@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="Identity.Data/Identity.Data.csproj" Id="2e62e633-0048-4fa5-b0e5-4a0f317e3875" />
   <Project Path="Identity/Identity.csproj" />
 </Solution>
