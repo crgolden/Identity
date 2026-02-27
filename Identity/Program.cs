@@ -1,25 +1,39 @@
 using Identity.Data;
-using Identity.Data.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
-
-// Add services to the container.
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
-builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+var assembly = typeof(ApplicationDbContext).Assembly;
 
-builder.Services.AddDefaultIdentity<User>(options =>
+builder.Services
+    .AddDbContext<ApplicationDbContext>(dbContextOptionsBuilder => { dbContextOptionsBuilder.UseSqlServer(connectionString, sqlServerDbContextOptionsBuilder => { sqlServerDbContextOptionsBuilder.MigrationsAssembly(assembly); }); })
+    .AddDatabaseDeveloperPageExceptionFilter()
+    .AddIdentity<IdentityUser<Guid>, IdentityRole<Guid>>(identityOptions =>
     {
-        options.Stores.SchemaVersion = IdentitySchemaVersions.Version3;
-        options.SignIn.RequireConfirmedAccount = true;
+        identityOptions.Stores.SchemaVersion = IdentitySchemaVersions.Version3;
+        identityOptions.SignIn.RequireConfirmedAccount = true;
     })
-    .AddEntityFrameworkStores<ApplicationDbContext>();
-builder.Services.AddRazorPages();
+    .AddDefaultUI()
+    .AddDefaultTokenProviders()
+    .AddEntityFrameworkStores<ApplicationDbContext>().Services
+    .AddIdentityServer(identityServerOptions =>
+    {
+        identityServerOptions.Events.RaiseErrorEvents = true;
+        identityServerOptions.Events.RaiseInformationEvents = true;
+        identityServerOptions.Events.RaiseFailureEvents = true;
+        identityServerOptions.Events.RaiseSuccessEvents = true;
+    })
+    .AddConfigurationStore<ApplicationDbContext>(configurationStoreOptions => { })
+    .AddOperationalStore<ApplicationDbContext>(operationalStoreOptions => { })
+    .AddAspNetIdentity<IdentityUser<Guid>>()
+    .AddLicenseSummary().Services
+    .AddAuthentication().Services
+    .AddRazorPages();
 
 var app = builder.Build();
-
+var db = app.Services.CreateScope().ServiceProvider.GetRequiredService<ApplicationDbContext>().Database;
+db.Migrate();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -33,13 +47,12 @@ else
 }
 
 app.UseHttpsRedirection();
-
 app.UseRouting();
-
+app.UseIdentityServer();
 app.UseAuthorization();
-
 app.MapStaticAssets();
 app.MapRazorPages()
-   .WithStaticAssets();
-
+   .WithStaticAssets()
+   .RequireAuthorization();
 app.Run();
+return;
