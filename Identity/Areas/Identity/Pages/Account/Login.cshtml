@@ -1,4 +1,5 @@
 ﻿@page
+@using Identity
 @model LoginModel
 
 @{
@@ -32,6 +33,11 @@
                 <div>
                     <button id="login-submit" type="submit" class="w-100 btn btn-lg btn-primary">Log in</button>
                 </div>
+                <hr />
+                <passkey-submit operation="@PasskeyOperation.Request" name="Input.Passkey" email-name="Input.Username" class="btn btn-outline-primary position-relative" formnovalidate>
+                    Log in with a passkey
+                </passkey-submit>
+                <hr />
                 <div>
                     <p>
                         <a id="forgot-password" asp-page="./ForgotPassword">Forgot your password?</a>
@@ -80,4 +86,5 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/passkey-submit.js" asp-append-version="true"></script>
 }

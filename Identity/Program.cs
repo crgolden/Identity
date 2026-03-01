@@ -1,3 +1,4 @@
+using Identity;
 using Identity.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -8,7 +9,6 @@ var assembly = typeof(ApplicationDbContext).Assembly;
 
 builder.Services
     .AddDbContext<ApplicationDbContext>(dbContextOptionsBuilder => { dbContextOptionsBuilder.UseSqlServer(connectionString, sqlServerDbContextOptionsBuilder => { sqlServerDbContextOptionsBuilder.MigrationsAssembly(assembly); }); })
-    .AddDatabaseDeveloperPageExceptionFilter()
     .AddIdentity<IdentityUser<Guid>, IdentityRole<Guid>>(identityOptions =>
     {
         identityOptions.Stores.SchemaVersion = IdentitySchemaVersions.Version3;
@@ -30,10 +30,18 @@ builder.Services
     .AddLicenseSummary().Services
     .AddAuthentication().Services
     .AddRazorPages();
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+    builder.Services.Configure<IdentityPasskeyOptions>(options =>
+    {
+        // Allow https://localhost:7261 origin.
+        options.ValidateOrigin = context => ValueTask.FromResult(context.Origin == "https://localhost:7261");
+    });
+}
 
 var app = builder.Build();
-var db = app.Services.CreateScope().ServiceProvider.GetRequiredService<ApplicationDbContext>().Database;
-db.Migrate();
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -50,9 +58,9 @@ app.UseHttpsRedirection();
 app.UseRouting();
 app.UseIdentityServer();
 app.UseAuthorization();
+app.MapAdditionalIdentityEndpoints();
 app.MapStaticAssets();
 app.MapRazorPages()
    .WithStaticAssets()
    .RequireAuthorization();
 app.Run();
-return;
