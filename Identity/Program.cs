@@ -1,10 +1,13 @@
 using Identity;
 using Identity.Data;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
+using Resend;
 
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+var resendClientOptionsSection = builder.Configuration.GetSection(nameof(ResendClientOptions));
 var assembly = typeof(ApplicationDbContext).Assembly;
 
 builder.Services
@@ -29,7 +32,11 @@ builder.Services
     .AddAspNetIdentity<IdentityUser<Guid>>()
     .AddLicenseSummary().Services
     .AddAuthentication().Services
-    .AddRazorPages();
+    .AddRazorPages().Services
+    .AddHttpClient<ResendClient>().Services
+    .Configure<ResendClientOptions>(resendClientOptionsSection)
+    .AddTransient<IResend, ResendClient>()
+    .AddTransient<IEmailSender, EmailSender>();
 if (builder.Environment.IsDevelopment())
 {
     builder.Services.AddDatabaseDeveloperPageExceptionFilter();
