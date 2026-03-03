@@ -1,3 +1,5 @@
+using Duende.IdentityServer;
+using Google.Apis.Auth.AspNetCore3;
 using Identity;
 using Identity.Data;
 using Microsoft.AspNetCore.Identity;
@@ -31,7 +33,16 @@ builder.Services
     .AddOperationalStore<ApplicationDbContext>(operationalStoreOptions => { })
     .AddAspNetIdentity<IdentityUser<Guid>>()
     .AddLicenseSummary().Services
-    .AddAuthentication().Services
+    .AddAuthentication()
+    .AddGoogleOpenIdConnect(
+        authenticationScheme: GoogleOpenIdConnectDefaults.AuthenticationScheme,
+        displayName: "Google",
+        configureOptions: openIdConnectOptions =>
+        {
+            openIdConnectOptions.SignInScheme = IdentityConstants.ExternalScheme;
+            openIdConnectOptions.ClientId = builder.Configuration["Authentication:Google:ClientId"];
+            openIdConnectOptions.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+        }).Services
     .AddRazorPages().Services
     .AddHttpClient<ResendClient>().Services
     .Configure<ResendClientOptions>(resendClientOptionsSection)
