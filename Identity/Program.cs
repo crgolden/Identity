@@ -1,14 +1,16 @@
-using Duende.IdentityServer;
 using Google.Apis.Auth.AspNetCore3;
 using Identity;
 using Identity.Data;
+using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Resend;
 
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+var corsPolicySection = builder.Configuration.GetSection(nameof(CorsPolicy));
 var resendClientOptionsSection = builder.Configuration.GetSection(nameof(ResendClientOptions));
 var assembly = typeof(ApplicationDbContext).Assembly;
 
@@ -28,6 +30,7 @@ builder.Services
         identityServerOptions.Events.RaiseInformationEvents = true;
         identityServerOptions.Events.RaiseFailureEvents = true;
         identityServerOptions.Events.RaiseSuccessEvents = true;
+        identityServerOptions.UserInteraction.ErrorUrl = "/Identity/Error";
     })
     .AddConfigurationStore<ApplicationDbContext>(configurationStoreOptions => { })
     .AddOperationalStore<ApplicationDbContext>(operationalStoreOptions => { })
@@ -45,9 +48,11 @@ builder.Services
         }).Services
     .AddRazorPages().Services
     .AddHttpClient<ResendClient>().Services
+    .Configure<CorsPolicy>(corsPolicySection)
     .Configure<ResendClientOptions>(resendClientOptionsSection)
     .AddTransient<IResend, ResendClient>()
-    .AddTransient<IEmailSender, EmailSender>();
+    .AddTransient<IEmailSender, EmailSender>()
+    .AddCors();
 if (builder.Environment.IsDevelopment())
 {
     builder.Services.AddDatabaseDeveloperPageExceptionFilter();
@@ -61,18 +66,23 @@ if (builder.Environment.IsDevelopment())
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+app.UseExceptionHandler("/Error");
 if (app.Environment.IsDevelopment())
 {
     app.UseMigrationsEndPoint();
 }
 else
 {
-    app.UseExceptionHandler("/Error");
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
 app.UseHttpsRedirection();
+app.UseCors(corsPolicyBuilder =>
+{
+    var corsPolicy = app.Services.GetRequiredService<IOptions<CorsPolicy>>().Value;
+    corsPolicyBuilder.WithOrigins(corsPolicy.Origins.ToArray());
+});
 app.UseRouting();
 app.UseIdentityServer();
 app.UseAuthorization();
