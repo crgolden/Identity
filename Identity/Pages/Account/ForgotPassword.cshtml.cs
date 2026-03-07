@@ -68,7 +68,7 @@ namespace Identity.Areas.Identity.Pages.Account
                 var callbackUrl = Url.Page(
                     "/Account/ResetPassword",
                     pageHandler: null,
-                    values: new { area = "Identity", code },
+                    values: new { code },
                     protocol: Request.Scheme);
 
                 await _emailSender.SendEmailAsync(
