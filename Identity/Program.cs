@@ -30,7 +30,7 @@ builder.Services
         identityServerOptions.Events.RaiseInformationEvents = true;
         identityServerOptions.Events.RaiseFailureEvents = true;
         identityServerOptions.Events.RaiseSuccessEvents = true;
-        identityServerOptions.UserInteraction.ErrorUrl = "/Identity/Error";
+        identityServerOptions.UserInteraction.ErrorUrl = "/Error";
     })
     .AddConfigurationStore<ApplicationDbContext>(configurationStoreOptions => { })
     .AddOperationalStore<ApplicationDbContext>(operationalStoreOptions => { })
@@ -78,13 +78,13 @@ else
 }
 
 app.UseHttpsRedirection();
+app.UseRouting();
+app.UseIdentityServer();
 app.UseCors(corsPolicyBuilder =>
 {
     var corsPolicy = app.Services.GetRequiredService<IOptions<CorsPolicy>>().Value;
     corsPolicyBuilder.WithOrigins(corsPolicy.Origins.ToArray());
 });
-app.UseRouting();
-app.UseIdentityServer();
 app.UseAuthorization();
 app.MapAdditionalIdentityEndpoints();
 app.MapStaticAssets();
