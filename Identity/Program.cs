@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using Azure.Security.KeyVault.Secrets;
 using Google.Apis.Auth.AspNetCore3;
 using Identity;
@@ -71,9 +72,17 @@ builder.Services
     .AddHttpClient<ResendClient>().Services
     .AddTransient<IResend, ResendClient>()
     .AddTransient<IEmailSender, EmailSender>()
+    .AddHttpClient<IGravatar, Gravatar>((sp, httpClient) =>
+    {
+        var secretClient = sp.GetRequiredService<SecretClient>();
+        var gravatarApiKeySecret = secretClient.GetSecret("GravatarApiSecretKey").Value;
+        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(IdentityConstants.BearerScheme, gravatarApiKeySecret.Value);
+    }).Services
+    .AddScoped<IAvatarService, GravatarService>()
     .AddRazorPages().Services
     .Configure<CorsPolicy>(corsPolicySection)
     .AddCors()
+    .AddHealthChecks().AddDbContextCheck<ApplicationDbContext>().Services
     .AddAzureClients(configureClients =>
     {
         configureClients.AddSecretClient(keyVaultSection);
@@ -113,6 +122,7 @@ app.UseCors(corsPolicyBuilder =>
 app.UseAuthorization();
 app.MapAdditionalIdentityEndpoints();
 app.MapStaticAssets();
+app.MapHealthChecks("health");
 app.MapRazorPages()
    .WithStaticAssets()
    .RequireAuthorization();
