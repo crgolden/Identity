@@ -1,3 +1,4 @@
+using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
 using Google.Apis.Auth.AspNetCore3;
 using Identity;
@@ -13,6 +14,7 @@ using Microsoft.Extensions.Options;
 using Resend;
 
 var builder = WebApplication.CreateBuilder(args);
+Console.WriteLine($"Environment: {builder.Environment.EnvironmentName}");
 var keyVaultSection = builder.Configuration.GetSection(nameof(Azure.Security.KeyVault));
 var corsPolicySection = builder.Configuration.GetSection(nameof(CorsPolicy));
 var sqlConnectionStringBuilderSection = builder.Configuration.GetSection(nameof(SqlConnectionStringBuilder));
@@ -77,6 +79,15 @@ builder.Services
     .AddAzureClients(configureClients =>
     {
         configureClients.AddSecretClient(keyVaultSection);
+        if (builder.Environment.IsProduction())
+        {
+            configureClients.UseCredential(sp =>
+            {
+                var id = ManagedIdentityId.SystemAssigned;
+                var options = new ManagedIdentityCredentialOptions(id);
+                return new ManagedIdentityCredential(options);
+            });
+        }
     });
 if (builder.Environment.IsDevelopment())
 {
