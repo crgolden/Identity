@@ -1,9 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
-
-namespace Identity;
-
-using Microsoft.AspNetCore.Antiforgery;
+﻿using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+
+namespace Identity.Pages.Account.Manage;
+
 using static ArgumentNullException;
 
 public static class PasskeyEndpointRouteBuilderExtensions

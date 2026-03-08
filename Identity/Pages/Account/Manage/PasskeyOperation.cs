@@ -1,4 +1,4 @@
-﻿namespace Identity;
+﻿namespace Identity.Pages.Account.Manage;
 
 public enum PasskeyOperation
 {

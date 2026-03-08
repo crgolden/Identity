@@ -1,10 +1,10 @@
+using System.Buffers.Text;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using System.Buffers.Text;
-using System.Diagnostics.CodeAnalysis;
 
-namespace Identity.Areas.Identity.Pages.Account.Manage
+namespace Identity.Pages.Account.Manage
 {
     public class PasskeysModel : PageModel
     {

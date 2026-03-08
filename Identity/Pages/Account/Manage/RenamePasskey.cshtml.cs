@@ -1,11 +1,10 @@
-using Identity.Data;
+using System.Buffers.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using System.Buffers.Text;
 using Microsoft.EntityFrameworkCore;
 
-namespace Identity.Areas.Identity.Pages.Account.Manage
+namespace Identity.Pages.Account.Manage
 {
     public class RenamePasskeyModel : PageModel
     {

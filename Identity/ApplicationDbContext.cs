@@ -1,13 +1,14 @@
-﻿namespace Identity.Data
+﻿using Duende.IdentityServer.EntityFramework.Entities;
+using Duende.IdentityServer.EntityFramework.Extensions;
+using Duende.IdentityServer.EntityFramework.Interfaces;
+using Duende.IdentityServer.EntityFramework.Options;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+
+namespace Identity
 {
-    using Duende.IdentityServer.EntityFramework.Entities;
-    using Duende.IdentityServer.EntityFramework.Extensions;
-    using Duende.IdentityServer.EntityFramework.Interfaces;
-    using Duende.IdentityServer.EntityFramework.Options;
-    using Microsoft.AspNetCore.Identity;
-    using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-    using Microsoft.EntityFrameworkCore;
-    using Microsoft.EntityFrameworkCore.Infrastructure;
     using static ArgumentNullException;
 
     /// <inheritdoc cref="DbContext" />

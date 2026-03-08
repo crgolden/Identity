@@ -1,21 +1,42 @@
+using Azure.Security.KeyVault.Secrets;
 using Google.Apis.Auth.AspNetCore3;
 using Identity;
-using Identity.Data;
+using Identity.Pages.Account.Manage;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Options;
 using Resend;
 
 var builder = WebApplication.CreateBuilder(args);
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+var keyVaultSection = builder.Configuration.GetSection(nameof(Azure.Security.KeyVault));
 var corsPolicySection = builder.Configuration.GetSection(nameof(CorsPolicy));
-var resendClientOptionsSection = builder.Configuration.GetSection(nameof(ResendClientOptions));
-var assembly = typeof(ApplicationDbContext).Assembly;
+var sqlConnectionStringBuilderSection = builder.Configuration.GetSection(nameof(SqlConnectionStringBuilder));
 
 builder.Services
-    .AddDbContext<ApplicationDbContext>(dbContextOptionsBuilder => { dbContextOptionsBuilder.UseSqlServer(connectionString, sqlServerDbContextOptionsBuilder => { sqlServerDbContextOptionsBuilder.MigrationsAssembly(assembly); }); })
+    .Configure<SqlConnectionStringBuilder>(sqlConnectionStringBuilderSection)
+    .AddDbContext<ApplicationDbContext>((sp, dbContextOptionsBuilder) =>
+    {
+        var sqlConnectionStringBuilder = sp.GetRequiredService<IOptions<SqlConnectionStringBuilder>>().Value;
+        if (!sqlConnectionStringBuilder.IntegratedSecurity)
+        {
+            var secretClient = sp.GetRequiredService<SecretClient>();
+            var sqlServerUserId = secretClient.GetSecret("SqlServerUserId");
+            var sqlServerPassword = secretClient.GetSecret("SqlServerPassword");
+            sqlConnectionStringBuilder.UserID = sqlServerUserId.Value.Value;
+            sqlConnectionStringBuilder.Password = sqlServerPassword.Value.Value;
+        }
+
+        dbContextOptionsBuilder.UseSqlServer(sqlConnectionStringBuilder.ConnectionString, sqlServerDbContextOptionsBuilder =>
+        {
+            var assembly = typeof(ApplicationDbContext).Assembly;
+            sqlServerDbContextOptionsBuilder.MigrationsAssembly(assembly);
+        });
+    })
     .AddIdentity<IdentityUser<Guid>, IdentityRole<Guid>>(identityOptions =>
     {
         identityOptions.Stores.SchemaVersion = IdentitySchemaVersions.Version3;
@@ -39,20 +60,24 @@ builder.Services
     .AddAuthentication()
     .AddGoogleOpenIdConnect(
         authenticationScheme: GoogleOpenIdConnectDefaults.AuthenticationScheme,
-        displayName: "Google",
+        displayName: nameof(Google),
         configureOptions: openIdConnectOptions =>
         {
             openIdConnectOptions.SignInScheme = IdentityConstants.ExternalScheme;
-            openIdConnectOptions.ClientId = builder.Configuration["Authentication:Google:ClientId"];
-            openIdConnectOptions.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
         }).Services
-    .AddRazorPages().Services
+    .AddTransient<IPostConfigureOptions<OpenIdConnectOptions>, OpenIdConnectConfigureOptions>()
+    .AddOptions<ResendClientOptions>().Services
+    .AddTransient<IPostConfigureOptions<ResendClientOptions>, ResendClientConfigureOptions>()
     .AddHttpClient<ResendClient>().Services
-    .Configure<CorsPolicy>(corsPolicySection)
-    .Configure<ResendClientOptions>(resendClientOptionsSection)
     .AddTransient<IResend, ResendClient>()
     .AddTransient<IEmailSender, EmailSender>()
-    .AddCors();
+    .AddRazorPages().Services
+    .Configure<CorsPolicy>(corsPolicySection)
+    .AddCors()
+    .AddAzureClients(configureClients =>
+    {
+        configureClients.AddSecretClient(keyVaultSection);
+    });
 if (builder.Environment.IsDevelopment())
 {
     builder.Services.AddDatabaseDeveloperPageExceptionFilter();
