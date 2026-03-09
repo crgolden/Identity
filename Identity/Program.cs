@@ -1,5 +1,5 @@
-using System.Net.Http.Headers;
 using Azure.Security.KeyVault.Secrets;
+using Elastic.Clients.Elasticsearch;
 using Google.Apis.Auth.AspNetCore3;
 using Identity;
 using Identity.Pages.Account.Manage;
@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Options;
 using Resend;
+using System.Net.Http.Headers;
 
 var builder = WebApplication.CreateBuilder(args);
 var keyVaultSection = builder.Configuration.GetSection(nameof(Azure.Security.KeyVault));
@@ -98,6 +99,26 @@ if (builder.Environment.IsDevelopment())
 }
 
 var app = builder.Build();
+
+var uri = new Uri("http://192.168.0.33:9200/");
+var settings = new ElasticsearchClientSettings(uri);
+var client = new ElasticsearchClient(settings);
+await client.Indices.CreateAsync("identity");
+var doc1 = new
+{
+    Id = 1,
+    User = "flobernd",
+    Message = "Trying out the client, so far so good?"
+};
+
+var response1 = await client.IndexAsync(doc1, "identity");
+var response2 = await client.GetAsync<object>(1, idx => idx.Index("identity"));
+if (response2.IsValidResponse)
+{
+    var doc2 = response2.Source;
+}
+
+var response3 = await client.DeleteAsync("identity", 1);
 
 // Configure the HTTP request pipeline.
 app.UseExceptionHandler("/Error");
