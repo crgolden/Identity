@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
 using Elastic.Ingest.Elasticsearch;
+using Elastic.Ingest.Elasticsearch.DataStreams;
 using Elastic.Serilog.Sinks;
 using Elastic.Transport;
 using Google.Apis.Auth.AspNetCore3;
@@ -72,6 +73,7 @@ try
                 [elasticsearchNode],
                 elasticsearchSinkOptions =>
                 {
+                    elasticsearchSinkOptions.DataStream = new DataStreamName("logs", "dotnet", "identity");
                     elasticsearchSinkOptions.BootstrapMethod = BootstrapMethod.Failure;
                 },
                 transportConfiguration =>
@@ -89,11 +91,7 @@ try
                 sqlConnectionStringBuilder.Password = sqlServerPassword.Value;
             }
 
-            dbContextOptionsBuilder.UseSqlServer(sqlConnectionStringBuilder.ConnectionString, sqlServerDbContextOptionsBuilder =>
-            {
-                var assembly = typeof(ApplicationDbContext).Assembly;
-                sqlServerDbContextOptionsBuilder.MigrationsAssembly(assembly);
-            });
+            dbContextOptionsBuilder.UseSqlServer(sqlConnectionStringBuilder.ConnectionString);
         })
         .AddIdentity<IdentityUser<Guid>, IdentityRole<Guid>>(identityOptions =>
         {
@@ -111,8 +109,8 @@ try
             identityServerOptions.Events.RaiseSuccessEvents = true;
             identityServerOptions.UserInteraction.ErrorUrl = "/Error";
         })
-        .AddConfigurationStore<ApplicationDbContext>(configurationStoreOptions => { })
-        .AddOperationalStore<ApplicationDbContext>(operationalStoreOptions => { })
+        .AddConfigurationStore<ApplicationDbContext>()
+        .AddOperationalStore<ApplicationDbContext>()
         .AddAspNetIdentity<IdentityUser<Guid>>()
         .AddLicenseSummary().Services
         .AddAuthentication()
