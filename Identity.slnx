@@ -1,4 +1,5 @@
 <Solution>
   <Project Path="Identity.Tests/Identity.Tests.csproj" />
   <Project Path="Identity/Identity.csproj" />
+  <Project Path="ServiceDefaults/ServiceDefaults.csproj" Id="35279be2-005c-4445-975d-4fd70e25e267" />
 </Solution>
