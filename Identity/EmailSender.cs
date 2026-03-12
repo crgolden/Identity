@@ -1,27 +1,29 @@
-﻿using Microsoft.AspNetCore.Identity.UI.Services;
+﻿namespace Identity;
+
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Resend;
 
-namespace Identity;
-
+/// <inheritdoc/>
 public class EmailSender : IEmailSender
 {
     private readonly IResend _resend;
 
+    /// <inheritdoc cref="IEmailSender"/>
     public EmailSender(IResend resend)
     {
         _resend = resend;
     }
 
-    public Task SendEmailAsync(string toEmail, string subject, string message)
+    /// <inheritdoc/>
+    public Task SendEmailAsync(string email, string subject, string htmlMessage)
     {
         var msg = new EmailMessage
         {
             From = "noreply@crgolden.com",
             Subject = subject,
-            TextBody = message,
-            HtmlBody =message
+            HtmlBody = htmlMessage,
         };
-        msg.To.Add(toEmail);
+        msg.To.Add(email);
         return _resend.EmailSendAsync(msg);
     }
 }

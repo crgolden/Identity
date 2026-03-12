@@ -27,7 +27,8 @@ namespace Identity.Pages
             RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
             if (!string.IsNullOrWhiteSpace(errorId))
             {
-                var error = await _interactionService.GetErrorContextAsync(errorId);
+                var errorMessage = await _interactionService.GetErrorContextAsync(errorId);
+
             }
         }
     }

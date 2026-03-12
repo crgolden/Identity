@@ -1,5 +1,5 @@
-using System.Diagnostics;
 using System.Net.Http.Headers;
+using Azure.Core;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
 using Elastic.Ingest.Elasticsearch;
@@ -10,6 +10,7 @@ using Google.Apis.Auth.AspNetCore3;
 using Identity;
 using Identity.Pages.Account.Manage;
 using Microsoft.AspNetCore.Cors.Infrastructure;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.Data.SqlClient;
@@ -23,25 +24,25 @@ Log.Logger = new LoggerConfiguration().WriteTo.Console().CreateBootstrapLogger()
 
 try
 {
-    static (IConfigurationSection, IConfigurationSection, IConfigurationSection) GetSections(ConfigurationManager configuration)
+    static (IConfigurationSection, IConfigurationSection) GetSections(ConfigurationManager configuration)
     {
-        var keyVaultSection = configuration.GetSection(nameof(Azure.Security.KeyVault));
         var corsPolicySection = configuration.GetSection(nameof(CorsPolicy));
         var sqlConnectionStringBuilderSection = configuration.GetSection(nameof(SqlConnectionStringBuilder));
-        return (keyVaultSection, corsPolicySection, sqlConnectionStringBuilderSection);
+        return (corsPolicySection, sqlConnectionStringBuilderSection);
     }
 
-    static (Uri, Uri) GetUris(ConfigurationManager configuration)
+    static (Uri, Uri, Uri, Uri) GetUris(ConfigurationManager configuration)
     {
         var elasticsearchNode = configuration.GetValue<Uri>("ElasticsearchNode") ?? throw new InvalidOperationException("Invalid 'ElasticsearchNode'.");
-        var keyVaultUrl = configuration.GetValue<Uri>("KeyVaultUri") ?? throw new InvalidOperationException("Invalid 'KeyVault.VaultUri'.");
-        return (elasticsearchNode, keyVaultUrl);
+        var keyVaultUrl = configuration.GetValue<Uri>("KeyVaultUri") ?? throw new InvalidOperationException("Invalid 'KeyVaultUri'.");
+        var blobUrl = configuration.GetValue<Uri>("BlobUri") ?? throw new InvalidOperationException("Invalid 'BlobUri'.");
+        var dataProtectionKeyIdentifier = configuration.GetValue<Uri>("DataProtectionKeyIdentifier") ?? throw new InvalidOperationException("Invalid 'DataProtectionKeyIdentifier'.");
+        return (elasticsearchNode, keyVaultUrl, blobUrl, dataProtectionKeyIdentifier);
     }
 
-    static async Task<(KeyVaultSecret, KeyVaultSecret, KeyVaultSecret, KeyVaultSecret, KeyVaultSecret, KeyVaultSecret, KeyVaultSecret, KeyVaultSecret)> GetSecrets(Uri keyVaultUrl, CancellationToken cancellationToken = default)
+    static async Task<(KeyVaultSecret, KeyVaultSecret, KeyVaultSecret, KeyVaultSecret, KeyVaultSecret, KeyVaultSecret, KeyVaultSecret, KeyVaultSecret)> GetSecrets(Uri keyVaultUrl, TokenCredential tokenCredential, CancellationToken cancellationToken = default)
     {
-        var timestamp = Stopwatch.GetTimestamp();
-        var secretClient = new SecretClient(keyVaultUrl, new DefaultAzureCredential());
+        var secretClient = new SecretClient(keyVaultUrl, tokenCredential);
         var tasks = new[]
         {
             secretClient.GetSecretAsync("GravatarApiSecretKey", cancellationToken: cancellationToken),
@@ -54,15 +55,14 @@ try
             secretClient.GetSecretAsync("ResendApiToken", cancellationToken: cancellationToken),
         };
         var result = await Task.WhenAll(tasks);
-        var elapsedTime = Stopwatch.GetElapsedTime(timestamp);
-        Log.Information("Retrieved secrets from Key Vault in {ElapsedMilliseconds} ms", elapsedTime.Milliseconds);
         return (result[0].Value, result[1].Value, result[2].Value, result[3].Value, result[4].Value, result[5].Value, result[6].Value, result[7].Value);
     }
 
+    TokenCredential tokenCredential = new DefaultAzureCredential();
     var builder = WebApplication.CreateBuilder(args);
-    var (keyVaultSection, corsPolicySection, sqlConnectionStringBuilderSection) = GetSections(builder.Configuration);
-    var (elasticsearchNode, keyVaultUrl) = GetUris(builder.Configuration);
-    var (gravatarApiKeySecret, elasticsearchUsername, elasticsearchPassword, sqlServerUserId, sqlServerPassword, googleClientId, googleClientSecret, resendApiToken) = await GetSecrets(keyVaultUrl);
+    var (corsPolicySection, sqlConnectionStringBuilderSection) = GetSections(builder.Configuration);
+    var (elasticsearchNode, keyVaultUrl, blobUrl, dataProtectionKeyIdentifier) = GetUris(builder.Configuration);
+    var (gravatarApiKeySecret, elasticsearchUsername, elasticsearchPassword, sqlServerUserId, sqlServerPassword, googleClientId, googleClientSecret, resendApiToken) = await GetSecrets(keyVaultUrl, tokenCredential);
     builder
         .ConfigureOpenTelemetry().Services
         .AddSerilog((sp, loggerConfiguration) => loggerConfiguration
@@ -139,10 +139,11 @@ try
         .Configure<CorsPolicy>(corsPolicySection)
         .AddCors()
         .AddHealthChecks().AddDbContextCheck<ApplicationDbContext>().Services
-        .AddAzureClients(configureClients =>
-        {
-            configureClients.AddSecretClient(keyVaultSection);
-        });
+        .AddDataProtection()
+        .SetApplicationName(nameof(Identity))
+        .PersistKeysToAzureBlobStorage(blobUrl, tokenCredential)
+        .ProtectKeysWithAzureKeyVault(dataProtectionKeyIdentifier, tokenCredential).Services
+        .AddAzureClientsCore(true);
     if (builder.Environment.IsDevelopment())
     {
         builder.Services.AddDatabaseDeveloperPageExceptionFilter();
@@ -154,32 +155,29 @@ try
     }
 
     var app = builder.Build();
-
-    // Configure the HTTP request pipeline.
-    app.UseSerilogRequestLogging();
-    app.UseExceptionHandler("/Error");
+    app.UseSerilogRequestLogging().UseExceptionHandler("/Error");
     if (app.Environment.IsDevelopment())
     {
+        app.UseDeveloperExceptionPage();
         app.UseMigrationsEndPoint();
     }
     else
     {
-        // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
         app.UseHsts();
     }
 
-    app.UseHttpsRedirection();
-    app.UseRouting();
-    app.UseIdentityServer();
-    app.UseCors(corsPolicyBuilder =>
-    {
-        var corsPolicy = app.Services.GetRequiredService<IOptions<CorsPolicy>>().Value;
-        corsPolicyBuilder.WithOrigins(corsPolicy.Origins.ToArray());
-    });
-    app.UseAuthorization();
+    app.UseHttpsRedirection()
+        .UseRouting()
+        .UseIdentityServer()
+        .UseCors(corsPolicyBuilder =>
+        {
+            var corsPolicy = app.Services.GetRequiredService<IOptions<CorsPolicy>>().Value;
+            corsPolicyBuilder.WithOrigins(corsPolicy.Origins.ToArray());
+        })
+        .UseAuthorization();
     app.MapAdditionalIdentityEndpoints();
-    app.MapStaticAssets();
     app.MapHealthChecks("health");
+    app.MapStaticAssets();
     app.MapRazorPages()
        .WithStaticAssets()
        .RequireAuthorization();
