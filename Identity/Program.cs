@@ -61,8 +61,20 @@ try
         return (result[0].Value, result[1].Value, result[2].Value, result[3].Value, result[4].Value, result[5].Value, result[6].Value, result[7].Value);
     }
 
-    TokenCredential tokenCredential = new DefaultAzureCredential();
     var builder = WebApplication.CreateBuilder(args);
+    var options = new DefaultAzureCredentialOptions();
+    if (builder.Environment.IsDevelopment())
+    {
+        var tenantId = builder.Configuration.GetValue<Guid>("DevelopmentTenantId");
+        options.ExcludeAzureCliCredential = true;
+        options.ExcludeEnvironmentCredential = true;
+        options.ExcludeManagedIdentityCredential = true;
+        options.ExcludeWorkloadIdentityCredential = true;
+        options.SharedTokenCacheTenantId = tenantId.ToString();
+        options.VisualStudioTenantId = tenantId.ToString();
+    }
+
+    TokenCredential tokenCredential = new DefaultAzureCredential(options);
     var (corsPolicySection, sqlConnectionStringBuilderSection) = GetSections(builder.Configuration);
     var (elasticsearchNode, keyVaultUrl, blobUrl, dataProtectionKeyIdentifier) = GetUris(builder.Configuration);
     var (gravatarApiKeySecret, elasticsearchUsername, elasticsearchPassword, sqlServerUserId, sqlServerPassword, googleClientId, googleClientSecret, resendApiToken) = await GetSecrets(keyVaultUrl, tokenCredential);

@@ -6,8 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 The solution (`Identity.slnx`) contains two projects:
 
-- **`Identity/`** — ASP.NET Core 10 Razor Pages web application (the main app)
-- **`Identity.Data/`** — Class library housing `ApplicationDbContext` and EF Core migrations
+- **`Identity/`** — ASP.NET Core 10 Razor Pages web application (the main app), also houses `ApplicationDbContext` and EF Core migrations
+- **`Identity.Tests/`** — xUnit v3 test project (uses `Microsoft.AspNetCore.Mvc.Testing`, `Moq`)
 
 ## What This App Does
 
@@ -25,16 +25,18 @@ Authentication features supported:
 
 Email is sent via **Resend** (`EmailSender.cs` implements `IEmailSender`).
 
+Avatar/profile images are served via **Gravatar** (`GravatarService` implements `IAvatarService`; the `Gravatar` HTTP client is generated from the Gravatar OpenAPI spec at `OpenAPIs/gravatar.json`).
+
 ## Key Architecture Points
 
 ### Single DbContext for Everything
 
-`ApplicationDbContext` (in `Identity.Data`) implements three interfaces simultaneously:
+`ApplicationDbContext` (in `Identity/ApplicationDbContext.cs`) implements three interfaces simultaneously:
 - `IdentityDbContext<IdentityUser<Guid>, ...>` — ASP.NET Identity tables
 - `IConfigurationDbContext` — Duende IdentityServer clients/resources
 - `IPersistedGrantDbContext` — Duende IdentityServer grants/sessions
 
-Migrations live in `Identity.Data/Migrations/` and are registered with `.MigrationsAssembly(assembly)` in `Program.cs`.
+Migrations live in `Identity/Migrations/` and are registered with `.MigrationsAssembly(assembly)` in `Program.cs`.
 
 ### Passkey Endpoints
 
@@ -48,18 +50,43 @@ Both require antiforgery validation. The Passkey Razor Pages live in `Areas/Iden
 
 All services use `IdentityUser<Guid>` (not the default `IdentityUser`). This must be kept consistent throughout — `UserManager<IdentityUser<Guid>>`, `SignInManager<IdentityUser<Guid>>`, `AddAspNetIdentity<IdentityUser<Guid>>()`, etc.
 
+### Observability
+
+- **Azure Monitor** — OpenTelemetry metrics and traces via `UseAzureMonitor()`
+- **Serilog** — structured logging with an Elasticsearch sink (`logs-dotnet-identity` data stream) and console sink bootstrap
+- Health checks endpoint at `/Health` with `DbContext` check; health check requests are filtered from traces
+
+### Data Protection
+
+Keys are persisted to **Azure Blob Storage** and protected with **Azure Key Vault** (via `PersistKeysToAzureBlobStorage` / `ProtectKeysWithAzureKeyVault`).
+
 ### Configuration
 
-Sensitive values are `null` in `appsettings.json` and must be set via User Secrets (development) or Azure App Configuration/Key Vault (production):
+All sensitive values are retrieved at startup from **Azure Key Vault** using `DefaultAzureCredential`. Non-secret infrastructure values are set via `appsettings.json` (nulled out) and supplied through User Secrets (development) or environment/Azure App Configuration (production):
 
 ```json
 {
-  "ConnectionStrings:DefaultConnection": "<SQL Server connection string>",
-  "ResendClientOptions:ApiToken": "<Resend API token>",
-  "Authentication:Google:ClientId": "<Google OAuth client ID>",
-  "Authentication:Google:ClientSecret": "<Google OAuth client secret>"
+  "ElasticsearchNode": "<Elasticsearch node URI>",
+  "KeyVaultUri": "<Azure Key Vault URI>",
+  "BlobUri": "<Azure Blob Storage URI for Data Protection keys>",
+  "DataProtectionKeyIdentifier": "<Azure Key Vault key URI for Data Protection>",
+  "SqlConnectionStringBuilder": {
+    "DataSource": "<SQL Server host>",
+    "InitialCatalog": "Identity",
+    "IntegratedSecurity": false
+  },
+  "CorsPolicy": {
+    "Origins": []
+  }
 }
 ```
+
+**Key Vault secrets** fetched at startup:
+- `GravatarApiSecretKey`
+- `ElasticsearchUsername` / `ElasticsearchPassword`
+- `SqlServerUserId` / `SqlServerPassword`
+- `GoogleClientId` / `GoogleClientSecret`
+- `ResendApiToken`
 
 User Secrets ID: `aspnet-Identity-149346d0-999f-4a74-8ff7-2a92d39790f2`
 
@@ -78,12 +105,17 @@ dotnet run
 # HTTPS: https://localhost:7261  HTTP: http://localhost:5021
 ```
 
+### Test
+```bash
+dotnet test
+```
+
 ### EF Core Migrations
-Run from the solution root; specify the `Identity.Data` project as the migrations project and `Identity` as the startup project:
+Run from the solution root; `ApplicationDbContext` and migrations are now in the `Identity` web project itself:
 
 ```bash
-dotnet ef migrations add <MigrationName> --project Identity.Data --startup-project Identity
-dotnet ef database update --project Identity.Data --startup-project Identity
+dotnet ef migrations add <MigrationName> --project Identity
+dotnet ef database update --project Identity
 ```
 
 ### Publish

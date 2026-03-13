@@ -22,6 +22,7 @@ public class EmailSender : IEmailSender
             From = "noreply@crgolden.com",
             Subject = subject,
             HtmlBody = htmlMessage,
+            TextBody = htmlMessage,
         };
         msg.To.Add(email);
         return _resend.EmailSendAsync(msg);
