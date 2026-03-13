@@ -60,8 +60,11 @@ jobs:
         run: dotnet tool install --global dotnet-coverage
 
       - name: Begin Sonar analysis
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        shell: powershell
         run: |
-          dotnet sonarscanner begin `
+          ${{ runner.temp }}\scanner\dotnet-sonarscanner begin `
             /k:"${{ secrets.SONAR_PROJECT_KEY }}" `
             /o:"${{ secrets.SONAR_ORGANIZATION }}" `
             /d:sonar.token="${{ secrets.SONAR_TOKEN }}" `
@@ -78,7 +81,7 @@ jobs:
             -f xml -o "coverage.xml"
 
       - name: End Sonar analysis
-        run: dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+        run: ${{ runner.temp }}\scanner\dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
 
       - name: dotnet publish
         run: dotnet publish -c Release -o "${{env.DOTNET_ROOT}}/myapp"
