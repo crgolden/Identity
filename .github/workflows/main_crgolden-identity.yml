@@ -46,7 +46,7 @@ jobs:
       - name: Run tests with coverage
         run: |
           dotnet-coverage collect `
-            "dotnet test Identity.Tests --no-build --configuration Release" `
+            "dotnet test --project Identity.Tests --no-build --configuration Release" `
             -f xml -o "coverage.xml"
 
       - name: End Sonar analysis
