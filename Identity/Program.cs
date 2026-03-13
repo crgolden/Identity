@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using Azure.Core;
 using Azure.Identity;
+using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Azure.Security.KeyVault.Secrets;
 using Elastic.Ingest.Elasticsearch;
 using Elastic.Ingest.Elasticsearch.DataStreams;
@@ -17,6 +18,8 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Options;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Trace;
 using Resend;
 using Serilog;
 
@@ -63,8 +66,29 @@ try
     var (corsPolicySection, sqlConnectionStringBuilderSection) = GetSections(builder.Configuration);
     var (elasticsearchNode, keyVaultUrl, blobUrl, dataProtectionKeyIdentifier) = GetUris(builder.Configuration);
     var (gravatarApiKeySecret, elasticsearchUsername, elasticsearchPassword, sqlServerUserId, sqlServerPassword, googleClientId, googleClientSecret, resendApiToken) = await GetSecrets(keyVaultUrl, tokenCredential);
-    builder
-        .ConfigureOpenTelemetry().Services
+    builder.Services
+        .AddOpenTelemetry()
+        .UseAzureMonitor()
+        .WithMetrics(meterProviderBuilder =>
+        {
+            meterProviderBuilder
+                .AddAspNetCoreInstrumentation()
+                .AddHttpClientInstrumentation()
+                .AddRuntimeInstrumentation();
+        })
+        .WithTracing(tracerProviderBuilder =>
+        {
+            tracerProviderBuilder
+                .AddSource(builder.Environment.ApplicationName)
+                .AddAspNetCoreInstrumentation(aspNetCoreTraceInstrumentationOptions =>
+                {
+                    aspNetCoreTraceInstrumentationOptions.Filter = context =>
+                    {
+                        return !context.Request.Path.StartsWithSegments("/Health");
+                    };
+                })
+                .AddHttpClientInstrumentation();
+        }).Services
         .AddSerilog((sp, loggerConfiguration) => loggerConfiguration
             .ReadFrom.Configuration(builder.Configuration)
             .ReadFrom.Services(sp)
@@ -140,30 +164,34 @@ try
         .AddCors()
         .AddHealthChecks().AddDbContextCheck<ApplicationDbContext>().Services
         .AddDataProtection()
-        .SetApplicationName(nameof(Identity))
+        .SetApplicationName(builder.Environment.ApplicationName)
         .PersistKeysToAzureBlobStorage(blobUrl, tokenCredential)
         .ProtectKeysWithAzureKeyVault(dataProtectionKeyIdentifier, tokenCredential).Services
         .AddAzureClientsCore(true);
+    builder.Logging.AddOpenTelemetry(openTelemetryLoggerOptions =>
+    {
+        openTelemetryLoggerOptions.IncludeFormattedMessage = true;
+        openTelemetryLoggerOptions.IncludeScopes = true;
+    });
     if (builder.Environment.IsDevelopment())
     {
         builder.Services.AddDatabaseDeveloperPageExceptionFilter();
-        builder.Services.Configure<IdentityPasskeyOptions>(options =>
+        builder.Services.Configure<IdentityPasskeyOptions>(identityPasskeyOptions =>
         {
             // Allow https://localhost:7261 origin.
-            options.ValidateOrigin = context => ValueTask.FromResult(context.Origin == "https://localhost:7261");
+            identityPasskeyOptions.ValidateOrigin = context => ValueTask.FromResult(context.Origin == "https://localhost:7261");
         });
     }
 
     var app = builder.Build();
-    app.UseSerilogRequestLogging().UseExceptionHandler("/Error");
+    app.UseSerilogRequestLogging();
     if (app.Environment.IsDevelopment())
     {
-        app.UseDeveloperExceptionPage();
-        app.UseMigrationsEndPoint();
+        app.UseDeveloperExceptionPage().UseMigrationsEndPoint();
     }
     else
     {
-        app.UseHsts();
+        app.UseExceptionHandler("/Error").UseHsts();
     }
 
     app.UseHttpsRedirection()
@@ -176,7 +204,7 @@ try
         })
         .UseAuthorization();
     app.MapAdditionalIdentityEndpoints();
-    app.MapHealthChecks("health");
+    app.MapHealthChecks("Health");
     app.MapStaticAssets();
     app.MapRazorPages()
        .WithStaticAssets()

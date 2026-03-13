@@ -11,10 +11,14 @@ namespace Identity.Pages
     [IgnoreAntiforgeryToken]
     public class ErrorModel : PageModel
     {
+        private readonly ILogger _logger;
         private readonly IIdentityServerInteractionService _interactionService;
 
-        public ErrorModel(IIdentityServerInteractionService interactionService)
+        public ErrorModel(
+            ILogger<ErrorModel> logger,
+            IIdentityServerInteractionService interactionService)
         {
+            _logger = logger;
             _interactionService = interactionService;
         }
 
@@ -28,7 +32,7 @@ namespace Identity.Pages
             if (!string.IsNullOrWhiteSpace(errorId))
             {
                 var errorMessage = await _interactionService.GetErrorContextAsync(errorId);
-
+                _logger.LogError("{ErrorMessage}", errorMessage);
             }
         }
     }

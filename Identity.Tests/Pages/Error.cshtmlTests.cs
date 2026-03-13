@@ -4,6 +4,7 @@ using Duende.IdentityServer.Services;
 using Identity.Pages;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Logging;
 using Moq;
 #nullable enable
 
@@ -23,11 +24,12 @@ namespace Identity.Tests.Pages
         public void ErrorModel_WithValidInteractionService_DoesNotThrowAndInitializesProperties(MockBehavior mockBehavior)
         {
             // Arrange
+            var mockLogger = new Mock<ILogger<ErrorModel>>();
             var mockInteraction = new Mock<IIdentityServerInteractionService>(mockBehavior);
 
             // Act
-            var exception = Record.Exception(() => new ErrorModel(mockInteraction.Object));
-            var model = exception is null ? new ErrorModel(mockInteraction.Object) : null;
+            var exception = Record.Exception(() => new ErrorModel(mockLogger.Object, mockInteraction.Object));
+            var model = exception is null ? new ErrorModel(mockLogger.Object, mockInteraction.Object) : null;
 
             // Assert
             Assert.Null(exception);
@@ -58,10 +60,11 @@ namespace Identity.Tests.Pages
         public async Task OnGetAsync_ErrorIdNullOrWhitespace_DoesNotCallGetErrorContextAndSetsRequestId(string? errorId, bool setActivity)
         {
             // Arrange
+            var mockLogger = new Mock<ILogger<ErrorModel>>();
             var mockInteraction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
             // No setup for GetErrorContextAsync - we expect it to not be called.
 
-            var model = new ErrorModel(mockInteraction.Object);
+            var model = new ErrorModel(mockLogger.Object, mockInteraction.Object);
 
             // Prepare HttpContext with a known trace identifier.
             var httpContext = new DefaultHttpContext();
@@ -132,6 +135,7 @@ namespace Identity.Tests.Pages
         public async Task OnGetAsync_NonEmptyErrorId_CallsGetErrorContextAndSetsRequestId(string errorId, bool setActivity)
         {
             // Arrange
+            var mockLogger = new Mock<ILogger<ErrorModel>>();
             var mockInteraction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
             // Return null from service to ensure code handles nullable returns without throwing.
             mockInteraction
@@ -139,7 +143,7 @@ namespace Identity.Tests.Pages
                 .ReturnsAsync((ErrorMessage?)null)
                 .Verifiable();
 
-            var model = new ErrorModel(mockInteraction.Object);
+            var model = new ErrorModel(mockLogger.Object, mockInteraction.Object);
 
             var httpContext = new DefaultHttpContext();
             httpContext.TraceIdentifier = $"trace-{Guid.NewGuid():N}";
@@ -210,8 +214,9 @@ namespace Identity.Tests.Pages
         public void ShowRequestId_RequestIdValue_ExpectedResult(string? requestId, bool expected)
         {
             // Arrange
+            var mockLogger = new Mock<ILogger<ErrorModel>>();
             var mockInteraction = new Mock<IIdentityServerInteractionService>();
-            var model = new ErrorModel(mockInteraction.Object)
+            var model = new ErrorModel(mockLogger.Object, mockInteraction.Object)
             {
                 RequestId = requestId
             };
@@ -221,6 +226,42 @@ namespace Identity.Tests.Pages
 
             // Assert
             Assert.Equal(expected, actual);
+        }
+
+        /// <summary>
+        /// Verifies that when a non-empty errorId is provided and the interaction service returns an ErrorMessage,
+        /// the logger's LogError method is invoked with that error message.
+        /// Input: a valid errorId and a non-null ErrorMessage returned by the service.
+        /// Expected: ILogger.Log called exactly once at LogLevel.Error.
+        /// </summary>
+        [Fact]
+        public async Task OnGetAsync_NonEmptyErrorIdWithErrorMessage_LogsError()
+        {
+            // Arrange
+            var mockLogger = new Mock<ILogger<ErrorModel>>();
+            var mockInteraction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
+            var errorMessage = new ErrorMessage { Error = "access_denied", ErrorDescription = "User denied access." };
+            mockInteraction
+                .Setup(s => s.GetErrorContextAsync("error-abc"))
+                .ReturnsAsync(errorMessage);
+
+            var model = new ErrorModel(mockLogger.Object, mockInteraction.Object);
+            model.PageContext = new PageContext { HttpContext = new DefaultHttpContext() };
+            Activity.Current = null;
+
+            // Act
+            await model.OnGetAsync("error-abc");
+
+            // Assert
+            mockLogger.Verify(
+                l => l.Log(
+                    LogLevel.Error,
+                    It.IsAny<EventId>(),
+                    It.IsAny<It.IsAnyType>(),
+                    It.IsAny<Exception?>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Once,
+                "LogError should be called once when GetErrorContextAsync returns an error message.");
         }
 
         public static IEnumerable<object?[]> RequestIdTestCases()
