@@ -1,8 +1,6 @@
-﻿#nullable enable
-using Identity.Pages.Account.Manage;
-using Microsoft.AspNetCore.Routing;
+﻿namespace Identity.Tests.Pages.Account.Manage;
 
-namespace Identity.Tests.Pages.Account.Manage;
+using Microsoft.AspNetCore.Routing;
 
 /// <summary>
 /// Tests for PasskeyEndpointRouteBuilderExtensions.

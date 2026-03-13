@@ -1,151 +1,107 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-#nullable disable
+﻿namespace Identity.Pages.Account;
 
 using System.ComponentModel.DataAnnotations;
-using Identity.Pages.Account.Manage;
+using Manage;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-namespace Identity.Pages.Account
+[AllowAnonymous]
+public class LoginModel : PageModel
 {
-    [AllowAnonymous]
-    public class LoginModel : PageModel
+    private readonly SignInManager<IdentityUser<Guid>> _signInManager;
+    private readonly ILogger<LoginModel> _logger;
+
+    public LoginModel(SignInManager<IdentityUser<Guid>> signInManager, ILogger<LoginModel> logger)
     {
-        private readonly SignInManager<IdentityUser<Guid>> _signInManager;
-        private readonly ILogger<LoginModel> _logger;
+        _signInManager = signInManager;
+        _logger = logger;
+    }
 
-        public LoginModel(SignInManager<IdentityUser<Guid>> signInManager, ILogger<LoginModel> logger)
+    [BindProperty]
+    public InputModel? Input { get; set; }
+
+    public IList<AuthenticationScheme> ExternalLogins { get; set; } = new List<AuthenticationScheme>();
+
+    public string? ReturnUrl { get; set; }
+
+    [TempData]
+    public string? ErrorMessage { get; set; }
+
+    public async Task OnGetAsync(string? returnUrl = null)
+    {
+        if (!IsNullOrWhiteSpace(ErrorMessage))
         {
-            _signInManager = signInManager;
-            _logger = logger;
+            ModelState.AddModelError(Empty, ErrorMessage);
         }
 
-        /// <summary>
-        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        ///     directly from your code. This API may change or be removed in future releases.
-        /// </summary>
-        [BindProperty]
-        public InputModel Input { get; set; }
+        returnUrl ??= Url.Content("~/");
 
-        /// <summary>
-        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        ///     directly from your code. This API may change or be removed in future releases.
-        /// </summary>
-        public IList<AuthenticationScheme> ExternalLogins { get; set; }
+        await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
 
-        /// <summary>
-        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        ///     directly from your code. This API may change or be removed in future releases.
-        /// </summary>
-        public string ReturnUrl { get; set; }
+        ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
 
-        /// <summary>
-        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        ///     directly from your code. This API may change or be removed in future releases.
-        /// </summary>
-        [TempData]
-        public string ErrorMessage { get; set; }
+        ReturnUrl = returnUrl;
+    }
 
-        /// <summary>
-        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        ///     directly from your code. This API may change or be removed in future releases.
-        /// </summary>
-        public class InputModel
+    public async Task<IActionResult> OnPostAsync(string? returnUrl = null)
+    {
+        returnUrl ??= Url.Content("~/");
+
+        ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
+
+        Microsoft.AspNetCore.Identity.SignInResult result;
+        if (!IsNullOrWhiteSpace(Input?.Passkey?.CredentialJson))
         {
-            /// <summary>
-            ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-            ///     directly from your code. This API may change or be removed in future releases.
-            /// </summary>
-            [Required]
-            [EmailAddress]
-            public string Email { get; set; }
-
-            /// <summary>
-            ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-            ///     directly from your code. This API may change or be removed in future releases.
-            /// </summary>
-            [Required]
-            [DataType(DataType.Password)]
-            public string Password { get; set; }
-
-            /// <summary>
-            ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-            ///     directly from your code. This API may change or be removed in future releases.
-            /// </summary>
-            [Display(Name = "Remember me?")]
-            public bool RememberMe { get; set; }
-
-            public PasskeyInputModel? Passkey { get; set; }
+            ModelState.Clear();
+            result = await _signInManager.PasskeySignInAsync(Input.Passkey.CredentialJson);
         }
-
-        public async Task OnGetAsync(string returnUrl = null)
+        else
         {
-            if (!string.IsNullOrEmpty(ErrorMessage))
+            if (!ModelState.IsValid || IsNullOrWhiteSpace(Input?.Email) || IsNullOrWhiteSpace(Input?.Password))
             {
-                ModelState.AddModelError(string.Empty, ErrorMessage);
-            }
-
-            returnUrl ??= Url.Content("~/");
-
-            // Clear the existing external cookie to ensure a clean login process
-            await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
-
-            ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
-
-            ReturnUrl = returnUrl;
-        }
-
-        public async Task<IActionResult> OnPostAsync(string returnUrl = null)
-        {
-            returnUrl ??= Url.Content("~/");
-
-            ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
-
-            Microsoft.AspNetCore.Identity.SignInResult result;
-            if (!string.IsNullOrEmpty(Input.Passkey?.CredentialJson))
-            {
-                // When performing passkey sign-in, don't perform form validation.
-                ModelState.Clear();
-                result = await _signInManager.PasskeySignInAsync(Input.Passkey.CredentialJson);
-            }
-            else
-            {
-                if (!ModelState.IsValid)
-                {
-                    return Page();
-                }
-
-                // This doesn't count login failures towards account lockout
-                // To enable password failures to trigger account lockout, set lockoutOnFailure: true
-                result = await _signInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
-            }
-
-            if (result.Succeeded)
-            {
-                _logger.LogInformation("User logged in.");
-                return LocalRedirect(returnUrl);
-            }
-            if (result.RequiresTwoFactor)
-            {
-                return RedirectToPage("./LoginWith2fa", new { ReturnUrl = returnUrl, RememberMe = Input.RememberMe });
-            }
-            if (result.IsLockedOut)
-            {
-                _logger.LogWarning("User account locked out.");
-                return RedirectToPage("./Lockout");
-            }
-            else
-            {
-                ModelState.AddModelError(string.Empty, "Invalid login attempt.");
                 return Page();
             }
 
-            // If we got this far, something failed, redisplay form
-            return Page();
+            result = await _signInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
         }
+
+        if (result.Succeeded)
+        {
+            _logger.LogTrace("User logged in.");
+            return LocalRedirect(returnUrl);
+        }
+
+        if (result.RequiresTwoFactor)
+        {
+            return RedirectToPage("./LoginWith2fa", new { ReturnUrl = returnUrl, Input.RememberMe });
+        }
+
+        if (result.IsLockedOut)
+        {
+            _logger.LogTrace("User account locked out.");
+            return RedirectToPage("./Lockout");
+        }
+
+        ModelState.AddModelError(Empty, "Invalid login attempt.");
+        return Page();
+    }
+
+    public class InputModel
+    {
+        [Required]
+        [EmailAddress]
+        public string? Email { get; set; }
+
+        [Required]
+        [DataType(DataType.Password)]
+        public string? Password { get; set; }
+
+        [Display(Name = "Remember me?")]
+        public bool RememberMe { get; set; }
+
+        public PasskeyInputModel? Passkey { get; set; }
     }
 }

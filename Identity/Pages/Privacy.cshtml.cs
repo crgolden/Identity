@@ -1,14 +1,12 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿namespace Identity.Pages;
+
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-namespace Identity.Pages
+[AllowAnonymous]
+public class PrivacyModel : PageModel
 {
-    [AllowAnonymous]
-    public class PrivacyModel : PageModel
+    public void OnGet()
     {
-        public void OnGet()
-        {
-        }
     }
-
 }

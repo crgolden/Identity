@@ -1,19 +1,18 @@
-﻿using Microsoft.AspNetCore.Antiforgery;
+﻿namespace Identity;
+
+using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-
-namespace Identity.Pages.Account.Manage;
-
 using static ArgumentNullException;
+using static String;
+using static System.Net.Mime.MediaTypeNames.Application;
 
 public static class PasskeyEndpointRouteBuilderExtensions
 {
     public static IEndpointConventionBuilder MapAdditionalIdentityEndpoints(this IEndpointRouteBuilder endpoints)
     {
         ThrowIfNull(endpoints);
-
         var accountGroup = endpoints.MapGroup("/Account");
-
         accountGroup.MapPost("/PasskeyCreationOptions", async (
             HttpContext context,
             [FromServices] UserManager<IdentityUser<Guid>> userManager,
@@ -21,7 +20,6 @@ public static class PasskeyEndpointRouteBuilderExtensions
             [FromServices] IAntiforgery antiforgery) =>
         {
             await antiforgery.ValidateRequestAsync(context);
-
             var user = await userManager.GetUserAsync(context.User);
             if (user is null)
             {
@@ -30,13 +28,14 @@ public static class PasskeyEndpointRouteBuilderExtensions
 
             var userId = await userManager.GetUserIdAsync(user);
             var userName = await userManager.GetUserNameAsync(user) ?? "User";
-            var optionsJson = await signInManager.MakePasskeyCreationOptionsAsync(new()
+            var userEntity = new PasskeyUserEntity
             {
                 Id = userId,
                 Name = userName,
                 DisplayName = userName
-            });
-            return TypedResults.Content(optionsJson, contentType: "application/json");
+            };
+            var optionsJson = await signInManager.MakePasskeyCreationOptionsAsync(userEntity);
+            return TypedResults.Content(optionsJson, contentType: Json);
         });
 
         accountGroup.MapPost("/PasskeyRequestOptions", async (
@@ -47,10 +46,9 @@ public static class PasskeyEndpointRouteBuilderExtensions
             [FromQuery] string? username) =>
         {
             await antiforgery.ValidateRequestAsync(context);
-
-            var user = string.IsNullOrEmpty(username) ? null : await userManager.FindByNameAsync(username);
+            var user = IsNullOrWhiteSpace(username) ? null : await userManager.FindByNameAsync(username);
             var optionsJson = await signInManager.MakePasskeyRequestOptionsAsync(user);
-            return TypedResults.Content(optionsJson, contentType: "application/json");
+            return TypedResults.Content(optionsJson, contentType: Json);
         });
 
         return accountGroup;

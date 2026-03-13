@@ -9,7 +9,6 @@ using Elastic.Serilog.Sinks;
 using Elastic.Transport;
 using Google.Apis.Auth.AspNetCore3;
 using Identity;
-using Identity.Pages.Account.Manage;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
@@ -55,7 +54,7 @@ try
             secretClient.GetSecretAsync("SqlServerPassword", cancellationToken: cancellationToken),
             secretClient.GetSecretAsync("GoogleClientId", cancellationToken: cancellationToken),
             secretClient.GetSecretAsync("GoogleClientSecret", cancellationToken: cancellationToken),
-            secretClient.GetSecretAsync("ResendApiToken", cancellationToken: cancellationToken),
+            secretClient.GetSecretAsync("ResendApiToken", cancellationToken: cancellationToken)
         };
         var result = await Task.WhenAll(tasks);
         return (result[0].Value, result[1].Value, result[2].Value, result[3].Value, result[4].Value, result[5].Value, result[6].Value, result[7].Value);
@@ -190,7 +189,6 @@ try
         builder.Services.AddDatabaseDeveloperPageExceptionFilter();
         builder.Services.Configure<IdentityPasskeyOptions>(identityPasskeyOptions =>
         {
-            // Allow https://localhost:7261 origin.
             identityPasskeyOptions.ValidateOrigin = context => ValueTask.FromResult(context.Origin == "https://localhost:7261");
         });
     }

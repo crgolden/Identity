@@ -1,49 +1,40 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-#nullable disable
+﻿namespace Identity.Pages.Account;
 
-using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.WebUtilities;
 
-namespace Identity.Pages.Account
+[AllowAnonymous]
+public class ConfirmEmailModel : PageModel
 {
-    [AllowAnonymous]
-    public class ConfirmEmailModel : PageModel
+    private readonly UserManager<IdentityUser<Guid>> _userManager;
+
+    public ConfirmEmailModel(UserManager<IdentityUser<Guid>> userManager)
     {
-        private readonly UserManager<IdentityUser<Guid>> _userManager;
+        _userManager = userManager;
+    }
 
-        public ConfirmEmailModel(UserManager<IdentityUser<Guid>> userManager)
+    [TempData]
+    public string? StatusMessage { get; set; }
+
+    public async Task<IActionResult> OnGetAsync(string? userId, string? code)
+    {
+        if (IsNullOrWhiteSpace(userId) || IsNullOrWhiteSpace(code))
         {
-            _userManager = userManager;
+            return RedirectToPage("/Index");
         }
 
-        /// <summary>
-        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        ///     directly from your code. This API may change or be removed in future releases.
-        /// </summary>
-        [TempData]
-        public string StatusMessage { get; set; }
-        public async Task<IActionResult> OnGetAsync(string userId, string code)
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user is null)
         {
-            if (userId == null || code == null)
-            {
-                return RedirectToPage("/Index");
-            }
-
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
-            {
-                return NotFound($"Unable to load user with ID '{userId}'.");
-            }
-
-            code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(code));
-            var result = await _userManager.ConfirmEmailAsync(user, code);
-            StatusMessage = result.Succeeded ? "Thank you for confirming your email." : "Error confirming your email.";
-            return Page();
+            return NotFound($"Unable to load user with ID '{userId}'.");
         }
+
+        var bytes = Base64UrlDecode(code);
+        code = UTF8.GetString(bytes);
+        var result = await _userManager.ConfirmEmailAsync(user, code);
+        StatusMessage = result.Succeeded ? "Thank you for confirming your email." : "Error confirming your email.";
+        return Page();
     }
 }

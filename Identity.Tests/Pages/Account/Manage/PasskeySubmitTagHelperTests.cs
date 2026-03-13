@@ -1,10 +1,10 @@
-﻿using Identity.Pages.Account.Manage;
+﻿namespace Identity.Tests.Pages.Account.Manage;
+
+using Identity.Pages.Account.Manage;
+using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Razor.TagHelpers;
-using Microsoft.Extensions.DependencyInjection;
 using Moq;
-
-namespace Identity.Tests.Pages.Account.Manage;
 
 /// <summary>
 /// Tests for PasskeySubmitTagHelper constructor behavior.
@@ -34,16 +34,16 @@ public class PasskeySubmitTagHelperTests
         var httpContextAccessorMock = new Mock<IHttpContextAccessor>(behavior);
 
         // Act
-        var helper = new PasskeySubmitTagHelper(httpContextAccessorMock.Object);
+        var helper = new PasskeySubmitTagHelper(httpContextAccessorMock.Object, Mock.Of<IAntiforgery>());
 
         // Assert
         Assert.NotNull(helper);
         // Read into nullable locals to respect nullable annotations in tests.
-        PasskeyOperation operation = helper.Operation;
+        PasskeyOperation? operation = helper.Operation;
         string? name = helper.Name;
         string? emailName = helper.EmailName;
 
-        Assert.Equal(default(PasskeyOperation), operation);
+        Assert.Null(operation);
         Assert.Null(name);
         Assert.Null(emailName);
     }
@@ -65,27 +65,27 @@ public class PasskeySubmitTagHelperTests
         var mockB = new Mock<IHttpContextAccessor>(MockBehavior.Loose);
 
         // Act
-        var helperA = new PasskeySubmitTagHelper(mockA.Object);
-        var helperB = new PasskeySubmitTagHelper(mockB.Object);
+        var helperA = new PasskeySubmitTagHelper(mockA.Object, Mock.Of<IAntiforgery>());
+        var helperB = new PasskeySubmitTagHelper(mockB.Object, Mock.Of<IAntiforgery>());
 
         // Assert
         Assert.NotSame(helperA, helperB);
 
         // Verify defaults for helperA
-        PasskeyOperation opA = helperA.Operation;
+        PasskeyOperation? opA = helperA.Operation;
         string? nameA = helperA.Name;
         string? emailA = helperA.EmailName;
 
-        Assert.Equal(default(PasskeyOperation), opA);
+        Assert.Null(opA);
         Assert.Null(nameA);
         Assert.Null(emailA);
 
         // Verify defaults for helperB
-        PasskeyOperation opB = helperB.Operation;
+        PasskeyOperation? opB = helperB.Operation;
         string? nameB = helperB.Name;
         string? emailB = helperB.EmailName;
 
-        Assert.Equal(default(PasskeyOperation), opB);
+        Assert.Null(opB);
         Assert.Null(nameB);
         Assert.Null(emailB);
     }
@@ -102,13 +102,16 @@ public class PasskeySubmitTagHelperTests
     {
         // Arrange
         var httpContext = new DefaultHttpContext();
-        // RequestServices has no IAntiforgery registered -> GetService returns null
-        httpContext.RequestServices = new ServiceCollection().BuildServiceProvider();
 
         var httpAccessorMock = new Mock<IHttpContextAccessor>();
         httpAccessorMock.Setup(a => a.HttpContext).Returns(httpContext);
 
-        var helper = new PasskeySubmitTagHelper(httpAccessorMock.Object)
+        var antiforgeryMock = new Mock<IAntiforgery>();
+        antiforgeryMock
+            .Setup(a => a.GetTokens(httpContext))
+            .Returns(new AntiforgeryTokenSet(null, "cookie", "__RequestVerificationToken", null));
+
+        var helper = new PasskeySubmitTagHelper(httpAccessorMock.Object, antiforgeryMock.Object)
         {
             Operation = (PasskeyOperation)0,
             Name = "theName",

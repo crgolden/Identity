@@ -1,70 +1,71 @@
-﻿using Microsoft.AspNetCore.Antiforgery;
-using Microsoft.AspNetCore.Razor.TagHelpers;
+﻿namespace Identity.Pages.Account.Manage;
 
-namespace Identity.Pages.Account.Manage;
+using Microsoft.AspNetCore.Antiforgery;
+using Microsoft.AspNetCore.Razor.TagHelpers;
+using static Microsoft.AspNetCore.Razor.TagHelpers.NullHtmlEncoder;
 
 [HtmlTargetElement("passkey-submit")]
 public class PasskeySubmitTagHelper : TagHelper
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IAntiforgery _antiforgery;
+
+    public PasskeySubmitTagHelper(IHttpContextAccessor httpContextAccessor, IAntiforgery antiforgery)
+    {
+        _httpContextAccessor = httpContextAccessor;
+        _antiforgery = antiforgery;
+    }
 
     [HtmlAttributeName("operation")]
-    public PasskeyOperation Operation { get; set; }
+    public PasskeyOperation? Operation { get; set; }
 
     [HtmlAttributeName("name")]
-    public string Name { get; set; } = null!;
+    public string? Name { get; set; }
 
     [HtmlAttributeName("email-name")]
     public string? EmailName { get; set; }
 
-    public PasskeySubmitTagHelper(IHttpContextAccessor httpContextAccessor)
-    {
-        _httpContextAccessor = httpContextAccessor;
-    }
-
     public override async Task ProcessAsync(TagHelperContext context, TagHelperOutput output)
     {
-        // Get tokens
-        var tokens = _httpContextAccessor.HttpContext?.RequestServices
-            .GetService<IAntiforgery>()?.GetTokens(_httpContextAccessor.HttpContext);
+        if (_httpContextAccessor.HttpContext is null)
+        {
+            return;
+        }
 
-        // Button is the main element we want to create, capture all attributes etc.
-        var buttonAttributes = output.Attributes.Where(it => it.Name != "operation" && it.Name != "name" && it.Name != "email-name").ToList();
-        var buttonContent = (await output.GetChildContentAsync(NullHtmlEncoder.Default))
-            .GetContent(NullHtmlEncoder.Default);
-
-        // Create the button
-        using var htmlWriter = new StringWriter();
-        htmlWriter.Write("<button type=\"submit\" name=\"__passkeySubmit\" ");
+        var tokens = _antiforgery.GetTokens(_httpContextAccessor.HttpContext);
+        var buttonAttributes = output.Attributes
+            .Where(x => !string.Equals(x.Name, "operation") && !string.Equals(x.Name, "name") && !string.Equals(x.Name, "email-name"))
+            .ToList();
+        var buttonContent = (await output.GetChildContentAsync(Default)).GetContent(Default);
+        const string value = "<button type=\"submit\" name=\"__passkeySubmit\" ";
+        await using var htmlWriter = new StringWriter();
+        await htmlWriter.WriteAsync(value);
         foreach (var buttonAttribute in buttonAttributes)
         {
-            buttonAttribute.WriteTo(htmlWriter, NullHtmlEncoder.Default);
-            htmlWriter.Write(" ");
+            buttonAttribute.WriteTo(htmlWriter, Default);
+            await htmlWriter.WriteAsync(" ");
         }
-        htmlWriter.Write(">");
-        if (!string.IsNullOrEmpty(buttonContent))
+
+        await htmlWriter.WriteAsync(">");
+        if (!IsNullOrWhiteSpace(buttonContent))
         {
-            htmlWriter.Write(buttonContent);
+            await htmlWriter.WriteAsync(buttonContent);
         }
-        htmlWriter.Write("</button>");
-        htmlWriter.WriteLine();
 
-        // Create the element
-        htmlWriter.Write("<passkey-submit ");
-        htmlWriter.Write($"operation=\"{Operation}\" ");
-        htmlWriter.Write($"name=\"{Name}\" ");
-        htmlWriter.Write($"email-name=\"{EmailName ?? ""}\" ");
-        htmlWriter.Write($"request-token-name=\"{tokens?.HeaderName ?? ""}\" ");
-        htmlWriter.Write($"request-token-value=\"{tokens?.RequestToken ?? ""}\" ");
-        htmlWriter.Write(">");
-        htmlWriter.Write("</passkey-submit>");
-
-        // Emit the element
+        await htmlWriter.WriteAsync("</button>");
+        await htmlWriter.WriteLineAsync();
+        await htmlWriter.WriteAsync("<passkey-submit ");
+        await htmlWriter.WriteAsync($"operation=\"{Operation}\" ");
+        await htmlWriter.WriteAsync($"name=\"{Name}\" ");
+        await htmlWriter.WriteAsync($"email-name=\"{EmailName ?? Empty}\" ");
+        await htmlWriter.WriteAsync($"request-token-name=\"{tokens.HeaderName ?? Empty}\" ");
+        await htmlWriter.WriteAsync($"request-token-value=\"{tokens.RequestToken ?? Empty}\" ");
+        await htmlWriter.WriteAsync(">");
+        await htmlWriter.WriteAsync("</passkey-submit>");
         output.TagName = null;
         output.Attributes.Clear();
         output.Content.Clear();
         output.Content.SetHtmlContent(htmlWriter.ToString());
-
         await base.ProcessAsync(context, output);
     }
 }
