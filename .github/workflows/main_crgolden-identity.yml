@@ -71,9 +71,6 @@ jobs:
             /d:sonar.host.url="https://sonarcloud.io" `
             /d:sonar.cs.vscoveragexml.reportsPaths=coverage.xml
 
-      - name: Build SQL project
-        run: dotnet build Identity.Data/Identity.Data.sqlproj --configuration Release
-
       - name: Build with dotnet
         run: dotnet build --no-incremental --configuration Release
 
@@ -130,7 +127,11 @@ jobs:
         run: dotnet tool install --global microsoft.sqlpackage
 
       - name: Deploy database
-        run: sqlpackage /Action:Publish /SourceFile:Identity.Data.dacpac /TargetConnectionString:"${{ secrets.SQL_CONNECTION_STRING }}"
+        env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: |
+          $connStr = "Server=deeprog.servehttp.com;Database=Identity;User Id=identity;Password={$env:DB_PASSWORD}"
+          sqlpackage /Action:Publish /SourceFile:Identity.Data.dacpac /TargetConnectionString:"$connStr"
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
