@@ -130,7 +130,7 @@ jobs:
         env:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
-          $connStr = "Data Source=deeprog.servehttp.com;Initial Catalog=Identity;User ID=identity;Password={$env:DB_PASSWORD};Connect Timeout=30;Encrypt=True;Trust Server Certificate=False;Application Intent=ReadWrite;Multi Subnet Failover=False;Command Timeout=30"
+          $connStr = "Data Source=deeprog.servehttp.com;Initial Catalog=Identity;User ID=identity;Password='$env:DB_PASSWORD';Connect Timeout=30;Encrypt=True;Trust Server Certificate=False;Application Intent=ReadWrite;Multi Subnet Failover=False;Command Timeout=30"
           sqlpackage /Action:Publish /SourceFile:Identity.Data.dacpac /TargetConnectionString:"$connStr"
 
       - name: Deploy to Azure Web App
