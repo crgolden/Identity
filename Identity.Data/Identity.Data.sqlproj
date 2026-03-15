@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Name>Identity.Data</Name>
     <TargetFramework>netstandard2.1</TargetFramework>
-    <DSP>Microsoft.Data.Tools.Schema.Sql.Sql170DatabaseSchemaProvider</DSP>
+    <DSP>Microsoft.Data.Tools.Schema.Sql.Sql150DatabaseSchemaProvider</DSP>
     <ModelCollation>1033,CI</ModelCollation>
     <DefaultCollation>SQL_Latin1_General_CP1_CI_AS</DefaultCollation>
     <TargetDatabaseSet>True</TargetDatabaseSet>
