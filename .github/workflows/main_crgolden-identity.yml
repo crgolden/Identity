@@ -127,12 +127,7 @@ jobs:
         run: dotnet tool install --global microsoft.sqlpackage
 
       - name: Deploy database
-        env:
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-        run: |
-          $connStr = "Data Source=deeprog.servehttp.com;Initial Catalog=Identity;User ID=identity;Password='$env:DB_PASSWORD';Connect Timeout=30;Encrypt=True;Trust Server Certificate=False;Application Intent=ReadWrite;Multi Subnet Failover=False;Command Timeout=30"
-          sqlpackage /Action:Publish /SourceFile:Identity.Data.dacpac /TargetConnectionString:"$connStr"
-
+        run: sqlpackage /Action:Publish /SourceFile:Identity.Data.dacpac /TargetConnectionString:"${{ secrets.SQL_CONNECTION_STRING }}"
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3

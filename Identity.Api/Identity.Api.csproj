@@ -55,12 +55,4 @@
     </OpenApiReference>
   </ItemGroup>
 
-  <ItemGroup>
-    <EditorConfigFiles Remove="C:\Users\crgol\source\repos\crgolden\Identity\.editorconfig" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="C:\Users\crgol\source\repos\crgolden\Identity\.editorconfig" />
-  </ItemGroup>
-
 </Project>
