@@ -4,9 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Solution Structure
 
-The solution (`Identity.slnx`) contains two projects:
+The solution (`Identity.slnx`) contains three projects:
 
-- **`Identity/`** — ASP.NET Core 10 Razor Pages web application (the main app), also houses `ApplicationDbContext` and EF Core migrations
+- **`Identity.Api/`** — ASP.NET Core 10 Razor Pages web application (the main app), also houses `ApplicationDbContext` and EF Core migrations
+- **`Identity.Data/`** — SQL Server Database Project (SSDT); the schema source of truth for production, builds to a `.dacpac`
 - **`Identity.Tests/`** — xUnit v3 test project (uses `Microsoft.AspNetCore.Mvc.Testing`, `Moq`)
 
 ## What This App Does
@@ -31,12 +32,21 @@ Avatar/profile images are served via **Gravatar** (`GravatarService` implements 
 
 ### Single DbContext for Everything
 
-`ApplicationDbContext` (in `Identity/ApplicationDbContext.cs`) implements three interfaces simultaneously:
+`ApplicationDbContext` (in `Identity.Api/ApplicationDbContext.cs`) implements three interfaces simultaneously:
 - `IdentityDbContext<IdentityUser<Guid>, ...>` — ASP.NET Identity tables
 - `IConfigurationDbContext` — Duende IdentityServer clients/resources
 - `IPersistedGrantDbContext` — Duende IdentityServer grants/sessions
 
-Migrations live in `Identity/Migrations/` and are registered with `.MigrationsAssembly(assembly)` in `Program.cs`.
+Migrations live in `Identity.Api/Migrations/` and are registered with `.MigrationsAssembly(assembly)` in `Program.cs`.
+
+### Database Change Strategy
+
+Two separate mechanisms are used depending on environment:
+
+- **Development** — EF Core migrations (`dotnet ef migrations add` / `dotnet ef database update`) are used to evolve the local database schema during development.
+- **Production** — The **`Identity.Data` SQL project** is the source of truth. Schema changes are deployed via `.dacpac` (built from `Identity.Data.sqlproj` and published with `SqlPackage`). Migrations are **not** run against production.
+
+When making a schema change, update both the EF Core migration (for dev) and the corresponding table definition in `Identity.Data/` (for prod).
 
 ### Passkey Endpoints
 
@@ -44,7 +54,7 @@ Two minimal API endpoints are registered in `PasskeyEndpointRouteBuilderExtensio
 - `POST /Account/PasskeyCreationOptions` — returns WebAuthn creation options JSON
 - `POST /Account/PasskeyRequestOptions` — returns WebAuthn request options JSON
 
-Both require antiforgery validation. The Passkey Razor Pages live in `Areas/Identity/Pages/Account/Manage/`.
+Both require antiforgery validation. The Passkey Razor Pages live in `Pages/Account/Manage/`.
 
 ### Identity User Type
 
@@ -100,7 +110,7 @@ dotnet build --configuration Release
 
 ### Run (development)
 ```bash
-cd Identity
+cd Identity.Api
 dotnet run
 # HTTPS: https://localhost:7261  HTTP: http://localhost:5021
 ```
@@ -110,21 +120,37 @@ dotnet run
 dotnet test
 ```
 
-### EF Core Migrations
-Run from the solution root; `ApplicationDbContext` and migrations are now in the `Identity` web project itself:
+### EF Core Migrations (development only — not used in production)
+Run from the solution root:
 
 ```bash
-dotnet ef migrations add <MigrationName> --project Identity
-dotnet ef database update --project Identity
+dotnet ef migrations add <MigrationName> --project Identity.Api
+dotnet ef database update --project Identity.Api
+```
+
+### SQL Database Project (production schema deployment)
+```bash
+# Build the dacpac
+dotnet build Identity.Data/Identity.Data.sqlproj --configuration Release
+
+# Deploy to a SQL Server instance
+sqlpackage /Action:Publish /SourceFile:Identity.Data/bin/Release/Identity.Data.dacpac /TargetConnectionString:"<connection-string>"
 ```
 
 ### Publish
 ```bash
-dotnet publish -c Release -o ./publish
+dotnet publish Identity.Api -c Release -o ./publish
 ```
 
 ## Deployment
 
-The GitHub Actions workflow (`.github/workflows/main_crgolden-identity.yml`) deploys to **Azure App Service** (`crgolden-identity`, Production slot) on every push to `main`. It builds with `dotnet build --configuration Release` and publishes with `dotnet publish`.
+The GitHub Actions workflow (`.github/workflows/main_crgolden-identity.yml`) runs on every push to `main`:
+
+1. Builds `Identity.Data.sqlproj` to produce a `.dacpac`
+2. Builds and tests the .NET solution (with SonarCloud analysis)
+3. Deploys the `.dacpac` to the production SQL Server via `SqlPackage` (uses `SQL_CONNECTION_STRING` secret)
+4. Deploys the web app to **Azure App Service** (`crgolden-identity`, Production slot)
+
+The database is always deployed before the app so the schema is in place when the app starts.
 
 In production, `IdentityPasskeyOptions.ValidateOrigin` is not overridden (the default strict validation applies). In development, it is relaxed to allow `https://localhost:7261`.

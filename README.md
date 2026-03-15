@@ -26,6 +26,7 @@ A standalone **OpenID Connect Identity Provider** built with [Duende IdentitySer
 | Auth server | Duende IdentityServer 7 |
 | Identity | ASP.NET Core Identity (`IdentityUser<Guid>`) |
 | Database | SQL Server via EF Core 10 |
+| Schema deployment | SQL Database Project (dacpac) |
 | Email | Resend |
 | Avatars | Gravatar API |
 | Observability | Azure Monitor, OpenTelemetry, Serilog, Elasticsearch |
@@ -46,7 +47,7 @@ A standalone **OpenID Connect Identity Provider** built with [Duende IdentitySer
 ### 1. Configure User Secrets
 
 ```bash
-cd Identity
+cd Identity.Api
 dotnet user-secrets set "ElasticsearchNode" "<your-elasticsearch-node-uri>"
 dotnet user-secrets set "KeyVaultUri" "<your-key-vault-uri>"
 dotnet user-secrets set "BlobUri" "<your-blob-storage-uri>"
@@ -67,16 +68,20 @@ The following secrets must be present in Azure Key Vault (fetched at startup via
 | `GoogleClientSecret` | Google OAuth client secret |
 | `ResendApiToken` | Resend API token |
 
-### 2. Apply Migrations
+### 2. Set Up the Database
+
+**Development** — use EF Core migrations to create/update your local database:
 
 ```bash
-dotnet ef database update --project Identity
+dotnet ef database update --project Identity.Api
 ```
+
+**Production** — the schema is deployed via dacpac (see [Deployment](#deployment) below). Migrations are not run against production.
 
 ### 3. Run
 
 ```bash
-cd Identity
+cd Identity.Api
 dotnet run
 ```
 
@@ -85,8 +90,9 @@ App is available at `https://localhost:7261` (HTTPS) or `http://localhost:5021` 
 ## Project Structure
 
 ```
-Identity/               # ASP.NET Core web app, DbContext, and migrations
-Identity.Tests/         # xUnit v3 test project
+Identity.Api/       # ASP.NET Core 10 Razor Pages web app, DbContext, and EF Core migrations
+Identity.Data/      # SQL Server Database Project — schema source of truth, builds to .dacpac
+Identity.Tests/     # xUnit v3 test project
 ```
 
 ## Commands
@@ -98,16 +104,29 @@ dotnet build
 # Test
 dotnet test
 
-# Add a migration
-dotnet ef migrations add <MigrationName> --project Identity
+# Add an EF Core migration (development only)
+dotnet ef migrations add <MigrationName> --project Identity.Api
 
-# Update database
-dotnet ef database update --project Identity
+# Apply migrations to local database (development only)
+dotnet ef database update --project Identity.Api
 
-# Publish
-dotnet publish -c Release -o ./publish
+# Build dacpac (production schema deployment)
+dotnet build Identity.Data/Identity.Data.sqlproj --configuration Release
+
+# Deploy dacpac to production SQL Server
+sqlpackage /Action:Publish /SourceFile:Identity.Data/bin/Release/Identity.Data.dacpac /TargetConnectionString:"<connection-string>"
+
+# Publish web app
+dotnet publish Identity.Api -c Release -o ./publish
 ```
 
 ## Deployment
 
-Pushes to `main` automatically build and deploy to the **Azure App Service** `crgolden-identity` (Production slot) via GitHub Actions.
+Pushes to `main` automatically trigger the GitHub Actions workflow, which:
+
+1. Builds the SQL project and produces a `.dacpac`
+2. Builds and tests the .NET solution (with SonarCloud analysis)
+3. Deploys the `.dacpac` to SQL Server via `SqlPackage`
+4. Deploys the web app to **Azure App Service** `crgolden-identity` (Production slot)
+
+Database schema is always deployed before the app to ensure a valid schema is in place when the app starts.
