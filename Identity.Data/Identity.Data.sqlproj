@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" Sdk="Microsoft.Build.Sql/2.1.0">
+<Project DefaultTargets="Build" ToolsVersion="4.0">
+  <Sdk Name="Microsoft.Build.Sql" Version="2.1.0" />
   <PropertyGroup>
     <Name>Identity.Data</Name>
     <TargetFramework>netstandard2.1</TargetFramework>
@@ -9,45 +10,4 @@
     <TargetDatabaseSet>True</TargetDatabaseSet>
     <ProjectGuid>{83be4387-c65f-4485-8a85-c28367b0d014}</ProjectGuid>
   </PropertyGroup>
-  <ItemGroup>
-    <Folder Include="dbo" />
-    <Folder Include="dbo\Tables" />
-  </ItemGroup>
-  <ItemGroup>
-    <Build Include="dbo\Tables\ApiResourceClaims.sql" />
-    <Build Include="dbo\Tables\ApiResourceProperties.sql" />
-    <Build Include="dbo\Tables\ApiResources.sql" />
-    <Build Include="dbo\Tables\ApiResourceScopes.sql" />
-    <Build Include="dbo\Tables\ApiResourceSecrets.sql" />
-    <Build Include="dbo\Tables\ApiScopeClaims.sql" />
-    <Build Include="dbo\Tables\ApiScopeProperties.sql" />
-    <Build Include="dbo\Tables\ApiScopes.sql" />
-    <Build Include="dbo\Tables\AspNetRoleClaims.sql" />
-    <Build Include="dbo\Tables\AspNetRoles.sql" />
-    <Build Include="dbo\Tables\AspNetUserClaims.sql" />
-    <Build Include="dbo\Tables\AspNetUserLogins.sql" />
-    <Build Include="dbo\Tables\AspNetUserPasskeys.sql" />
-    <Build Include="dbo\Tables\AspNetUserRoles.sql" />
-    <Build Include="dbo\Tables\AspNetUsers.sql" />
-    <Build Include="dbo\Tables\AspNetUserTokens.sql" />
-    <Build Include="dbo\Tables\ClientClaims.sql" />
-    <Build Include="dbo\Tables\ClientCorsOrigins.sql" />
-    <Build Include="dbo\Tables\ClientGrantTypes.sql" />
-    <Build Include="dbo\Tables\ClientIdPRestrictions.sql" />
-    <Build Include="dbo\Tables\ClientPostLogoutRedirectUris.sql" />
-    <Build Include="dbo\Tables\ClientProperties.sql" />
-    <Build Include="dbo\Tables\ClientRedirectUris.sql" />
-    <Build Include="dbo\Tables\Clients.sql" />
-    <Build Include="dbo\Tables\ClientScopes.sql" />
-    <Build Include="dbo\Tables\ClientSecrets.sql" />
-    <Build Include="dbo\Tables\DeviceCodes.sql" />
-    <Build Include="dbo\Tables\IdentityProviders.sql" />
-    <Build Include="dbo\Tables\IdentityResourceClaims.sql" />
-    <Build Include="dbo\Tables\IdentityResourceProperties.sql" />
-    <Build Include="dbo\Tables\IdentityResources.sql" />
-    <Build Include="dbo\Tables\Keys.sql" />
-    <Build Include="dbo\Tables\PersistedGrants.sql" />
-    <Build Include="dbo\Tables\PushedAuthorizationRequests.sql" />
-    <Build Include="dbo\Tables\ServerSideSessions.sql" />
-  </ItemGroup>
 </Project>
