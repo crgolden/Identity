@@ -255,7 +255,7 @@ public class EmailModelTests
         Assert.Null(model.Email);
         Assert.False(model.IsEmailConfirmed);
         Assert.Null(model.StatusMessage);
-        Assert.Null(model.Input);
+        Assert.NotNull(model.Input);
     }
 
     /// <summary>
@@ -289,12 +289,12 @@ public class EmailModelTests
         Assert.Null(model1.Email);
         Assert.False(model1.IsEmailConfirmed);
         Assert.Null(model1.StatusMessage);
-        Assert.Null(model1.Input);
+        Assert.NotNull(model1.Input);
 
         Assert.Null(model2.Email);
         Assert.False(model2.IsEmailConfirmed);
         Assert.Null(model2.StatusMessage);
-        Assert.Null(model2.Input);
+        Assert.NotNull(model2.Input);
     }
 
     // Helper methods to create minimal mocks/instances needed for constructor invocation.

@@ -80,6 +80,7 @@ All sensitive values are retrieved at startup from **Azure Key Vault** using `De
   "KeyVaultUri": "<Azure Key Vault URI>",
   "BlobUri": "<Azure Blob Storage URI for Data Protection keys>",
   "DataProtectionKeyIdentifier": "<Azure Key Vault key URI for Data Protection>",
+  "APPLICATIONINSIGHTS_CONNECTION_STRING": "<Azure Monitor connection string>",
   "SqlConnectionStringBuilder": {
     "DataSource": "<SQL Server host>",
     "InitialCatalog": "Identity",
@@ -144,12 +145,17 @@ dotnet publish Identity.Api -c Release -o ./publish
 
 ## Deployment
 
-The GitHub Actions workflow (`.github/workflows/main_crgolden-identity.yml`) runs on every push to `main`:
+The GitHub Actions workflow (`.github/workflows/main_crgolden-identity.yml`) triggers on pushes to `main`, pull request events (opened, synchronize, reopened), and manual dispatch.
 
-1. Builds `Identity.Data.sqlproj` to produce a `.dacpac`
-2. Builds and tests the .NET solution (with SonarCloud analysis)
-3. Deploys the `.dacpac` to the production SQL Server via `SqlPackage` (uses `SQL_CONNECTION_STRING` secret)
-4. Deploys the web app to **Azure App Service** (`crgolden-identity`, Production slot)
+**Build job:**
+1. Builds the full solution via `dotnet build --no-incremental --configuration Release` — this includes `Identity.Data.sqlproj`, which produces the `.dacpac`
+2. Runs tests with coverage (`dotnet-coverage` + `dotnet test`)
+3. Runs SonarCloud analysis
+4. Publishes the web app and uploads both the app artifact and the `.dacpac` artifact
+
+**Deploy job** (runs after build):
+5. Deploys the `.dacpac` to the production SQL Server via `SqlPackage` — builds the connection string from `DB_SERVER`, `DB_USERID`, `DB_PASSWORD`, and `DB_NAME` secrets
+6. Deploys the web app to **Azure App Service** (`crgolden-identity`, Production slot) via Azure OIDC (`AZUREAPPSERVICE_CLIENTID_*`, `AZUREAPPSERVICE_TENANTID_*`, `AZUREAPPSERVICE_SUBSCRIPTIONID_*` secrets)
 
 The database is always deployed before the app so the schema is in place when the app starts.
 

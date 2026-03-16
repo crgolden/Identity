@@ -80,7 +80,7 @@ public class DeletePersonalDataModelTests
 
         // Assert
         Assert.NotNull(model);
-        Assert.Null(model.Input);
+        Assert.NotNull(model.Input);
         Assert.False(model.RequirePassword);
     }
 

@@ -115,15 +115,15 @@ public class RegisterConfirmationModelTests
     }
 
     /// <summary>
-    /// Ensures that when a user exists the handler returns Page, sets Email, leaves DisplayConfirmAccountLink false,
-    /// does not populate EmailConfirmationUrl (since DisplayConfirmAccountLink is set to false in code),
-    /// and that Url.Content("~/") is invoked only when returnUrl is null.
-    /// Inputs: returnUrl == null (expect Url.Content called) and returnUrl == "/custom" (expect Url.Content not called).
-    /// Expected: PageResult, Email set to provided email, DisplayConfirmAccountLink == false, EmailConfirmationUrl == null.
+    /// Ensures that when a user exists the handler returns Page and sets Email regardless of returnUrl.
+    /// Url.Content is never called by the handler.
+    /// Inputs: returnUrl == null and returnUrl == "/custom".
+    /// Expected: PageResult, Email set to provided email.
     /// </summary>
     [Theory]
-    [MemberData(nameof(ReturnUrlCases))]
-    public async Task OnGetAsync_UserFound_SetsPropertiesAndDoesNotGenerateConfirmationUrl_UrlContentBehavior(string? returnUrl, bool expectContentCall)
+    [InlineData(null)]
+    [InlineData("/custom")]
+    public async Task OnGetAsync_UserFound_SetsPropertiesAndDoesNotGenerateConfirmationUrl_UrlContentBehavior(string? returnUrl)
     {
         // Arrange
         var testEmail = "found@example.com";
@@ -131,16 +131,8 @@ public class RegisterConfirmationModelTests
         var mockUserStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
         var mockUserManager = new Mock<UserManager<IdentityUser<Guid>>>(mockUserStore, null, null, null, null, null, null, null, null);
         mockUserManager.Setup(m => m.FindByEmailAsync(It.Is<string>(s => s == testEmail))).ReturnsAsync(user);
-        var mockSender = new Mock<IEmailSender>();
         var mockUrl = new Mock<IUrlHelper>(MockBehavior.Strict);
-        if (expectContentCall)
-        {
-            mockUrl.Setup(u => u.Content("~/")).Returns("/").Verifiable();
-        }
-        else
-        {
-            mockUrl.Setup(u => u.Content(It.IsAny<string>())).Throws(new Exception("Content should not be called when returnUrl provided"));
-        }
+        mockUrl.Setup(u => u.Content(It.IsAny<string>())).Throws(new Exception("Url.Content should not be called"));
 
         var model = new RegisterConfirmationModel(mockUserManager.Object)
         {
@@ -151,30 +143,6 @@ public class RegisterConfirmationModelTests
         // Assert
         Assert.IsType<PageResult>(result);
         Assert.Equal(testEmail, model.Email);
-        if (expectContentCall)
-        {
-            mockUrl.Verify(u => u.Content("~/"), Times.Once);
-        }
-        else
-        {
-            // Verify that the strict mock saw no call to Content (no exception thrown above, but verify no invocation)
-            mockUrl.Verify(u => u.Content(It.IsAny<string>()), Times.Never);
-        }
-    }
-
-    public static IEnumerable<object[]> ReturnUrlCases()
-    {
-        // returnUrl null should cause Url.Content("~/") to be invoked
-        yield return new object[]
-        {
-            null,
-            true
-        };
-        // explicit returnUrl should prevent Url.Content from being invoked
-        yield return new object[]
-        {
-            "/custom",
-            false
-        };
+        mockUrl.Verify(u => u.Content(It.IsAny<string>()), Times.Never);
     }
 }

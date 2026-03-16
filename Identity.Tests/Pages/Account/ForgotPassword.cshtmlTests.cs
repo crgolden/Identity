@@ -162,8 +162,8 @@ public class ForgotPasswordModelTests
         Assert.NotNull(model);
         Assert.IsType<ForgotPasswordModel>(model);
         Assert.IsAssignableFrom<PageModel>(model);
-        // By default Input should be null (not initialized in constructor)
-        Assert.Null(model.Input);
+        // Constructor initializes Input with a default InputModel instance.
+        Assert.NotNull(model.Input);
     }
 
     public static IEnumerable<object[]> ConstructorNullCombinations()

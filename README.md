@@ -53,6 +53,7 @@ dotnet user-secrets set "KeyVaultUri" "<your-key-vault-uri>"
 dotnet user-secrets set "BlobUri" "<your-blob-storage-uri>"
 dotnet user-secrets set "DataProtectionKeyIdentifier" "<your-key-vault-key-uri>"
 dotnet user-secrets set "SqlConnectionStringBuilder:DataSource" "<your-sql-server>"
+dotnet user-secrets set "APPLICATIONINSIGHTS_CONNECTION_STRING" "<your-app-insights-connection-string>"
 ```
 
 The following secrets must be present in Azure Key Vault (fetched at startup via `DefaultAzureCredential`):
@@ -122,11 +123,15 @@ dotnet publish Identity.Api -c Release -o ./publish
 
 ## Deployment
 
-Pushes to `main` automatically trigger the GitHub Actions workflow, which:
+The GitHub Actions workflow triggers on pushes to `main`, pull requests, and manual dispatch.
 
-1. Builds the SQL project and produces a `.dacpac`
-2. Builds and tests the .NET solution (with SonarCloud analysis)
-3. Deploys the `.dacpac` to SQL Server via `SqlPackage`
-4. Deploys the web app to **Azure App Service** `crgolden-identity` (Production slot)
+**Build job** — runs on every trigger:
+1. Builds the full solution (`dotnet build --configuration Release`), which also compiles `Identity.Data.sqlproj` and produces the `.dacpac`
+2. Runs tests with code coverage and SonarCloud analysis
+3. Publishes the web app and uploads both artifacts
+
+**Deploy job** — runs after a successful build:
+4. Deploys the `.dacpac` to the production SQL Server via `SqlPackage`
+5. Deploys the web app to **Azure App Service** `crgolden-identity` (Production slot) via Azure OIDC
 
 Database schema is always deployed before the app to ensure a valid schema is in place when the app starts.

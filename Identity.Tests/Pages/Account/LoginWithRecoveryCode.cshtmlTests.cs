@@ -173,7 +173,7 @@ public class LoginWithRecoveryCodeModelTests
         // Assert
         Assert.Null(exception);
         Assert.NotNull(model);
-        Assert.Null(model.Input);
+        Assert.NotNull(model.Input);
         Assert.Null(model.ReturnUrl);
     }
 
@@ -205,7 +205,7 @@ public class LoginWithRecoveryCodeModelTests
         // Assert
         Assert.Null(exception);
         Assert.NotNull(model);
-        Assert.Null(model.Input);
+        Assert.NotNull(model.Input);
         Assert.Null(model.ReturnUrl);
     }
 

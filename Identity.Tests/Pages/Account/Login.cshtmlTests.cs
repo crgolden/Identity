@@ -46,8 +46,8 @@ public class LoginModelTests
         Assert.Null(ex);
         Assert.NotNull(model);
         Assert.IsAssignableFrom<PageModel>(model);
-        // Constructor does not initialize Input; it should remain null.
-        Assert.Null(model.Input);
+        // Constructor initializes Input with a default InputModel instance.
+        Assert.NotNull(model.Input);
         // ReturnUrl is not set by constructor; expect null.
         Assert.Null(model.ReturnUrl);
         // ExternalLogins is initialized to an empty list by the field initializer.

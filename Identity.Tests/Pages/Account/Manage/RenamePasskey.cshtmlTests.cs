@@ -239,8 +239,8 @@ public class RenamePasskeyModelTests
         // Assert
         Assert.NotNull(model);
         Assert.IsType<RenamePasskeyModel>(model);
-        // The Input property is nullable and not initialized by the constructor; expect null.
-        Assert.Null(model.Input);
+        // The Input property is initialized with a default InputModel instance by the property initializer.
+        Assert.NotNull(model.Input);
     }
 
     /// <summary>

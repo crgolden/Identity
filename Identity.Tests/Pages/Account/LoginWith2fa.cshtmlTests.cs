@@ -234,7 +234,7 @@ public class LoginWith2faModelTests
         // Assert
         Assert.NotNull(model);
         // Default expectations
-        Assert.Null(model.Input);
+        Assert.NotNull(model.Input);
         Assert.False(model.RememberMe);
         Assert.Null(model.ReturnUrl);
     }
@@ -270,7 +270,7 @@ public class LoginWith2faModelTests
         foreach (var model in models)
         {
             Assert.NotNull(model);
-            Assert.Null(model.Input);
+            Assert.NotNull(model.Input);
             Assert.False(model.RememberMe);
             Assert.Null(model.ReturnUrl);
         }

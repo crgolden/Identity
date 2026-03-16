@@ -85,7 +85,7 @@ public partial class PasskeysModelTests
         Assert.NotNull(model); // model constructed successfully
         Assert.NotNull(model.CurrentPasskeys); // list initialized to empty by constructor
         Assert.Empty(model.CurrentPasskeys);
-        Assert.Null(model.Input); // Input property not initialized by constructor
+        Assert.NotNull(model.Input); // Input property initialized with default InputModel by constructor
         Assert.Null(model.StatusMessage); // StatusMessage default (not set) after construction
     }
 
