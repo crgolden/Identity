@@ -134,12 +134,14 @@ public partial class PasskeysModelTests
     /// - Setup SignInManager.PerformPasskeyAttestationAsync to return that result.
     /// - Assert RedirectToPageResult and proper StatusMessage ("Could not add the passkey: {message}.").
     /// </summary>
+#pragma warning disable S2699
     [Fact]
     public async Task OnPostAddPasskeyAsync_AttestationFails_RedirectsWithFailureMessage_Partial()
     {
         // Partial: see XML comment for guidance.
         await Task.CompletedTask;
     }
+#pragma warning restore S2699
 
     /// <summary>
     /// Partial test placeholder: Verifies behavior when adding/updating the passkey on the user fails.
@@ -169,12 +171,14 @@ public partial class PasskeysModelTests
     /// - Setup UserManager.AddOrUpdatePasskeyAsync to return IdentityResult.Success.
     /// - Call the handler and assert RedirectToPageResult.PageName == "./RenamePasskey" and RouteValues["id"] equals Base64Url.EncodeToString(CredentialId).
     /// </summary>
+#pragma warning disable S2699
     [Fact]
     public async Task OnPostAddPasskeyAsync_Success_RedirectsToRenamePasskey_Partial()
     {
         // Partial: see XML comment for guidance.
         await Task.CompletedTask;
     }
+#pragma warning restore S2699
 
     /// <summary>
     /// Verifies that when no user is found the handler returns NotFound with the user id supplied by UserManager.GetUserId.

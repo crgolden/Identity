@@ -61,7 +61,7 @@ public class PasskeysModel : PageModel
             return RedirectToPage();
         }
 
-        switch (Input?.Action)
+        switch (Input.Action)
         {
             case "rename":
                 return RedirectToPage("./RenamePasskey", new { id = Input.CredentialId });

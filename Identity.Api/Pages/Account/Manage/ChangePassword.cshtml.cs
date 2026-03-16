@@ -46,7 +46,7 @@ public class ChangePasswordModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        if (!ModelState.IsValid || IsNullOrWhiteSpace(Input?.OldPassword) || IsNullOrWhiteSpace(Input?.NewPassword))
+        if (!ModelState.IsValid || IsNullOrWhiteSpace(Input.OldPassword) || IsNullOrWhiteSpace(Input?.NewPassword))
         {
             return Page();
         }

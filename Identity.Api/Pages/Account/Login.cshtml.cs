@@ -60,7 +60,7 @@ public class LoginModel : PageModel
         }
         else
         {
-            if (!ModelState.IsValid || IsNullOrWhiteSpace(Input?.Email) || IsNullOrWhiteSpace(Input?.Password))
+            if (!ModelState.IsValid || IsNullOrWhiteSpace(Input?.Email) || IsNullOrWhiteSpace(Input.Password))
             {
                 return Page();
             }

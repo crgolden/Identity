@@ -12,6 +12,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 [AllowAnonymous]
 public class ExternalLoginModel : PageModel
 {
+    private const string LoginPageName = "./Login";
+
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
     private readonly UserManager<IdentityUser<Guid>> _userManager;
     private readonly IUserStore<IdentityUser<Guid>> _userStore;
@@ -44,7 +46,7 @@ public class ExternalLoginModel : PageModel
     [TempData]
     public string? ErrorMessage { get; set; }
 
-    public IActionResult OnGet() => RedirectToPage("./Login");
+    public IActionResult OnGet() => RedirectToPage(LoginPageName);
 
     public IActionResult OnPost(string provider, string? returnUrl = null)
     {
@@ -59,14 +61,14 @@ public class ExternalLoginModel : PageModel
         if (!IsNullOrWhiteSpace(remoteError))
         {
             ErrorMessage = $"Error from external provider: {remoteError}";
-            return RedirectToPage("./Login", new { ReturnUrl = returnUrl });
+            return RedirectToPage(LoginPageName, new { ReturnUrl = returnUrl });
         }
 
         var info = await _signInManager.GetExternalLoginInfoAsync();
         if (info is null)
         {
             ErrorMessage = "Error loading external login information.";
-            return RedirectToPage("./Login", new { ReturnUrl = returnUrl });
+            return RedirectToPage(LoginPageName, new { ReturnUrl = returnUrl });
         }
 
         var result = await _signInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, isPersistent: false, bypassTwoFactor: true);
@@ -101,7 +103,7 @@ public class ExternalLoginModel : PageModel
         if (info is null)
         {
             ErrorMessage = "Error loading external login information during confirmation.";
-            return RedirectToPage("./Login", new { ReturnUrl = returnUrl });
+            return RedirectToPage(LoginPageName, new { ReturnUrl = returnUrl });
         }
 
         if (ModelState.IsValid && !IsNullOrWhiteSpace(Input?.Email))
@@ -112,35 +114,10 @@ public class ExternalLoginModel : PageModel
             var result = await _userManager.CreateAsync(user);
             if (result.Succeeded)
             {
-                result = await _userManager.AddLoginAsync(user, info);
-                if (result.Succeeded)
+                var redirect = await CompleteExternalRegistrationAsync(user, info, Input.Email, returnUrl);
+                if (redirect is not null)
                 {
-                    _logger.LogTrace("User created an account using {Name} provider.", info.LoginProvider);
-                    var userId = await _userManager.GetUserIdAsync(user);
-                    var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-                    var bytes = UTF8.GetBytes(code);
-                    code = Base64UrlEncode(bytes);
-                    var callbackUrl = Url.Page(
-                        "/Account/ConfirmEmail",
-                        pageHandler: null,
-                        values: new { userId, code },
-                        protocol: Request.Scheme);
-
-                    if (!IsNullOrWhiteSpace(callbackUrl))
-                    {
-                        const string subject = "Confirm your email";
-                        var link = HtmlEncoder.Default.Encode(callbackUrl);
-                        var htmlMessage = $"Please confirm your account by <a href='{link}'>clicking here</a>.";
-                        await _emailSender.SendEmailAsync(Input.Email, subject, htmlMessage);
-                    }
-
-                    if (_userManager.Options.SignIn.RequireConfirmedAccount)
-                    {
-                        return RedirectToPage("./RegisterConfirmation", new { Input.Email });
-                    }
-
-                    await _signInManager.SignInAsync(user, isPersistent: false, info.LoginProvider);
-                    return LocalRedirect(returnUrl);
+                    return redirect;
                 }
             }
 
@@ -153,6 +130,46 @@ public class ExternalLoginModel : PageModel
         ProviderDisplayName = info.ProviderDisplayName;
         ReturnUrl = returnUrl;
         return Page();
+    }
+
+    private async Task<IActionResult?> CompleteExternalRegistrationAsync(
+        IdentityUser<Guid> user,
+        ExternalLoginInfo info,
+        string email,
+        string returnUrl)
+    {
+        var result = await _userManager.AddLoginAsync(user, info);
+        if (!result.Succeeded)
+        {
+            return null;
+        }
+
+        _logger.LogTrace("User created an account using {Name} provider.", info.LoginProvider);
+        var userId = await _userManager.GetUserIdAsync(user);
+        var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+        var bytes = UTF8.GetBytes(code);
+        code = Base64UrlEncode(bytes);
+        var callbackUrl = Url.Page(
+            "/Account/ConfirmEmail",
+            pageHandler: null,
+            values: new { userId, code },
+            protocol: Request.Scheme);
+
+        if (!IsNullOrWhiteSpace(callbackUrl))
+        {
+            const string subject = "Confirm your email";
+            var link = HtmlEncoder.Default.Encode(callbackUrl);
+            var htmlMessage = $"Please confirm your account by <a href='{link}'>clicking here</a>.";
+            await _emailSender.SendEmailAsync(email, subject, htmlMessage);
+        }
+
+        if (_userManager.Options.SignIn.RequireConfirmedAccount)
+        {
+            return RedirectToPage("./RegisterConfirmation", new { email });
+        }
+
+        await _signInManager.SignInAsync(user, isPersistent: false, info.LoginProvider);
+        return LocalRedirect(returnUrl);
     }
 
     public class InputModel

@@ -62,12 +62,14 @@ jobs:
       - name: Begin Sonar analysis
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
+          SONAR_ORGANIZATION: ${{ secrets.SONAR_ORGANIZATION }}
         shell: powershell
         run: |
           ${{ runner.temp }}\scanner\dotnet-sonarscanner begin `
-            /k:"${{ secrets.SONAR_PROJECT_KEY }}" `
-            /o:"${{ secrets.SONAR_ORGANIZATION }}" `
-            /d:sonar.token="${{ secrets.SONAR_TOKEN }}" `
+            /k:"$env:SONAR_PROJECT_KEY" `
+            /o:"$env:SONAR_ORGANIZATION" `
+            /d:sonar.token="$env:SONAR_TOKEN" `
             /d:sonar.host.url="https://sonarcloud.io" `
             /d:sonar.cs.vscoveragexml.reportsPaths=coverage.xml
 
@@ -81,16 +83,24 @@ jobs:
             -f xml -o "coverage.xml"
 
       - name: End Sonar analysis
-        run: ${{ runner.temp }}\scanner\dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        shell: powershell
+        run: |
+          ${{ runner.temp }}\scanner\dotnet-sonarscanner end /d:sonar.token="$env:SONAR_TOKEN"
 
       - name: dotnet publish
-        run: dotnet publish -c Release -o "${{env.DOTNET_ROOT}}/myapp"
-
+        run: >
+          dotnet publish Identity.Api/Identity.Api.csproj
+          -c Release
+          -r win-x64
+          --self-contained false
+          -o ${{ github.workspace  }}\publish
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: .net-app
-          path: ${{env.DOTNET_ROOT}}/myapp
+          path: ${{ github.workspace }}\publish
 
       - name: Upload dacpac for deployment job
         uses: actions/upload-artifact@v4
@@ -117,7 +127,7 @@ jobs:
           name: sql-dacpac
 
       - name: Login to Azure
-        uses: azure/login@v2
+        uses: azure/login@a65d910e8af852a8061c627c456678983e180302 # v2
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_4533A76F9560447CBA73C7D19BFDC764 }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_07B3DB796C7C4D409EFADCB306F23869 }}
@@ -138,7 +148,7 @@ jobs:
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
-        uses: azure/webapps-deploy@v3
+        uses: azure/webapps-deploy@657f0700ea5214d56a0400d8ac5e8023c963d25d # v3.0.6
         with:
           app-name: 'crgolden-identity'
           slot-name: 'Production'

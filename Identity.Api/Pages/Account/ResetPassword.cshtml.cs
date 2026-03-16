@@ -37,7 +37,7 @@ public class ResetPasswordModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        if (!ModelState.IsValid || IsNullOrWhiteSpace(Input?.Email) || IsNullOrWhiteSpace(Input?.Code) || IsNullOrWhiteSpace(Input?.Password))
+        if (!ModelState.IsValid || IsNullOrWhiteSpace(Input.Email) || IsNullOrWhiteSpace(Input.Code) || IsNullOrWhiteSpace(Input.Password))
         {
             return Page();
         }
