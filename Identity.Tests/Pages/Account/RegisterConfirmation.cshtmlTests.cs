@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account;
 
 using Identity.Pages.Account;
@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
 using Moq;
 
+[Trait("Category", "Unit")]
 public class RegisterConfirmationModelTests
 {
     /// <summary>

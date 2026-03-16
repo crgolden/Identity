@@ -1,10 +1,11 @@
-﻿namespace Identity.Tests.Pages.Account.Manage;
+namespace Identity.Tests.Pages.Account.Manage;
 
 using Microsoft.AspNetCore.Routing;
 
 /// <summary>
 /// Tests for PasskeyEndpointRouteBuilderExtensions.
 /// </summary>
+[Trait("Category", "Unit")]
 public class PasskeyEndpointRouteBuilderExtensionsTests
 {
     /// <summary>

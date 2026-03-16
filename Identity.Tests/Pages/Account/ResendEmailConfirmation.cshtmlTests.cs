@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account;
 
 using Identity.Pages.Account;
@@ -12,6 +12,7 @@ using Moq;
 /// Tests for ResendEmailConfirmationModel.OnGet.
 /// Focuses on ensuring OnGet does not alter state or throw for typical/pre-set states.
 /// </summary>
+[Trait("Category", "Unit")]
 public class ResendEmailConfirmationModelTests
 {
     /// <summary>

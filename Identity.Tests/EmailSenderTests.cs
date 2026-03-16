@@ -1,4 +1,4 @@
-﻿namespace Identity.Tests;
+namespace Identity.Tests;
 
 using Moq;
 using Resend;
@@ -6,6 +6,7 @@ using Resend;
 /// <summary>
 /// Tests for Identity.EmailSender.
 /// </summary>
+[Trait("Category", "Unit")]
 public class EmailSenderTests
 {
     /// <summary>
@@ -18,7 +19,7 @@ public class EmailSenderTests
     [InlineData("user@example.com", "Hello", "Body text")]
     [InlineData("user+tag@example.com", "", "")] // empty subject and message
     [InlineData("user@example.com", "   ", "   ")] // whitespace-only subject and message
-    [InlineData("special@chars.example", "¡Hola! ✨", "<p>HTML & <b>bold</b></p>")] // special chars / HTML
+    [InlineData("special@chars.example", "�Hola! ?", "<p>HTML & <b>bold</b></p>")] // special chars / HTML
     [InlineData("long@example.com", "L" /* placeholder */, "M" /* placeholder */)]
     public async Task SendEmailAsync_VariousInputs_CallsResendWithExpectedMessage(string toEmail, string subject, string message)
     {

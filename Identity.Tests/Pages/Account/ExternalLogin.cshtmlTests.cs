@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account;
 
 using System.Security.Claims;
@@ -19,6 +19,7 @@ using Moq;
 /// Tests for ExternalLoginModel.OnGetCallbackAsync covering success, error and edge cases
 /// involving external login info, sign-in results and email claim presence.
 /// </summary>
+[Trait("Category", "Unit")]
 public class ExternalLoginModelTests
 {
     /// <summary>

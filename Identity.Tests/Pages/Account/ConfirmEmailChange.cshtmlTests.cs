@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account;
 
 using System.Text;
@@ -20,6 +20,7 @@ using Moq;
 /// provided as skipped, guided templates to complete in an environment where those dependencies
 /// can be provided or properly mocked.
 /// </summary>
+[Trait("Category", "Unit")]
 public class ConfirmEmailChangeModelTests
 {
     /// <summary>
@@ -286,7 +287,7 @@ public class ConfirmEmailChangeModelTests
     {
         // Arrange
         const string userId = "user-4";
-        const string email = "user+special@exämple.com";
+        const string email = "user+special@ex�mple.com";
         const string token = "var-token";
         var encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
         var user = new IdentityUser<Guid>

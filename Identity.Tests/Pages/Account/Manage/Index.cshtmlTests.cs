@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account.Manage;
 
 using System.Security.Claims;
@@ -15,6 +15,7 @@ using Moq;
 /// <summary>
 /// Tests for Identity.Pages.Account.Manage.IndexModel OnGetAsync behavior.
 /// </summary>
+[Trait("Category", "Unit")]
 public class IndexModelTests
 {
     /// <summary>
@@ -93,7 +94,7 @@ public class IndexModelTests
         // Empty strings
         { string.Empty, string.Empty },
         // Whitespace and special unicode
-        { "   ", "🙂-Ⓣest" },
+        { "   ", "??-?est" },
         // Very long username and null phone number
         { new string('a', 500), null },
     };

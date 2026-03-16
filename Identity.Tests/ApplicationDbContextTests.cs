@@ -1,10 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 namespace Identity.Tests;
 
 /// <summary>
 /// Tests for Identity.ApplicationDbContext.OnModelCreating behavior.
 /// </summary>
+[Trait("Category", "Unit")]
 public class ApplicationDbContextTests
 {
     /// <summary>

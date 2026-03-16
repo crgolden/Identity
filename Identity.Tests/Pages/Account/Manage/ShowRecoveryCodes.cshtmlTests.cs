@@ -1,4 +1,4 @@
-﻿namespace Identity.Tests.Pages.Account.Manage;
+namespace Identity.Tests.Pages.Account.Manage;
 
 using Identity.Pages.Account.Manage;
 using Microsoft.AspNetCore.Mvc;
@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 /// <summary>
 /// Tests for ShowRecoveryCodesModel.OnGet method.
 /// </summary>
+[Trait("Category", "Unit")]
 public class ShowRecoveryCodesModelTests
 {
     /// <summary>

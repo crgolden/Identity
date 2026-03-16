@@ -1,4 +1,4 @@
-﻿namespace Identity.Tests.Pages.Account.Manage;
+namespace Identity.Tests.Pages.Account.Manage;
 
 using Identity.Pages.Account.Manage;
 using Microsoft.AspNetCore.Antiforgery;
@@ -9,6 +9,7 @@ using Moq;
 /// <summary>
 /// Tests for PasskeySubmitTagHelper constructor behavior.
 /// </summary>
+[Trait("Category", "Unit")]
 public class PasskeySubmitTagHelperTests
 {
     /// <summary>

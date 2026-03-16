@@ -1,4 +1,4 @@
-ï»¿namespace Identity.Tests.Pages;
+namespace Identity.Tests.Pages;
 
 using System.Diagnostics;
 using Duende.IdentityServer.Models;
@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
 using Moq;
 
+[Trait("Category", "Unit")]
 public class ErrorModelTests
 {
     /// <summary>
@@ -282,6 +283,6 @@ public class ErrorModelTests
         { "\n", false },
         { "\r\n", false },
         // string with special characters => true
-        { "Ã¦Ã¸Ã¥!@#$%^&*()", true },
+        { "æøå!@#$%^&*()", true },
     };
 }

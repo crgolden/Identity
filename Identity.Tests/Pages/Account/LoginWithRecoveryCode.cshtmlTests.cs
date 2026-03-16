@@ -1,4 +1,4 @@
-ï»¿#pragma warning disable CS8604 // Possible null reference argument.
+#pragma warning disable CS8604 // Possible null reference argument.
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account;
 
@@ -14,6 +14,7 @@ using Moq;
 /// <summary>
 /// Tests for LoginWithRecoveryCodeModel.OnGetAsync
 /// </summary>
+[Trait("Category", "Unit")]
 public class LoginWithRecoveryCodeModelTests
 {
     /// <summary>
@@ -61,7 +62,7 @@ public class LoginWithRecoveryCodeModelTests
         string.Empty,
         " ",
         "/account/manage?return=true",
-        "/path/with/special?param=Ã¼Ã±Ã®Ã§Ã¸dÃ©&x=1",
+        "/path/with/special?param=üñîçødé&x=1",
         // long string (~2048 chars) to test boundary for very long URLs
         new string('a', 2048),
     };

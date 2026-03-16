@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account.Manage;
 
 using Identity.Pages.Account.Manage;
@@ -15,6 +15,7 @@ using Moq;
 /// <summary>
 /// Tests for ManageNavPages static members.
 /// </summary>
+[Trait("Category", "Unit")]
 public class ManageNavPagesTests
 {
     /// <summary>

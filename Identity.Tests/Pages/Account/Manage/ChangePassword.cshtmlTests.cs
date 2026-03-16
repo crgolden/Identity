@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account.Manage;
 
 using System.Security.Claims;
@@ -16,6 +16,7 @@ using Moq;
 /// Tests for ChangePasswordModel.OnGetAsync behavior.
 /// Covers branches where user is null, user exists with/without password, and propagation of exceptions.
 /// </summary>
+[Trait("Category", "Unit")]
 public class ChangePasswordModelTests
 {
     public static IEnumerable<object? []> GetUserIdValues()

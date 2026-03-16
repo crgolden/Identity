@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account.Manage;
 
 using System.Security.Claims;
@@ -11,6 +11,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 
+[Trait("Category", "Unit")]
 public class PersonalDataModelTests
 {
     /// <summary>
@@ -112,7 +113,7 @@ public class PersonalDataModelTests
         string.Empty,
         "   ",
         new string('a', 1024),
-        "special\n\t!@#€",
+        "special\n\t!@#�",
     };
 
     /// <summary>

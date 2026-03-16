@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8604 // Possible null reference argument.
+#pragma warning disable CS8604 // Possible null reference argument.
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account;
 
@@ -12,6 +12,7 @@ using Moq;
 /// Tests for Identity.Pages.Account.LogoutModel constructor behavior.
 /// Focuses on constructor acceptance of provided dependencies and null handling.
 /// </summary>
+[Trait("Category", "Unit")]
 public class LogoutModelTests
 {
     /// <summary>

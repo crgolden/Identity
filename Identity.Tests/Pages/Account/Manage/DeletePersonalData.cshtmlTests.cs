@@ -1,4 +1,4 @@
-﻿namespace Identity.Tests.Pages.Account.Manage;
+namespace Identity.Tests.Pages.Account.Manage;
 
 using System.Security.Claims;
 using Identity.Pages.Account.Manage;
@@ -14,6 +14,7 @@ using Moq;
 /// <summary>
 /// Tests for Identity.Pages.Account.Manage.DeletePersonalDataModel constructor.
 /// </summary>
+[Trait("Category", "Unit")]
 public class DeletePersonalDataModelTests
 {
     /// <summary>
