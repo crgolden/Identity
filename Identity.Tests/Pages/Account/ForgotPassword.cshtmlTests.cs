@@ -42,7 +42,7 @@ public class ForgotPasswordModelTests
         model.Input = new ForgotPasswordModel.InputModel { Email = "user@example.com" };
 
         // Act
-        IActionResult result = await model.OnPostAsync();
+        var result = await model.OnPostAsync();
 
         // Assert
         Assert.IsType<PageResult>(result);
@@ -99,7 +99,7 @@ public class ForgotPasswordModelTests
         }
 
         // Act
-        IActionResult result = await model.OnPostAsync();
+        var result = await model.OnPostAsync();
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
@@ -154,24 +154,23 @@ public class ForgotPasswordModelTests
         }
 
         // Act
-        Exception? ex = Record.Exception(() => new ForgotPasswordModel(userManager, emailSender));
+        var ex = Record.Exception(() => new ForgotPasswordModel(userManager, emailSender));
         var model = new ForgotPasswordModel(userManager, emailSender);
 
         // Assert
         Assert.Null(ex);
         Assert.NotNull(model);
         Assert.IsType<ForgotPasswordModel>(model);
-        Assert.IsAssignableFrom<PageModel>(model);
+        Assert.IsType<PageModel>(model, exactMatch: false);
         // Constructor initializes Input with a default InputModel instance.
         Assert.NotNull(model.Input);
     }
 
-    public static IEnumerable<object[]> ConstructorNullCombinations()
+    public static TheoryData<bool, bool> ConstructorNullCombinations() => new()
     {
-        // userManagerNull, emailSenderNull
-        yield return new object[] { false, false }; // both provided
-        yield return new object[] { true, false };  // userManager null
-        yield return new object[] { false, true };  // emailSender null
-        yield return new object[] { true, true };   // both null
-    }
+        { false, false }, // both provided
+        { true, false },  // userManager null
+        { false, true },  // emailSender null
+        { true, true },   // both null
+    };
 }

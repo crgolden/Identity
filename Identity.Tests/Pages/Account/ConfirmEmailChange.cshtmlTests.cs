@@ -72,7 +72,7 @@ public class ConfirmEmailChangeModelTests
     {
         // Arrange
         // Provide nulls for the dependencies to exercise null-argument behavior.
-        Type targetType = typeof(ConfirmEmailChangeModel);
+        var targetType = typeof(ConfirmEmailChangeModel);
         // Act & Assert
         // We accept either:
         //  - the constructor throws an ArgumentNullException for null arguments (defensive),
@@ -95,7 +95,7 @@ public class ConfirmEmailChangeModelTests
 
         try
         {
-            var instance = ctor.Invoke(new object? [] { null, null });
+            var instance = ctor.Invoke([null, null]);
             Assert.NotNull(instance);
         }
         catch (System.Reflection.TargetInvocationException tie)when (tie.InnerException is ArgumentNullException)
@@ -122,7 +122,7 @@ public class ConfirmEmailChangeModelTests
         var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(userManagerMock.Object, Mock.Of<IHttpContextAccessor>(), Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(), null, null, null, null);
         var model = new ConfirmEmailChangeModel(userManagerMock.Object, signInManagerMock.Object);
         // Act
-        IActionResult result = await model.OnGetAsync(userId, email, code);
+        var result = await model.OnGetAsync(userId, email, code);
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("/Index", redirect.PageName);
@@ -141,14 +141,14 @@ public class ConfirmEmailChangeModelTests
         const string userId = "missing-user";
         const string email = "user@example.com";
         const string token = "tok";
-        string encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+        var encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
         var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock.Object, null, null, null, null, null, null, null, null);
         userManagerMock.Setup(um => um.FindByIdAsync(It.Is<string>(s => s == userId))).ReturnsAsync((IdentityUser<Guid>? )null);
         var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(userManagerMock.Object, Mock.Of<IHttpContextAccessor>(), Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(), null, null, null, null);
         var model = new ConfirmEmailChangeModel(userManagerMock.Object, signInManagerMock.Object);
         // Act
-        IActionResult result = await model.OnGetAsync(userId, email, encoded);
+        var result = await model.OnGetAsync(userId, email, encoded);
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
         Assert.Equal($"Unable to load user with ID '{userId}'.", notFound.Value);
@@ -167,7 +167,7 @@ public class ConfirmEmailChangeModelTests
         const string userId = "user-1";
         const string email = "new@example.com";
         const string token = "change-token";
-        string encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+        var encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
         var user = new IdentityUser<Guid>
         {
             Id = Guid.NewGuid()
@@ -179,7 +179,7 @@ public class ConfirmEmailChangeModelTests
         var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(userManagerMock.Object, Mock.Of<IHttpContextAccessor>(), Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(), null, null, null, null);
         var model = new ConfirmEmailChangeModel(userManagerMock.Object, signInManagerMock.Object);
         // Act
-        IActionResult result = await model.OnGetAsync(userId, email, encoded);
+        var result = await model.OnGetAsync(userId, email, encoded);
         // Assert
         Assert.IsType<PageResult>(result);
         Assert.Equal("Error changing email.", model.StatusMessage);
@@ -198,7 +198,7 @@ public class ConfirmEmailChangeModelTests
         const string userId = "user-2";
         const string email = "newuser@example.com";
         const string token = "token-2";
-        string encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+        var encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
         var user = new IdentityUser<Guid>
         {
             Id = Guid.NewGuid()
@@ -211,7 +211,7 @@ public class ConfirmEmailChangeModelTests
         var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(userManagerMock.Object, Mock.Of<IHttpContextAccessor>(), Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(), null, null, null, null);
         var model = new ConfirmEmailChangeModel(userManagerMock.Object, signInManagerMock.Object);
         // Act
-        IActionResult result = await model.OnGetAsync(userId, email, encoded);
+        var result = await model.OnGetAsync(userId, email, encoded);
         // Assert
         Assert.IsType<PageResult>(result);
         Assert.Equal("Error changing user name.", model.StatusMessage);
@@ -230,7 +230,7 @@ public class ConfirmEmailChangeModelTests
         const string userId = "user-3";
         const string email = "ok@example.com";
         const string token = "ok-token";
-        string encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+        var encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
         var user = new IdentityUser<Guid>
         {
             Id = Guid.NewGuid()
@@ -244,7 +244,7 @@ public class ConfirmEmailChangeModelTests
         signInManagerMock.Setup(s => s.RefreshSignInAsync(It.IsAny<IdentityUser<Guid>>())).Returns(Task.CompletedTask).Verifiable();
         var model = new ConfirmEmailChangeModel(userManagerMock.Object, signInManagerMock.Object);
         // Act
-        IActionResult result = await model.OnGetAsync(userId, email, encoded);
+        var result = await model.OnGetAsync(userId, email, encoded);
         // Assert
         Assert.IsType<PageResult>(result);
         Assert.Equal("Thank you for confirming your email change.", model.StatusMessage);
@@ -264,13 +264,13 @@ public class ConfirmEmailChangeModelTests
         // Arrange
         const string userId = "user-4";
         const string token = "var-token";
-        string encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+        var encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
         var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock.Object, null, null, null, null, null, null, null, null);
         var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(userManagerMock.Object, Mock.Of<IHttpContextAccessor>(), Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(), null, null, null, null);
         var model = new ConfirmEmailChangeModel(userManagerMock.Object, signInManagerMock.Object);
         // Act
-        IActionResult result = await model.OnGetAsync(userId, email, encoded);
+        var result = await model.OnGetAsync(userId, email, encoded);
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("/Index", redirect.PageName);
@@ -288,7 +288,7 @@ public class ConfirmEmailChangeModelTests
         const string userId = "user-4";
         const string email = "user+special@exämple.com";
         const string token = "var-token";
-        string encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+        var encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
         var user = new IdentityUser<Guid>
         {
             Id = Guid.NewGuid()
@@ -302,7 +302,7 @@ public class ConfirmEmailChangeModelTests
         signInManagerMock.Setup(s => s.RefreshSignInAsync(It.IsAny<IdentityUser<Guid>>())).Returns(Task.CompletedTask);
         var model = new ConfirmEmailChangeModel(userManagerMock.Object, signInManagerMock.Object);
         // Act
-        IActionResult result = await model.OnGetAsync(userId, email, encoded);
+        var result = await model.OnGetAsync(userId, email, encoded);
         // Assert
         Assert.IsType<PageResult>(result);
         Assert.Equal("Thank you for confirming your email change.", model.StatusMessage);

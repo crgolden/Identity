@@ -51,7 +51,7 @@ public class ManageNavPagesTests
         // (No setup required for a static string property.)
 
         // Act
-        string? actual = ManageNavPages.ExternalLogins;
+        var actual = ManageNavPages.ExternalLogins;
 
         // Assert
         Assert.NotNull(actual); // property must not be null
@@ -233,27 +233,27 @@ public class ManageNavPagesTests
         }
     }
 
-    public static IEnumerable<object[]> DeletePersonalDataCases()
+    public static TheoryData<object?, bool, string?, string?> DeletePersonalDataCases() => new()
     {
         // activePageValue, hasActivePage, displayName, expectedResult
         // 1) ViewData ActivePage exactly matches the page => active
-        yield return new object[] { "DeletePersonalData", true, "/some/path/Irrelevant.cshtml", "active" };
+        { "DeletePersonalData", true, "/some/path/Irrelevant.cshtml", "active" },
 
         // 2) Case-insensitive match => active
-        yield return new object[] { "deletepersonaldata", true, "/some/path/Irrelevant.cshtml", "active" };
+        { "deletepersonaldata", true, "/some/path/Irrelevant.cshtml", "active" },
 
         // 3) ActivePage present but different; DisplayName file name equals DeletePersonalData => fallback used => active
-        yield return new object[] { "SomethingElse", true, "/Areas/Identity/Pages/Account/Manage/DeletePersonalData.cshtml", null };
+        { "SomethingElse", true, "/Areas/Identity/Pages/Account/Manage/DeletePersonalData.cshtml", null },
 
         // 4) No ActivePage key; DisplayName filename is DeletePersonalData => fallback should yield active
-        yield return new object[] { null, false, "/Areas/Identity/Pages/Account/Manage/DeletePersonalData.cshtml", "active" };
+        { null, false, "/Areas/Identity/Pages/Account/Manage/DeletePersonalData.cshtml", "active" },
 
         // 5) ActivePage exists but is non-string (int): 'as string' yields null -> fallback to DisplayName filename
-        yield return new object[] { 123, true, "/Areas/Identity/Pages/Account/Manage/DeletePersonalData.cshtml", "active" };
+        { 123, true, "/Areas/Identity/Pages/Account/Manage/DeletePersonalData.cshtml", "active" },
 
         // 6) No ActivePage and DisplayName null => fallback is null => result null
-        yield return new object[] { null, false, null, null };
-    }
+        { null, false, null, null },
+    };
 
     /// <summary>
     /// Verifies that passing a null ViewContext to DeletePersonalDataNavClass results in a NullReferenceException.
@@ -283,7 +283,7 @@ public class ManageNavPagesTests
     /// </remarks>
     [Theory]
     [MemberData(nameof(PageNavTestData))]
-    public void PageNavClass_VariousActivePageAndDisplayName_ComputesExpected(object activePage, string? displayName, string page, string? expected)
+    public void PageNavClass_VariousActivePageAndDisplayName_ComputesExpected(object? activePage, string? displayName, string page, string? expected)
     {
         // Arrange
         var viewData = new ViewDataDictionary(new EmptyModelMetadataProvider(), new ModelStateDictionary());
@@ -302,41 +302,44 @@ public class ManageNavPagesTests
         Assert.Equal(expected, result);
     }
 
-    public static IEnumerable<object[]> PageNavTestData()
+    public static TheoryData<object?, string?, string, string?> PageNavTestData()
     {
-        // ActivePage is a string and matches exactly -> active
-        yield return new object[] { "Index", "/Areas/Identity/Pages/Account/Manage/Index.cshtml", "Index", "active" };
-
-        // ActivePage is a different casing -> still active (case-insensitive)
-        yield return new object[] { "index", "/Some/Path/Index.cshtml", "Index", "active" };
-
-        // ActivePage empty string matches empty page
-        yield return new object[] { string.Empty, "/Any/Path/Ignore.cshtml", "", "active" };
-
-        // ActivePage is null -> fallback to DisplayName file name, matches -> active
-        yield return new object[] { null, "/Areas/Identity/Pages/Account/Manage/ChangePassword.cshtml", "ChangePassword", "active" };
-
-        // ActivePage is non-string (int) -> 'as string' yields null -> fallback to DisplayName file name, matches -> active
-        yield return new object[] { 123, "/some/path/Custom-Page.cshtml", "Custom-Page", "active" };
-
-        // ActivePage string exists but does not match page -> should be null even though DisplayName would match
-        yield return new object[] { "OtherPage", "/path/Index.cshtml", "Index", null };
-
-        // ActivePage null and DisplayName null -> no match -> null
-        yield return new object[] { null, null, "Index", null };
-
-        // ActivePage null and DisplayName has file name with special characters -> matches
-        yield return new object[] { null, "/x/y/special_name!@#$.cshtml", "special_name!@#$", "active" };
-
-        // ActivePage has whitespace-only string and page matches same whitespace -> active
-        yield return new object[] { "   ", "/ignored/path.cshtml", "   ", "active" };
-
-        // Long string match (boundary test)
         var longStr = new string('a', 600);
-        yield return new object[] { longStr, "/ignored/long.cshtml", longStr, "active" };
+        return new TheoryData<object?, string?, string, string?>
+        {
+            // ActivePage is a string and matches exactly -> active
+            { "Index", "/Areas/Identity/Pages/Account/Manage/Index.cshtml", "Index", "active" },
 
-        // DisplayName contains no directory, just filename -> fallback extracts name
-        yield return new object[] { null, "PlainName.cshtml", "PlainName", "active" };
+            // ActivePage is a different casing -> still active (case-insensitive)
+            { "index", "/Some/Path/Index.cshtml", "Index", "active" },
+
+            // ActivePage empty string matches empty page
+            { string.Empty, "/Any/Path/Ignore.cshtml", "", "active" },
+
+            // ActivePage is null -> fallback to DisplayName file name, matches -> active
+            { null, "/Areas/Identity/Pages/Account/Manage/ChangePassword.cshtml", "ChangePassword", "active" },
+
+            // ActivePage is non-string (int) -> 'as string' yields null -> fallback to DisplayName file name, matches -> active
+            { 123, "/some/path/Custom-Page.cshtml", "Custom-Page", "active" },
+
+            // ActivePage string exists but does not match page -> should be null even though DisplayName would match
+            { "OtherPage", "/path/Index.cshtml", "Index", null },
+
+            // ActivePage null and DisplayName null -> no match -> null
+            { null, null, "Index", null },
+
+            // ActivePage null and DisplayName has file name with special characters -> matches
+            { null, "/x/y/special_name!@#$.cshtml", "special_name!@#$", "active" },
+
+            // ActivePage has whitespace-only string and page matches same whitespace -> active
+            { "   ", "/ignored/path.cshtml", "   ", "active" },
+
+            // Long string match (boundary test)
+            { longStr, "/ignored/long.cshtml", longStr, "active" },
+
+            // DisplayName contains no directory, just filename -> fallback extracts name
+            { null, "PlainName.cshtml", "PlainName", "active" },
+        };
     }
 
     /// <summary>
@@ -372,7 +375,7 @@ public class ManageNavPagesTests
         // (no arrangement needed for a static literal property)
 
         // Act
-        string? actual = ManageNavPages.PersonalData;
+        var actual = ManageNavPages.PersonalData;
 
         // Assert
         Assert.NotNull(actual); // not null
@@ -387,7 +390,7 @@ public class ManageNavPagesTests
         Assert.DoesNotContain("\r", actual);
 
         // No control characters
-        foreach (char c in actual)
+        foreach (var c in actual)
         {
             Assert.False(char.IsControl(c), $"Unexpected control character U+{(int)c:X4} in PersonalData value.");
         }
@@ -405,9 +408,9 @@ public class ManageNavPagesTests
         // (no arrangement required)
 
         // Act
-        string? first = ManageNavPages.PersonalData;
-        string? second = ManageNavPages.PersonalData;
-        string? third = ManageNavPages.PersonalData;
+        var first = ManageNavPages.PersonalData;
+        var second = ManageNavPages.PersonalData;
+        var third = ManageNavPages.PersonalData;
 
         // Assert
         Assert.Equal(first, second);
@@ -471,35 +474,35 @@ public class ManageNavPagesTests
     /// - ViewData['ActivePage'] missing or non-string causing fallback to ActionDescriptor.DisplayName
     /// - Both ViewData['ActivePage'] and DisplayName null
     /// </summary>
-    public static IEnumerable<object?[]> EmailNavClassCases()
+    public static TheoryData<object?, string?, string?> EmailNavClassCases() => new()
     {
         // When ViewData contains a matching page name (exact)
-        yield return new object?[] { "Email", null, "active" };
+        { "Email", null, "active" },
 
         // When ViewData contains a matching page name but different case (case-insensitive match)
-        yield return new object?[] { "email", null, "active" };
+        { "email", null, "active" },
 
         // When ViewData contains a non-matching page name -> not active
-        yield return new object?[] { "Other", null, null };
+        { "Other", null, null },
 
         // When ViewData does not contain a string (null) but DisplayName filename matches
-        yield return new object?[] { null, "/Pages/Account/Manage/Email.cshtml", "active" };
+        { null, "/Pages/Account/Manage/Email.cshtml", "active" },
 
         // When ViewData does not contain a string but DisplayName filename does not match
-        yield return new object?[] { null, "/Pages/Account/Manage/Other.cshtml", null };
+        { null, "/Pages/Account/Manage/Other.cshtml", null },
 
         // When ViewData contains a non-string object -> treated as null, fallback to DisplayName
-        yield return new object?[] { 123, "/Pages/Account/Manage/Email.cshtml", "active" };
+        { 123, "/Pages/Account/Manage/Email.cshtml", "active" },
 
         // When both ViewData['ActivePage'] and DisplayName are null -> no active page
-        yield return new object?[] { null, null, null };
+        { null, null, null },
 
         // When DisplayName filename differs only by case -> should be active (case-insensitive)
-        yield return new object?[] { null, "/Pages/Account/Manage/EMAIL.CSHTML", "active" };
+        { null, "/Pages/Account/Manage/EMAIL.CSHTML", "active" },
 
         // When ViewData contains whitespace-only string -> does not match (whitespace != "Email", no fallback to DisplayName)
-        yield return new object?[] { "   ", "/Pages/Account/Manage/Email.cshtml", null };
-    }
+        { "   ", "/Pages/Account/Manage/Email.cshtml", null },
+    };
 
     /// <summary>
     /// Verifies ExternalLoginsNavClass returns "active" when the effective active page equals the ExternalLogins page name,
@@ -603,7 +606,7 @@ public class ManageNavPagesTests
         // (No setup required for a static literal property.)
 
         // Act
-        string? actual = ManageNavPages.ChangePassword;
+        var actual = ManageNavPages.ChangePassword;
 
         // Assert
         Assert.NotNull(actual);
@@ -621,8 +624,8 @@ public class ManageNavPagesTests
     {
         // Arrange
         // Act
-        string? first = ManageNavPages.ChangePassword;
-        string? second = ManageNavPages.ChangePassword;
+        var first = ManageNavPages.ChangePassword;
+        var second = ManageNavPages.ChangePassword;
 
         // Assert
         Assert.Equal(first, second);
@@ -654,15 +657,15 @@ public class ManageNavPagesTests
     /// Provides test cases combining ViewData['ActivePage'] and ActionDescriptor.DisplayName inputs
     /// to validate whether ChangePasswordNavClass returns "active" or null.
     /// </summary>
-    public static IEnumerable<object?[]> PageCases()
+    public static TheoryData<string?, string?, string?> PageCases() => new()
     {
         // activePage, displayName, expectedResult
-        yield return new object?[] { "ChangePassword", null, "active" }; // exact match in ActivePage
-        yield return new object?[] { "changepassword", null, "active" }; // case-insensitive match in ActivePage
-        yield return new object?[] { null, "/Views/Account/Manage/ChangePassword.cshtml", "active" }; // DisplayName filename matches page
-        yield return new object?[] { null, "/Views/Account/Manage/Other.cshtml", null }; // DisplayName filename does not match page
-        yield return new object?[] { null, null, null }; // both sources null -> no active
-    }
+        { "ChangePassword", null, "active" }, // exact match in ActivePage
+        { "changepassword", null, "active" }, // case-insensitive match in ActivePage
+        { null, "/Views/Account/Manage/ChangePassword.cshtml", "active" }, // DisplayName filename matches page
+        { null, "/Views/Account/Manage/Other.cshtml", null }, // DisplayName filename does not match page
+        { null, null, null }, // both sources null -> no active
+    };
 
     /// <summary>
     /// Tests that ChangePasswordNavClass returns "active" when either ViewData["ActivePage"]
@@ -764,41 +767,41 @@ public class ManageNavPagesTests
     /// - Very long and special-character ActivePage values that should not match
     /// - DisplayName values that do and do not produce the expected filename
     /// </summary>
-    public static IEnumerable<object[]> GetPersonalDataNavCases()
+    public static TheoryData<string?, string?, string?> GetPersonalDataNavCases() => new()
     {
         // ActivePage exactly matches -> active
-        yield return new object[] { "PersonalData", null, "active" };
+        { "PersonalData", null, "active" },
 
         // ActivePage matches ignoring case -> active
-        yield return new object[] { "personaldata", null, "active" };
+        { "personaldata", null, "active" },
 
         // ActivePage null, DisplayName contains PersonalData filename -> active
-        yield return new object[] { null, "Pages/Account/Manage/PersonalData.cshtml", "active" };
+        { null, "Pages/Account/Manage/PersonalData.cshtml", "active" },
 
         // ActivePage null, DisplayName with full path -> active
-        yield return new object[] { null, "C:\\Views\\Account\\Manage\\PersonalData.cshtml", "active" };
+        { null, "C:\\Views\\Account\\Manage\\PersonalData.cshtml", "active" },
 
         // ActivePage null, DisplayName null -> no active (Path.GetFileNameWithoutExtension returns null)
-        yield return new object[] { null, null, null };
+        { null, null, null },
 
         // ActivePage empty string prevents fallback and does not match -> null
-        yield return new object[] { string.Empty, "Pages/Account/Manage/PersonalData.cshtml", null };
+        { string.Empty, "Pages/Account/Manage/PersonalData.cshtml", null },
 
         // ActivePage whitespace prevents fallback and should not match -> null
-        yield return new object[] { "   ", null, null };
+        { "   ", null, null },
 
         // ActivePage close but with trailing space -> not equal -> null
-        yield return new object[] { "PersonalData ", null, null };
+        { "PersonalData ", null, null },
 
         // Very long ActivePage -> null
-        yield return new object[] { new string('x', 1000), null, null };
+        { new string('x', 1000), null, null },
 
         // ActivePage with special characters -> null
-        yield return new object[] { "PersonalData\u2603", null, null };
+        { "PersonalData\u2603", null, null },
 
         // DisplayName filename differs (contains prefix) -> null
-        yield return new object[] { null, "Pages/Account/Manage/some.PersonalData.cshtml", null };
-    }
+        { null, "Pages/Account/Manage/some.PersonalData.cshtml", null },
+    };
 
     /// <summary>
     /// Ensures that when ViewData[\"ActivePage\"] equals the Passkeys page name (case-insensitive),
@@ -923,7 +926,7 @@ public class ManageNavPagesTests
         // (no setup required for static literal property)
 
         // Act
-        string? result = ManageNavPages.Email;
+        var result = ManageNavPages.Email;
 
         // Assert
         Assert.NotNull(result);
@@ -947,7 +950,7 @@ public class ManageNavPagesTests
         // (No setup required for a static constant string property.)
 
         // Act
-        string? actual = ManageNavPages.DeletePersonalData;
+        var actual = ManageNavPages.DeletePersonalData;
 
         // Assert
         Assert.NotNull(actual); // Should never be null for this static constant.
@@ -968,7 +971,7 @@ public class ManageNavPagesTests
         // (No setup required for a static literal property)
 
         // Act
-        string? value = ManageNavPages.Passkeys;
+        var value = ManageNavPages.Passkeys;
 
         // Assert
         Assert.NotNull(value);
@@ -991,10 +994,10 @@ public class ManageNavPagesTests
         // (No external dependencies required; this verifies property stability)
 
         // Act
-        string? first = ManageNavPages.Passkeys;
-        for (int i = 0; i < readCount; i++)
+        var first = ManageNavPages.Passkeys;
+        for (var i = 0; i < readCount; i++)
         {
-            string? current = ManageNavPages.Passkeys;
+            var current = ManageNavPages.Passkeys;
 
             // Assert inside loop for clearer failure localization
             Assert.NotNull(current);

@@ -25,7 +25,7 @@ public class DownloadPersonalDataModelTests
         var model = new DownloadPersonalDataModel(null!, loggerMock.Object);
 
         // Act
-        IActionResult result = model.OnGet();
+        var result = model.OnGet();
 
         // Assert
         var notFound = Assert.IsType<NotFoundResult>(result);
@@ -83,12 +83,12 @@ public class DownloadPersonalDataModelTests
         };
 
         // Act
-        IActionResult result = await model.OnPostAsync();
+        var result = await model.OnPostAsync();
 
         // Assert
         var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
         Assert.NotNull(notFoundResult.Value);
-        string message = notFoundResult.Value.ToString() ?? string.Empty;
+        var message = notFoundResult.Value.ToString() ?? string.Empty;
         Assert.Contains(userId, message);
     }
 

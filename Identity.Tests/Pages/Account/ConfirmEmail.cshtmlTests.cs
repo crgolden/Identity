@@ -15,12 +15,12 @@ public partial class ConfirmEmailModelTests
     /// Test data for null userId or null code inputs which should redirect to the Index page.
     /// Covers: userId null, code null, both null.
     /// </summary>
-    public static IEnumerable<object?[]> RedirectNullCases()
+    public static TheoryData<string?, string?> RedirectNullCases() => new()
     {
-        yield return new object?[] { null, "non-null-code" };
-        yield return new object?[] { "non-null-user", null };
-        yield return new object?[] { null, null };
-    }
+        { null, "non-null-code" },
+        { "non-null-user", null },
+        { null, null },
+    };
 
     /// <summary>
     /// Verifies that when either userId or code is null the action redirects to the Index page.
@@ -37,7 +37,7 @@ public partial class ConfirmEmailModelTests
         var model = new ConfirmEmailModel(userManagerMock.Object);
 
         // Act
-        IActionResult result = await model.OnGetAsync(userId, code);
+        var result = await model.OnGetAsync(userId, code);
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
@@ -64,7 +64,7 @@ public partial class ConfirmEmailModelTests
         var model = new ConfirmEmailModel(userManagerMock.Object);
 
         // Act
-        IActionResult result = await model.OnGetAsync(userId, code);
+        var result = await model.OnGetAsync(userId, code);
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);

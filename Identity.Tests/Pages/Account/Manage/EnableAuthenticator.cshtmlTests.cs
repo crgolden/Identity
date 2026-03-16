@@ -16,43 +16,6 @@ using Moq;
 public partial class EnableAuthenticatorModelTests
 {
     /// <summary>
-    /// Verifies construction of EnableAuthenticatorModel with valid dependencies.
-    /// Input: a logger and a UrlEncoder mock. The UserManager dependency requires complex construction and
-    /// cannot be trivially created/mocked here without providing many framework services.
-    /// Expected: model can be constructed and its public properties are initialized to their default values.
-    /// NOTE: This test is marked as skipped because Microsoft.AspNetCore.Identity.UserManager`1 requires
-    /// framework services or a proper mock setup (constructor parameters) that is out-of-scope for this unit test.
-    /// To complete this test, provide a properly constructed UserManager<IdentityUser<Guid>> instance or
-    /// a Moq.Mock<UserManager<IdentityUser<Guid>>> created with valid constructor arguments.
-    /// </summary>
-    [Fact(Skip = "UserManager<IdentityUser<Guid>> cannot be instantiated/mocked without providing many framework services. Provide a valid instance or mock with constructor args to enable this test.")]
-    public void Constructor_WithValidDependencies_InitializesModel()
-    {
-        // Arrange
-        var loggerMock = new Mock<ILogger<EnableAuthenticatorModel>>();
-        var urlEncoderMock = new Mock<UrlEncoder>();
-
-        // NOTE: The following shows the intended Act/Assert but remains commented because creating
-        // a UserManager<IdentityUser<Guid>> requires providing many concrete dependencies (IUserStore, IOptions<IdentityOptions>, etc.)
-        //
-        // // Example (NOT COMPILED): create a mock or real instance of UserManager<IdentityUser<Guid>>
-        // var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(/* provide required constructor args here */);
-        //
-        // // Act
-        // var model = new EnableAuthenticatorModel(userManagerMock.Object, loggerMock.Object, urlEncoderMock.Object);
-        //
-        // // Assert - public properties should be in default (null) state after construction
-        // Xunit.Assert.NotNull(model);
-        // Xunit.Assert.Null(model.SharedKey);
-        // Xunit.Assert.Null(model.AuthenticatorUri);
-        // Xunit.Assert.Null(model.RecoveryCodes);
-        // Xunit.Assert.Null(model.StatusMessage);
-        // Xunit.Assert.Null(model.Input);
-
-        // Act & Assert are intentionally omitted due to the inability to create a valid UserManager here.
-    }
-
-    /// <summary>
     /// Ensures that attempting to test constructor behavior with null arguments is left as a skipped/inconclusive test.
     /// Input: intention to pass null for one or more non-nullable constructor parameters.
     /// Expected: either the constructor accepts nulls (no exception) or it throws an ArgumentNullException.
@@ -327,7 +290,7 @@ public partial class EnableAuthenticatorModelTests
         var pageModel = new EnableAuthenticatorModel(userManagerMock.Object, loggerMock.Object, urlEncoder);
 
         // Provide a principal so PageModel.User is non-null (the mocks use It.IsAny but set up for realism)
-        var principal = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.NameIdentifier, expectedId) }, "TestAuth"));
+        var principal = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, expectedId)], "TestAuth"));
         pageModel.PageContext = new PageContext { HttpContext = new DefaultHttpContext { User = principal } };
 
         // Act

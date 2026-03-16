@@ -1,7 +1,7 @@
-﻿using Moq;
-using Resend;
+﻿namespace Identity.Tests;
 
-namespace Identity.Tests;
+using Moq;
+using Resend;
 
 /// <summary>
 /// Tests for Identity.EmailSender.
@@ -140,9 +140,9 @@ public class EmailSenderTests
         Assert.IsType<EmailSender>(senderB);
     }
 
-    public static IEnumerable<object?[]> MockBehaviors()
+    public static TheoryData<MockBehavior> MockBehaviors() => new()
     {
-        yield return new object?[] { MockBehavior.Default };
-        yield return new object?[] { MockBehavior.Strict };
-    }
+        MockBehavior.Default,
+        MockBehavior.Strict,
+    };
 }

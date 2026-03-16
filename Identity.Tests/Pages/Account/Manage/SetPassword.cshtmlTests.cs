@@ -127,7 +127,7 @@ public class SetPasswordModelTests
         pageModel.ModelState.AddModelError("Test", "Invalid");
 
         // Act
-        IActionResult result = await pageModel.OnPostAsync();
+        var result = await pageModel.OnPostAsync();
 
         // Assert
         Assert.IsType<PageResult>(result);
@@ -171,7 +171,7 @@ public class SetPasswordModelTests
         // Set Input so the null/whitespace guard is bypassed and we reach the user lookup
         pageModel.Input = new SetPasswordModel.InputModel { NewPassword = "NewP@ss1!" };
         // Act
-        IActionResult result = await pageModel.OnPostAsync();
+        var result = await pageModel.OnPostAsync();
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
@@ -235,7 +235,7 @@ public class SetPasswordModelTests
         };
 
         // Act
-        IActionResult result = await model.OnGetAsync();
+        var result = await model.OnGetAsync();
 
         // Assert
         var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
@@ -300,7 +300,7 @@ public class SetPasswordModelTests
         };
 
         // Act
-        IActionResult result = await model.OnGetAsync();
+        var result = await model.OnGetAsync();
 
         // Assert
         if (hasPassword)

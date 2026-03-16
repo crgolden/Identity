@@ -29,7 +29,7 @@ public class ShowRecoveryCodesModelTests
         };
 
         // Act
-        IActionResult result = model.OnGet();
+        var result = model.OnGet();
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
@@ -56,33 +56,33 @@ public class ShowRecoveryCodesModelTests
         };
 
         // Act
-        IActionResult result = model.OnGet();
+        var result = model.OnGet();
 
         // Assert
         Assert.IsType<PageResult>(result);
     }
 
     // MemberData for invalid cases: empty array
-    public static IEnumerable<object?[]> InvalidRecoveryCodes()
+    public static TheoryData<string[]?> InvalidRecoveryCodes() => new()
     {
-        yield return new object?[] { new string[0] };
-    }
+        Array.Empty<string>(),
+    };
 
     // MemberData for valid cases: single, duplicates, empty/whitespace codes, and a large array
-    public static IEnumerable<object?[]> ValidRecoveryCodes()
+    public static TheoryData<string[]?> ValidRecoveryCodes() => new()
     {
-        yield return new object?[] { new string[] { "ABC123" } };
-        yield return new object?[] { new string[] { "code", "code" } };
-        yield return new object?[] { new string[] { "", "   " } };
+        new string[] { "ABC123" },
+        new string[] { "code", "code" },
+        new string[] { "", "   " },
         // Large but feasible array to exercise non-empty boundary
-        yield return new object?[] { CreateLargeArray(10000, "X") };
-    }
+        CreateLargeArray(10000, "X"),
+    };
 
     private static string[] CreateLargeArray(int count, string value)
     {
-        if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
         var arr = new string[count];
-        for (int i = 0; i < count; i++) arr[i] = value;
+        for (var i = 0; i < count; i++) arr[i] = value;
         return arr;
     }
 }

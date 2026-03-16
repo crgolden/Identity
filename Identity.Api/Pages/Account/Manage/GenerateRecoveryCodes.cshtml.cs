@@ -3,7 +3,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using static Array;
 
 public class GenerateRecoveryCodesModel : PageModel
 {
@@ -19,7 +18,7 @@ public class GenerateRecoveryCodesModel : PageModel
     }
 
     [TempData]
-    public string[] RecoveryCodes { get; set; } = Empty<string>();
+    public string[] RecoveryCodes { get; set; } = Array.Empty<string>();
 
     [TempData]
     public string? StatusMessage { get; set; }
@@ -55,7 +54,11 @@ public class GenerateRecoveryCodesModel : PageModel
 
         var recoveryCodes = await _userManager.GenerateNewTwoFactorRecoveryCodesAsync(user, 10);
         RecoveryCodes = recoveryCodes?.ToArray() ?? RecoveryCodes;
-        _logger.LogTrace("User with ID '{UserId}' has generated new 2FA recovery codes.", userId);
+        if (_logger.IsEnabled(LogLevel.Trace))
+        {
+            _logger.LogTrace("User with ID '{UserId}' has generated new 2FA recovery codes.", userId);
+        }
+
         StatusMessage = "You have generated new recovery codes.";
         return RedirectToPage("./ShowRecoveryCodes");
     }

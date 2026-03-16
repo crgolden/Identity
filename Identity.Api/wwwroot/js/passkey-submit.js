@@ -1,8 +1,8 @@
 ﻿const browserSupportsPasskeys =
-    typeof navigator.credentials !== 'undefined' &&
-    typeof window.PublicKeyCredential !== 'undefined' &&
-    typeof window.PublicKeyCredential.parseCreationOptionsFromJSON === 'function' &&
-    typeof window.PublicKeyCredential.parseRequestOptionsFromJSON === 'function';
+    navigator.credentials !== undefined &&
+    globalThis.PublicKeyCredential !== undefined &&
+    typeof globalThis.PublicKeyCredential.parseCreationOptionsFromJSON === 'function' &&
+    typeof globalThis.PublicKeyCredential.parseRequestOptionsFromJSON === 'function';
 
 async function fetchWithErrorHandling(url, options = {}) {
     const response = await fetch(url, {

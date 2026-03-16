@@ -39,9 +39,9 @@ public class PasskeySubmitTagHelperTests
         // Assert
         Assert.NotNull(helper);
         // Read into nullable locals to respect nullable annotations in tests.
-        PasskeyOperation? operation = helper.Operation;
-        string? name = helper.Name;
-        string? emailName = helper.EmailName;
+        var operation = helper.Operation;
+        var name = helper.Name;
+        var emailName = helper.EmailName;
 
         Assert.Null(operation);
         Assert.Null(name);
@@ -72,18 +72,18 @@ public class PasskeySubmitTagHelperTests
         Assert.NotSame(helperA, helperB);
 
         // Verify defaults for helperA
-        PasskeyOperation? opA = helperA.Operation;
-        string? nameA = helperA.Name;
-        string? emailA = helperA.EmailName;
+        var opA = helperA.Operation;
+        var nameA = helperA.Name;
+        var emailA = helperA.EmailName;
 
         Assert.Null(opA);
         Assert.Null(nameA);
         Assert.Null(emailA);
 
         // Verify defaults for helperB
-        PasskeyOperation? opB = helperB.Operation;
-        string? nameB = helperB.Name;
-        string? emailB = helperB.EmailName;
+        var opB = helperB.Operation;
+        var nameB = helperB.Name;
+        var emailB = helperB.EmailName;
 
         Assert.Null(opB);
         Assert.Null(nameB);
@@ -113,7 +113,7 @@ public class PasskeySubmitTagHelperTests
 
         var helper = new PasskeySubmitTagHelper(httpAccessorMock.Object, antiforgeryMock.Object)
         {
-            Operation = (PasskeyOperation)0,
+            Operation = 0,
             Name = "theName",
             EmailName = null
         };
@@ -136,7 +136,7 @@ public class PasskeySubmitTagHelperTests
             attributes,
             (useCachedResult, encoder) => Task.FromResult<TagHelperContent>(childContent));
 
-        var context = new TagHelperContext(new TagHelperAttributeList(), new Dictionary<object, object>(), Guid.NewGuid().ToString());
+        var context = new TagHelperContext([], new Dictionary<object, object>(), Guid.NewGuid().ToString());
 
         // Act
         await helper.ProcessAsync(context, output);
@@ -144,7 +144,7 @@ public class PasskeySubmitTagHelperTests
         // Assert
         Assert.Null(output.TagName); // TagName cleared
         Assert.Empty(output.Attributes); // Attributes cleared
-        string html = output.Content.GetContent(NullHtmlEncoder.Default);
+        var html = output.Content.GetContent(NullHtmlEncoder.Default);
 
         // Contains button with submitted class attribute and inner content
         Assert.Contains("<button", html, StringComparison.Ordinal);

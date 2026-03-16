@@ -52,7 +52,11 @@ public class Disable2faModel : PageModel
             throw new InvalidOperationException($"Unexpected error occurred disabling 2FA.");
         }
 
-        _logger.LogTrace("User with ID '{UserId}' has disabled 2fa.", _userManager.GetUserId(User));
+        if (_logger.IsEnabled(LogLevel.Trace))
+        {
+            _logger.LogTrace("User with ID '{UserId}' has disabled 2fa.", _userManager.GetUserId(User));
+        }
+
         StatusMessage = "2fa has been disabled. You can reenable 2fa when you setup an authenticator app";
         return RedirectToPage("./TwoFactorAuthentication");
     }

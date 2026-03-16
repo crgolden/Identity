@@ -24,11 +24,11 @@ public class ResendEmailConfirmationModelTests
     /// </summary>
     public static IEnumerable<object[]> EmailTestCases()
     {
-        yield return new object[] { string.Empty };
-        yield return new object[] { "   " };
-        yield return new object[] { "user@example.com" };
-        yield return new object[] { new string('a', 1024) };
-        yield return new object[] { "special!@#$%^&*()\t\n\"<>[];:\\'/" };
+        yield return [string.Empty];
+        yield return ["   "];
+        yield return ["user@example.com"];
+        yield return [new string('a', 1024)];
+        yield return ["special!@#$%^&*()\t\n\"<>[];:\\'/"];
     }
 
     /// <summary>

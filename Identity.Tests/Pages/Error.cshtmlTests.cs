@@ -1,4 +1,6 @@
-﻿using System.Diagnostics;
+﻿namespace Identity.Tests.Pages;
+
+using System.Diagnostics;
 using Duende.IdentityServer.Models;
 using Duende.IdentityServer.Services;
 using Identity.Pages;
@@ -6,9 +8,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
 using Moq;
-#nullable enable
-
-namespace Identity.Tests.Pages;
 
 public class ErrorModelTests
 {
@@ -43,11 +42,11 @@ public class ErrorModelTests
     /// <summary>
     /// Provides MockBehavior values to exercise constructor under different mock configurations.
     /// </summary>
-    public static IEnumerable<object?[]> GetMockBehaviors()
+    public static TheoryData<MockBehavior> GetMockBehaviors() => new()
     {
-        yield return new object?[] { MockBehavior.Loose };
-        yield return new object?[] { MockBehavior.Strict };
-    }
+        MockBehavior.Loose,
+        MockBehavior.Strict,
+    };
 
     /// <summary>
     /// Tests that when errorId is null, empty, or whitespace the interaction service is NOT called,
@@ -112,16 +111,16 @@ public class ErrorModelTests
         }
     }
 
-    public static IEnumerable<object?[]> NoErrorIdCases()
+    public static TheoryData<string?, bool> NoErrorIdCases() => new()
     {
         // Each combination: (errorId, setActivity)
-        yield return new object?[] { null, true };
-        yield return new object?[] { null, false };
-        yield return new object?[] { string.Empty, true };
-        yield return new object?[] { string.Empty, false };
-        yield return new object?[] { "   ", true };
-        yield return new object?[] { "   ", false };
-    }
+        { null, true },
+        { null, false },
+        { string.Empty, true },
+        { string.Empty, false },
+        { "   ", true },
+        { "   ", false },
+    };
 
     /// <summary>
     /// Tests that when a non-empty errorId is provided, the interaction service is called exactly once with that id,
@@ -187,21 +186,22 @@ public class ErrorModelTests
         }
     }
 
-    public static IEnumerable<object?[]> NonEmptyErrorIdCases()
+    public static TheoryData<string, bool> NonEmptyErrorIdCases()
     {
-        // Normal id
-        yield return new object?[] { "error-123", true };
-        yield return new object?[] { "error-123", false };
-
-        // Very long id (boundary)
         var longId = new string('x', 5000);
-        yield return new object?[] { longId, true };
-        yield return new object?[] { longId, false };
-
-        // Special and control characters
         var specialId = "err\0or\n\t\u2603-!@#$%^&*()";
-        yield return new object?[] { specialId, true };
-        yield return new object?[] { specialId, false };
+        return new TheoryData<string, bool>
+        {
+            // Normal id
+            { "error-123", true },
+            { "error-123", false },
+            // Very long id (boundary)
+            { longId, true },
+            { longId, false },
+            // Special and control characters
+            { specialId, true },
+            { specialId, false },
+        };
     }
 
     /// <summary>
@@ -264,31 +264,24 @@ public class ErrorModelTests
             "LogError should be called once when GetErrorContextAsync returns an error message.");
     }
 
-    public static IEnumerable<object?[]> RequestIdTestCases()
+    public static TheoryData<string?, bool> RequestIdTestCases() => new()
     {
         // null => IsNullOrWhiteSpace(null) == true => ShowRequestId == false
-        yield return new object?[] { null, false };
-
+        { null, false },
         // empty string => IsNullOrWhiteSpace("") == true => ShowRequestId == false
-        yield return new object?[] { string.Empty, false };
-
+        { string.Empty, false },
         // whitespace-only string => IsNullOrWhiteSpace(" ") == true => ShowRequestId == false
-        yield return new object?[] { " ", false };
-
+        { " ", false },
         // typical non-empty string => true
-        yield return new object?[] { "request-123", true };
-
+        { "request-123", true },
         // very long string => true
-        yield return new object?[] { new string('x', 10000), true };
-
+        { new string('x', 10000), true },
         // null character inside string => not empty => true
-        yield return new object?[] { "\0", true };
-
+        { "\0", true },
         // newline characters => IsNullOrWhiteSpace => false
-        yield return new object?[] { "\n", false };
-        yield return new object?[] { "\r\n", false };
-
+        { "\n", false },
+        { "\r\n", false },
         // string with special characters => true
-        yield return new object?[] { "æøå!@#$%^&*()", true };
-    }
+        { "æøå!@#$%^&*()", true },
+    };
 }

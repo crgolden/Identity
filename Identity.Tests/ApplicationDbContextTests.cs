@@ -11,20 +11,20 @@ public class ApplicationDbContextTests
     /// Provide a representative set of entity CLR types that the Configure* extension methods should add to the model.
     /// These are likely to be registered when OnModelCreating is executed with non-null store options.
     /// </summary>
-    public static IEnumerable<object[]> EntityTypes()
+    public static TheoryData<Type> EntityTypes() => new()
     {
-        yield return new object[] { typeof(Duende.IdentityServer.EntityFramework.Entities.Client) };
-        yield return new object[] { typeof(Duende.IdentityServer.EntityFramework.Entities.ClientCorsOrigin) };
-        yield return new object[] { typeof(Duende.IdentityServer.EntityFramework.Entities.IdentityResource) };
-        yield return new object[] { typeof(Duende.IdentityServer.EntityFramework.Entities.ApiResource) };
-        yield return new object[] { typeof(Duende.IdentityServer.EntityFramework.Entities.ApiScope) };
-        yield return new object[] { typeof(Duende.IdentityServer.EntityFramework.Entities.IdentityProvider) };
-        yield return new object[] { typeof(Duende.IdentityServer.EntityFramework.Entities.PersistedGrant) };
-        yield return new object[] { typeof(Duende.IdentityServer.EntityFramework.Entities.DeviceFlowCodes) };
-        yield return new object[] { typeof(Duende.IdentityServer.EntityFramework.Entities.Key) };
-        yield return new object[] { typeof(Duende.IdentityServer.EntityFramework.Entities.ServerSideSession) };
-        yield return new object[] { typeof(Duende.IdentityServer.EntityFramework.Entities.PushedAuthorizationRequest) };
-    }
+        typeof(Duende.IdentityServer.EntityFramework.Entities.Client),
+        typeof(Duende.IdentityServer.EntityFramework.Entities.ClientCorsOrigin),
+        typeof(Duende.IdentityServer.EntityFramework.Entities.IdentityResource),
+        typeof(Duende.IdentityServer.EntityFramework.Entities.ApiResource),
+        typeof(Duende.IdentityServer.EntityFramework.Entities.ApiScope),
+        typeof(Duende.IdentityServer.EntityFramework.Entities.IdentityProvider),
+        typeof(Duende.IdentityServer.EntityFramework.Entities.PersistedGrant),
+        typeof(Duende.IdentityServer.EntityFramework.Entities.DeviceFlowCodes),
+        typeof(Duende.IdentityServer.EntityFramework.Entities.Key),
+        typeof(Duende.IdentityServer.EntityFramework.Entities.ServerSideSession),
+        typeof(Duende.IdentityServer.EntityFramework.Entities.PushedAuthorizationRequest),
+    };
 
     /// <summary>
     /// Testable subclass to expose the protected OnModelCreating for direct invocation.
@@ -83,8 +83,8 @@ public class ApplicationDbContextTests
     /// Currently provides a default-built options instance. This covers the typical construction scenario
     /// where options may not include a provider. Additional provider-backed options can be added if available.
     /// </summary>
-    public static IEnumerable<object?[]> ValidOptions()
+    public static TheoryData<DbContextOptions<ApplicationDbContext>> ValidOptions() => new()
     {
-        yield return new object?[] { new DbContextOptionsBuilder<ApplicationDbContext>().Options };
-    }
+        new DbContextOptionsBuilder<ApplicationDbContext>().Options,
+    };
 }

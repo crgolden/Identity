@@ -62,17 +62,29 @@ public class LoginWithRecoveryCodeModel : PageModel
 
         if (result.Succeeded)
         {
-            _logger.LogTrace("User with ID '{UserId}' logged in with a recovery code.", userId);
+            if (_logger.IsEnabled(LogLevel.Trace))
+            {
+                _logger.LogTrace("User with ID '{UserId}' logged in with a recovery code.", userId);
+            }
+
             return LocalRedirect(returnUrl ?? Url.Content("~/"));
         }
 
         if (result.IsLockedOut)
         {
-            _logger.LogTrace("User account locked out.");
+            if (_logger.IsEnabled(LogLevel.Trace))
+            {
+                _logger.LogTrace("User account locked out.");
+            }
+
             return RedirectToPage("./Lockout");
         }
 
-        _logger.LogTrace("Invalid recovery code entered for user with ID '{UserId}' ", userId);
+        if (_logger.IsEnabled(LogLevel.Trace))
+        {
+            _logger.LogTrace("Invalid recovery code entered for user with ID '{UserId}' ", userId);
+        }
+
         ModelState.AddModelError(Empty, "Invalid recovery code entered.");
         return Page();
     }

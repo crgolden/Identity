@@ -88,7 +88,7 @@ public class GenerateRecoveryCodesModelTests
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
             storeMock.Object, null, null, null, null, null, null, null, null);
 
-        string expectedUserId = "missing-user-id";
+        var expectedUserId = "missing-user-id";
         userManagerMock
             .Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
             .ReturnsAsync((IdentityUser<Guid>?)null);
@@ -104,11 +104,11 @@ public class GenerateRecoveryCodesModelTests
         };
 
         // Act
-        IActionResult result = await model.OnPostAsync();
+        var result = await model.OnPostAsync();
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
-        string expectedMessage = $"Unable to load user with ID '{expectedUserId}'.";
+        var expectedMessage = $"Unable to load user with ID '{expectedUserId}'.";
         Assert.Equal(expectedMessage, Assert.IsType<string>(notFound.Value));
         Assert.Equal(expectedMessage, (string)notFound.Value);
     }
@@ -187,7 +187,7 @@ public class GenerateRecoveryCodesModelTests
         var generatedCodes = new List<string> { "code1", "code2", "code3" };
         userManagerMock
             .Setup(um => um.GenerateNewTwoFactorRecoveryCodesAsync(user, 10))
-            .ReturnsAsync((IEnumerable<string>)generatedCodes);
+            .ReturnsAsync(generatedCodes);
 
         var loggerMock = new Mock<ILogger<GenerateRecoveryCodesModel>>();
 
@@ -197,7 +197,7 @@ public class GenerateRecoveryCodesModelTests
         };
 
         // Act
-        IActionResult result = await model.OnPostAsync();
+        var result = await model.OnPostAsync();
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
@@ -244,10 +244,9 @@ public class GenerateRecoveryCodesModelTests
         {
             HttpContext = new DefaultHttpContext
             {
-                User = new ClaimsPrincipal(new ClaimsIdentity(new[]
-                {
+                User = new ClaimsPrincipal(new ClaimsIdentity([
                     new Claim(ClaimTypes.NameIdentifier, expectedId)
-                }))
+                ]))
             }
         };
 

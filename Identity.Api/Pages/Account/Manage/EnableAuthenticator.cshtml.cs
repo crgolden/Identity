@@ -7,7 +7,6 @@ using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using static Array;
 using static String;
 
 public class EnableAuthenticatorModel : PageModel
@@ -35,7 +34,7 @@ public class EnableAuthenticatorModel : PageModel
     public string? AuthenticatorUri { get; set; }
 
     [TempData]
-    public string[] RecoveryCodes { get; set; } = Empty<string>();
+    public string[] RecoveryCodes { get; set; } = Array.Empty<string>();
 
     [TempData]
     public string? StatusMessage { get; set; }
@@ -81,7 +80,11 @@ public class EnableAuthenticatorModel : PageModel
 
         await _userManager.SetTwoFactorEnabledAsync(user, true);
         var userId = await _userManager.GetUserIdAsync(user);
-        _logger.LogTrace("User with ID '{UserId}' has enabled 2FA with an authenticator app.", userId);
+        if (_logger.IsEnabled(LogLevel.Trace))
+        {
+            _logger.LogTrace("User with ID '{UserId}' has enabled 2FA with an authenticator app.", userId);
+        }
+
         StatusMessage = "Your authenticator app has been verified.";
         if (await _userManager.CountRecoveryCodesAsync(user) > 0)
         {

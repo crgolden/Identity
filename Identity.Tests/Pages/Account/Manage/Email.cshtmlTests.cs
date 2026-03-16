@@ -40,7 +40,7 @@ public class EmailModelTests
             Mock.Of<Microsoft.AspNetCore.Authentication.IAuthenticationSchemeProvider>(),
             Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
 
-        var principal = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.NameIdentifier, "ignored") }));
+        var principal = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "ignored")]));
         userManagerMock
             .Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
             .ReturnsAsync((IdentityUser<Guid>?)null);
@@ -57,7 +57,7 @@ public class EmailModelTests
         };
 
         // Act
-        IActionResult result = await model.OnPostSendVerificationEmailAsync();
+        var result = await model.OnPostSendVerificationEmailAsync();
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
@@ -105,7 +105,7 @@ public class EmailModelTests
         model.ModelState.AddModelError("Input.NewEmail", "Required");
 
         // Act
-        IActionResult result = await model.OnPostSendVerificationEmailAsync();
+        var result = await model.OnPostSendVerificationEmailAsync();
 
         // Assert
         Assert.IsType<PageResult>(result);
@@ -157,7 +157,7 @@ public class EmailModelTests
             .ReturnsAsync("raw-token");
 
         const string fixedCallbackUrl = "https://example.test/Account/ConfirmEmail?userId=the-user-id&code=abc";
-        string? capturedCallbackUrl = fixedCallbackUrl;
+        var capturedCallbackUrl = fixedCallbackUrl;
         var urlHelperMock = new Mock<IUrlHelper>();
         // ActionContext must be non-null because UrlHelperExtensions.Page always accesses it
         var urlRouteData = new RouteData();
@@ -197,7 +197,7 @@ public class EmailModelTests
         model.PageContext.HttpContext.Request.Scheme = "https";
 
         // Act
-        IActionResult result = await model.OnPostSendVerificationEmailAsync();
+        var result = await model.OnPostSendVerificationEmailAsync();
 
         // Assert
         // RedirectToPageResult expected
@@ -220,15 +220,15 @@ public class EmailModelTests
         Assert.NotNull(capturedCallbackUrl);
 
         // Handler encodes callbackUrl via HtmlEncoder.Default.Encode
-        string expectedEncodedUrl = HtmlEncoder.Default.Encode(capturedCallbackUrl);
+        var expectedEncodedUrl = HtmlEncoder.Default.Encode(capturedCallbackUrl);
         Assert.Contains(expectedEncodedUrl, capturedBody);
     }
 
-    public static IEnumerable<object?[]> ValidEmailCases()
+    public static TheoryData<string?> ValidEmailCases() => new()
     {
-        yield return new object?[] { "user@example.com" };
-        yield return new object?[] { "user+tag@exa-mple.co.uk" };
-    }
+        "user@example.com",
+        "user+tag@exa-mple.co.uk",
+    };
 
     /// <summary>
     /// Verifies that the EmailModel constructor does not throw when provided with valid dependencies
@@ -347,8 +347,8 @@ public class EmailModelTests
                 storeMock.Object,
                 optionsMock.Object,
                 hasherMock.Object,
-                new IUserValidator<IdentityUser<Guid>>[0],
-                new IPasswordValidator<IdentityUser<Guid>>[0],
+                Array.Empty<IUserValidator<IdentityUser<Guid>>>(),
+                Array.Empty<IPasswordValidator<IdentityUser<Guid>>>(),
                 lookupNormalizerMock.Object,
                 new IdentityErrorDescriber(),
                 new Mock<IServiceProvider>().Object,
@@ -386,7 +386,7 @@ public class EmailModelTests
         };
 
         // Act
-        IActionResult result = await model.OnPostChangeEmailAsync();
+        var result = await model.OnPostChangeEmailAsync();
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);

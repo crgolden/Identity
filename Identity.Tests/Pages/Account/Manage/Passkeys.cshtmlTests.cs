@@ -40,9 +40,9 @@ public partial class PasskeysModelTests
         var options = Mock.Of<IOptions<IdentityOptions>>();
         var passwordHasher = Mock.Of<IPasswordHasher<IdentityUser<Guid>>>();
         IEnumerable<IUserValidator<IdentityUser<Guid>>> userValidators = useSingleValidator
-            ? new[] { Mock.Of<IUserValidator<IdentityUser<Guid>>>() }
-            : Enumerable.Empty<IUserValidator<IdentityUser<Guid>>>();
-        IEnumerable<IPasswordValidator<IdentityUser<Guid>>> passwordValidators = Enumerable.Empty<IPasswordValidator<IdentityUser<Guid>>>();
+            ? [Mock.Of<IUserValidator<IdentityUser<Guid>>>()]
+            : [];
+        IEnumerable<IPasswordValidator<IdentityUser<Guid>>> passwordValidators = [];
         var lookupNormalizer = Mock.Of<ILookupNormalizer>();
         var errorDescriber = new IdentityErrorDescriber();
         var services = Mock.Of<IServiceProvider>();
@@ -222,8 +222,8 @@ public partial class PasskeysModelTests
     public static IEnumerable<object?[]> CredentialIdNullOrEmptyData()
     {
         // MemberData supports null values via object?[]
-        yield return new object?[] { null };
-        yield return new object?[] { string.Empty };
+        yield return [null];
+        yield return [string.Empty];
     }
 
     /// <summary>
@@ -272,7 +272,7 @@ public partial class PasskeysModelTests
 
         // Ensure PageContext and User are present
         var httpContext = new DefaultHttpContext();
-        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.NameIdentifier, expectedId) }));
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, expectedId)]));
         model.PageContext = new PageContext()
         {
             HttpContext = httpContext

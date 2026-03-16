@@ -17,7 +17,7 @@ public class AccessDeniedModelTests
     public void AccessDeniedModel_Class_HasAllowAnonymousAttribute()
     {
         // Arrange & Act
-        bool hasAttribute = Attribute.IsDefined(typeof(AccessDeniedModel), typeof(AllowAnonymousAttribute));
+        var hasAttribute = Attribute.IsDefined(typeof(AccessDeniedModel), typeof(AllowAnonymousAttribute));
 
         // Assert
         Assert.True(hasAttribute);

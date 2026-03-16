@@ -74,7 +74,11 @@ public class ExternalLoginModel : PageModel
         var result = await _signInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, isPersistent: false, bypassTwoFactor: true);
         if (result.Succeeded)
         {
-            _logger.LogTrace("{Name} logged in with {LoginProvider} provider.", info.Principal.Identity?.Name, info.LoginProvider);
+            if (_logger.IsEnabled(LogLevel.Trace))
+            {
+                _logger.LogTrace("{Name} logged in with {LoginProvider} provider.", info.Principal.Identity?.Name, info.LoginProvider);
+            }
+
             return LocalRedirect(returnUrl);
         }
 
@@ -144,7 +148,11 @@ public class ExternalLoginModel : PageModel
             return null;
         }
 
-        _logger.LogTrace("User created an account using {Name} provider.", info.LoginProvider);
+        if (_logger.IsEnabled(LogLevel.Trace))
+        {
+            _logger.LogTrace("User created an account using {Name} provider.", info.LoginProvider);
+        }
+
         var userId = await _userManager.GetUserIdAsync(user);
         var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
         var bytes = UTF8.GetBytes(code);

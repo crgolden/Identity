@@ -39,7 +39,7 @@ public class TwoFactorAuthenticationModelTests
         // Arrange
         UserManager<IdentityUser<Guid>>? userManager = null;
         SignInManager<IdentityUser<Guid>>? signInManager = null;
-        ILogger<TwoFactorAuthenticationModel>? logger = provideLogger
+        var logger = provideLogger
             ? new Mock<ILogger<TwoFactorAuthenticationModel>>().Object
             : null;
 
@@ -73,7 +73,7 @@ public class TwoFactorAuthenticationModelTests
         // Arrange
         UserManager<IdentityUser<Guid>>? userManager = null;
         SignInManager<IdentityUser<Guid>>? signInManager = null;
-        ILogger<TwoFactorAuthenticationModel>? logger = new Mock<ILogger<TwoFactorAuthenticationModel>>().Object;
+        var logger = new Mock<ILogger<TwoFactorAuthenticationModel>>().Object;
 
         var model = new TwoFactorAuthenticationModel(userManager, signInManager);
 
@@ -129,7 +129,7 @@ public class TwoFactorAuthenticationModelTests
             .Returns(expectedUserId);
 
         // Act
-        IActionResult result = await model.OnPostAsync();
+        var result = await model.OnPostAsync();
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
@@ -179,7 +179,7 @@ public class TwoFactorAuthenticationModelTests
             .Verifiable();
 
         // Act
-        IActionResult result = await model.OnPostAsync();
+        var result = await model.OnPostAsync();
 
         // Assert
         Assert.IsType<RedirectToPageResult>(result);
@@ -224,7 +224,7 @@ public class TwoFactorAuthenticationModelTests
         var pageModel = new TwoFactorAuthenticationModel(mockUserManager.Object, mockSignInManager.Object);
 
         // Act
-        IActionResult? result = await pageModel.OnGetAsync();
+        var result = await pageModel.OnGetAsync();
 
         // Assert
         var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
@@ -283,7 +283,7 @@ public class TwoFactorAuthenticationModelTests
         var pageModel = new TwoFactorAuthenticationModel(mockUserManager.Object, mockSignInManager.Object);
 
         // Act
-        IActionResult? result = await pageModel.OnGetAsync();
+        var result = await pageModel.OnGetAsync();
 
         // Assert
         Assert.IsType<PageResult>(result);
@@ -296,9 +296,9 @@ public class TwoFactorAuthenticationModelTests
     public static IEnumerable<object?[]> GetOnGetAsyncCases()
     {
         // Cover typical, boundary and unusual numeric values as RecoveryCodesLeft, and both null/non-null authenticator key.
-        yield return new object?[] { null, false, false, 0 };
-        yield return new object?[] { "auth-key-abc", true, true, 5 };
-        yield return new object?[] { "k", false, true, int.MaxValue };
-        yield return new object?[] { null, true, false, int.MinValue };
+        yield return [null, false, false, 0];
+        yield return ["auth-key-abc", true, true, 5];
+        yield return ["k", false, true, int.MaxValue];
+        yield return [null, true, false, int.MinValue];
     }
 }

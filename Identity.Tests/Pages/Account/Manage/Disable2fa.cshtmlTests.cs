@@ -49,7 +49,7 @@ public class Disable2faModelTests
         };
 
         // Act
-        IActionResult result = await model.OnGet();
+        var result = await model.OnGet();
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
@@ -100,7 +100,7 @@ public class Disable2faModelTests
         // Act & Assert
         if (twoFactorEnabled)
         {
-            IActionResult result = await model.OnGet();
+            var result = await model.OnGet();
             Assert.IsType<PageResult>(result);
         }
         else
@@ -141,7 +141,7 @@ public class Disable2faModelTests
         };
 
         // Act
-        IActionResult result = await model.OnPostAsync();
+        var result = await model.OnPostAsync();
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
@@ -206,6 +206,7 @@ public class Disable2faModelTests
             .Returns(userId);
 
         var loggerMock = new Mock<ILogger<Disable2faModel>>();
+        loggerMock.Setup(l => l.IsEnabled(LogLevel.Trace)).Returns(true);
         var model = new Disable2faModel(userManagerMock.Object, loggerMock.Object)
         {
             PageContext = new PageContext
@@ -218,7 +219,7 @@ public class Disable2faModelTests
         };
 
         // Act
-        IActionResult result = await model.OnPostAsync();
+        var result = await model.OnPostAsync();
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);

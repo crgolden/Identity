@@ -181,7 +181,7 @@ public class ExternalLoginModelTests
             emailSenderMock.Object);
 
         // Act
-        IActionResult result = model.OnGet();
+        var result = model.OnGet();
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
@@ -405,7 +405,7 @@ public class ExternalLoginModelTests
             Input = new ExternalLoginModel.InputModel { Email = "user@example.com" }
         };
 
-        string returnUrl = "/localReturn";
+        var returnUrl = "/localReturn";
 
         // Act
         var result = await model.OnPostConfirmationAsync(returnUrl);
@@ -441,9 +441,9 @@ public class ExternalLoginModelTests
     /// </summary>
     public static IEnumerable<object?[]> ConstructorTestData()
     {
-        yield return new object?[] { false, true, typeof(NotSupportedException) };
-        yield return new object?[] { true, false, typeof(InvalidCastException) };
-        yield return new object?[] { true, true, null };
+        yield return [false, true, typeof(NotSupportedException)];
+        yield return [true, false, typeof(InvalidCastException)];
+        yield return [true, true, null];
     }
 
 }

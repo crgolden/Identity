@@ -5,7 +5,6 @@ using System.Text;
 using Identity.Pages.Account;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.WebUtilities;
 using Moq;
@@ -94,7 +93,7 @@ public class ResetPasswordModelTests
         var model = new ResetPasswordModel(mockUserManager.Object);
 
         // Act
-        IActionResult result = model.OnGet(null);
+        var result = model.OnGet(null);
 
         // Assert
         var badRequest = Assert.IsType<BadRequestObjectResult>(result);
@@ -116,10 +115,10 @@ public class ResetPasswordModelTests
         var mockUserManager = new Mock<UserManager<IdentityUser<Guid>>>(userStore, null, null, null, null, null, null, null, null);
         var model = new ResetPasswordModel(mockUserManager.Object);
 
-        string encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(original));
+        var encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(original));
 
         // Act
-        IActionResult result = model.OnGet(encoded);
+        var result = model.OnGet(encoded);
 
         // Assert
         Assert.IsType<PageResult>(result);
@@ -132,12 +131,12 @@ public class ResetPasswordModelTests
     /// Provides valid original strings to be encoded by Base64Url for tests.
     /// Includes empty string and strings with special/unicode characters.
     /// </summary>
-    public static IEnumerable<object[]> GetValidEncodedCases()
+    public static TheoryData<string> GetValidEncodedCases() => new()
     {
-        yield return new object[] { "abc" };
-        yield return new object[] { "p@$$w0rd!" };
-        yield return new object[] { "这是一些中文" };
-    }
+        "abc",
+        "p@$$w0rd!",
+        "这是一些中文",
+    };
 
     /// <summary>
     /// The test verifies that malformed Base64Url inputs (containing whitespace or invalid chars)
@@ -188,7 +187,7 @@ public class ResetPasswordModelTests
         model.ModelState.AddModelError("Email", "Required");
 
         // Act
-        IActionResult result = await model.OnPostAsync();
+        var result = await model.OnPostAsync();
 
         // Assert
         Assert.IsType<PageResult>(result);
@@ -228,7 +227,7 @@ public class ResetPasswordModelTests
 
         if (userExists)
         {
-            IdentityResult result = resetSucceeds
+            var result = resetSucceeds
                 ? IdentityResult.Success
                 : IdentityResult.Failed(new IdentityError { Description = "failed" });
 
@@ -249,7 +248,7 @@ public class ResetPasswordModelTests
         };
 
         // Act
-        IActionResult actionResult = await model.OnPostAsync();
+        var actionResult = await model.OnPostAsync();
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(actionResult);
@@ -318,14 +317,14 @@ public class ResetPasswordModelTests
         Assert.True(model.ModelState.IsValid);
 
         // Act
-        IActionResult actionResult = await model.OnPostAsync();
+        var actionResult = await model.OnPostAsync();
 
         // Assert
         Assert.IsType<PageResult>(actionResult);
         Assert.False(model.ModelState.IsValid);
 
         // Errors added with empty key
-        ModelStateEntry? entry = model.ModelState[string.Empty];
+        var entry = model.ModelState[string.Empty];
         Assert.NotNull(entry);
         var actualMessages = entry!.Errors.Select(e => e.ErrorMessage).ToArray();
         Assert.Contains("Err1", actualMessages);

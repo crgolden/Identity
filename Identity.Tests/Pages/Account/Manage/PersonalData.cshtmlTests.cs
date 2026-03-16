@@ -50,13 +50,13 @@ public class PersonalDataModelTests
 
         // Act
         PersonalDataModel? model = null;
-        Exception? caught = Record.Exception(() => model = new PersonalDataModel(userManager));
+        var caught = Record.Exception(() => model = new PersonalDataModel(userManager));
 
         // Assert
         Assert.Null(caught);
         Assert.NotNull(model);
         Assert.IsType<PersonalDataModel>(model);
-        Assert.IsAssignableFrom<PageModel>(model);
+        Assert.IsType<PageModel>(model, exactMatch: false);
     }
 
     /// <summary>
@@ -106,15 +106,14 @@ public class PersonalDataModelTests
     /// Provides various user id values (including null, empty, whitespace, long, and special characters)
     /// to validate the NotFound message formatting when the user cannot be loaded.
     /// </summary>
-    public static IEnumerable<object?[]> UserIdValues =>
-        new List<object?[]>
-        {
-            new object?[] { null },
-            new object?[] { string.Empty },
-            new object?[] { "   " },
-            new object?[] { new string('a', 1024) },
-            new object?[] { "special\n\t!@#€" }
-        };
+    public static TheoryData<string?> UserIdValues => new()
+    {
+        null,
+        string.Empty,
+        "   ",
+        new string('a', 1024),
+        "special\n\t!@#€",
+    };
 
     /// <summary>
     /// The test verifies that when the user manager returns null for GetUserAsync,
@@ -152,11 +151,11 @@ public class PersonalDataModelTests
         };
 
         // Act
-        IActionResult result = await model.OnGet();
+        var result = await model.OnGet();
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
-        string expected = $"Unable to load user with ID '{userId}'.";
+        var expected = $"Unable to load user with ID '{userId}'.";
         Assert.Equal(expected, Assert.IsType<string>(notFound.Value));
         Assert.Equal(expected, (string)notFound.Value!);
 
@@ -199,7 +198,7 @@ public class PersonalDataModelTests
         };
 
         // Act
-        IActionResult result = await model.OnGet();
+        var result = await model.OnGet();
 
         // Assert
         Assert.IsType<PageResult>(result);

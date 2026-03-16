@@ -21,14 +21,14 @@ public class ChangePasswordModelTests
     public static IEnumerable<object? []> GetUserIdValues()
     {
         // Provide a concrete string and a null value to exercise both message forms
-        yield return new object? []
-        {
+        yield return
+        [
             "test-user-123"
-        };
-        yield return new object? []
-        {
+        ];
+        yield return
+        [
             null
-        };
+        ];
     }
 
     /// <summary>
@@ -56,7 +56,7 @@ public class ChangePasswordModelTests
         // Make model invalid
         model.ModelState.AddModelError("SomeKey", "Some error");
         // Act
-        IActionResult result = await model.OnPostAsync();
+        var result = await model.OnPostAsync();
         // Assert
         Assert.IsType<PageResult>(result);
         // Ensure GetUserAsync was never called due to early return
@@ -93,7 +93,7 @@ public class ChangePasswordModelTests
         // Set Input so the null/whitespace guard is bypassed and we reach the user lookup
         model.Input = new ChangePasswordModel.InputModel { OldPassword = "OldP@ss1!", NewPassword = "NewP@ss1!" };
         // Act
-        IActionResult result = await model.OnPostAsync();
+        var result = await model.OnPostAsync();
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
         Assert.Equal($"Unable to load user with ID '{expectedId}'.", notFound.Value);

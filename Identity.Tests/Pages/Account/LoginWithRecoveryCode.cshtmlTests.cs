@@ -6,7 +6,6 @@ using Identity.Pages.Account;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -48,7 +47,7 @@ public class LoginWithRecoveryCodeModelTests
         var model = new LoginWithRecoveryCodeModel(signInManagerMock.Object, userManager, logger);
 
         // Act
-        IActionResult result = await model.OnGetAsync(returnUrl);
+        var result = await model.OnGetAsync(returnUrl);
 
         // Assert
         Assert.IsType<PageResult>(result);
@@ -56,16 +55,16 @@ public class LoginWithRecoveryCodeModelTests
     }
 
     // MemberData providing a variety of string edge cases including null.
-    public static IEnumerable<object?[]> ReturnUrlValues()
+    public static TheoryData<string?> ReturnUrlValues() => new()
     {
-        yield return new object?[] { null };
-        yield return new object?[] { string.Empty };
-        yield return new object?[] { " " };
-        yield return new object?[] { "/account/manage?return=true" };
-        yield return new object?[] { "/path/with/special?param=üñîçødé&x=1" };
+        null,
+        string.Empty,
+        " ",
+        "/account/manage?return=true",
+        "/path/with/special?param=üñîçødé&x=1",
         // long string (~2048 chars) to test boundary for very long URLs
-        yield return new object?[] { new string('a', 2048) };
-    }
+        new string('a', 2048),
+    };
 
     /// <summary>
     /// Verifies that when ModelState is invalid the handler returns PageResult without calling sign-in flows.
@@ -94,7 +93,7 @@ public class LoginWithRecoveryCodeModelTests
         model.Input = new LoginWithRecoveryCodeModel.InputModel { RecoveryCode = "irrelevant" };
 
         // Act
-        IActionResult result = await model.OnPostAsync(null);
+        var result = await model.OnPostAsync(null);
 
         // Assert
         Assert.IsType<PageResult>(result);
@@ -138,13 +137,13 @@ public class LoginWithRecoveryCodeModelTests
         signInManagerMock.Verify(s => s.TwoFactorRecoveryCodeSignInAsync(It.IsAny<string>()), Times.Never);
     }
 
-    public static IEnumerable<object?[]> GetReturnUrlCases()
+    public static TheoryData<string?, string> GetReturnUrlCases() => new()
     {
         // Case: null returnUrl should redirect to Url.Content("~/") which we mock to "/"
-        yield return new object?[] { null, "/" };
+        { null, "/" },
         // Case: provided returnUrl should be used as-is
-        yield return new object?[] { "/some/local/path", "/some/local/path" };
-    }
+        { "/some/local/path", "/some/local/path" },
+    };
 
     /// <summary>
     /// Verifies that constructing LoginWithRecoveryCodeModel with all null dependencies does not throw
@@ -196,7 +195,7 @@ public class LoginWithRecoveryCodeModelTests
         SignInManager<IdentityUser<Guid>>? signInManager = null;
         UserManager<IdentityUser<Guid>>? userManager = null;
         var loggerMock = new Mock<ILogger<LoginWithRecoveryCodeModel>>();
-        ILogger<LoginWithRecoveryCodeModel> logger = loggerMock.Object;
+        var logger = loggerMock.Object;
 
         // Act
         var exception = Record.Exception(() => new LoginWithRecoveryCodeModel(signInManager, userManager, logger));

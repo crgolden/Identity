@@ -52,7 +52,7 @@ public class RegisterModelTests
         // Provide an empty external schemes result to focus this test on ReturnUrl assignment.
         signInManagerMock
             .Setup(s => s.GetExternalAuthenticationSchemesAsync())
-            .ReturnsAsync(Enumerable.Empty<AuthenticationScheme>());
+            .ReturnsAsync([]);
 
         var logger = Mock.Of<ILogger<RegisterModel>>();
         var emailSender = Mock.Of<IEmailSender>();
@@ -128,99 +128,20 @@ public class RegisterModelTests
         Assert.Equal(expectedNames, actualNames);
     }
 
-    public static IEnumerable<object[]> ExternalSchemesData()
+    public static TheoryData<IEnumerable<AuthenticationScheme>> ExternalSchemesData() => new()
     {
-        yield return new object[] { Enumerable.Empty<AuthenticationScheme>() };
-
-        yield return new object[] {
-            new List<AuthenticationScheme>
-            {
-                new AuthenticationScheme("Provider1", "Provider One", typeof(DummyAuthHandler))
-            }
-        };
-
-        yield return new object[] {
-            new List<AuthenticationScheme>
-            {
-                new AuthenticationScheme("ProviderA", "A", typeof(DummyAuthHandler)),
-                new AuthenticationScheme("ProviderB", "B", typeof(DummyAuthHandler)),
-                new AuthenticationScheme("ProviderC", "C", typeof(DummyAuthHandler))
-            }
-        };
-    }
-
-    /// <summary>
-    /// Verifies that the constructor throws NotSupportedException when the provided UserManager indicates
-    /// it does not support user email. Input conditions: UserManager.SupportsUserEmail == false.
-    /// Expected result: NotSupportedException is thrown from GetEmailStore called during construction.
-    /// 
-    /// Note: This test is intentionally skipped. Creating a usable UserManager{IdentityUser<Guid>} instance
-    /// (or a Moq mock with a working SupportsUserEmail property) requires invoking the framework constructor
-    /// with many dependencies. Replace the TODO block with real construction or a properly-configured Moq
-    /// Mock<UserManager<IdentityUser<Guid>>> that sets up SupportsUserEmail to false and provides the
-    /// necessary constructor arguments.
-    /// </summary>
-    [Fact(Skip = "Requires factory or properly-configured Mock<UserManager<IdentityUser<Guid>>> and SignInManager. See test comments.")]
-    public void RegisterModel_Constructor_UserManagerDoesNotSupportEmail_ThrowsNotSupportedException()
-    {
-        // Arrange
-        // TODO: Create a Mock<UserManager<IdentityUser<Guid>>> and set SupportsUserEmail to false.
-        // Example sketch (NOT valid as-is because UserManager constructor requires many framework arguments):
-        //
-        // var mockUserStore = new Mock<IUserStore<IdentityUser<Guid>>>();
-        // var mockUserManager = new Mock<UserManager<IdentityUser<Guid>>>( /* supply required ctor args */ );
-        // mockUserManager.SetupGet(m => m.SupportsUserEmail).Returns(false);
-        //
-        // var mockSignInManager = new Mock<SignInManager<IdentityUser<Guid>>>( /* supply required ctor args */ );
-        // var mockLogger = new Mock<ILogger<RegisterModel>>();
-        // var mockEmailSender = new Mock<IEmailSender>();
-        //
-        // Act & Assert
-        // Assert.Throws<NotSupportedException>(() =>
-        //     new RegisterModel(mockUserManager.Object, mockUserStore.Object, mockSignInManager.Object, mockLogger.Object, mockEmailSender.Object));
-        //
-        // Because constructing/mocking UserManager and SignInManager requires many framework types, this test is marked skipped.
-    }
-
-    /// <summary>
-    /// Verifies that the constructor successfully constructs a RegisterModel when the provided UserManager
-    /// indicates it supports email and the provided user store implements IUserEmailStore.
-    /// Input conditions: UserManager.SupportsUserEmail == true, userStore is IUserEmailStore{IdentityUser<Guid>}.
-    /// Expected result: Construction succeeds and no exception is thrown.
-    /// 
-    /// Note: This test is intentionally skipped. To implement, provide a properly-configured Mock<UserManager<IdentityUser<Guid>>>
-    /// with SupportsUserEmail returning true, and a mock IUserEmailStore passed as the userStore. See comments below.
-    /// </summary>
-    [Fact(Skip = "Requires factory or properly-configured Mock<UserManager<IdentityUser<Guid>>> and SignInManager. See test comments.")]
-    public void RegisterModel_Constructor_UserManagerSupportsEmail_CreatesInstance()
-    {
-        // Arrange
-        // TODO: Create mocks with the necessary constructor arguments and setups:
-        //
-        // var mockEmailStore = new Mock<IUserEmailStore<IdentityUser<Guid>>>();
-        // var mockUserStore = mockEmailStore.As<IUserStore<IdentityUser<Guid>>>();
-        //
-        // var mockUserManager = new Mock<UserManager<IdentityUser<Guid>>>( /* supply required ctor args */ );
-        // mockUserManager.SetupGet(m => m.SupportsUserEmail).Returns(true);
-        //
-        // var mockSignInManager = new Mock<SignInManager<IdentityUser<Guid>>>( /* supply required ctor args */ );
-        // var mockLogger = new Mock<ILogger<RegisterModel>>();
-        // var mockEmailSender = new Mock<IEmailSender>();
-        //
-        // Act
-        // var model = new RegisterModel(mockUserManager.Object, mockUserStore.Object, mockSignInManager.Object, mockLogger.Object, mockEmailSender.Object);
-        //
-        // Assert
-        // Assert.NotNull(model);
-        //
-        // Notes:
-        // - Ensure the Mock<UserManager<IdentityUser<Guid>>> is constructed with valid ctor args or use a factory/helper
-        //   available in your test suite to create UserManager instances.
-        // - If UserManager.SupportsUserEmail is not virtual in your environment, you may need to supply a real
-        //   UserManager constructed with an IUserStore that implements IUserEmailStore so SupportsUserEmail resolves to true.
-        //
-        // Because constructing/mocking UserManager and SignInManager requires many framework types, this test is marked skipped.
-    }
+        Enumerable.Empty<AuthenticationScheme>(),
+        new List<AuthenticationScheme>
+        {
+            new AuthenticationScheme("Provider1", "Provider One", typeof(DummyAuthHandler))
+        },
+        new List<AuthenticationScheme>
+        {
+            new AuthenticationScheme("ProviderA", "A", typeof(DummyAuthHandler)),
+            new AuthenticationScheme("ProviderB", "B", typeof(DummyAuthHandler)),
+            new AuthenticationScheme("ProviderC", "C", typeof(DummyAuthHandler))
+        },
+    };
 
     /// <summary>
     /// Tests that when the PageModel's ModelState is invalid OnPostAsync returns PageResult
@@ -247,7 +168,7 @@ public class RegisterModelTests
 
         signInManagerMock
             .Setup(s => s.GetExternalAuthenticationSchemesAsync())
-            .ReturnsAsync(Enumerable.Empty<AuthenticationScheme>());
+            .ReturnsAsync([]);
 
         var loggerMock = new Mock<ILogger<RegisterModel>>();
         var emailSenderMock = new Mock<IEmailSender>();
@@ -329,7 +250,7 @@ public class RegisterModelTests
 
         signInManagerMock
             .Setup(s => s.GetExternalAuthenticationSchemesAsync())
-            .ReturnsAsync(Enumerable.Empty<AuthenticationScheme>());
+            .ReturnsAsync([]);
 
         signInManagerMock
             .Setup(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<bool>(), It.IsAny<string>()))

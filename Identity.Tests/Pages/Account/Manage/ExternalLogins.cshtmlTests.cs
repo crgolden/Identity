@@ -206,7 +206,7 @@ public class ExternalLoginsModelTests
             .Setup(sm => sm.GetExternalLoginInfoAsync(userIdString))
             .ReturnsAsync(info);
 
-        IdentityResult result = addSucceeded
+        var result = addSucceeded
             ? IdentityResult.Success
             : IdentityResult.Failed(new IdentityError { Description = "fail" });
 
@@ -283,12 +283,12 @@ public class ExternalLoginsModelTests
         var model = new ExternalLoginsModel(userManagerMock.Object, signInManagerMock.Object, Mock.Of<IUserStore<IdentityUser<Guid>>>());
 
         // Act
-        IActionResult result = await model.OnPostRemoveLoginAsync("provider", "key");
+        var result = await model.OnPostRemoveLoginAsync("provider", "key");
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
         Assert.NotNull(notFound.Value);
-        string asString = notFound.Value.ToString() ?? string.Empty;
+        var asString = notFound.Value.ToString() ?? string.Empty;
         Assert.Contains(expectedUserId, asString);
 
         // Ensure RemoveLoginAsync and RefreshSignInAsync were not invoked
@@ -352,7 +352,7 @@ public class ExternalLoginsModelTests
         Assert.Null(model.StatusMessage);
 
         // Act
-        IActionResult result = await model.OnPostRemoveLoginAsync(loginProvider, providerKey);
+        var result = await model.OnPostRemoveLoginAsync(loginProvider, providerKey);
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
@@ -416,7 +416,7 @@ public class ExternalLoginsModelTests
         var model = new ExternalLoginsModel(userManagerMock.Object, signInManagerMock.Object, Mock.Of<IUserStore<IdentityUser<Guid>>>());
 
         // Act
-        IActionResult result = await model.OnPostRemoveLoginAsync(loginProvider, providerKey);
+        var result = await model.OnPostRemoveLoginAsync(loginProvider, providerKey);
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
@@ -426,13 +426,13 @@ public class ExternalLoginsModelTests
         signInManagerMock.Verify(s => s.RefreshSignInAsync(It.Is<IdentityUser<Guid>>(x => x == user)), Times.Once);
     }
 
-    public static IEnumerable<object?[]> Providers()
+    public static TheoryData<string?> Providers() => new()
     {
-        yield return new object?[] { "Google" };
-        yield return new object?[] { "" }; // empty provider
-        yield return new object?[] { "   " }; // whitespace-only provider
-        yield return new object?[] { "prov!der@#%" }; // special chars
-    }
+        "Google",
+        "", // empty provider
+        "   ", // whitespace-only provider
+        "prov!der@#%", // special chars
+    };
 
     /// <summary>
     /// Verifies that OnPostLinkLoginAsync signs out the external cookie, configures external authentication properties,
@@ -443,7 +443,7 @@ public class ExternalLoginsModelTests
     /// </summary>
     [Theory]
     [MemberData(nameof(Providers))]
-    public async Task OnPostLinkLoginAsync_Provider_ReturnsChallengeAndSignsOut(string provider)
+    public async Task OnPostLinkLoginAsync_Provider_ReturnsChallengeAndSignsOut(string? provider)
     {
         // Arrange
         // Mock UserManager
@@ -452,8 +452,8 @@ public class ExternalLoginsModelTests
             mockUserStoreForUserManager,
             Mock.Of<IOptions<IdentityOptions>>(),
             Mock.Of<IPasswordHasher<IdentityUser<Guid>>>(),
-            new IUserValidator<IdentityUser<Guid>>[] { },
-            new IPasswordValidator<IdentityUser<Guid>>[] { },
+            Array.Empty<IUserValidator<IdentityUser<Guid>>>(),
+            Array.Empty<IPasswordValidator<IdentityUser<Guid>>>(),
             Mock.Of<ILookupNormalizer>(),
             Mock.Of<IdentityErrorDescriber>(),
             Mock.Of<IServiceProvider>(),
@@ -517,7 +517,8 @@ public class ExternalLoginsModelTests
         };
 
         // Provide a non-null User to PageModel (DefaultHttpContext has an empty ClaimsPrincipal)
-        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.NameIdentifier, expectedUserId) }));
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, expectedUserId)
+        ]));
 
         // Construct model and inject Url and PageContext (to set HttpContext and Url)
         var model = new ExternalLoginsModel(mockUserManager.Object, mockSignInManager.Object, mockUserStore.Object)
@@ -549,12 +550,12 @@ public class ExternalLoginsModelTests
         mockUserManager.Verify(u => u.GetUserId(httpContext.User), Times.Once);
     }
 
-    public static IEnumerable<object[]> ShowRemoveData()
+    public static TheoryData<int, string?, bool> ShowRemoveData() => new()
     {
         // loginCount, passwordHash, expectedShowRemoveButton
-        yield return new object[] { 0, null, false };          // no logins, no password -> cannot remove
-        yield return new object[] { 0, "hash", true };         // no logins, but has password -> can remove
-        yield return new object[] { 1, null, false };          // single external login, no password -> cannot remove
-        yield return new object[] { 2, null, true };           // multiple external logins -> can remove
-    }
+        { 0, null, false },          // no logins, no password -> cannot remove
+        { 0, "hash", true },         // no logins, but has password -> can remove
+        { 1, null, false },          // single external login, no password -> cannot remove
+        { 2, null, true },           // multiple external logins -> can remove
+    };
 }

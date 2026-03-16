@@ -75,9 +75,9 @@ public class ResetAuthenticatorModelTests
         var model = new ResetAuthenticatorModel(userManagerMock.Object, signInManager, loggerMock.Object);
 
         // Set up a minimal PageContext with a ClaimsPrincipal so PageModel.User is available
-        var principal = new ClaimsPrincipal(new ClaimsIdentity(new Claim[] {
+        var principal = new ClaimsPrincipal(new ClaimsIdentity([
             new Claim(ClaimTypes.NameIdentifier, expectedUserId ?? string.Empty)
-        }, "test"));
+        ], "test"));
 
         model.PageContext = new PageContext
         {
@@ -88,7 +88,7 @@ public class ResetAuthenticatorModelTests
         };
 
         // Act
-        IActionResult result = await model.OnGet();
+        var result = await model.OnGet();
 
         // Assert
         Assert.IsType(expectedResultType, result);
@@ -106,15 +106,17 @@ public class ResetAuthenticatorModelTests
         }
     }
 
-    public static IEnumerable<object[]> OnGetTestCases()
+    public static TheoryData<bool, string?, Type, string?> OnGetTestCases()
     {
-        // Case: user exists -> expect PageResult
-        yield return new object[] { true, null, typeof(PageResult), null };
-
-        // Case: user not found -> expect NotFound with ID embedded in message
         const string missingUserId = "user-123";
-        string expectedMessage = $"Unable to load user with ID '{missingUserId}'.";
-        yield return new object[] { false, missingUserId, typeof(NotFoundObjectResult), expectedMessage };
+        var expectedMessage = $"Unable to load user with ID '{missingUserId}'.";
+        return new TheoryData<bool, string?, Type, string?>
+        {
+            // Case: user exists -> expect PageResult
+            { true, null, typeof(PageResult), null },
+            // Case: user not found -> expect NotFound with ID embedded in message
+            { false, missingUserId, typeof(NotFoundObjectResult), expectedMessage },
+        };
     }
 
     /// <summary>
@@ -168,7 +170,7 @@ public class ResetAuthenticatorModelTests
         model.PageContext = new PageContext { HttpContext = new DefaultHttpContext { User = principal } };
 
         // Act
-        IActionResult result = await model.OnPostAsync();
+        var result = await model.OnPostAsync();
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
@@ -250,7 +252,7 @@ public class ResetAuthenticatorModelTests
         model.PageContext = new PageContext { HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity()) } };
 
         // Act
-        IActionResult result = await model.OnPostAsync();
+        var result = await model.OnPostAsync();
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);

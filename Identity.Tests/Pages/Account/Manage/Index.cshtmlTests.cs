@@ -86,33 +86,17 @@ public class IndexModelTests
         userManagerMock.Verify(u => u.GetPhoneNumberAsync(user), Times.Once);
     }
 
-    public static IEnumerable<object? []> ValidUserData()
+    public static TheoryData<string?, string?> ValidUserData() => new()
     {
         // Typical values
-        yield return new object? []
-        {
-            "normalUser",
-            "+1234567890"
-        };
+        { "normalUser", "+1234567890" },
         // Empty strings
-        yield return new object? []
-        {
-            string.Empty,
-            string.Empty
-        };
+        { string.Empty, string.Empty },
         // Whitespace and special unicode
-        yield return new object? []
-        {
-            "   ",
-            "🙂-Ⓣest"
-        };
+        { "   ", "🙂-Ⓣest" },
         // Very long username and null phone number
-        yield return new object? []
-        {
-            new string ('a', 500),
-            null
-        };
-    }
+        { new string('a', 500), null },
+    };
 
     /// <summary>
     /// Verifies that when no user is returned from UserManager.GetUserAsync the handler returns NotFound
@@ -132,7 +116,7 @@ public class IndexModelTests
         userManagerMock.Setup(um => um.GetUserId(It.IsAny<ClaimsPrincipal>())).Returns(expectedUserId);
         var page = new IndexModel(userManagerMock.Object, signInManagerMock.Object);
         // Act
-        IActionResult result = await page.OnPostAsync();
+        var result = await page.OnPostAsync();
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
         Assert.Contains(expectedUserId, notFound.Value?.ToString() ?? string.Empty);
@@ -167,7 +151,7 @@ public class IndexModelTests
             PhoneNumber = "000"
         };
         // Act
-        IActionResult result = await page.OnPostAsync();
+        var result = await page.OnPostAsync();
         // Assert
         Assert.IsType<PageResult>(result);
         userManagerMock.Verify(u => u.GetPhoneNumberAsync(It.IsAny<IdentityUser<Guid>>()), Times.Once);
@@ -175,70 +159,22 @@ public class IndexModelTests
         signInManagerMock.Verify(s => s.RefreshSignInAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
     }
 
-    public static IEnumerable<object[]> PhoneUpdateCases()
+    public static TheoryData<string?, string?, bool, bool, bool, string> PhoneUpdateCases() => new()
     {
         // existingPhone, inputPhone, setSucceeds, expectSetCall, expectRefreshCall, expectedStatusMessage
         // 1) Both null -> no change, refresh occurs, success message
-        yield return new object[]
-        {
-            (string? )null,
-            (string? )null,
-            false,
-            false,
-            true,
-            "Your profile has been updated"
-        };
+        { null, null, false, false, true, "Your profile has been updated" },
         // 2) Same non-null phone -> no change, refresh occurs, success message
-        yield return new object[]
-        {
-            "123",
-            "123",
-            false,
-            false,
-            true,
-            "Your profile has been updated"
-        };
+        { "123", "123", false, false, true, "Your profile has been updated" },
         // 3) Changed phone -> set succeeds -> refresh occurs, success message
-        yield return new object[]
-        {
-            "123",
-            "456",
-            true,
-            true,
-            true,
-            "Your profile has been updated"
-        };
+        { "123", "456", true, true, true, "Your profile has been updated" },
         // 4) Changed phone -> set fails -> no refresh, unexpected error message
-        yield return new object[]
-        {
-            "123",
-            "456",
-            false,
-            true,
-            false,
-            "Unexpected error when trying to set phone number."
-        };
+        { "123", "456", false, true, false, "Unexpected error when trying to set phone number." },
         // 5) existing not null, input null (attempt to remove phone) -> set succeeds -> refresh occurs
-        yield return new object[]
-        {
-            "123",
-            (string? )null,
-            true,
-            true,
-            true,
-            "Your profile has been updated"
-        };
+        { "123", null, true, true, true, "Your profile has been updated" },
         // 6) existing null, input empty string (attempt to set empty) -> set succeeds -> refresh occurs
-        yield return new object[]
-        {
-            (string? )null,
-            string.Empty,
-            true,
-            true,
-            true,
-            "Your profile has been updated"
-        };
-    }
+        { null, string.Empty, true, true, true, "Your profile has been updated" },
+    };
 
     /// <summary>
     /// Verifies the IndexModel constructor can be invoked with valid UserManager and SignInManager
@@ -273,41 +209,4 @@ public class IndexModelTests
         Assert.NotNull(model);
     }
 
-    /// <summary>
-    /// Verifies behavior when null dependencies are (attempted to be) passed to the constructor.
-    /// Input conditions: null for one or both constructor parameters.
-    /// Expected result: documentation indicates constructor does not perform null checks; however,
-    /// instantiating IndexModel with nulls may lead to later NullReferenceException at runtime.
-    /// This test is skipped because passing null to non-nullable parameters in production code is not
-    /// recommended and constructing valid non-null dependencies is required for meaningful assertions.
-    /// </summary>
-    [Theory(Skip = "Skipped: The constructor parameters are concrete framework types that cannot be trivially mocked here. If you must test null handling, construct the mocks for UserManager/SignInManager as in the previous test and then pass null for one parameter to validate behavior.")]
-    [InlineData(false, false)]
-    [InlineData(true, false)]
-    [InlineData(false, true)]
-    [InlineData(true, true)]
-#pragma warning disable xUnit1026
-    public void IndexModel_Constructor_NullabilityCases_Skipped(bool passNullUserManager, bool passNullSignInManager)
-#pragma warning restore xUnit1026
-    {
-        // Arrange
-        // Respect nullable annotations in test code by using nullable types for parameters that may be null.
-#pragma warning disable CS0219 // Variable is assigned but its value is never used
-        UserManager<IdentityUser<Guid>>? userManager = null;
-        SignInManager<IdentityUser<Guid>>? signInManager = null;
-#pragma warning restore CS0219 // Variable is assigned but its value is never used
-        // TODO: If passNullUserManager == false or passNullSignInManager == false, create the concrete mocks
-        // per guidance in the previous test and assign to the corresponding local variables.
-        //
-        // Example:
-        // if (!passNullUserManager) userManager = mockedUserManagerInstance;
-        // if (!passNullSignInManager) signInManager = mockedSignInManagerInstance;
-        //
-        // Act & Assert
-        // The constructor currently does not validate nulls; it will accept null values and assign them to readonly fields.
-        // However, since these fields are private and not directly observable without reflection (disallowed),
-        // meaningful validation requires invoking members that use these dependencies.
-        //
-        // This test remains skipped until proper mocks are provided.
-    }
 }

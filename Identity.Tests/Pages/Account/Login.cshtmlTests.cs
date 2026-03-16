@@ -34,18 +34,18 @@ public class LoginModelTests
     {
         // Arrange
         SignInManager<IdentityUser<Guid>>? signInManager = null;
-        ILogger<LoginModel>? logger = provideLogger
+        var logger = provideLogger
             ? new Mock<ILogger<LoginModel>>().Object
             : null;
 
         // Act
         LoginModel model = null!;
-        Exception? ex = Record.Exception(() => model = new LoginModel(signInManager, logger));
+        var ex = Record.Exception(() => model = new LoginModel(signInManager, logger));
 
         // Assert
         Assert.Null(ex);
         Assert.NotNull(model);
-        Assert.IsAssignableFrom<PageModel>(model);
+        Assert.IsType<PageModel>(model, exactMatch: false);
         // Constructor initializes Input with a default InputModel instance.
         Assert.NotNull(model.Input);
         // ReturnUrl is not set by constructor; expect null.
@@ -106,7 +106,7 @@ public class LoginModelTests
             { CallBase = false };
 
         signInManagerMock.Setup(s => s.GetExternalAuthenticationSchemesAsync())
-            .ReturnsAsync(Enumerable.Empty<AuthenticationScheme>());
+            .ReturnsAsync([]);
 
         var loggerMock = new Mock<ILogger<LoginModel>>();
         var urlHelperMock = new Mock<IUrlHelper>();

@@ -71,17 +71,29 @@ public class LoginWith2faModel : PageModel
 
         if (result.Succeeded)
         {
-            _logger.LogTrace("User with ID '{UserId}' logged in with 2fa.", userId);
+            if (_logger.IsEnabled(LogLevel.Trace))
+            {
+                _logger.LogTrace("User with ID '{UserId}' logged in with 2fa.", userId);
+            }
+
             return LocalRedirect(returnUrl);
         }
 
         if (result.IsLockedOut)
         {
-            _logger.LogTrace("User with ID '{UserId}' account locked out.", userId);
+            if (_logger.IsEnabled(LogLevel.Trace))
+            {
+                _logger.LogTrace("User with ID '{UserId}' account locked out.", userId);
+            }
+
             return RedirectToPage("./Lockout");
         }
 
-        _logger.LogTrace("Invalid authenticator code entered for user with ID '{UserId}'.", userId);
+        if (_logger.IsEnabled(LogLevel.Trace))
+        {
+            _logger.LogTrace("Invalid authenticator code entered for user with ID '{UserId}'.", userId);
+        }
+
         ModelState.AddModelError(Empty, "Invalid authenticator code.");
         return Page();
     }

@@ -131,7 +131,7 @@ public class DeletePersonalDataModelTests
         var model = new DeletePersonalDataModel(mockUserManager.Object, signInManagerMock.Object, logger);
 
         // Ensure PageModel.User is populated (the actual claims are not used by the mock setup that uses It.IsAny)
-        var principal = new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { }));
+        var principal = new ClaimsPrincipal(new ClaimsIdentity([]));
         model.PageContext = new PageContext
         {
             HttpContext = new DefaultHttpContext { User = principal }

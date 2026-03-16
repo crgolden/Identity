@@ -2,12 +2,11 @@
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using static Array;
 
 public class ShowRecoveryCodesModel : PageModel
 {
     [TempData]
-    public string[] RecoveryCodes { get; set; } = Empty<string>();
+    public string[] RecoveryCodes { get; set; } = Array.Empty<string>();
 
     [TempData]
     public string? StatusMessage { get; set; }

@@ -34,7 +34,11 @@ public class DownloadPersonalDataModel : PageModel
             return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
         }
 
-        _logger.LogTrace("User with ID '{UserId}' asked for their personal data.", _userManager.GetUserId(User));
+        if (_logger.IsEnabled(LogLevel.Trace))
+        {
+            _logger.LogTrace("User with ID '{UserId}' asked for their personal data.", _userManager.GetUserId(User));
+        }
+
         var personalData = typeof(IdentityUser<Guid>)
             .GetProperties()
             .Where(x => IsDefined(x, typeof(PersonalDataAttribute)))

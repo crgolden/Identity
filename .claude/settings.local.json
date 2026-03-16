@@ -3,7 +3,8 @@
     "allow": [
       "Bash(dotnet run:*)",
       "Bash(dotnet build:*)",
-      "Bash(dotnet test:*)"
+      "Bash(dotnet test:*)",
+      "WebFetch(domain:sonarcloud.io)"
     ]
   }
 }

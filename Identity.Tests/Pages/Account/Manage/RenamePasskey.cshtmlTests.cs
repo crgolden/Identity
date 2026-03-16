@@ -33,7 +33,8 @@ public class RenamePasskeyModelTests
         var mockDb = new Mock<ApplicationDbContext>(dbOptions);
         var model = new RenamePasskeyModel(mockUserManager.Object, mockDb.Object);
         // Provide a ClaimsPrincipal so the methods receive a non-null principal
-        var principal = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.NameIdentifier, "expected-user-id") }));
+        var principal = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "expected-user-id")
+        ]));
         model.PageContext = new PageContext
         {
             HttpContext = new DefaultHttpContext
@@ -42,10 +43,10 @@ public class RenamePasskeyModelTests
             }
         };
         // Act
-        IActionResult result = await model.OnGetAsync("any-id");
+        var result = await model.OnGetAsync("any-id");
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
-        string message = Assert.IsType<string>(notFound.Value);
+        var message = Assert.IsType<string>(notFound.Value);
         Assert.Contains("Unable to load user with ID 'expected-user-id'.", message);
     }
 
@@ -76,9 +77,9 @@ public class RenamePasskeyModelTests
                 User = principal
             }
         };
-        string invalidId = "!!!invalid-base64url$$$";
+        var invalidId = "!!!invalid-base64url$$$";
         // Act
-        IActionResult result = await model.OnGetAsync(invalidId);
+        var result = await model.OnGetAsync(invalidId);
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("./Passkeys", redirect.PageName);
@@ -117,12 +118,12 @@ public class RenamePasskeyModelTests
             }
         };
         // Create a valid Base64Url string for bytes [1,2,3] -> "AQID"
-        string validId = "AQID";
+        var validId = "AQID";
         // Act
-        IActionResult result = await model.OnGetAsync(validId);
+        var result = await model.OnGetAsync(validId);
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
-        string message = Assert.IsType<string>(notFound.Value);
+        var message = Assert.IsType<string>(notFound.Value);
         Assert.Contains("Unable to load passkey ID 'user-42'.", message);
     }
 
@@ -190,7 +191,7 @@ public class RenamePasskeyModelTests
     /// - A real ApplicationDbContext constructed with default DbContextOptions and the same UserManager instance.
     /// This member returns tuples of (ApplicationDbContext, UserManager&lt;IdentityUser&lt;Guid&gt; &gt;).
     /// </summary>
-    public static IEnumerable<object? []> ValidConstructorArguments()
+    public static TheoryData<ApplicationDbContext, UserManager<IdentityUser<Guid>>> ValidConstructorArguments()
     {
         // Build a usable UserManager instance using lightweight mocked collaborators.
         var store = Mock.Of<IUserStore<IdentityUser<Guid>>>();
@@ -205,18 +206,13 @@ public class RenamePasskeyModelTests
         var userManager = new UserManager<IdentityUser<Guid>>(store, identityOptions, passwordHasher, userValidators, passwordValidators, lookupNormalizer, errorDescriber, services, logger);
         // Case 1: ApplicationDbContext with default options (no DB provider)
         var mockedDbContext = new ApplicationDbContext(new DbContextOptions<ApplicationDbContext>());
-        yield return new object? []
-        {
-            mockedDbContext,
-            userManager
-        };
         // Case 2: concrete ApplicationDbContext with default options (no DB provider configured).
         var realOptions = new DbContextOptions<ApplicationDbContext>();
         var realDbContext = new ApplicationDbContext(realOptions);
-        yield return new object? []
+        return new TheoryData<ApplicationDbContext, UserManager<IdentityUser<Guid>>>
         {
-            realDbContext,
-            userManager
+            { mockedDbContext, userManager },
+            { realDbContext, userManager },
         };
     }
 
@@ -257,7 +253,7 @@ public class RenamePasskeyModelTests
         var store = Mock.Of<IUserStore<IdentityUser<Guid>>>();
         var identityOptions = Options.Create(new IdentityOptions());
         var passwordHasher = Mock.Of<IPasswordHasher<IdentityUser<Guid>>>();
-        var userManager = new UserManager<IdentityUser<Guid>>(store, identityOptions, passwordHasher, Enumerable.Empty<IUserValidator<IdentityUser<Guid>>>(), Enumerable.Empty<IPasswordValidator<IdentityUser<Guid>>>(), Mock.Of<ILookupNormalizer>(), new IdentityErrorDescriber(), Mock.Of<IServiceProvider>(), Mock.Of<ILogger<UserManager<IdentityUser<Guid>>>>());
+        var userManager = new UserManager<IdentityUser<Guid>>(store, identityOptions, passwordHasher, [], [], Mock.Of<ILookupNormalizer>(), new IdentityErrorDescriber(), Mock.Of<IServiceProvider>(), Mock.Of<ILogger<UserManager<IdentityUser<Guid>>>>());
         var dbContext = new ApplicationDbContext(new DbContextOptionsBuilder<ApplicationDbContext>().Options);
         // Act
         var first = new RenamePasskeyModel(userManager, dbContext);

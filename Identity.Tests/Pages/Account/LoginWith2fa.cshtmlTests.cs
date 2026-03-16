@@ -50,7 +50,7 @@ public class LoginWith2faModelTests
         model.ModelState.AddModelError("SomeKey", "Some error");
 
         // Act
-        IActionResult result = await model.OnPostAsync(true, "/irrelevant");
+        var result = await model.OnPostAsync(true, "/irrelevant");
 
         // Assert
         Assert.IsType<PageResult>(result);
@@ -143,7 +143,7 @@ public class LoginWith2faModelTests
         var model = new LoginWith2faModel(signInManagerMock.Object, userManagerMock.Object, loggerMock.Object);
 
         // Act
-        IActionResult result = await model.OnGetAsync(rememberMe, returnUrl);
+        var result = await model.OnGetAsync(rememberMe, returnUrl);
 
         // Assert
         Assert.IsType<PageResult>(result);
@@ -155,15 +155,15 @@ public class LoginWith2faModelTests
     /// Provides combination of rememberMe and returnUrl values to exercise edge cases for strings.
     /// Includes null, empty, whitespace-only, and a long string.
     /// </summary>
-    public static IEnumerable<object?[]> ValidUserCases()
+    public static TheoryData<bool, string?> ValidUserCases() => new()
     {
-        yield return new object?[] { false, null };
-        yield return new object?[] { true, "/" };
-        yield return new object?[] { false, "" };
-        yield return new object?[] { true, "   " };
-        yield return new object?[] { false, new string('a', 1024) }; // long string
-        yield return new object?[] { true, "special-chars-!@#$%^&*()\t\n" };
-    }
+        { false, null },
+        { true, "/" },
+        { false, "" },
+        { true, "   " },
+        { false, new string('a', 1024) }, // long string
+        { true, "special-chars-!@#$%^&*()\t\n" },
+    };
 
     // Helper to create the complex mocks required by SignInManager and UserManager.
     // All helpers are inside the test class as required.

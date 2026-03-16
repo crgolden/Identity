@@ -1,5 +1,5 @@
 window.addEventListener("load", () => {
-    const uri = document.getElementById("qrCodeData").getAttribute('data-url');
+    const uri = document.getElementById("qrCodeData").dataset.url;
     new QRCode(document.getElementById("qrCode"),
         {
             text: uri,

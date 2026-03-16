@@ -82,13 +82,6 @@ jobs:
             "dotnet test --project Identity.Tests --no-build --configuration Release" `
             -f xml -o "coverage.xml"
 
-      - name: End Sonar analysis
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        shell: powershell
-        run: |
-          ${{ runner.temp }}\scanner\dotnet-sonarscanner end /d:sonar.token="$env:SONAR_TOKEN"
-
       - name: dotnet publish
         run: >
           dotnet publish Identity.Api/Identity.Api.csproj
@@ -101,6 +94,13 @@ jobs:
         with:
           name: .net-app
           path: ${{ github.workspace }}\publish
+
+      - name: End Sonar analysis
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        shell: powershell
+        run: |
+          ${{ runner.temp }}\scanner\dotnet-sonarscanner end /d:sonar.token="$env:SONAR_TOKEN"
 
       - name: Upload dacpac for deployment job
         uses: actions/upload-artifact@v4
