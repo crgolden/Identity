@@ -1,4 +1,5 @@
-﻿namespace Identity.Tests.Pages.Account.Manage;
+﻿#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+namespace Identity.Tests.Pages.Account.Manage;
 
 using Identity.Pages.Account.Manage;
 using Microsoft.AspNetCore.Http;

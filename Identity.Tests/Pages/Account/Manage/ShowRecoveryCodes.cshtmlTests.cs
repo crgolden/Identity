@@ -23,7 +23,9 @@ public class ShowRecoveryCodesModelTests
         // Arrange
         var model = new ShowRecoveryCodesModel
         {
+#pragma warning disable CS8601 // Possible null reference assignment.
             RecoveryCodes = recoveryCodes
+#pragma warning restore CS8601 // Possible null reference assignment.
         };
 
         // Act
@@ -48,7 +50,9 @@ public class ShowRecoveryCodesModelTests
         // Arrange
         var model = new ShowRecoveryCodesModel
         {
+#pragma warning disable CS8601 // Possible null reference assignment.
             RecoveryCodes = recoveryCodes
+#pragma warning restore CS8601 // Possible null reference assignment.
         };
 
         // Act

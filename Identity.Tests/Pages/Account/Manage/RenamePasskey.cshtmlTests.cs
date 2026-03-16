@@ -1,4 +1,6 @@
-﻿namespace Identity.Tests.Pages.Account.Manage;
+﻿#pragma warning disable CS8604 // Possible null reference argument.
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+namespace Identity.Tests.Pages.Account.Manage;
 
 using System.Linq.Expressions;
 using System.Security.Claims;

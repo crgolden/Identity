@@ -1,4 +1,6 @@
-﻿namespace Identity.Tests.Pages.Account.Manage;
+﻿#pragma warning disable CS8604 // Possible null reference argument.
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+namespace Identity.Tests.Pages.Account.Manage;
 
 using System.Security.Claims;
 using Identity.Pages.Account.Manage;
@@ -81,8 +83,7 @@ public class ExternalLoginsModelTests
         var expectedUserId = "missing-user-id";
         var userStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
 
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
-            userStore, null, null, null, null, null, null, null, null);
+        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(userStore, null, null, null, null, null, null, null, null);
         userManagerMock
             .Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
             .ReturnsAsync((IdentityUser<Guid>?)null);
@@ -473,7 +474,7 @@ public class ExternalLoginsModelTests
             Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
 
         // Prepare AuthenticationProperties that the SignInManager should return
-        var expectedProperties = new AuthenticationProperties(new Dictionary<string, string> { { "k", "v" } });
+        var expectedProperties = new AuthenticationProperties(new Dictionary<string, string?> { { "k", "v" } });
 
         // We'll set the UrlHelper to return this redirect
         const string expectedRedirect = "/ExternalLogins?handler=LinkLoginCallback";

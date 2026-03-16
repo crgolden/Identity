@@ -1,4 +1,5 @@
-﻿global using System;
+﻿#pragma warning disable SA1200
+global using System;
 global using System.Collections.Generic;
 global using System.IO;
 global using System.Linq;
@@ -15,3 +16,4 @@ global using static System.ArgumentNullException;
 global using static System.String;
 global using static System.Text.Encoding;
 global using static Microsoft.AspNetCore.WebUtilities.WebEncoders;
+#pragma warning disable SA1200

@@ -21,11 +21,7 @@ public class ResendEmailConfirmationModel : PageModel
     }
 
     [BindProperty]
-    public InputModel? Input { get; set; }
-
-    public void OnGet()
-    {
-    }
+    public InputModel Input { get; set; } = new InputModel();
 
     public async Task<IActionResult> OnPostAsync()
     {

@@ -63,7 +63,7 @@ public class EmailSenderTests
 
         // The recipient list should have exactly one entry added by SendEmailAsync.
         Assert.NotNull(capturedMessage.To);
-        Assert.Equal(1, capturedMessage.To.Count);
+        Assert.Single(capturedMessage.To);
     }
 
     /// <summary>

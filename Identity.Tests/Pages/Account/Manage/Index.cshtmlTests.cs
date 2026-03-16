@@ -1,4 +1,5 @@
-﻿namespace Identity.Tests.Pages.Account.Manage;
+﻿#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+namespace Identity.Tests.Pages.Account.Manage;
 
 using System.Security.Claims;
 using Identity.Pages.Account.Manage;
@@ -285,12 +286,16 @@ public class IndexModelTests
     [InlineData(true, false)]
     [InlineData(false, true)]
     [InlineData(true, true)]
+#pragma warning disable xUnit1026
     public void IndexModel_Constructor_NullabilityCases_Skipped(bool passNullUserManager, bool passNullSignInManager)
+#pragma warning restore xUnit1026
     {
         // Arrange
         // Respect nullable annotations in test code by using nullable types for parameters that may be null.
+#pragma warning disable CS0219 // Variable is assigned but its value is never used
         UserManager<IdentityUser<Guid>>? userManager = null;
         SignInManager<IdentityUser<Guid>>? signInManager = null;
+#pragma warning restore CS0219 // Variable is assigned but its value is never used
         // TODO: If passNullUserManager == false or passNullSignInManager == false, create the concrete mocks
         // per guidance in the previous test and assign to the corresponding local variables.
         //

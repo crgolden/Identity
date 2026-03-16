@@ -1,3 +1,4 @@
+#pragma warning disable SA1200
 using System.Net.Http.Headers;
 using Azure.Core;
 using Azure.Identity;
@@ -21,6 +22,7 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 using Resend;
 using Serilog;
+#pragma warning restore SA1200
 
 Log.Logger = new LoggerConfiguration().WriteTo.Console().CreateBootstrapLogger();
 

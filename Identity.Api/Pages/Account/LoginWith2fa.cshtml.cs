@@ -26,7 +26,7 @@ public class LoginWith2faModel : PageModel
     }
 
     [BindProperty]
-    public InputModel? Input { get; set; }
+    public InputModel Input { get; set; } = new InputModel();
 
     public bool RememberMe { get; set; }
 

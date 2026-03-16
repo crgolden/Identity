@@ -22,7 +22,7 @@ public class DeletePersonalDataModel : PageModel
     }
 
     [BindProperty]
-    public InputModel? Input { get; set; }
+    public InputModel Input { get; set; } = new InputModel();
 
     public bool RequirePassword { get; set; }
 

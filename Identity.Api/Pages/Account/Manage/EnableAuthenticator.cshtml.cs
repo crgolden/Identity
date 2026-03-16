@@ -12,7 +12,9 @@ using static String;
 
 public class EnableAuthenticatorModel : PageModel
 {
+#pragma warning disable S1075
     private const string AuthenticatorUriFormat = "otpauth://totp/{0}:{1}?secret={2}&issuer={0}&digits=6";
+#pragma warning restore S1075
 
     private readonly UserManager<IdentityUser<Guid>> _userManager;
     private readonly ILogger<EnableAuthenticatorModel> _logger;
@@ -39,7 +41,7 @@ public class EnableAuthenticatorModel : PageModel
     public string? StatusMessage { get; set; }
 
     [BindProperty]
-    public InputModel? Input { get; set; }
+    public InputModel Input { get; set; } = new InputModel();
 
     public async Task<IActionResult> OnGetAsync()
     {

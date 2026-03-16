@@ -1,4 +1,6 @@
-﻿namespace Identity.Tests.Pages.Account.Manage;
+﻿#pragma warning disable CS8604 // Possible null reference argument.
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+namespace Identity.Tests.Pages.Account.Manage;
 
 using System.Security.Claims;
 using Identity.Pages.Account.Manage;
@@ -279,8 +281,8 @@ public class ResetAuthenticatorModelTests
         var loggerMock = new Mock<ILogger<ResetAuthenticatorModel>>();
 
         // TODO: Acquire or construct valid instances of these dependencies in the test environment.
-        UserManager<IdentityUser<Guid>> userManager = null;
-        SignInManager<IdentityUser<Guid>> signInManager = null;
+        UserManager<IdentityUser<Guid>>? userManager = null;
+        SignInManager<IdentityUser<Guid>>? signInManager = null;
 
         // Act
         // The test was previously skipped. For the purpose of verifying the constructor does not throw,
@@ -305,8 +307,8 @@ public class ResetAuthenticatorModelTests
     {
         // Arrange
         var loggerMock = new Mock<ILogger<ResetAuthenticatorModel>>();
-        UserManager<IdentityUser<Guid>> nullUserManager = null;
-        SignInManager<IdentityUser<Guid>> nullSignInManager = null;
+        UserManager<IdentityUser<Guid>>? nullUserManager = null;
+        SignInManager<IdentityUser<Guid>>? nullSignInManager = null;
 
         // Act
         var model = new ResetAuthenticatorModel(nullUserManager, nullSignInManager, loggerMock.Object);

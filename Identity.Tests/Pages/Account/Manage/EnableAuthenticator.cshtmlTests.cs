@@ -1,4 +1,6 @@
-﻿namespace Identity.Tests.Pages.Account.Manage;
+﻿#pragma warning disable CS8604 // Possible null reference argument.
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+namespace Identity.Tests.Pages.Account.Manage;
 
 using System.Security.Claims;
 using System.Text.Encodings.Web;
@@ -72,7 +74,7 @@ public partial class EnableAuthenticatorModelTests
         var pwdValidators = new List<IPasswordValidator<IdentityUser<Guid>>>();
         var keyNormalizer = new UpperInvariantLookupNormalizer();
         var errors = new IdentityErrorDescriber();
-        IServiceProvider services = null;
+        IServiceProvider? services = null;
         var umLogger = new Mock<ILogger<UserManager<IdentityUser<Guid>>>>().Object;
 
         var userManager = new UserManager<IdentityUser<Guid>>(
@@ -211,7 +213,7 @@ public partial class EnableAuthenticatorModelTests
         // Assert
         Assert.IsType<PageResult>(result);
         Assert.True(model.ModelState.ContainsKey("Input.Code"));
-        var error = model.ModelState["Input.Code"].Errors.FirstOrDefault();
+        var error = model.ModelState["Input.Code"]?.Errors.FirstOrDefault();
         Assert.NotNull(error);
         Assert.Equal("Verification code is invalid.", error!.ErrorMessage);
     }

@@ -24,8 +24,6 @@ public class RegisterConfirmationModel : PageModel
             return RedirectToPage("/Index");
         }
 
-        returnUrl ??= Url.Content("~/");
-
         var user = await _userManager.FindByEmailAsync(email);
         if (user is null)
         {

@@ -6,7 +6,4 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 [AllowAnonymous]
 public class PrivacyModel : PageModel
 {
-    public void OnGet()
-    {
-    }
 }

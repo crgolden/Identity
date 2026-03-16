@@ -24,7 +24,7 @@ public class IndexModel : PageModel
     public string? StatusMessage { get; set; }
 
     [BindProperty]
-    public InputModel? Input { get; set; }
+    public InputModel Input { get; set; } = new InputModel();
 
     public async Task<IActionResult> OnGetAsync()
     {

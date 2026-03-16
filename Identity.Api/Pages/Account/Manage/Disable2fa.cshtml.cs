@@ -4,7 +4,9 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
+#pragma warning disable S101
 public class Disable2faModel : PageModel
+#pragma warning restore S101
 {
     private readonly UserManager<IdentityUser<Guid>> _userManager;
     private readonly ILogger<Disable2faModel> _logger;

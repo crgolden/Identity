@@ -1,4 +1,5 @@
-﻿namespace Identity.Tests.Pages.Account;
+﻿#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+namespace Identity.Tests.Pages.Account;
 
 using Identity.Pages.Account;
 using Microsoft.AspNetCore.Http;
@@ -13,61 +14,6 @@ using Moq;
 /// </summary>
 public class ResendEmailConfirmationModelTests
 {
-    /// <summary>
-    /// Ensures that calling OnGet when Input is null does not throw and leaves Input null.
-    /// </summary>
-    [Fact]
-    public void OnGet_WhenCalled_WithNullInput_DoesNotThrowAndLeavesInputNull()
-    {
-        // Arrange
-        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock.Object, null, null, null, null, null, null, null, null);
-        var emailSenderMock = new Mock<IEmailSender>();
-
-        var model = new ResendEmailConfirmationModel(userManagerMock.Object, emailSenderMock.Object);
-
-        // Precondition: Input is null
-        Assert.Null(model.Input);
-
-        // Act
-        var exception = Record.Exception(() => model.OnGet());
-
-        // Assert
-        Assert.Null(exception);
-        Assert.Null(model.Input);
-    }
-
-    /// <summary>
-    /// Verifies that OnGet does not modify an already assigned Input model and preserves the Email value.
-    /// Tests multiple representative email values including empty, whitespace, valid, long and special-character strings.
-    /// </summary>
-    [Theory]
-    [MemberData(nameof(EmailTestCases))]
-    public void OnGet_WhenInputSet_RetainsInputUnchanged(string email)
-    {
-        // Arrange
-        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock.Object, null, null, null, null, null, null, null, null);
-        var emailSenderMock = new Mock<IEmailSender>();
-
-        var model = new ResendEmailConfirmationModel(userManagerMock.Object, emailSenderMock.Object);
-
-        var input = new ResendEmailConfirmationModel.InputModel
-        {
-            Email = email
-        };
-
-        model.Input = input;
-
-        // Act
-        var exception = Record.Exception(() => model.OnGet());
-
-        // Assert: no exception and Input reference and value unchanged
-        Assert.Null(exception);
-        Assert.Same(input, model.Input);
-        Assert.Equal(email, model.Input.Email);
-    }
-
     /// <summary>
     /// Provides representative email test cases:
     /// - empty string

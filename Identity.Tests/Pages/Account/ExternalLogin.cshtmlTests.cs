@@ -1,4 +1,5 @@
-﻿namespace Identity.Tests.Pages.Account;
+﻿#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+namespace Identity.Tests.Pages.Account;
 
 using System.Security.Claims;
 using Identity.Pages.Account;
@@ -85,7 +86,7 @@ public class ExternalLoginModelTests
     [Theory]
     [InlineData(null)]
     [InlineData("/some/return")]
-    public async Task OnGetCallbackAsync_RemoteErrorProvided_SetsErrorMessageAndRedirectsToLogin(string returnUrl)
+    public async Task OnGetCallbackAsync_RemoteErrorProvided_SetsErrorMessageAndRedirectsToLogin(string? returnUrl)
     {
         // Arrange
         var (model, signInManagerMock, _) = CreateModelWithMocks();
@@ -117,7 +118,7 @@ public class ExternalLoginModelTests
     [Theory]
     [InlineData(null)]
     [InlineData("/return/here")]
-    public async Task OnGetCallbackAsync_InfoIsNull_SetsErrorMessageAndRedirectsToLogin(string returnUrl)
+    public async Task OnGetCallbackAsync_InfoIsNull_SetsErrorMessageAndRedirectsToLogin(string? returnUrl)
     {
         // Arrange
         var (model, signInManagerMock, _) = CreateModelWithMocks();
@@ -130,8 +131,8 @@ public class ExternalLoginModelTests
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("./Login", redirect.PageName);
         var expectedReturn = returnUrl ?? "/";
-        Assert.True(redirect.RouteValues.ContainsKey("ReturnUrl"));
-        Assert.Equal(expectedReturn, redirect.RouteValues["ReturnUrl"]);
+        Assert.True(redirect.RouteValues?.ContainsKey("ReturnUrl"));
+        Assert.Equal(expectedReturn, redirect.RouteValues!["ReturnUrl"]);
         Assert.Equal("Error loading external login information.", model.ErrorMessage);
         signInManagerMock.Verify(s => s.GetExternalLoginInfoAsync(), Times.Once);
     }
@@ -242,8 +243,8 @@ public class ExternalLoginModelTests
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("./Login", redirect.PageName);
-        Assert.True(redirect.RouteValues.ContainsKey("ReturnUrl"));
-        Assert.Equal("/", redirect.RouteValues["ReturnUrl"]);
+        Assert.True(redirect.RouteValues?.ContainsKey("ReturnUrl"));
+        Assert.Equal("/", redirect.RouteValues!["ReturnUrl"]);
         Assert.Equal("Error loading external login information during confirmation.", model.ErrorMessage);
     }
 
@@ -414,8 +415,8 @@ public class ExternalLoginModelTests
         {
             var redirect = Assert.IsType<RedirectToPageResult>(result);
             Assert.Equal("./RegisterConfirmation", redirect.PageName);
-            Assert.True(redirect.RouteValues.ContainsKey("Email"));
-            Assert.Equal("user@example.com", redirect.RouteValues["Email"]);
+            Assert.True(redirect.RouteValues?.ContainsKey("Email"));
+            Assert.Equal("user@example.com", redirect.RouteValues!["Email"]);
             // SignIn should NOT be invoked when confirmation is required
             signInManagerMock.Verify(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<bool>(), It.IsAny<string?>()), Times.Never);
         }

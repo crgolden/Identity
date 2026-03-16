@@ -35,7 +35,7 @@ public class ExternalLoginModel : PageModel
     }
 
     [BindProperty]
-    public InputModel? Input { get; set; }
+    public InputModel Input { get; set; } = new InputModel();
 
     public string? ProviderDisplayName { get; set; }
 

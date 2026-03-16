@@ -13,16 +13,11 @@ using static Microsoft.AspNetCore.WebUtilities.WebEncoders;
 public class EmailModel : PageModel
 {
     private readonly UserManager<IdentityUser<Guid>> _userManager;
-    private readonly SignInManager<IdentityUser<Guid>> _signInManager;
     private readonly IEmailSender _emailSender;
 
-    public EmailModel(
-        UserManager<IdentityUser<Guid>> userManager,
-        SignInManager<IdentityUser<Guid>> signInManager,
-        IEmailSender emailSender)
+    public EmailModel(UserManager<IdentityUser<Guid>> userManager, IEmailSender emailSender)
     {
         _userManager = userManager;
-        _signInManager = signInManager;
         _emailSender = emailSender;
     }
 
@@ -34,7 +29,7 @@ public class EmailModel : PageModel
     public string? StatusMessage { get; set; }
 
     [BindProperty]
-    public InputModel? Input { get; set; }
+    public InputModel Input { get; set; } = new InputModel();
 
     public async Task<IActionResult> OnGetAsync()
     {

@@ -1,4 +1,5 @@
-﻿namespace Identity.Tests.Pages.Account.Manage;
+﻿#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+namespace Identity.Tests.Pages.Account.Manage;
 
 using System.Security.Claims;
 using Identity.Pages.Account.Manage;
@@ -229,9 +230,9 @@ public class Disable2faModelTests
             l => l.Log(
                 LogLevel.Trace,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("has disabled 2fa.")),
+                It.Is<It.IsAnyType>((v, t) => v.ToString() != null && $"{v}".Contains("has disabled 2fa.")),
                 It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
     }
 }

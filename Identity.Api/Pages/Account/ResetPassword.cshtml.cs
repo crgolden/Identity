@@ -17,7 +17,7 @@ public class ResetPasswordModel : PageModel
     }
 
     [BindProperty]
-    public InputModel? Input { get; set; }
+    public InputModel Input { get; set; } = new InputModel();
 
     public IActionResult OnGet(string? code = null)
     {

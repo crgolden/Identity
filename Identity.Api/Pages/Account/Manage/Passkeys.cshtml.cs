@@ -19,7 +19,7 @@ public class PasskeysModel : PageModel
     public IList<UserPasskeyInfo> CurrentPasskeys { get; set; } = new List<UserPasskeyInfo>();
 
     [BindProperty]
-    public InputModel? Input { get; set; }
+    public InputModel Input { get; set; } = new InputModel();
 
     [TempData]
     public string? StatusMessage { get; set; }

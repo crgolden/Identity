@@ -24,7 +24,7 @@ public class LoginWithRecoveryCodeModel : PageModel
     }
 
     [BindProperty]
-    public InputModel? Input { get; set; }
+    public InputModel Input { get; set; } = new InputModel();
 
     public string? ReturnUrl { get; set; }
 

@@ -1,4 +1,6 @@
-﻿namespace Identity.Tests.Pages.Account.Manage;
+﻿#pragma warning disable CS8604 // Possible null reference argument.
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+namespace Identity.Tests.Pages.Account.Manage;
 
 using System.Security.Claims;
 using System.Text.Encodings.Web;
@@ -46,7 +48,7 @@ public class EmailModelTests
             .Setup(um => um.GetUserId(It.IsAny<ClaimsPrincipal>()))
             .Returns("expected-user-id");
 
-        var model = new EmailModel(userManagerMock.Object, signInManagerMock.Object, emailSenderMock.Object)
+        var model = new EmailModel(userManagerMock.Object, emailSenderMock.Object)
         {
             PageContext = new PageContext
             {
@@ -91,7 +93,7 @@ public class EmailModelTests
             .Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
             .ReturnsAsync(user);
 
-        var model = new EmailModel(userManagerMock.Object, signInManagerMock.Object, emailSenderMock.Object)
+        var model = new EmailModel(userManagerMock.Object, emailSenderMock.Object)
         {
             PageContext = new PageContext
             {
@@ -179,7 +181,7 @@ public class EmailModelTests
                 capturedBody = body;
             });
 
-        var model = new EmailModel(userManagerMock.Object, signInManagerMock.Object, emailSenderMock.Object)
+        var model = new EmailModel(userManagerMock.Object, emailSenderMock.Object)
         {
             PageContext = new PageContext
             {
@@ -243,11 +245,10 @@ public class EmailModelTests
     {
         // Arrange
         var userManager = CreateUserManager();
-        var signInManager = CreateSignInManager(userManager);
         var emailSenderMock = new Mock<IEmailSender>();
 
         // Act
-        var model = new EmailModel(userManager, signInManager, emailSenderMock.Object);
+        var model = new EmailModel(userManager, emailSenderMock.Object);
 
         // Assert
         Assert.NotNull(model);
@@ -270,17 +271,15 @@ public class EmailModelTests
     {
         // Arrange - first instance
         var userManager1 = CreateUserManager();
-        var signInManager1 = CreateSignInManager(userManager1);
         var emailSender1 = new Mock<IEmailSender>();
 
         // Arrange - second instance
         var userManager2 = CreateUserManager();
-        var signInManager2 = CreateSignInManager(userManager2);
         var emailSender2 = new Mock<IEmailSender>();
 
         // Act
-        var model1 = new EmailModel(userManager1, signInManager1, emailSender1.Object);
-        var model2 = new EmailModel(userManager2, signInManager2, emailSender2.Object);
+        var model1 = new EmailModel(userManager1, emailSender1.Object);
+        var model2 = new EmailModel(userManager2, emailSender2.Object);
 
         // Assert
         Assert.NotNull(model1);
@@ -329,27 +328,6 @@ public class EmailModelTests
             logger);
 
         return userManagerMock.Object;
-    }
-
-    private static SignInManager<IdentityUser<Guid>> CreateSignInManager(UserManager<IdentityUser<Guid>> userManager)
-    {
-        var httpContextAccessor = new Mock<IHttpContextAccessor>();
-        var claimsFactory = new Mock<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>();
-        var options = Options.Create(new IdentityOptions());
-        var logger = Mock.Of<ILogger<SignInManager<IdentityUser<Guid>>>>();
-        var schemes = new Mock<Microsoft.AspNetCore.Authentication.IAuthenticationSchemeProvider>();
-        var userConfirmation = new Mock<IUserConfirmation<IdentityUser<Guid>>>();
-
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManager,
-            httpContextAccessor.Object,
-            claimsFactory.Object,
-            options,
-            logger,
-            schemes.Object,
-            userConfirmation.Object);
-
-        return signInManagerMock.Object;
     }
 
     /// <summary>
@@ -401,7 +379,7 @@ public class EmailModelTests
 
         var emailSenderMock = new Mock<IEmailSender>();
 
-        var model = new EmailModel(userManagerMock.Object, signInManagerMock.Object, emailSenderMock.Object)
+        var model = new EmailModel(userManagerMock.Object, emailSenderMock.Object)
         {
             // Ensure PageContext is available (PageModel may access Request, Url etc. but not needed here)
             PageContext = new PageContext { HttpContext = new DefaultHttpContext() }

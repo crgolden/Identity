@@ -1,4 +1,5 @@
-﻿namespace Identity.Tests.Pages.Account.Manage;
+﻿#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+namespace Identity.Tests.Pages.Account.Manage;
 
 using Identity.Pages.Account.Manage;
 using Microsoft.AspNetCore.Http;
@@ -64,8 +65,7 @@ public class DownloadPersonalDataModelTests
         // Arrange
         var userId = "sentinel-user-id";
         var userStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
-            userStore, null, null, null, null, null, null, null, null);
+        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(userStore, null, null, null, null, null, null, null, null);
 
         userManagerMock
             .Setup(u => u.GetUserAsync(It.IsAny<System.Security.Claims.ClaimsPrincipal>()))

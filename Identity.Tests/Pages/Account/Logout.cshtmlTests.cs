@@ -1,4 +1,6 @@
-﻿namespace Identity.Tests.Pages.Account;
+﻿#pragma warning disable CS8604 // Possible null reference argument.
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+namespace Identity.Tests.Pages.Account;
 
 using Identity.Pages.Account;
 using Microsoft.AspNetCore.Identity;
@@ -89,7 +91,9 @@ public class LogoutModelTests
     /// </summary>
     [Theory(Skip = "SignInManager cannot be mocked with the available metadata. Complete mocking instructions are in the XML doc comment.")]
     [MemberData(nameof(GetCases))]
+#pragma warning disable xUnit1026
     public async Task OnPost_ReturnUrl_Various_ReturnsExpectedResultType(string? returnUrl, Type expectedResultType)
+#pragma warning restore xUnit1026
     {
         // Arrange
         // TODO: When SignInManager can be mocked in this environment:

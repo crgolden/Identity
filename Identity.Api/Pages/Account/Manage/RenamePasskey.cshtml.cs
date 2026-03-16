@@ -20,7 +20,7 @@ public class RenamePasskeyModel : PageModel
     }
 
     [BindProperty]
-    public InputModel? Input { get; set; }
+    public InputModel Input { get; set; } = new InputModel();
 
     [TempData]
     public string? StatusMessage { get; set; }
