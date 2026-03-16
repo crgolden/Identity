@@ -55,7 +55,7 @@ public class RegisterModel : PageModel
     {
         returnUrl ??= Url.Content("~/");
         ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
-        if (!ModelState.IsValid || IsNullOrWhiteSpace(Input?.Email) || IsNullOrWhiteSpace(Input?.Password))
+        if (!ModelState.IsValid || IsNullOrWhiteSpace(Input.Email) || IsNullOrWhiteSpace(Input.Password))
         {
             return Page();
         }
