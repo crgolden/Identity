@@ -98,7 +98,7 @@ jobs:
           echo "ElasticsearchNode=${{ vars.ELASTICSEARCH_NODE }}" >> $env:GITHUB_ENV
           echo "APPLICATIONINSIGHTS_CONNECTION_STRING=${{ vars.APPLICATIONINSIGHTS_CONNECTION_STRING }}" >> $env:GITHUB_ENV
           echo "SqlConnectionStringBuilder__DataSource=${{ secrets.DB_SERVER }}" >> $env:GITHUB_ENV
-          echo "SqlConnectionStringBuilder__InitialCatalog=${{ vars.E2E_DB_NAME }}" >> $env:GITHUB_ENV
+          echo "SqlConnectionStringBuilder__InitialCatalog=${{ secrets.E2E_DB_NAME }}" >> $env:GITHUB_ENV
           echo "SqlConnectionStringBuilder__IntegratedSecurity=false" >> $env:GITHUB_ENV
 
       - name: Install SqlPackage
@@ -109,7 +109,7 @@ jobs:
           DB_SERVER: ${{ secrets.DB_SERVER }}
           DB_USERID: ${{ secrets.DB_USERID }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          DB_NAME: ${{ vars.E2E_DB_NAME }}
+          DB_NAME: ${{ secrets.E2E_DB_NAME }}
         shell: powershell
         run: |
           $connStr = "Data Source=$env:DB_SERVER;Initial Catalog=$env:DB_NAME;User ID=$env:DB_USERID;Password='$env:DB_PASSWORD';Connect Timeout=30;Encrypt=True;Trust Server Certificate=False;Application Intent=ReadWrite;Multi Subnet Failover=False;Command Timeout=30"
@@ -131,11 +131,18 @@ jobs:
           -r win-x64
           --self-contained false
           -o ${{ github.workspace  }}\publish
+
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: .net-app
           path: ${{ github.workspace }}\publish
+
+      - name: Upload dacpac for deployment job
+        uses: actions/upload-artifact@v4
+        with:
+          name: sql-dacpac
+          path: Identity.Data/bin/Release/Identity.Data.dacpac
 
       - name: End Sonar analysis
         env:
@@ -143,12 +150,6 @@ jobs:
         shell: powershell
         run: |
           ${{ runner.temp }}\scanner\dotnet-sonarscanner end /d:sonar.token="$env:SONAR_TOKEN"
-
-      - name: Upload dacpac for deployment job
-        uses: actions/upload-artifact@v4
-        with:
-          name: sql-dacpac
-          path: Identity.Data/bin/Release/Identity.Data.dacpac
 
   deploy:
     runs-on: windows-latest
