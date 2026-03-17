@@ -63,8 +63,8 @@ jobs:
       - name: Begin Sonar analysis
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
-          SONAR_ORGANIZATION: ${{ secrets.SONAR_ORGANIZATION }}
+          SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY }}
+          SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION }}
         shell: powershell
         run: |
           ${{ runner.temp }}\scanner\dotnet-sonarscanner begin `
@@ -96,9 +96,11 @@ jobs:
           echo "BlobUri=${{ vars.BLOB_URI }}" >> $env:GITHUB_ENV
           echo "DataProtectionKeyIdentifier=${{ vars.DATA_PROTECTION_KEY_IDENTIFIER }}" >> $env:GITHUB_ENV
           echo "ElasticsearchNode=${{ vars.ELASTICSEARCH_NODE }}" >> $env:GITHUB_ENV
+          echo "ElasticsearchUsername=${{ secrets.ELASTICSEARCH_USERNAME }}" >> $env:GITHUB_ENV
+          echo "ElasticsearchNode=${{ vars.ELASTICSEARCH_NODE }}" >> $env:GITHUB_ENV
           echo "APPLICATIONINSIGHTS_CONNECTION_STRING=${{ vars.APPLICATIONINSIGHTS_CONNECTION_STRING }}" >> $env:GITHUB_ENV
-          echo "SqlConnectionStringBuilder__DataSource=${{ secrets.DB_SERVER }}" >> $env:GITHUB_ENV
-          echo "SqlConnectionStringBuilder__InitialCatalog=${{ secrets.E2E_DB_NAME }}" >> $env:GITHUB_ENV
+          echo "SqlConnectionStringBuilder__DataSource=${{ vars.DB_SERVER }}" >> $env:GITHUB_ENV
+          echo "SqlConnectionStringBuilder__InitialCatalog=${{ vars.E2E_DB_NAME }}" >> $env:GITHUB_ENV
           echo "SqlConnectionStringBuilder__IntegratedSecurity=false" >> $env:GITHUB_ENV
 
       - name: Install SqlPackage
@@ -106,10 +108,10 @@ jobs:
 
       - name: Deploy E2E test database schema
         env:
-          DB_SERVER: ${{ secrets.DB_SERVER }}
+          DB_SERVER: ${{ vars.DB_SERVER }}
           DB_USERID: ${{ secrets.DB_USERID }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          DB_NAME: ${{ secrets.E2E_DB_NAME }}
+          DB_NAME: ${{ vars.E2E_DB_NAME }}
         shell: powershell
         run: |
           $connStr = "Data Source=$env:DB_SERVER;Initial Catalog=$env:DB_NAME;User ID=$env:DB_USERID;Password='$env:DB_PASSWORD';Connect Timeout=30;Encrypt=True;Trust Server Certificate=False;Application Intent=ReadWrite;Multi Subnet Failover=False;Command Timeout=30"
@@ -181,10 +183,10 @@ jobs:
 
       - name: Deploy database
         env:
-          DB_SERVER: ${{ secrets.DB_SERVER }}
+          DB_SERVER: ${{ vars.DB_SERVER }}
           DB_USERID: ${{ secrets.DB_USERID }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_NAME: ${{ vars.DB_NAME }}
         run: |
           $connStr = "Data Source=$env:DB_SERVER;Initial Catalog=$env:DB_NAME;User ID=$env:DB_USERID;Password='$env:DB_PASSWORD';Connect Timeout=30;Encrypt=True;Trust Server Certificate=False;Application Intent=ReadWrite;Multi Subnet Failover=False;Command Timeout=30"
           sqlpackage /Action:Publish /SourceFile:Identity.Data.dacpac /TargetConnectionString:"$connStr"
