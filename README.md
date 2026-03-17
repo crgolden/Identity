@@ -170,11 +170,11 @@ The GitHub Actions workflow triggers on pushes to `main`, pull requests, and man
 **Build job** — runs on every trigger:
 1. Builds the full solution (`dotnet build --configuration Release`), which also compiles `Identity.Data.sqlproj` and produces the `.dacpac`
 2. Runs unit tests with coverage
-3. Logs in to Azure via OIDC, then runs E2E tests with `ASPNETCORE_ENVIRONMENT=CLI` — the `CLI` environment enables only `AzureCliCredential` so the in-process test server authenticates against Key Vault using the workflow's OIDC identity
+3. Logs in to Azure via OIDC, deploys the E2E test database schema, then runs E2E tests with `ASPNETCORE_ENVIRONMENT=CLI` — the `CLI` environment enables only `AzureCliCredential` so the in-process test server authenticates against Key Vault using the workflow's OIDC identity
 4. Runs SonarCloud analysis, publishes the web app, and uploads both artifacts
 
 **Deploy job** — runs after a successful build:
-4. Deploys the `.dacpac` to the production SQL Server via `SqlPackage`
-5. Deploys the web app to **Azure App Service** `crgolden-identity` (Production slot) via Azure OIDC
+1. Deploys the `.dacpac` to the production SQL Server via `SqlPackage`
+2. Deploys the web app to **Azure App Service** `crgolden-identity` (Production slot) via Azure OIDC
 
 Database schema is always deployed before the app to ensure a valid schema is in place when the app starts.

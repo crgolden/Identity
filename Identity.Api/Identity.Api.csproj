@@ -15,7 +15,9 @@
     <PackageReference Include="Azure.Security.KeyVault.Secrets" Version="4.9.0" />
     <PackageReference Include="Duende.IdentityServer.AspNetIdentity" Version="7.4.7" />
     <PackageReference Include="Duende.IdentityServer.EntityFramework" Version="7.4.7" />
-    <PackageReference Include="Elastic.Serilog.Sinks" Version="9.0.0" />
+    <!-- Exact version pin: must match the self-hosted Elasticsearch node (8.x). -->
+    <!-- ECS 9.x templates use synthetic_source_keep which 8.x does not support. -->
+    <PackageReference Include="Elastic.Serilog.Sinks" Version="[8.11.1]" />
     <PackageReference Include="Google.Apis.Auth.AspNetCore3" Version="1.73.0" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="10.0.5" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.5" />

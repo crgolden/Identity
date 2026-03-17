@@ -65,7 +65,7 @@ All services use `IdentityUser<Guid>` (not the default `IdentityUser`). This mus
 ### Observability
 
 - **Azure Monitor** — OpenTelemetry metrics and traces via `UseAzureMonitor()`
-- **Serilog** — structured logging with an Elasticsearch sink (`logs-dotnet-identity` data stream) and console sink bootstrap
+- **Serilog** — structured logging with an Elasticsearch sink (`logs-dotnet-identity` data stream) and console sink bootstrap. `Elastic.Serilog.Sinks` is pinned to exact version `[8.11.1]` to match the self-hosted Elasticsearch 8.x node; ECS 9.x templates use `synthetic_source_keep` which is not supported by Elasticsearch 8.x.
 - Health checks endpoint at `/Health` with `DbContext` check; health check requests are filtered from traces
 
 ### Data Protection
@@ -170,14 +170,14 @@ The GitHub Actions workflow (`.github/workflows/main_crgolden-identity.yml`) tri
 
 **Build job:**
 1. Builds the full solution via `dotnet build --no-incremental --configuration Release` — this includes `Identity.Data.sqlproj`, which produces the `.dacpac`
-2. Runs unit tests with coverage
-3. Logs in to Azure via OIDC, then deploys the E2E test database schema and runs E2E tests with `ASPNETCORE_ENVIRONMENT=CLI`
-4. Runs SonarCloud analysis
-5. Publishes the web app and uploads both the app artifact and the `.dacpac` artifact
+2. Runs unit tests with coverage using `dotnet-coverage collect ... -s "coverage.settings.xml"`, writing `coverage.xml`. `coverage.settings.xml` excludes `[GeneratedCode]`-decorated types (e.g. the NSwag-generated Gravatar client) from coverage metrics.
+3. Logs in to Azure via OIDC, then deploys the E2E test database schema and runs E2E tests with `ASPNETCORE_ENVIRONMENT=CLI`, writing `coverage-e2e.xml` with the same settings file
+4. Publishes the web app and uploads both the app artifact and the `.dacpac` artifact
+5. Runs SonarCloud analysis, reading both `coverage.xml` and `coverage-e2e.xml`
 
 **Deploy job** (runs after build):
-5. Deploys the `.dacpac` to the production SQL Server via `SqlPackage` — builds the connection string from `DB_SERVER`, `DB_USERID`, `DB_PASSWORD`, and `DB_NAME` secrets
-6. Deploys the web app to **Azure App Service** (`crgolden-identity`, Production slot) via Azure OIDC (`AZUREAPPSERVICE_CLIENTID_*`, `AZUREAPPSERVICE_TENANTID_*`, `AZUREAPPSERVICE_SUBSCRIPTIONID_*` secrets)
+1. Deploys the `.dacpac` to the production SQL Server via `SqlPackage` — builds the connection string from `DB_SERVER`, `DB_USERID`, `DB_PASSWORD`, and `DB_NAME` secrets
+2. Deploys the web app to **Azure App Service** (`crgolden-identity`, Production slot) via Azure OIDC (`AZUREAPPSERVICE_CLIENTID_*`, `AZUREAPPSERVICE_TENANTID_*`, `AZUREAPPSERVICE_SUBSCRIPTIONID_*` secrets)
 
 The database is always deployed before the app so the schema is in place when the app starts.
 

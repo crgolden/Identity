@@ -79,7 +79,6 @@ try
         options.ExcludeEnvironmentCredential = true;
         options.ExcludeManagedIdentityCredential = true;
         options.ExcludeWorkloadIdentityCredential = true;
-        options.ExcludeSharedTokenCacheCredential = true;
         options.ExcludeVisualStudioCredential = true;
         options.ExcludeVisualStudioCodeCredential = true;
         options.ExcludeAzurePowerShellCredential = true;

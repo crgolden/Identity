@@ -2,24 +2,32 @@
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account;
 
+using System.Text;
 using Identity.Pages.Account;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 
+[Trait("Category", "Unit")]
 public partial class ConfirmEmailModelTests
 {
     /// <summary>
     /// Test data for null userId or null code inputs which should redirect to the Index page.
     /// Covers: userId null, code null, both null.
     /// </summary>
-    public static TheoryData<string?, string?> RedirectNullCases() => new()
+    public static TheoryData<string?, string?> RedirectNullOrWhitespaceCases() => new()
     {
         { null, "non-null-code" },
         { "non-null-user", null },
         { null, null },
+        { "", "non-null-code" },
+        { "  ", "non-null-code" },
+        { "non-null-user", "" },
+        { "non-null-user", "  " },
     };
 
     /// <summary>
@@ -28,8 +36,8 @@ public partial class ConfirmEmailModelTests
     /// Expected result: RedirectToPageResult with PageName \"/Index\".
     /// </summary>
     [Theory]
-    [MemberData(nameof(RedirectNullCases))]
-    public async Task OnGetAsync_NullUserIdOrCode_RedirectsToIndex(string? userId, string? code)
+    [MemberData(nameof(RedirectNullOrWhitespaceCases))]
+    public async Task OnGetAsync_NullOrWhitespaceUserIdOrCode_RedirectsToIndex(string? userId, string? code)
     {
         // Arrange
         var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
@@ -89,6 +97,50 @@ public partial class ConfirmEmailModelTests
         // Assert
         Assert.NotNull(model);
         Assert.Null(model.StatusMessage);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_ConfirmEmailSucceeds_ReturnsPageWithSuccessMessage()
+    {
+        // Arrange
+        const string userId = "user-1";
+        const string token = "valid-token";
+        var code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+        var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
+        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
+        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock.Object, null, null, null, null, null, null, null, null);
+        userManagerMock.Setup(m => m.FindByIdAsync(userId)).ReturnsAsync(user);
+        userManagerMock.Setup(m => m.ConfirmEmailAsync(user, token)).ReturnsAsync(IdentityResult.Success);
+        var model = new ConfirmEmailModel(userManagerMock.Object);
+
+        // Act
+        var result = await model.OnGetAsync(userId, code);
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        Assert.Equal("Thank you for confirming your email.", model.StatusMessage);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_ConfirmEmailFails_ReturnsPageWithErrorMessage()
+    {
+        // Arrange
+        const string userId = "user-2";
+        const string token = "bad-token";
+        var code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+        var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
+        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
+        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock.Object, null, null, null, null, null, null, null, null);
+        userManagerMock.Setup(m => m.FindByIdAsync(userId)).ReturnsAsync(user);
+        userManagerMock.Setup(m => m.ConfirmEmailAsync(user, token)).ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "Invalid token." }));
+        var model = new ConfirmEmailModel(userManagerMock.Object);
+
+        // Act
+        var result = await model.OnGetAsync(userId, code);
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        Assert.Equal("Error confirming your email.", model.StatusMessage);
     }
 
     /// <summary>
