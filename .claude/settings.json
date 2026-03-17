@@ -5,5 +5,13 @@
     "dotnet-diag@dotnet-agent-skills": true,
     "dotnet-msbuild@dotnet-agent-skills": true
   },
-  "enableAllProjectMcpServers": true
+  "allowedMcpServers": [
+    { "serverName": "ef-dacpac-mcp" },
+    { "serverName": "github" },
+    { "serverName": "playwright" }
+  ],
+  "deniedMcpServers": [
+    { "serverName": "azure" },
+    { "serverName": "sonarqube" }
+  ]
 }
