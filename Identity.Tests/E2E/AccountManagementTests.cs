@@ -50,7 +50,7 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.OldPassword']", oldPassword);
             await page.FillAsync("input[name='Input.NewPassword']", newPassword);
             await page.FillAsync("input[name='Input.ConfirmPassword']", newPassword);
-            await page.ClickAsync("button[type='submit']");
+            await page.ClickAsync("button.btn-primary");
 
             // Confirm success message
             await page.WaitForURLAsync("**/Account/Manage/ChangePassword**");
@@ -90,7 +90,7 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
             // Delete account
             await page.GotoAsync("/Account/Manage/DeletePersonalData");
             await page.FillAsync("input[name='Input.Password']", password);
-            await page.ClickAsync("button[type='submit']");
+            await page.ClickAsync("button.btn-danger");
 
             // Should redirect to home/login after deletion
             await page.WaitForURLAsync(url => !url.Contains("/Account/Manage"));

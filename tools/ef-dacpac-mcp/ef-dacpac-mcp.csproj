@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>ef-dacpac-mcp</AssemblyName>
+    <RootNamespace>EfDacpacMcp</RootNamespace>
+    <Description>MCP server exposing EF Core migration and SQL Server DACPAC schema-drift tools</Description>
+    <PackageId>ef-dacpac-mcp</PackageId>
+    <Authors>crgolden</Authors>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ModelContextProtocol" Version="0.2.0-preview.3" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.3" />
+  </ItemGroup>
+
+</Project>

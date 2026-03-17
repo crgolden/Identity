@@ -226,6 +226,7 @@ public class RenamePasskeyModelTests
     /// - A non-null RenamePasskeyModel instance is produced.
     /// - The Input bind property is null by default.
     /// </summary>
+#pragma warning disable xUnit1045
     [Theory]
     [MemberData(nameof(ValidConstructorArguments))]
     public void Constructor_ValidDependencies_CreatesInstance(ApplicationDbContext dbContext, UserManager<IdentityUser<Guid>> userManager)
@@ -239,6 +240,7 @@ public class RenamePasskeyModelTests
         // The Input property is initialized with a default InputModel instance by the property initializer.
         Assert.NotNull(model.Input);
     }
+#pragma warning restore xUnit1045
 
     /// <summary>
     /// Verifies that multiple constructions with the same dependencies produce distinct RenamePasskeyModel instances.

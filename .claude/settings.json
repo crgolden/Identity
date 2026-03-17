@@ -4,5 +4,6 @@
     "dotnet-data@dotnet-agent-skills": true,
     "dotnet-diag@dotnet-agent-skills": true,
     "dotnet-msbuild@dotnet-agent-skills": true
-  }
+  },
+  "enableAllProjectMcpServers": true
 }

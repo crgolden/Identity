@@ -93,7 +93,7 @@ App is available at `https://localhost:7261` (HTTPS) or `http://localhost:5021` 
 ```
 Identity.Api/       # ASP.NET Core 10 Razor Pages web app, DbContext, and EF Core migrations
 Identity.Data/      # SQL Server Database Project — schema source of truth, builds to .dacpac
-Identity.Tests/     # xUnit v3 test project
+Identity.Tests/     # xUnit v3 test project: unit tests (Moq) and E2E tests (Playwright/Chromium)
 ```
 
 ## Commands
@@ -102,8 +102,11 @@ Identity.Tests/     # xUnit v3 test project
 # Build
 dotnet build
 
-# Test
-dotnet test
+# All tests (unit + E2E) — requires Development environment for User Secrets
+ASPNETCORE_ENVIRONMENT=Development dotnet test --configuration Release
+
+# Unit tests only
+dotnet test --configuration Release -- --filter-trait "Category=Unit"
 
 # Add an EF Core migration (development only)
 dotnet ef migrations add <MigrationName> --project Identity.Api
@@ -120,6 +123,42 @@ sqlpackage /Action:Publish /SourceFile:Identity.Data/bin/Release/Identity.Data.d
 # Publish web app
 dotnet publish Identity.Api -c Release -o ./publish
 ```
+
+## AI Assistant Integration (Claude Code)
+
+This repo ships a `.mcp.json` that configures five MCP servers for use with Claude Code. All servers are auto-approved via `.claude/settings.json`.
+
+| Server | Source | Purpose |
+|---|---|---|
+| `github` | `@modelcontextprotocol/server-github` (official) | Search issues/PRs, create issues, review code |
+| `azure` | `@azure/mcp@latest` (Microsoft official) | Query Key Vault, App Service, Blob Storage |
+| `playwright` | `@playwright/mcp@latest` (Microsoft official) | Drive browser sessions for E2E investigation |
+| `sonarqube` | `mcp/sonarqube` Docker image (SonarSource official) | Query issues, quality gates, security hotspots |
+| `ef-dacpac-mcp` | `tools/ef-dacpac-mcp/` (this repo) | EF Core migration management and DACPAC schema-drift analysis |
+
+### Required environment variables
+
+```powershell
+$env:GITHUB_PERSONAL_ACCESS_TOKEN = "ghp_..."   # GitHub PAT with repo scope
+$env:SONAR_TOKEN = "squ_..."                     # SonarCloud user token
+```
+
+`azure` uses `DefaultAzureCredential` (same as the app — `az login` covers it).
+`sonarqube` requires Docker Desktop.
+
+### ef-dacpac-mcp tools
+
+The custom MCP server at `tools/ef-dacpac-mcp/` exposes these tools to bridge the dual-track schema strategy (EF Core for dev, DACPAC for prod):
+
+- `ef_list_migrations` — lists applied and pending migrations
+- `ef_migration_script` — generates an idempotent SQL script for a migration range
+- `ef_dbcontext_info` / `ef_dbcontext_list` — DbContext metadata
+- `dacpac_build` — builds a `.dacpac` from `Identity.Data.sqlproj`
+- `dacpac_deploy_report` — XML report of changes sqlpackage would apply
+- `dacpac_drift_check` — human-readable schema drift summary
+- `dacpac_script` — full T-SQL deploy script for pre-deploy review
+
+Requires: `dotnet tool install -g dotnet-ef` and `dotnet tool install -g microsoft.sqlpackage`.
 
 ## Deployment
 

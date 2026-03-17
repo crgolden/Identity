@@ -80,6 +80,7 @@ public class RegisterModelTests
     /// Input conditions: various collections of AuthenticationScheme (empty, single, multiple).
     /// Expected result: ExternalLogins contains the same schemes (order preserved) and count matches.
     /// </summary>
+#pragma warning disable xUnit1045
     [Theory]
     [MemberData(nameof(ExternalSchemesData))]
     public async Task OnGetAsync_ExternalSchemesReturned_PopulatesExternalLogins(IEnumerable<AuthenticationScheme> schemes)
@@ -128,6 +129,7 @@ public class RegisterModelTests
         var actualNames = model.ExternalLogins.Select(s => s.Name).ToList();
         Assert.Equal(expectedNames, actualNames);
     }
+#pragma warning restore xUnit1045
 
     public static TheoryData<IEnumerable<AuthenticationScheme>> ExternalSchemesData() => new()
     {

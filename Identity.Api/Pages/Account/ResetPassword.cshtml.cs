@@ -19,7 +19,7 @@ public class ResetPasswordModel : PageModel
     [BindProperty]
     public InputModel Input { get; set; } = new InputModel();
 
-    public IActionResult OnGet(string? code = null)
+    public IActionResult OnGet(string? code = null, string? email = null)
     {
         if (IsNullOrWhiteSpace(code))
         {
@@ -30,7 +30,8 @@ public class ResetPasswordModel : PageModel
         code = UTF8.GetString(bytes);
         Input = new InputModel
         {
-            Code = code
+            Code = code,
+            Email = email
         };
         return Page();
     }

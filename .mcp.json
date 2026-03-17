@@ -1,0 +1,40 @@
+{
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
+      }
+    },
+    "azure": {
+      "command": "npx",
+      "args": ["-y", "@azure/mcp@latest", "server", "start"]
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest"]
+    },
+    "sonarqube": {
+      "command": "docker",
+      "args": [
+        "run", "-i", "--rm",
+        "-e", "SONAR_TOKEN",
+        "-e", "SONAR_HOST_URL=https://sonarcloud.io",
+        "mcp/sonarqube"
+      ],
+      "env": {
+        "SONAR_TOKEN": "${SONAR_TOKEN}"
+      }
+    },
+    "ef-dacpac-mcp": {
+      "command": "dotnet",
+      "args": [
+        "run",
+        "--project",
+        "tools/ef-dacpac-mcp/ef-dacpac-mcp.csproj",
+        "--no-launch-profile"
+      ]
+    }
+  }
+}

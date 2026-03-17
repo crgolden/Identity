@@ -228,6 +228,7 @@ public class Disable2faModelTests
         Assert.Equal("2fa has been disabled. You can reenable 2fa when you setup an authenticator app", model.StatusMessage);
 
         // Verify logger was called with an information level entry containing the expected phrase.
+#pragma warning disable CA1873
         loggerMock.Verify(
             l => l.Log(
                 LogLevel.Trace,
@@ -236,5 +237,6 @@ public class Disable2faModelTests
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
+#pragma warning restore CA1873
     }
 }

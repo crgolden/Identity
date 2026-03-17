@@ -203,6 +203,7 @@ public class ManageNavPagesTests
     /// - DisplayName pointing to a file named DeletePersonalData.cshtml => "active" via fallback.
     /// - DisplayName null and no ActivePage => null.
     /// </summary>
+#pragma warning disable xUnit1045
     [Theory]
     [MemberData(nameof(DeletePersonalDataCases))]
     public void DeletePersonalDataNavClass_VariousViewContexts_ReturnsExpectedNavClass(object? activePageValue, bool hasActivePage, string? displayName, string? expected)
@@ -233,6 +234,7 @@ public class ManageNavPagesTests
             Assert.Equal(expected, result);
         }
     }
+#pragma warning restore xUnit1045
 
     public static TheoryData<object?, bool, string?, string?> DeletePersonalDataCases() => new()
     {
@@ -282,6 +284,7 @@ public class ManageNavPagesTests
     /// Act: call ManageNavPages.PageNavClass(viewContext, page).
     /// Assert: result equals expected (\"active\" or null).
     /// </remarks>
+#pragma warning disable xUnit1045
     [Theory]
     [MemberData(nameof(PageNavTestData))]
     public void PageNavClass_VariousActivePageAndDisplayName_ComputesExpected(object? activePage, string? displayName, string page, string? expected)
@@ -302,6 +305,7 @@ public class ManageNavPagesTests
         // Assert
         Assert.Equal(expected, result);
     }
+#pragma warning restore xUnit1045
 
     public static TheoryData<object?, string?, string, string?> PageNavTestData()
     {
@@ -432,6 +436,7 @@ public class ManageNavPagesTests
     /// - Returns "active" when the resolved active page (from ViewData or DisplayName filename) matches ManageNavPages.Email case-insensitively.
     /// - Returns null otherwise.
     /// </summary>
+#pragma warning disable xUnit1045
     [Theory]
     [MemberData(nameof(EmailNavClassCases))]
     public void EmailNavClass_VariousActivePageAndDisplayName_ReturnsExpected(object? activePageValue, string? displayName, string? expected)
@@ -467,6 +472,7 @@ public class ManageNavPagesTests
             Assert.Equal(expected, result);
         }
     }
+#pragma warning restore xUnit1045
 
     /// <summary>
     /// Provides test cases covering:

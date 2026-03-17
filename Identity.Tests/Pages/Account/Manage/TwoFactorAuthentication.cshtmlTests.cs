@@ -294,12 +294,12 @@ public class TwoFactorAuthenticationModelTests
         Assert.Equal(recoveryCodes, pageModel.RecoveryCodesLeft);
     }
 
-    public static IEnumerable<object?[]> GetOnGetAsyncCases()
+    public static TheoryData<string?, bool, bool, int> GetOnGetAsyncCases() => new()
     {
         // Cover typical, boundary and unusual numeric values as RecoveryCodesLeft, and both null/non-null authenticator key.
-        yield return [null, false, false, 0];
-        yield return ["auth-key-abc", true, true, 5];
-        yield return ["k", false, true, int.MaxValue];
-        yield return [null, true, false, int.MinValue];
-    }
+        { null, false, false, 0 },
+        { "auth-key-abc", true, true, 5 },
+        { "k", false, true, int.MaxValue },
+        { null, true, false, int.MinValue },
+    };
 }

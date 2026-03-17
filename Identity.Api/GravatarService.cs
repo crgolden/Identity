@@ -16,7 +16,14 @@ public class GravatarService : IAvatarService
         var source = UTF8.GetBytes(profileIdentifier);
         var inArray = SHA256.HashData(source);
         var hash = System.Convert.ToHexString(inArray);
-        var profile = await _gravatar.GetProfileByIdAsync(hash.ToLowerInvariant(), cancellationToken);
-        return profile?.Avatar_url;
+        try
+        {
+            var profile = await _gravatar.GetProfileByIdAsync(hash.ToLowerInvariant(), cancellationToken);
+            return profile?.Avatar_url;
+        }
+        catch (ApiException ex) when (ex.StatusCode == 404)
+        {
+            return null;
+        }
     }
 }

@@ -69,12 +69,16 @@ public class ShowRecoveryCodesModelTests
         Array.Empty<string>(),
     };
 
+    private static readonly string[] SingleCode = ["ABC123"];
+    private static readonly string[] DuplicateCodes = ["code", "code"];
+    private static readonly string[] EmptyWhitespaceCodes = ["", "   "];
+
     // MemberData for valid cases: single, duplicates, empty/whitespace codes, and a large array
     public static TheoryData<string[]?> ValidRecoveryCodes() => new()
     {
-        new string[] { "ABC123" },
-        new string[] { "code", "code" },
-        new string[] { "", "   " },
+        SingleCode,
+        DuplicateCodes,
+        EmptyWhitespaceCodes,
         // Large but feasible array to exercise non-empty boundary
         CreateLargeArray(10000, "X"),
     };

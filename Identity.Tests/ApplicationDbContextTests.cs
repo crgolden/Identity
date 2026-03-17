@@ -49,6 +49,7 @@ public class ApplicationDbContextTests
     /// Input: a non-null <see cref="DbContextOptions{ApplicationDbContext}"/> produced by <see cref="DbContextOptionsBuilder{TContext}"/>.
     /// Expected: an instance of <see cref="ApplicationDbContext"/> is returned and no exception is thrown.
     /// </summary>
+#pragma warning disable xUnit1045
     [Theory]
     [MemberData(nameof(ValidOptions))]
     public void Constructor_ValidOptions_CreatesInstance(DbContextOptions<ApplicationDbContext> options)
@@ -63,6 +64,7 @@ public class ApplicationDbContextTests
         Assert.NotNull(context);
         Assert.IsType<ApplicationDbContext>(context);
     }
+#pragma warning restore xUnit1045
 
     /// <summary>
     /// Verifies that the constructor throws <see cref="ArgumentNullException"/> when called with null options.

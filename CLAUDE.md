@@ -8,7 +8,9 @@ The solution (`Identity.slnx`) contains three projects:
 
 - **`Identity.Api/`** — ASP.NET Core 10 Razor Pages web application (the main app), also houses `ApplicationDbContext` and EF Core migrations
 - **`Identity.Data/`** — SQL Server Database Project (SSDT); the schema source of truth for production, builds to a `.dacpac`
-- **`Identity.Tests/`** — xUnit v3 test project (uses `Microsoft.AspNetCore.Mvc.Testing`, `Moq`)
+- **`Identity.Tests/`** — xUnit v3 test project: unit tests (using `Microsoft.AspNetCore.Mvc.Testing`, `Moq`) and browser-based E2E tests (using `Microsoft.Playwright`)
+
+Additionally, `tools/ef-dacpac-mcp/` contains a custom MCP server (see [MCP Servers](#mcp-servers) below).
 
 ## What This App Does
 
@@ -118,8 +120,17 @@ dotnet run
 
 ### Test
 ```bash
-dotnet test
+# All tests (unit + E2E) — requires Development environment to load User Secrets
+ASPNETCORE_ENVIRONMENT=Development dotnet test --configuration Release
+
+# Unit tests only
+dotnet test --configuration Release -- --filter-trait "Category=Unit"
+
+# E2E tests only
+ASPNETCORE_ENVIRONMENT=Development dotnet test --configuration Release -- --filter-trait "Category=E2E"
 ```
+
+E2E tests use Playwright (Chromium) against a real Kestrel server started in-process. They require the same User Secrets as `dotnet run` (database, Key Vault, etc.).
 
 ### EF Core Migrations (development only — not used in production)
 Run from the solution root:
@@ -160,3 +171,37 @@ The GitHub Actions workflow (`.github/workflows/main_crgolden-identity.yml`) tri
 The database is always deployed before the app so the schema is in place when the app starts.
 
 In production, `IdentityPasskeyOptions.ValidateOrigin` is not overridden (the default strict validation applies). In development, it is relaxed to allow `https://localhost:7261`.
+
+## MCP Servers
+
+Five MCP servers are configured in `.mcp.json` and auto-approved via `.claude/settings.json` (`enableAllProjectMcpServers: true`).
+
+| Server | Package / Source | Auth |
+|---|---|---|
+| `github` | `@modelcontextprotocol/server-github` | `GITHUB_PERSONAL_ACCESS_TOKEN` env var |
+| `azure` | `@azure/mcp@latest` | `DefaultAzureCredential` (`az login`) |
+| `playwright` | `@playwright/mcp@latest` | None |
+| `sonarqube` | `mcp/sonarqube` Docker image | `SONAR_TOKEN` env var; requires Docker Desktop |
+| `ef-dacpac-mcp` | `tools/ef-dacpac-mcp/` (this repo, .NET 9) | None |
+
+### ef-dacpac-mcp
+
+A custom MCP server that bridges the dual-track schema strategy (EF for dev, DACPAC for prod). Source lives in `tools/ef-dacpac-mcp/` and is OSS-ready (MIT license).
+
+**EF Core tools** (`dotnet-ef` global tool required):
+- `ef_list_migrations` — shows applied/pending migrations
+- `ef_migration_script` — generates idempotent SQL for a migration range
+- `ef_dbcontext_info` — provider, connection source, migrations assembly
+- `ef_dbcontext_list` — all DbContext types in the project
+
+**DACPAC tools** (`sqlpackage` global tool required):
+- `dacpac_build` — builds `.dacpac` from `Identity.Data.sqlproj`
+- `dacpac_deploy_report` — raw XML report of changes sqlpackage would apply
+- `dacpac_drift_check` — human-readable drift summary between dacpac and a live database
+- `dacpac_script` — full T-SQL deploy script for pre-deploy review
+
+Install prerequisites:
+```bash
+dotnet tool install -g dotnet-ef
+dotnet tool install -g microsoft.sqlpackage
+```

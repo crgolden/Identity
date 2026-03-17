@@ -51,7 +51,7 @@ public sealed class TwoFactorTests(PlaywrightFixture fixture)
             await page.WaitForURLAsync("**/Account/Manage/EnableAuthenticator**");
 
             // Extract shared key from page
-            var sharedKeyEl = page.Locator("#sharedKey, [data-shared-key], code");
+            var sharedKeyEl = page.Locator("kbd");
             var sharedKey = (await sharedKeyEl.First.TextContentAsync() ?? string.Empty)
                 .Replace(" ", string.Empty)
                 .Replace("-", string.Empty)
@@ -64,7 +64,7 @@ public sealed class TwoFactorTests(PlaywrightFixture fixture)
 
             // Submit the code
             await page.FillAsync("input[name='Input.Code']", code);
-            await page.ClickAsync("button[type='submit']");
+            await page.ClickAsync("button.btn-primary");
 
             // Should show recovery codes or success confirmation
             await page.WaitForURLAsync(url =>
@@ -94,7 +94,7 @@ public sealed class TwoFactorTests(PlaywrightFixture fixture)
             await setupPage.ClickAsync("a[href*='EnableAuthenticator']");
             await setupPage.WaitForURLAsync("**/Account/Manage/EnableAuthenticator**");
 
-            var sharedKeyEl = setupPage.Locator("#sharedKey, [data-shared-key], code");
+            var sharedKeyEl = setupPage.Locator("kbd");
             var sharedKey = (await sharedKeyEl.First.TextContentAsync() ?? string.Empty)
                 .Replace(" ", string.Empty).Replace("-", string.Empty).ToUpperInvariant();
             var keyBytes = Base32Encoding.ToBytes(sharedKey);
@@ -102,11 +102,11 @@ public sealed class TwoFactorTests(PlaywrightFixture fixture)
             var code = totp.ComputeTotp();
 
             await setupPage.FillAsync("input[name='Input.Code']", code);
-            await setupPage.ClickAsync("button[type='submit']");
+            await setupPage.ClickAsync("button.btn-primary");
 
             // Generate recovery codes
             await setupPage.GotoAsync("/Account/Manage/GenerateRecoveryCodes");
-            await setupPage.ClickAsync("button[type='submit']");
+            await setupPage.ClickAsync("button.btn-danger");
             await setupPage.WaitForURLAsync("**/Account/Manage/ShowRecoveryCodes**");
 
             var codeEl = setupPage.Locator("code").First;

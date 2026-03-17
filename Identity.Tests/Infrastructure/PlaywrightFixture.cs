@@ -25,10 +25,8 @@ public sealed class PlaywrightFixture : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        var client = Factory.CreateClient();
-        var baseAddress = client.BaseAddress
-            ?? throw new InvalidOperationException("WebApplicationFactory did not set a base address on the HttpClient.");
-        BaseAddress = baseAddress.ToString().TrimEnd('/');
+        Factory.CreateClient(); // Triggers server startup; populates Factory.ServerAddress.
+        BaseAddress = Factory.ServerAddress;
 
         var exitCode = Microsoft.Playwright.Program.Main(["install", "chromium"]);
         if (exitCode != 0)
