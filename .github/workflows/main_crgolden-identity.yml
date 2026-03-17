@@ -81,7 +81,7 @@ jobs:
         run: |
           dotnet-coverage collect `
             "dotnet test --project Identity.Tests --no-build --configuration Release -- --filter-trait Category=Unit" `
-            -f xml -o "coverage.xml"
+            -f xml -o "coverage.xml" -s "coverage.settings.xml"
 
       - name: Login to Azure (for E2E tests)
         uses: azure/login@a65d910e8af852a8061c627c456678983e180302 # v2
@@ -123,7 +123,7 @@ jobs:
         run: |
           dotnet-coverage collect `
             "dotnet test --project Identity.Tests --no-build --configuration Release -- --filter-trait Category=E2E" `
-            -f xml -o "coverage-e2e.xml"
+            -f xml -o "coverage-e2e.xml" -s "coverage.settings.xml"
 
       - name: dotnet publish
         run: >
