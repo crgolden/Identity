@@ -102,11 +102,14 @@ Identity.Tests/     # xUnit v3 test project: unit tests (Moq) and E2E tests (Pla
 # Build
 dotnet build
 
-# All tests (unit + E2E) — requires Development environment for User Secrets
-ASPNETCORE_ENVIRONMENT=Development dotnet test --configuration Release
-
 # Unit tests only
 dotnet test --configuration Release -- --filter-trait "Category=Unit"
+
+# E2E tests (local) — requires Development environment for User Secrets
+ASPNETCORE_ENVIRONMENT=Development dotnet test --configuration Release -- --filter-trait "Category=E2E"
+
+# All tests (unit + E2E, local)
+ASPNETCORE_ENVIRONMENT=Development dotnet test --configuration Release
 
 # Add an EF Core migration (development only)
 dotnet ef migrations add <MigrationName> --project Identity.Api
@@ -166,8 +169,9 @@ The GitHub Actions workflow triggers on pushes to `main`, pull requests, and man
 
 **Build job** — runs on every trigger:
 1. Builds the full solution (`dotnet build --configuration Release`), which also compiles `Identity.Data.sqlproj` and produces the `.dacpac`
-2. Runs tests with code coverage and SonarCloud analysis
-3. Publishes the web app and uploads both artifacts
+2. Runs unit tests with coverage
+3. Logs in to Azure via OIDC, then runs E2E tests with `ASPNETCORE_ENVIRONMENT=CLI` — the `CLI` environment enables only `AzureCliCredential` so the in-process test server authenticates against Key Vault using the workflow's OIDC identity
+4. Runs SonarCloud analysis, publishes the web app, and uploads both artifacts
 
 **Deploy job** — runs after a successful build:
 4. Deploys the `.dacpac` to the production SQL Server via `SqlPackage`

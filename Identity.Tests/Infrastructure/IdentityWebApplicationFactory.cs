@@ -50,12 +50,15 @@ public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Progra
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder.ConfigureServices(services =>
+        builder.ConfigureServices((context, services) =>
         {
-            // Replace the Serilog ILoggerFactory (which connects to Elasticsearch on startup)
-            // with the default logging infrastructure to avoid external sink failures in tests.
-            services.RemoveAll<ILoggerFactory>();
-            services.AddLogging(lb => lb.AddConsole());
+            if (context.HostingEnvironment.IsDevelopment())
+            {
+                // Replace the Serilog ILoggerFactory (which connects to Elasticsearch on startup)
+                // with the default logging infrastructure to avoid external sink failures in tests.
+                services.RemoveAll<ILoggerFactory>();
+                services.AddLogging(lb => lb.AddConsole());
+            }
 
             // Remove the real IEmailSender registrations and replace with the capture service.
             services.RemoveAll<IEmailSender>();
@@ -64,7 +67,6 @@ public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Progra
             services.AddSingleton<EmailCaptureService>(_ => EmailCapture);
             services.AddSingleton<IEmailSender>(sp => sp.GetRequiredService<EmailCaptureService>());
             services.AddSingleton<IEmailSender<IdentityUser<Guid>>>(sp => sp.GetRequiredService<EmailCaptureService>());
-
         });
     }
 

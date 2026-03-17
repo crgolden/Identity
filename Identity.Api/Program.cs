@@ -74,6 +74,17 @@ try
         options.SharedTokenCacheTenantId = tenantId.ToString();
         options.VisualStudioTenantId = tenantId.ToString();
     }
+    else if (builder.Environment.IsEnvironment("CLI"))
+    {
+        options.ExcludeEnvironmentCredential = true;
+        options.ExcludeManagedIdentityCredential = true;
+        options.ExcludeWorkloadIdentityCredential = true;
+        options.ExcludeSharedTokenCacheCredential = true;
+        options.ExcludeVisualStudioCredential = true;
+        options.ExcludeVisualStudioCodeCredential = true;
+        options.ExcludeAzurePowerShellCredential = true;
+        options.ExcludeAzureDeveloperCliCredential = true;
+    }
 
     TokenCredential tokenCredential = new DefaultAzureCredential(options);
     var (corsPolicySection, sqlConnectionStringBuilderSection) = GetSections(builder.Configuration);

@@ -74,7 +74,15 @@ Keys are persisted to **Azure Blob Storage** and protected with **Azure Key Vaul
 
 ### Configuration
 
-All sensitive values are retrieved at startup from **Azure Key Vault** using `DefaultAzureCredential`. Non-secret infrastructure values are set via `appsettings.json` (nulled out) and supplied through User Secrets (development) or environment/Azure App Configuration (production):
+All sensitive values are retrieved at startup from **Azure Key Vault** using `DefaultAzureCredential`. The credential chain is narrowed per environment to prevent ambiguous or slow credential probing:
+
+| Environment | Enabled credential | Typical use |
+|---|---|---|
+| `Development` | `VisualStudioCredential`, `SharedTokenCacheCredential` | Local dev via VS / VS Code |
+| `CLI` | `AzureCliCredential` | CI — after `azure/login` OIDC step |
+| `Production` (default) | All credentials (full `DefaultAzureCredential` chain) | Azure App Service managed identity |
+
+Non-secret infrastructure values are set via `appsettings.json` (nulled out) and supplied through User Secrets (development) or environment/Azure App Configuration (production):
 
 ```json
 {
@@ -120,17 +128,19 @@ dotnet run
 
 ### Test
 ```bash
-# All tests (unit + E2E) — requires Development environment to load User Secrets
-ASPNETCORE_ENVIRONMENT=Development dotnet test --configuration Release
-
 # Unit tests only
 dotnet test --configuration Release -- --filter-trait "Category=Unit"
 
-# E2E tests only
+# E2E tests only (local) — Development environment loads User Secrets and uses VS/VS Code credentials
 ASPNETCORE_ENVIRONMENT=Development dotnet test --configuration Release -- --filter-trait "Category=E2E"
+
+# All tests (local)
+ASPNETCORE_ENVIRONMENT=Development dotnet test --configuration Release
 ```
 
 E2E tests use Playwright (Chromium) against a real Kestrel server started in-process. They require the same User Secrets as `dotnet run` (database, Key Vault, etc.).
+
+In CI the workflow sets `ASPNETCORE_ENVIRONMENT=CLI`, which uses `AzureCliCredential` after the `azure/login` OIDC step instead of User Secrets. The `IdentityWebApplicationFactory` only replaces the Serilog logger factory (to avoid the Elasticsearch sink) when the environment is `Development`; in `CLI` the real sink is used.
 
 ### EF Core Migrations (development only — not used in production)
 Run from the solution root:
@@ -160,9 +170,10 @@ The GitHub Actions workflow (`.github/workflows/main_crgolden-identity.yml`) tri
 
 **Build job:**
 1. Builds the full solution via `dotnet build --no-incremental --configuration Release` — this includes `Identity.Data.sqlproj`, which produces the `.dacpac`
-2. Runs tests with coverage (`dotnet-coverage` + `dotnet test`)
-3. Runs SonarCloud analysis
-4. Publishes the web app and uploads both the app artifact and the `.dacpac` artifact
+2. Runs unit tests with coverage
+3. Logs in to Azure via OIDC, then deploys the E2E test database schema and runs E2E tests with `ASPNETCORE_ENVIRONMENT=CLI`
+4. Runs SonarCloud analysis
+5. Publishes the web app and uploads both the app artifact and the `.dacpac` artifact
 
 **Deploy job** (runs after build):
 5. Deploys the `.dacpac` to the production SQL Server via `SqlPackage` — builds the connection string from `DB_SERVER`, `DB_USERID`, `DB_PASSWORD`, and `DB_NAME` secrets
