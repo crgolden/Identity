@@ -1,6 +1,8 @@
-using Microsoft.Playwright;
-
 namespace Identity.Tests.Infrastructure;
+
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Playwright;
 
 /// <summary>
 /// xUnit collection fixture that owns the <see cref="IdentityWebApplicationFactory"/>,
@@ -65,6 +67,32 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         if (_browser is not null)
             await _browser.DisposeAsync();
         _playwright?.Dispose();
+        await CleanupDatabaseAsync();
         await Factory.DisposeAsync();
+    }
+
+    private async Task CleanupDatabaseAsync()
+    {
+        await using var scope = Factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        // Identity — cascade deletes UserClaims, UserLogins, UserTokens, UserPasskeys, UserRoles
+        await db.Users.ExecuteDeleteAsync();
+        // Roles — cascade deletes RoleClaims (UserRoles already gone via Users cascade)
+        await db.Roles.ExecuteDeleteAsync();
+
+        // IdentityServer operational (no FK dependencies)
+        await db.PersistedGrants.ExecuteDeleteAsync();
+        await db.DeviceFlowCodes.ExecuteDeleteAsync();
+        await db.Keys.ExecuteDeleteAsync();
+        await db.ServerSideSessions.ExecuteDeleteAsync();
+        await db.PushedAuthorizationRequests.ExecuteDeleteAsync();
+
+        // IdentityServer config — cascade deletes all child tables
+        await db.Clients.ExecuteDeleteAsync();
+        await db.IdentityResources.ExecuteDeleteAsync();
+        await db.ApiResources.ExecuteDeleteAsync();
+        await db.ApiScopes.ExecuteDeleteAsync();
+        await db.IdentityProviders.ExecuteDeleteAsync();
     }
 }

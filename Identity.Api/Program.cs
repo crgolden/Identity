@@ -28,11 +28,12 @@ Log.Logger = new LoggerConfiguration().WriteTo.Console().CreateBootstrapLogger()
 
 try
 {
-    static (IConfigurationSection, IConfigurationSection) GetSections(ConfigurationManager configuration)
+    static (IConfigurationSection, IConfigurationSection, IConfigurationSection) GetSections(ConfigurationManager configuration)
     {
         var corsPolicySection = configuration.GetSection(nameof(CorsPolicy));
         var sqlConnectionStringBuilderSection = configuration.GetSection(nameof(SqlConnectionStringBuilder));
-        return (corsPolicySection, sqlConnectionStringBuilderSection);
+        var defaultAzureCredentialOptionsSection = configuration.GetSection(nameof(DefaultAzureCredentialOptions));
+        return (corsPolicySection, sqlConnectionStringBuilderSection, defaultAzureCredentialOptionsSection);
     }
 
     static (Uri, Uri, Uri, Uri) GetUris(ConfigurationManager configuration)
@@ -63,30 +64,9 @@ try
     }
 
     var builder = WebApplication.CreateBuilder(args);
-    var options = new DefaultAzureCredentialOptions();
-    if (builder.Environment.IsDevelopment())
-    {
-        var tenantId = builder.Configuration.GetValue<Guid>("DevelopmentTenantId");
-        options.ExcludeAzureCliCredential = true;
-        options.ExcludeEnvironmentCredential = true;
-        options.ExcludeManagedIdentityCredential = true;
-        options.ExcludeWorkloadIdentityCredential = true;
-        options.SharedTokenCacheTenantId = tenantId.ToString();
-        options.VisualStudioTenantId = tenantId.ToString();
-    }
-    else if (builder.Environment.IsEnvironment("CLI"))
-    {
-        options.ExcludeEnvironmentCredential = true;
-        options.ExcludeManagedIdentityCredential = true;
-        options.ExcludeWorkloadIdentityCredential = true;
-        options.ExcludeVisualStudioCredential = true;
-        options.ExcludeVisualStudioCodeCredential = true;
-        options.ExcludeAzurePowerShellCredential = true;
-        options.ExcludeAzureDeveloperCliCredential = true;
-    }
-
-    TokenCredential tokenCredential = new DefaultAzureCredential(options);
-    var (corsPolicySection, sqlConnectionStringBuilderSection) = GetSections(builder.Configuration);
+    var (corsPolicySection, sqlConnectionStringBuilderSection, defaultAzureCredentialOptionsSection) = GetSections(builder.Configuration);
+    var defaultAzureCredentialOptions = defaultAzureCredentialOptionsSection.Get<DefaultAzureCredentialOptions>() ?? throw new InvalidOperationException($"Invalid '{nameof(DefaultAzureCredentialOptions)}'");
+    TokenCredential tokenCredential = new DefaultAzureCredential(defaultAzureCredentialOptions);
     var (elasticsearchNode, keyVaultUrl, blobUrl, dataProtectionKeyIdentifier) = GetUris(builder.Configuration);
     var (gravatarApiKeySecret, elasticsearchUsername, elasticsearchPassword, sqlServerUserId, sqlServerPassword, googleClientId, googleClientSecret, resendApiToken) = await GetSecrets(keyVaultUrl, tokenCredential);
     builder.Services
