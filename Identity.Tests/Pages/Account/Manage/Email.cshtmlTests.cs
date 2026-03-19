@@ -19,6 +19,12 @@ using Moq;
 [Trait("Category", "Unit")]
 public class EmailModelTests
 {
+    public static TheoryData<string?> ValidEmailCases() => new()
+    {
+        "user@example.com",
+        "user+tag@exa-mple.co.uk",
+    };
+
     /// <summary>
     /// Tests that when no user is found (UserManager.GetUserAsync returns null),
     /// the handler returns a NotFoundObjectResult containing the user id from UserManager.GetUserId.
@@ -32,15 +38,6 @@ public class EmailModelTests
         var storeMock = Mock.Of<IUserStore<IdentityUser<Guid>>>();
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock, null, null, null, null, null, null, null, null);
         var emailSenderMock = new Mock<IEmailSender>();
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManagerMock.Object,
-            Mock.Of<IHttpContextAccessor>(),
-            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
-            Mock.Of<IOptions<IdentityOptions>>(),
-            Mock.Of<ILogger<SignInManager<IdentityUser<Guid>>>>(),
-            Mock.Of<Microsoft.AspNetCore.Authentication.IAuthenticationSchemeProvider>(),
-            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
-
         var principal = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "ignored")]));
         userManagerMock
             .Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
@@ -78,15 +75,6 @@ public class EmailModelTests
         var storeMock = Mock.Of<IUserStore<IdentityUser<Guid>>>();
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock, null, null, null, null, null, null, null, null);
         var emailSenderMock = new Mock<IEmailSender>();
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManagerMock.Object,
-            Mock.Of<IHttpContextAccessor>(),
-            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
-            Mock.Of<IOptions<IdentityOptions>>(),
-            Mock.Of<ILogger<SignInManager<IdentityUser<Guid>>>>(),
-            Mock.Of<Microsoft.AspNetCore.Authentication.IAuthenticationSchemeProvider>(),
-            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
-
         var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
         var principal = new ClaimsPrincipal(new ClaimsIdentity());
 
@@ -110,6 +98,7 @@ public class EmailModelTests
 
         // Assert
         Assert.IsType<PageResult>(result);
+
         // Ensure no email was attempted to be sent
         emailSenderMock.Verify(es => es.SendEmailAsync(It.IsAny<string?>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
@@ -132,15 +121,6 @@ public class EmailModelTests
         var storeMock = Mock.Of<IUserStore<IdentityUser<Guid>>>();
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock, null, null, null, null, null, null, null, null);
         var emailSenderMock = new Mock<IEmailSender>();
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManagerMock.Object,
-            Mock.Of<IHttpContextAccessor>(),
-            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
-            Mock.Of<IOptions<IdentityOptions>>(),
-            Mock.Of<ILogger<SignInManager<IdentityUser<Guid>>>>(),
-            Mock.Of<Microsoft.AspNetCore.Authentication.IAuthenticationSchemeProvider>(),
-            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
-
         var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
         var principal = new ClaimsPrincipal(new ClaimsIdentity());
 
@@ -160,11 +140,13 @@ public class EmailModelTests
         const string fixedCallbackUrl = "https://example.test/Account/ConfirmEmail?userId=the-user-id&code=abc";
         var capturedCallbackUrl = fixedCallbackUrl;
         var urlHelperMock = new Mock<IUrlHelper>();
+
         // ActionContext must be non-null because UrlHelperExtensions.Page always accesses it
         var urlRouteData = new RouteData();
         urlRouteData.Values["page"] = "/Account/Manage/Email";
         urlHelperMock.SetupGet(u => u.ActionContext).Returns(
             new ActionContext(new DefaultHttpContext(), urlRouteData, new ActionDescriptor()));
+
         // SetReturnsDefault covers all string?-returning methods including RouteUrl called by Url.Page
         urlHelperMock.SetReturnsDefault<string?>(fixedCallbackUrl);
 
@@ -224,12 +206,6 @@ public class EmailModelTests
         var expectedEncodedUrl = HtmlEncoder.Default.Encode(capturedCallbackUrl);
         Assert.Contains(expectedEncodedUrl, capturedBody);
     }
-
-    public static TheoryData<string?> ValidEmailCases() => new()
-    {
-        "user@example.com",
-        "user+tag@exa-mple.co.uk",
-    };
 
     /// <summary>
     /// Verifies that the EmailModel constructor does not throw when provided with valid dependencies
@@ -298,9 +274,59 @@ public class EmailModelTests
         Assert.NotNull(model2.Input);
     }
 
+    /// <summary>
+    /// Test that when the current user cannot be loaded (UserManager.GetUserAsync returns null),
+    /// OnPostChangeEmailAsync returns a NotFoundObjectResult containing the user id returned by UserManager.GetUserId.
+    /// </summary>
+    [Fact]
+    public async Task OnPostChangeEmailAsync_UserNotFound_ReturnsNotFoundObjectResult()
+    {
+        // Arrange
+        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
+        var optionsMock = new Mock<IOptions<IdentityOptions>>();
+        optionsMock.Setup(o => o.Value).Returns(new IdentityOptions());
+        var hasherMock = new Mock<IPasswordHasher<IdentityUser<Guid>>>();
+        var lookupNormalizerMock = new Mock<ILookupNormalizer>();
+        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
+                storeMock.Object,
+                optionsMock.Object,
+                hasherMock.Object,
+                Array.Empty<IUserValidator<IdentityUser<Guid>>>(),
+                Array.Empty<IPasswordValidator<IdentityUser<Guid>>>(),
+                lookupNormalizerMock.Object,
+                new IdentityErrorDescriber(),
+                new Mock<IServiceProvider>().Object,
+                new Mock<ILogger<UserManager<IdentityUser<Guid>>>>().Object)
+        { CallBase = false };
+
+        // Make GetUserAsync return null to simulate missing user.
+        userManagerMock
+            .Setup(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
+            .ReturnsAsync((IdentityUser<Guid>?)null);
+
+        // Ensure GetUserId returns a specific id used in the NotFound message.
+        userManagerMock
+            .Setup(u => u.GetUserId(It.IsAny<ClaimsPrincipal>()))
+            .Returns("missing-user-id");
+
+        var emailSenderMock = new Mock<IEmailSender>();
+
+        var model = new EmailModel(userManagerMock.Object, emailSenderMock.Object)
+        {
+            // Ensure PageContext is available (PageModel may access Request, Url etc. but not needed here)
+            PageContext = new PageContext { HttpContext = new DefaultHttpContext() }
+        };
+
+        // Act
+        var result = await model.OnPostChangeEmailAsync();
+
+        // Assert
+        var notFound = Assert.IsType<NotFoundObjectResult>(result);
+        Assert.Contains("Unable to load user with ID 'missing-user-id'", notFound.Value?.ToString() ?? string.Empty);
+    }
+
     // Helper methods to create minimal mocks/instances needed for constructor invocation.
     // These helpers are local to the test class to avoid adding any extra types at namespace scope.
-
     private static UserManager<IdentityUser<Guid>> CreateUserManager()
     {
         // Minimal IUserStore needed for UserManager constructor
@@ -330,68 +356,4 @@ public class EmailModelTests
 
         return userManagerMock.Object;
     }
-
-    /// <summary>
-    /// Test that when the current user cannot be loaded (UserManager.GetUserAsync returns null),
-    /// OnPostChangeEmailAsync returns a NotFoundObjectResult containing the user id returned by UserManager.GetUserId.
-    /// </summary>
-    [Fact]
-    public async Task OnPostChangeEmailAsync_UserNotFound_ReturnsNotFoundObjectResult()
-    {
-        // Arrange
-        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var optionsMock = new Mock<IOptions<IdentityOptions>>();
-        optionsMock.Setup(o => o.Value).Returns(new IdentityOptions());
-        var hasherMock = new Mock<IPasswordHasher<IdentityUser<Guid>>>();
-        var lookupNormalizerMock = new Mock<ILookupNormalizer>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
-                storeMock.Object,
-                optionsMock.Object,
-                hasherMock.Object,
-                Array.Empty<IUserValidator<IdentityUser<Guid>>>(),
-                Array.Empty<IPasswordValidator<IdentityUser<Guid>>>(),
-                lookupNormalizerMock.Object,
-                new IdentityErrorDescriber(),
-                new Mock<IServiceProvider>().Object,
-                new Mock<ILogger<UserManager<IdentityUser<Guid>>>>().Object)
-            { CallBase = false };
-
-        // Make GetUserAsync return null to simulate missing user.
-        var principal = new ClaimsPrincipal();
-        userManagerMock
-            .Setup(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
-            .ReturnsAsync((IdentityUser<Guid>?)null);
-
-        // Ensure GetUserId returns a specific id used in the NotFound message.
-        userManagerMock
-            .Setup(u => u.GetUserId(It.IsAny<ClaimsPrincipal>()))
-            .Returns("missing-user-id");
-
-        // SignInManager (not used) - provide minimal valid ctor args
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
-                userManagerMock.Object,
-                new Mock<IHttpContextAccessor>().Object,
-                new Mock<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>().Object,
-                optionsMock.Object,
-                new Mock<ILogger<SignInManager<IdentityUser<Guid>>>>().Object,
-                new Mock<Microsoft.AspNetCore.Authentication.IAuthenticationSchemeProvider>().Object,
-                new Mock<IUserConfirmation<IdentityUser<Guid>>>().Object)
-            { CallBase = false };
-
-        var emailSenderMock = new Mock<IEmailSender>();
-
-        var model = new EmailModel(userManagerMock.Object, emailSenderMock.Object)
-        {
-            // Ensure PageContext is available (PageModel may access Request, Url etc. but not needed here)
-            PageContext = new PageContext { HttpContext = new DefaultHttpContext() }
-        };
-
-        // Act
-        var result = await model.OnPostChangeEmailAsync();
-
-        // Assert
-        var notFound = Assert.IsType<NotFoundObjectResult>(result);
-        Assert.Contains("Unable to load user with ID 'missing-user-id'", notFound.Value?.ToString() ?? string.Empty);
-    }
-
 }

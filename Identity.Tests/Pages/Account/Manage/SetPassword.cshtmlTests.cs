@@ -46,7 +46,7 @@ public class SetPasswordModelTests
     /// Partial test: constructing SetPasswordModel with non-null UserManager and SignInManager.
     /// Input conditions: requires properly constructed/mocked UserManager&lt;IdentityUser&lt;Guid&gt;&gt; and SignInManager&lt;IdentityUser&lt;Guid&gt;&gt;.
     /// Expected result: an instance is created without exceptions.
-    /// 
+    ///
     /// Rationale and next steps:
     /// Creating concrete UserManager and SignInManager instances requires many dependencies (stores, accessors, loggers, options, etc.).
     /// According to project constraints, do NOT create custom fake types. Instead, use Moq to mock only if the types' constructors can be satisfied.
@@ -124,6 +124,7 @@ public class SetPasswordModelTests
             Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
 
         var pageModel = new SetPasswordModel(userManagerMock.Object, signInManagerMock.Object);
+
         // Make model state invalid
         pageModel.ModelState.AddModelError("Test", "Invalid");
 
@@ -132,6 +133,7 @@ public class SetPasswordModelTests
 
         // Assert
         Assert.IsType<PageResult>(result);
+
         // Ensure no user manager/signin calls happened
         userManagerMock.Verify(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>()), Times.Never);
         userManagerMock.Verify(u => u.AddPasswordAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>()), Times.Never);
@@ -171,6 +173,7 @@ public class SetPasswordModelTests
 
         // Set Input so the null/whitespace guard is bypassed and we reach the user lookup
         pageModel.Input = new SetPasswordModel.InputModel { NewPassword = "NewP@ss1!" };
+
         // Act
         var result = await pageModel.OnPostAsync();
 
@@ -201,9 +204,8 @@ public class SetPasswordModelTests
                 null, // ILookupNormalizer
                 null, // IdentityErrorDescriber
                 null, // IServiceProvider
-                null  // ILogger<UserManager<IdentityUser<Guid>>>
-            )
-            { CallBase = false };
+                null) // ILogger<UserManager<IdentityUser<Guid>>>
+        { CallBase = false };
 
         var mockSignInManager = new Mock<SignInManager<IdentityUser<Guid>>>(
                 mockUserManager.Object,
@@ -212,9 +214,8 @@ public class SetPasswordModelTests
                 null,
                 null,
                 new Mock<IAuthenticationSchemeProvider>().Object,
-                new Mock<IUserConfirmation<IdentityUser<Guid>>>().Object
-            )
-            { CallBase = false };
+                new Mock<IUserConfirmation<IdentityUser<Guid>>>().Object)
+        { CallBase = false };
 
         const string expectedId = "expected-user-id";
         mockUserManager
@@ -268,9 +269,8 @@ public class SetPasswordModelTests
                 null,
                 null,
                 null,
-                null
-            )
-            { CallBase = false };
+                null)
+        { CallBase = false };
 
         var mockSignInManager = new Mock<SignInManager<IdentityUser<Guid>>>(
                 mockUserManager.Object,
@@ -279,9 +279,8 @@ public class SetPasswordModelTests
                 null,
                 null,
                 new Mock<IAuthenticationSchemeProvider>().Object,
-                new Mock<IUserConfirmation<IdentityUser<Guid>>>().Object
-            )
-            { CallBase = false };
+                new Mock<IUserConfirmation<IdentityUser<Guid>>>().Object)
+        { CallBase = false };
 
         var user = new IdentityUser<Guid>();
         mockUserManager

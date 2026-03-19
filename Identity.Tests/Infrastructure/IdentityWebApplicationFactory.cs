@@ -73,7 +73,10 @@ public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Progra
     protected override void Dispose(bool disposing)
     {
         if (disposing)
+        {
             _kestrelHost?.Dispose();
+        }
+
         base.Dispose(disposing);
     }
 }

@@ -13,6 +13,74 @@ using Moq;
 public class ErrorModelTests
 {
     /// <summary>
+    /// Provides MockBehavior values to exercise constructor under different mock configurations.
+    /// </summary>
+    public static TheoryData<MockBehavior> GetMockBehaviors() => new()
+    {
+        MockBehavior.Loose,
+        MockBehavior.Strict,
+    };
+
+    public static TheoryData<string?, bool> NoErrorIdCases() => new()
+    {
+        // Each combination: (errorId, setActivity)
+        { null, true },
+        { null, false },
+        { string.Empty, true },
+        { string.Empty, false },
+        { "   ", true },
+        { "   ", false },
+    };
+
+    public static TheoryData<string, bool> NonEmptyErrorIdCases()
+    {
+        var longId = new string('x', 5000);
+        var specialId = "err\0or\n\t\u2603-!@#$%^&*()";
+        return new TheoryData<string, bool>
+        {
+            // Normal id
+            { "error-123", true },
+            { "error-123", false },
+
+            // Very long id (boundary)
+            { longId, true },
+            { longId, false },
+
+            // Special and control characters
+            { specialId, true },
+            { specialId, false },
+        };
+    }
+
+    public static TheoryData<string?, bool> RequestIdTestCases() => new()
+    {
+        // null => IsNullOrWhiteSpace(null) == true => ShowRequestId == false
+        { null, false },
+
+        // empty string => IsNullOrWhiteSpace("") == true => ShowRequestId == false
+        { string.Empty, false },
+
+        // whitespace-only string => IsNullOrWhiteSpace(" ") == true => ShowRequestId == false
+        { " ", false },
+
+        // typical non-empty string => true
+        { "request-123", true },
+
+        // very long string => true
+        { new string('x', 10000), true },
+
+        // null character inside string => not empty => true
+        { "\0", true },
+
+        // newline characters => IsNullOrWhiteSpace => false
+        { "\n", false },
+        { "\r\n", false },
+
+        // string with special characters => true
+        { "ï¿½ï¿½ï¿½!@#$%^&*()", true },
+    };
+
+    /// <summary>
     /// Verifies that the constructor accepts a valid IIdentityServerInteractionService and
     /// produces a usable ErrorModel instance without throwing. This uses different mock
     /// behaviors to ensure the constructor is resilient to the mock's configuration.
@@ -34,20 +102,13 @@ public class ErrorModelTests
         // Assert
         Assert.Null(exception);
         Assert.NotNull(model);
+
         // Initial RequestId should be null (not set by constructor)
         Assert.Null(model?.RequestId);
+
         // ShowRequestId should be false when RequestId is null or empty
         Assert.False(model?.ShowRequestId);
     }
-
-    /// <summary>
-    /// Provides MockBehavior values to exercise constructor under different mock configurations.
-    /// </summary>
-    public static TheoryData<MockBehavior> GetMockBehaviors() => new()
-    {
-        MockBehavior.Loose,
-        MockBehavior.Strict,
-    };
 
     /// <summary>
     /// Tests that when errorId is null, empty, or whitespace the interaction service is NOT called,
@@ -62,8 +123,8 @@ public class ErrorModelTests
         // Arrange
         var mockLogger = new Mock<ILogger<ErrorModel>>();
         var mockInteraction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
-        // No setup for GetErrorContextAsync - we expect it to not be called.
 
+        // No setup for GetErrorContextAsync - we expect it to not be called.
         var model = new ErrorModel(mockLogger.Object, mockInteraction.Object);
 
         // Prepare HttpContext with a known trace identifier.
@@ -106,22 +167,12 @@ public class ErrorModelTests
             if (activity is not null)
             {
                 activity.Stop();
+
                 // Clear current to avoid affecting other tests.
                 Activity.Current = null;
             }
         }
     }
-
-    public static TheoryData<string?, bool> NoErrorIdCases() => new()
-    {
-        // Each combination: (errorId, setActivity)
-        { null, true },
-        { null, false },
-        { string.Empty, true },
-        { string.Empty, false },
-        { "   ", true },
-        { "   ", false },
-    };
 
     /// <summary>
     /// Tests that when a non-empty errorId is provided, the interaction service is called exactly once with that id,
@@ -137,6 +188,7 @@ public class ErrorModelTests
         // Arrange
         var mockLogger = new Mock<ILogger<ErrorModel>>();
         var mockInteraction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
+
         // Return null from service to ensure code handles nullable returns without throwing.
         mockInteraction
             .Setup(s => s.GetErrorContextAsync(It.Is<string>(id => id == errorId)))
@@ -185,24 +237,6 @@ public class ErrorModelTests
                 Activity.Current = null;
             }
         }
-    }
-
-    public static TheoryData<string, bool> NonEmptyErrorIdCases()
-    {
-        var longId = new string('x', 5000);
-        var specialId = "err\0or\n\t\u2603-!@#$%^&*()";
-        return new TheoryData<string, bool>
-        {
-            // Normal id
-            { "error-123", true },
-            { "error-123", false },
-            // Very long id (boundary)
-            { longId, true },
-            { longId, false },
-            // Special and control characters
-            { specialId, true },
-            { specialId, false },
-        };
     }
 
     /// <summary>
@@ -264,25 +298,4 @@ public class ErrorModelTests
             Times.Once,
             "LogError should be called once when GetErrorContextAsync returns an error message.");
     }
-
-    public static TheoryData<string?, bool> RequestIdTestCases() => new()
-    {
-        // null => IsNullOrWhiteSpace(null) == true => ShowRequestId == false
-        { null, false },
-        // empty string => IsNullOrWhiteSpace("") == true => ShowRequestId == false
-        { string.Empty, false },
-        // whitespace-only string => IsNullOrWhiteSpace(" ") == true => ShowRequestId == false
-        { " ", false },
-        // typical non-empty string => true
-        { "request-123", true },
-        // very long string => true
-        { new string('x', 10000), true },
-        // null character inside string => not empty => true
-        { "\0", true },
-        // newline characters => IsNullOrWhiteSpace => false
-        { "\n", false },
-        { "\r\n", false },
-        // string with special characters => true
-        { "æøå!@#$%^&*()", true },
-    };
 }

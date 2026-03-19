@@ -18,6 +18,21 @@ public sealed class EmailCaptureService : IEmailSender, IEmailSender<IdentityUse
     private readonly ConcurrentDictionary<string, ConcurrentQueue<CapturedEmail>> _emailsByAddress =
         new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Extracts the first URL from an HTML body whose value matches <paramref name="urlPattern"/>.
+    /// HTML entities in the href are decoded before the URL is returned.
+    /// </summary>
+    public static string ExtractLink(string htmlBody, string urlPattern)
+    {
+        var matches = Regex.Matches(htmlBody, $@"href=['""]({urlPattern}[^'""]*)['""]");
+        if (matches.Count == 0)
+        {
+            throw new InvalidOperationException($"No link matching '{urlPattern}' found in email body.");
+        }
+
+        return System.Net.WebUtility.HtmlDecode(matches[0].Groups[1].Value);
+    }
+
     public Task SendEmailAsync(string email, string subject, string htmlMessage)
     {
         var queue = _emailsByAddress.GetOrAdd(email, _ => new ConcurrentQueue<CapturedEmail>());
@@ -45,22 +60,14 @@ public sealed class EmailCaptureService : IEmailSender, IEmailSender<IdentityUse
         while (DateTime.UtcNow < deadline)
         {
             if (queue.TryDequeue(out var email))
+            {
                 return email;
+            }
+
             await Task.Delay(100);
         }
-        throw new TimeoutException($"No email received for '{toAddress}' within {timeout ?? TimeSpan.FromSeconds(10)}.");
-    }
 
-    /// <summary>
-    /// Extracts the first URL from an HTML body whose value matches <paramref name="urlPattern"/>.
-    /// HTML entities in the href are decoded before the URL is returned.
-    /// </summary>
-    public static string ExtractLink(string htmlBody, string urlPattern)
-    {
-        var matches = Regex.Matches(htmlBody, $@"href=['""]({urlPattern}[^'""]*)['""]");
-        if (matches.Count == 0)
-            throw new InvalidOperationException($"No link matching '{urlPattern}' found in email body.");
-        return System.Net.WebUtility.HtmlDecode(matches[0].Groups[1].Value);
+        throw new TimeoutException($"No email received for '{toAddress}' within {timeout ?? TimeSpan.FromSeconds(10)}.");
     }
 
     public void Clear() => _emailsByAddress.Clear();

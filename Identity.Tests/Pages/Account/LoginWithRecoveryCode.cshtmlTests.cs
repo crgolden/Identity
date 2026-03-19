@@ -17,6 +17,28 @@ using Moq;
 [Trait("Category", "Unit")]
 public class LoginWithRecoveryCodeModelTests
 {
+    // MemberData providing a variety of string edge cases including null.
+    public static TheoryData<string?> ReturnUrlValues() => new()
+    {
+        null,
+        string.Empty,
+        " ",
+        "/account/manage?return=true",
+        "/path/with/special?param=\ufffd\ufffd\ufffd\ufffdd\ufffd&x=1",
+
+        // long string (~2048 chars) to test boundary for very long URLs
+        new string('a', 2048),
+    };
+
+    public static TheoryData<string?, string> GetReturnUrlCases() => new()
+    {
+        // Case: null returnUrl should redirect to Url.Content("~/") which we mock to "/"
+        { null, "/" },
+
+        // Case: provided returnUrl should be used as-is
+        { "/some/local/path", "/some/local/path" },
+    };
+
     /// <summary>
     /// Verifies that when a two-factor authentication user exists the handler returns a PageResult and sets ReturnUrl to the provided value.
     /// Input conditions: SignInManager.GetTwoFactorAuthenticationUserAsync returns a non-null IdentityUser; various returnUrl inputs including null, empty, whitespace, long and special-character strings are tested.
@@ -55,18 +77,6 @@ public class LoginWithRecoveryCodeModelTests
         Assert.Equal(returnUrl, model.ReturnUrl);
     }
 
-    // MemberData providing a variety of string edge cases including null.
-    public static TheoryData<string?> ReturnUrlValues() => new()
-    {
-        null,
-        string.Empty,
-        " ",
-        "/account/manage?return=true",
-        "/path/with/special?param=üñîçødé&x=1",
-        // long string (~2048 chars) to test boundary for very long URLs
-        new string('a', 2048),
-    };
-
     /// <summary>
     /// Verifies that when ModelState is invalid the handler returns PageResult without calling sign-in flows.
     /// Input conditions: ModelState contains an error.
@@ -89,6 +99,7 @@ public class LoginWithRecoveryCodeModelTests
         var loggerMock = new Mock<ILogger<LoginWithRecoveryCodeModel>>();
 
         var model = new LoginWithRecoveryCodeModel(signInManagerMock.Object, userManagerMock.Object, loggerMock.Object);
+
         // Make ModelState invalid
         model.ModelState.AddModelError("key", "error");
         model.Input = new LoginWithRecoveryCodeModel.InputModel { RecoveryCode = "irrelevant" };
@@ -98,6 +109,7 @@ public class LoginWithRecoveryCodeModelTests
 
         // Assert
         Assert.IsType<PageResult>(result);
+
         // Ensure sign-in manager methods were not invoked
         signInManagerMock.Verify(s => s.GetTwoFactorAuthenticationUserAsync(), Times.Never);
         signInManagerMock.Verify(s => s.TwoFactorRecoveryCodeSignInAsync(It.IsAny<string>()), Times.Never);
@@ -137,14 +149,6 @@ public class LoginWithRecoveryCodeModelTests
         // Ensure TwoFactorRecoveryCodeSignInAsync was not called
         signInManagerMock.Verify(s => s.TwoFactorRecoveryCodeSignInAsync(It.IsAny<string>()), Times.Never);
     }
-
-    public static TheoryData<string?, string> GetReturnUrlCases() => new()
-    {
-        // Case: null returnUrl should redirect to Url.Content("~/") which we mock to "/"
-        { null, "/" },
-        // Case: provided returnUrl should be used as-is
-        { "/some/local/path", "/some/local/path" },
-    };
 
     /// <summary>
     /// Verifies that constructing LoginWithRecoveryCodeModel with all null dependencies does not throw
@@ -208,5 +212,4 @@ public class LoginWithRecoveryCodeModelTests
         Assert.NotNull(model.Input);
         Assert.Null(model.ReturnUrl);
     }
-
 }

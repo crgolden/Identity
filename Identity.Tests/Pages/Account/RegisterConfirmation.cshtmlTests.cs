@@ -27,8 +27,6 @@ public class RegisterConfirmationModelTests
     public void Constructor_WithValidDependencies_DoesNotThrow()
     {
         // Arrange
-        // Note: The IEmailSender interface can be mocked easily:
-        var sender = new Mock<IEmailSender>().Object;
         // Create the minimal set of dependencies required by UserManager<IdentityUser<Guid>>
         var userStore = new Mock<IUserStore<IdentityUser<Guid>>>().Object;
         var options = Microsoft.Extensions.Options.Options.Create(new IdentityOptions());
@@ -40,8 +38,10 @@ public class RegisterConfirmationModelTests
         var services = new Mock<IServiceProvider>().Object;
         var logger = new Mock<ILogger<UserManager<IdentityUser<Guid>>>>().Object;
         var userManager = new UserManager<IdentityUser<Guid>>(userStore, options, passwordHasher, userValidators, passwordValidators, keyNormalizer, errors, services, logger);
+
         // Act
         var model = new RegisterConfirmationModel(userManager);
+
         // Assert
         Assert.NotNull(model);
     }
@@ -59,11 +59,12 @@ public class RegisterConfirmationModelTests
     public void Constructor_MissingUserManager_DescribeExpectedBehavior()
     {
         // Arrange
-        var sender = new Mock<IEmailSender>().Object;
         var mockUserStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
         var mockUserManager = new Mock<UserManager<IdentityUser<Guid>>>(mockUserStore, null, null, null, null, null, null, null, null);
+
         // Act
         var model = new RegisterConfirmationModel(mockUserManager.Object);
+
         // Assert
         Assert.NotNull(model);
     }
@@ -79,10 +80,11 @@ public class RegisterConfirmationModelTests
         // Arrange
         var mockUserStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
         var mockUserManager = new Mock<UserManager<IdentityUser<Guid>>>(mockUserStore, null, null, null, null, null, null, null, null);
-        var mockSender = new Mock<IEmailSender>();
         var model = new RegisterConfirmationModel(mockUserManager.Object);
+
         // Act
         var result = await model.OnGetAsync(email: null);
+
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("/Index", redirect.PageName);
@@ -100,17 +102,19 @@ public class RegisterConfirmationModelTests
         // Arrange
         var mockUserStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
         var mockUserManager = new Mock<UserManager<IdentityUser<Guid>>>(mockUserStore, null, null, null, null, null, null, null, null);
-        mockUserManager.Setup(m => m.FindByEmailAsync(It.IsAny<string>())).ReturnsAsync((IdentityUser<Guid>? )null);
-        var mockSender = new Mock<IEmailSender>();
+        mockUserManager.Setup(m => m.FindByEmailAsync(It.IsAny<string>())).ReturnsAsync((IdentityUser<Guid>?)null);
         var mockUrl = new Mock<IUrlHelper>();
         mockUrl.Setup(u => u.Content("~/")).Returns("/");
         var model = new RegisterConfirmationModel(mockUserManager.Object);
         model.Url = mockUrl.Object;
+
         // Act
         var result = await model.OnGetAsync(email);
+
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
         Assert.Equal($"Unable to load user with email '{email}'.", notFound.Value);
+
         // Ensure Email property not set when user not found
         Assert.Null(model.Email);
     }
@@ -139,8 +143,10 @@ public class RegisterConfirmationModelTests
         {
             Url = mockUrl.Object
         };
+
         // Act
         var result = await model.OnGetAsync(testEmail, returnUrl);
+
         // Assert
         Assert.IsType<PageResult>(result);
         Assert.Equal(testEmail, model.Email);

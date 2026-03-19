@@ -13,17 +13,18 @@ public sealed class PlaywrightFixture : IAsyncLifetime
     private IPlaywright? _playwright;
     private IBrowser? _browser;
 
-    public IdentityWebApplicationFactory Factory { get; }
-    public EmailCaptureService Email => Factory.EmailCapture;
-
-    /// <summary>Base address of the in-process test server.</summary>
-    public string BaseAddress { get; private set; }
-
     public PlaywrightFixture()
     {
         Factory = new IdentityWebApplicationFactory();
         BaseAddress = string.Empty;
     }
+
+    public IdentityWebApplicationFactory Factory { get; }
+
+    public EmailCaptureService Email => Factory.EmailCapture;
+
+    /// <summary>Base address of the in-process test server.</summary>
+    public string BaseAddress { get; private set; }
 
     public async ValueTask InitializeAsync()
     {
@@ -32,11 +33,14 @@ public sealed class PlaywrightFixture : IAsyncLifetime
 
         var exitCode = Microsoft.Playwright.Program.Main(["install", "chromium"]);
         if (exitCode != 0)
+        {
             throw new InvalidOperationException($"Playwright install failed with exit code {exitCode}.");
+        }
 
         _playwright = await Playwright.CreateAsync();
         var headless = !string.Equals(
-            Environment.GetEnvironmentVariable("PLAYWRIGHT_HEADED"), "1",
+            Environment.GetEnvironmentVariable("PLAYWRIGHT_HEADED"),
+            "1",
             StringComparison.OrdinalIgnoreCase);
         _browser = await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
         {
@@ -51,7 +55,9 @@ public sealed class PlaywrightFixture : IAsyncLifetime
     public async Task<(IBrowserContext Context, IPage Page)> NewPageAsync()
     {
         if (_browser is null)
+        {
             throw new InvalidOperationException("Browser is not initialized. Ensure InitializeAsync has been awaited.");
+        }
 
         var context = await _browser.NewContextAsync(new BrowserNewContextOptions
         {
@@ -65,7 +71,10 @@ public sealed class PlaywrightFixture : IAsyncLifetime
     public async ValueTask DisposeAsync()
     {
         if (_browser is not null)
+        {
             await _browser.DisposeAsync();
+        }
+
         _playwright?.Dispose();
         await CleanupDatabaseAsync();
         await Factory.DisposeAsync();
@@ -78,6 +87,7 @@ public sealed class PlaywrightFixture : IAsyncLifetime
 
         // Identity — cascade deletes UserClaims, UserLogins, UserTokens, UserPasskeys, UserRoles
         await db.Users.ExecuteDeleteAsync();
+
         // Roles — cascade deletes RoleClaims (UserRoles already gone via Users cascade)
         await db.Roles.ExecuteDeleteAsync();
 

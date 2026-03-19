@@ -23,60 +23,17 @@ using Moq;
 public class ExternalLoginModelTests
 {
     /// <summary>
-    /// Helper to create a configured ExternalLoginModel instance along with commonly needed mocks.
-    /// Ensures UserManager.SupportsUserEmail returns true and the provided external sign-in manager is used.
+    /// Provides combinations of UserManager.SupportsUserEmail and whether the provided user store implements IUserEmailStore.
+    /// The tuple values are:
+    /// - supportsEmail: bool indicating UserManager.SupportsUserEmail
+    /// - storeIsEmailStore: bool indicating whether the provided user store implements IUserEmailStore
+    /// - expectedExceptionType: Type? expected exception type (null if construction should succeed)
     /// </summary>
-    private static (ExternalLoginModel model, Mock<SignInManager<IdentityUser<Guid>>> signInManagerMock, Mock<UserManager<IdentityUser<Guid>>> userManagerMock) CreateModelWithMocks()
+    public static IEnumerable<object?[]> ConstructorTestData()
     {
-        // IUserEmailStore needed as the constructor calls GetEmailStore which casts userStore to IUserEmailStore
-        var userEmailStoreMock = new Mock<IUserEmailStore<IdentityUser<Guid>>>();
-        var userStore = userEmailStoreMock.As<IUserStore<IdentityUser<Guid>>>();
-
-        // UserManager dependencies
-        var userValidators = new List<IUserValidator<IdentityUser<Guid>>>();
-        var pwdValidators = new List<IPasswordValidator<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
-            userStore.Object,
-            new Mock<IOptions<IdentityOptions>>().Object,
-            new Mock<IPasswordHasher<IdentityUser<Guid>>>().Object,
-            userValidators,
-            pwdValidators,
-            new Mock<ILookupNormalizer>().Object,
-            new IdentityErrorDescriber(),
-            new Mock<IServiceProvider>().Object,
-            new Mock<ILogger<UserManager<IdentityUser<Guid>>>>().Object);
-
-        userManagerMock.SetupGet(um => um.SupportsUserEmail).Returns(true);
-
-        // SignInManager dependencies
-        var httpContextAccessor = new Mock<IHttpContextAccessor>().Object;
-        var claimsFactory = new Mock<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>().Object;
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManagerMock.Object,
-            httpContextAccessor,
-            claimsFactory,
-            new Mock<IOptions<IdentityOptions>>().Object,
-            new Mock<ILogger<SignInManager<IdentityUser<Guid>>>>().Object,
-            new Mock<IAuthenticationSchemeProvider>().Object,
-            new Mock<IUserConfirmation<IdentityUser<Guid>>>().Object);
-
-        // ExternalLoginModel dependencies
-        var loggerMock = new Mock<ILogger<ExternalLoginModel>>();
-        var emailSenderMock = new Mock<IEmailSender>();
-
-        var model = new ExternalLoginModel(
-            signInManagerMock.Object,
-            userManagerMock.Object,
-            userStore.Object,
-            loggerMock.Object,
-            emailSenderMock.Object);
-
-        // Provide Url helper so Url.Content("~/") works
-        var urlHelperMock = new Mock<IUrlHelper>();
-        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
-        model.Url = urlHelperMock.Object;
-
-        return (model, signInManagerMock, userManagerMock);
+        yield return [false, true, typeof(NotSupportedException)];
+        yield return [true, false, typeof(InvalidCastException)];
+        yield return [true, true, null];
     }
 
     /// <summary>
@@ -100,6 +57,7 @@ public class ExternalLoginModelTests
         Assert.IsType<RedirectToPageResult>(result);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("./Login", redirect.PageName);
+
         // Check route values contains ReturnUrl as resolved by Url.Content when returnUrl is null, otherwise same string
         var expectedReturn = returnUrl ?? "/";
         Assert.NotNull(redirect.RouteValues);
@@ -107,6 +65,7 @@ public class ExternalLoginModelTests
         Assert.Equal(expectedReturn, redirect.RouteValues["ReturnUrl"]);
         Assert.NotNull(model.ErrorMessage);
         Assert.Contains(remoteError, model.ErrorMessage);
+
         // Ensure no external login info was requested in this branch
         signInManagerMock.Verify(s => s.GetExternalLoginInfoAsync(), Times.Never);
     }
@@ -208,8 +167,15 @@ public class ExternalLoginModelTests
         var serviceProviderMock = new Mock<IServiceProvider>();
         var loggerUserManagerMock = new Mock<ILogger<UserManager<IdentityUser<Guid>>>>();
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
-            userStoreMock.Object, options, pwdHasherMock.Object, userValidators,
-            pwdValidators, keyNormalizerMock.Object, errors, serviceProviderMock.Object, loggerUserManagerMock.Object);
+            userStoreMock.Object,
+            options,
+            pwdHasherMock.Object,
+            userValidators,
+            pwdValidators,
+            keyNormalizerMock.Object,
+            errors,
+            serviceProviderMock.Object,
+            loggerUserManagerMock.Object);
 
         var httpContextAccessorMock = new Mock<IHttpContextAccessor>();
         var claimsFactoryMock = new Mock<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>();
@@ -217,8 +183,13 @@ public class ExternalLoginModelTests
         var authSchemeProviderMock = new Mock<IAuthenticationSchemeProvider>();
         var userConfirmationMock = new Mock<IUserConfirmation<IdentityUser<Guid>>>();
         var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManagerMock.Object, httpContextAccessorMock.Object, claimsFactoryMock.Object,
-            options, loggerSignInMock.Object, authSchemeProviderMock.Object, userConfirmationMock.Object);
+            userManagerMock.Object,
+            httpContextAccessorMock.Object,
+            claimsFactoryMock.Object,
+            options,
+            loggerSignInMock.Object,
+            authSchemeProviderMock.Object,
+            userConfirmationMock.Object);
 
         // Ensure GetExternalLoginInfoAsync returns null
         signInManagerMock.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>()))
@@ -268,8 +239,15 @@ public class ExternalLoginModelTests
         var serviceProviderMock = new Mock<IServiceProvider>();
         var loggerUserManagerMock = new Mock<ILogger<UserManager<IdentityUser<Guid>>>>();
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
-            userStoreMock.Object, options, pwdHasherMock.Object, userValidators,
-            pwdValidators, keyNormalizerMock.Object, errors, serviceProviderMock.Object, loggerUserManagerMock.Object);
+            userStoreMock.Object,
+            options,
+            pwdHasherMock.Object,
+            userValidators,
+            pwdValidators,
+            keyNormalizerMock.Object,
+            errors,
+            serviceProviderMock.Object,
+            loggerUserManagerMock.Object);
 
         // Ensure the mocked UserManager reports that it supports email, so GetEmailStore() succeeds.
         userManagerMock.Setup(u => u.SupportsUserEmail).Returns(true);
@@ -280,8 +258,13 @@ public class ExternalLoginModelTests
         var authSchemeProviderMock = new Mock<IAuthenticationSchemeProvider>();
         var userConfirmationMock = new Mock<IUserConfirmation<IdentityUser<Guid>>>();
         var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManagerMock.Object, httpContextAccessorMock.Object, claimsFactoryMock.Object,
-            options, loggerSignInMock.Object, authSchemeProviderMock.Object, userConfirmationMock.Object);
+            userManagerMock.Object,
+            httpContextAccessorMock.Object,
+            claimsFactoryMock.Object,
+            options,
+            loggerSignInMock.Object,
+            authSchemeProviderMock.Object,
+            userConfirmationMock.Object);
 
         // Create an ExternalLoginInfo with a principal and provider display name
         var claims = new[] { new Claim(ClaimTypes.Email, "x@y.com") };
@@ -347,8 +330,15 @@ public class ExternalLoginModelTests
         var serviceProviderMock = new Mock<IServiceProvider>();
         var loggerUserManagerMock = new Mock<ILogger<UserManager<IdentityUser<Guid>>>>();
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
-            userStoreMock.Object, options, pwdHasherMock.Object, userValidators,
-            pwdValidators, keyNormalizerMock.Object, errors, serviceProviderMock.Object, loggerUserManagerMock.Object);
+            userStoreMock.Object,
+            options,
+            pwdHasherMock.Object,
+            userValidators,
+            pwdValidators,
+            keyNormalizerMock.Object,
+            errors,
+            serviceProviderMock.Object,
+            loggerUserManagerMock.Object);
 
         userManagerMock.SetupGet(um => um.SupportsUserEmail).Returns(true);
 
@@ -368,8 +358,13 @@ public class ExternalLoginModelTests
         var authSchemeProviderMock = new Mock<IAuthenticationSchemeProvider>();
         var userConfirmationMock = new Mock<IUserConfirmation<IdentityUser<Guid>>>();
         var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManagerMock.Object, httpContextAccessorMock.Object, claimsFactoryMock.Object,
-            options, loggerSignInMock.Object, authSchemeProviderMock.Object, userConfirmationMock.Object);
+            userManagerMock.Object,
+            httpContextAccessorMock.Object,
+            claimsFactoryMock.Object,
+            options,
+            loggerSignInMock.Object,
+            authSchemeProviderMock.Object,
+            userConfirmationMock.Object);
 
         // Prepare ExternalLoginInfo with provider and principal
         var claims = new[] { new Claim(ClaimTypes.Email, "user@example.com") };
@@ -392,6 +387,7 @@ public class ExternalLoginModelTests
 
         var urlHelperMock = new Mock<IUrlHelper>();
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
+
         // ActionContext must be non-null because UrlHelperExtensions.Page always accesses it
         var urlRouteData = new RouteData();
         urlRouteData.Values["page"] = "/Account/ExternalLogin";
@@ -418,6 +414,7 @@ public class ExternalLoginModelTests
             Assert.Equal("./RegisterConfirmation", redirect.PageName);
             Assert.True(redirect.RouteValues?.ContainsKey("Email"));
             Assert.Equal("user@example.com", redirect.RouteValues!["Email"]);
+
             // SignIn should NOT be invoked when confirmation is required
             signInManagerMock.Verify(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<bool>(), It.IsAny<string?>()), Times.Never);
         }
@@ -425,6 +422,7 @@ public class ExternalLoginModelTests
         {
             var localRedirect = Assert.IsType<LocalRedirectResult>(result);
             Assert.Equal(returnUrl, localRedirect.Url);
+
             // SignIn should be invoked
             signInManagerMock.Verify(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), false, info.LoginProvider), Times.Once);
         }
@@ -434,17 +432,59 @@ public class ExternalLoginModelTests
     }
 
     /// <summary>
-    /// Provides combinations of UserManager.SupportsUserEmail and whether the provided user store implements IUserEmailStore.
-    /// The tuple values are:
-    /// - supportsEmail: bool indicating UserManager.SupportsUserEmail
-    /// - storeIsEmailStore: bool indicating whether the provided user store implements IUserEmailStore
-    /// - expectedExceptionType: Type? expected exception type (null if construction should succeed)
+    /// Helper to create a configured ExternalLoginModel instance along with commonly needed mocks.
+    /// Ensures UserManager.SupportsUserEmail returns true and the provided external sign-in manager is used.
     /// </summary>
-    public static IEnumerable<object?[]> ConstructorTestData()
+    private static (ExternalLoginModel model, Mock<SignInManager<IdentityUser<Guid>>> signInManagerMock, Mock<UserManager<IdentityUser<Guid>>> userManagerMock) CreateModelWithMocks()
     {
-        yield return [false, true, typeof(NotSupportedException)];
-        yield return [true, false, typeof(InvalidCastException)];
-        yield return [true, true, null];
-    }
+        // IUserEmailStore needed as the constructor calls GetEmailStore which casts userStore to IUserEmailStore
+        var userEmailStoreMock = new Mock<IUserEmailStore<IdentityUser<Guid>>>();
+        var userStore = userEmailStoreMock.As<IUserStore<IdentityUser<Guid>>>();
 
+        // UserManager dependencies
+        var userValidators = new List<IUserValidator<IdentityUser<Guid>>>();
+        var pwdValidators = new List<IPasswordValidator<IdentityUser<Guid>>>();
+        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
+            userStore.Object,
+            new Mock<IOptions<IdentityOptions>>().Object,
+            new Mock<IPasswordHasher<IdentityUser<Guid>>>().Object,
+            userValidators,
+            pwdValidators,
+            new Mock<ILookupNormalizer>().Object,
+            new IdentityErrorDescriber(),
+            new Mock<IServiceProvider>().Object,
+            new Mock<ILogger<UserManager<IdentityUser<Guid>>>>().Object);
+
+        userManagerMock.SetupGet(um => um.SupportsUserEmail).Returns(true);
+
+        // SignInManager dependencies
+        var httpContextAccessor = new Mock<IHttpContextAccessor>().Object;
+        var claimsFactory = new Mock<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>().Object;
+        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
+            userManagerMock.Object,
+            httpContextAccessor,
+            claimsFactory,
+            new Mock<IOptions<IdentityOptions>>().Object,
+            new Mock<ILogger<SignInManager<IdentityUser<Guid>>>>().Object,
+            new Mock<IAuthenticationSchemeProvider>().Object,
+            new Mock<IUserConfirmation<IdentityUser<Guid>>>().Object);
+
+        // ExternalLoginModel dependencies
+        var loggerMock = new Mock<ILogger<ExternalLoginModel>>();
+        var emailSenderMock = new Mock<IEmailSender>();
+
+        var model = new ExternalLoginModel(
+            signInManagerMock.Object,
+            userManagerMock.Object,
+            userStore.Object,
+            loggerMock.Object,
+            emailSenderMock.Object);
+
+        // Provide Url helper so Url.Content("~/") works
+        var urlHelperMock = new Mock<IUrlHelper>();
+        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
+        model.Url = urlHelperMock.Object;
+
+        return (model, signInManagerMock, userManagerMock);
+    }
 }

@@ -53,6 +53,7 @@ public class ResendEmailConfirmationModelTests
         };
 
         model.PageContext = new PageContext { HttpContext = new DefaultHttpContext() };
+
         // Mark model state invalid
         model.ModelState.AddModelError("someKey", "some error");
 

@@ -17,6 +17,13 @@ using Moq;
 /// </summary>
 public partial class PasskeysModelTests
 {
+    public static IEnumerable<object?[]> CredentialIdNullOrEmptyData()
+    {
+        // MemberData supports null values via object?[]
+        yield return [null];
+        yield return [string.Empty];
+    }
+
     /// <summary>
     /// Verifies that constructing PasskeysModel with valid manager instances does not throw
     /// and that public properties are initially null (default) after construction.
@@ -208,6 +215,7 @@ public partial class PasskeysModelTests
             Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
 
         var model = new PasskeysModel(userManagerMock.Object, signInManagerMock.Object);
+
         // ensure PageModel.User can be passed; not necessary because setups use It.IsAny<ClaimsPrincipal>()
 
         // Act
@@ -217,13 +225,6 @@ public partial class PasskeysModelTests
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
         Assert.IsType<string>(notFound.Value);
         Assert.Contains("missing-user-id", notFound.Value as string, StringComparison.Ordinal);
-    }
-
-    public static IEnumerable<object?[]> CredentialIdNullOrEmptyData()
-    {
-        // MemberData supports null values via object?[]
-        yield return [null];
-        yield return [string.Empty];
     }
 
     /// <summary>
@@ -286,5 +287,4 @@ public partial class PasskeysModelTests
         var expectedMessage = $"Unable to load user with ID '{expectedId}'.";
         Assert.Equal(expectedMessage, notFound.Value as string);
     }
-
 }

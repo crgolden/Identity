@@ -19,7 +19,7 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ChangePasswordModelTests
 {
-    public static IEnumerable<object? []> GetUserIdValues()
+    public static IEnumerable<object?[]> GetUserIdValues()
     {
         // Provide a concrete string and a null value to exercise both message forms
         yield return
@@ -46,6 +46,7 @@ public class ChangePasswordModelTests
         var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(userManagerMock.Object, Mock.Of<IHttpContextAccessor>(), Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(), null, null, null, null);
         var loggerMock = new Mock<ILogger<ChangePasswordModel>>();
         var model = new ChangePasswordModel(userManagerMock.Object, signInManagerMock.Object, loggerMock.Object);
+
         // Put a dummy principal on the PageContext (not strictly used because we expect early exit)
         model.PageContext = new PageContext
         {
@@ -54,12 +55,16 @@ public class ChangePasswordModelTests
                 User = new ClaimsPrincipal()
             }
         };
+
         // Make model invalid
         model.ModelState.AddModelError("SomeKey", "Some error");
+
         // Act
         var result = await model.OnPostAsync();
+
         // Assert
         Assert.IsType<PageResult>(result);
+
         // Ensure GetUserAsync was never called due to early return
         userManagerMock.Verify(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()), Times.Never);
     }
@@ -78,6 +83,7 @@ public class ChangePasswordModelTests
         var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(userManagerMock.Object, Mock.Of<IHttpContextAccessor>(), Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(), null, null, null, null);
         var loggerMock = new Mock<ILogger<ChangePasswordModel>>();
         var model = new ChangePasswordModel(userManagerMock.Object, signInManagerMock.Object, loggerMock.Object);
+
         // Prepare a principal and page context
         var principal = new ClaimsPrincipal(new ClaimsIdentity());
         model.PageContext = new PageContext
@@ -87,14 +93,18 @@ public class ChangePasswordModelTests
                 User = principal
             }
         };
+
         // Setup UserManager to return null user and a known id
         const string expectedId = "expected-user-id";
-        userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync((IdentityUser<Guid>? )null);
+        userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync((IdentityUser<Guid>?)null);
         userManagerMock.Setup(um => um.GetUserId(It.IsAny<ClaimsPrincipal>())).Returns(expectedId);
+
         // Set Input so the null/whitespace guard is bypassed and we reach the user lookup
         model.Input = new ChangePasswordModel.InputModel { OldPassword = "OldP@ss1!", NewPassword = "NewP@ss1!" };
+
         // Act
         var result = await model.OnPostAsync();
+
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
         Assert.Equal($"Unable to load user with ID '{expectedId}'.", notFound.Value);
@@ -104,7 +114,7 @@ public class ChangePasswordModelTests
     /// Verifies that constructing ChangePasswordModel with valid (non-null) dependencies does not throw.
     /// Input conditions: valid instances for userManager, signInManager and logger must be provided.
     /// Expected result: constructor completes without throwing and the resulting object is not null.
-    /// 
+    ///
     /// NOTE (Skipped): Creating UserManager<IdentityUser<Guid>> and SignInManager<IdentityUser<Guid>>
     /// requires providing concrete implementations of many ASP.NET Core Identity services (IUserStore,
     /// IOptions, IPasswordHasher, validators, ILookupNormalizer, IdentityErrorDescriber, IServiceProvider, etc.)
@@ -137,8 +147,10 @@ public class ChangePasswordModelTests
         var confirmation = new Mock<IUserConfirmation<IdentityUser<Guid>>>().Object;
         var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(userManagerMock.Object, httpContextAccessor, claimsFactory, identityOptions, signInManagerLogger, schemes, confirmation);
         var loggerMock = new Mock<ILogger<ChangePasswordModel>>();
+
         // Act
         var model = new ChangePasswordModel(userManagerMock.Object, signInManagerMock.Object, loggerMock.Object);
+
         // Assert
         Assert.NotNull(model);
     }
@@ -147,7 +159,7 @@ public class ChangePasswordModelTests
     /// Partial test template for null-parameter behavior.
     /// Input conditions: one or more constructor parameters are null.
     /// Expected result: If the implementation adds null checks, an ArgumentNullException should be thrown.
-    /// 
+    ///
     /// NOTE (Skipped): The current ChangePasswordModel constructor in the provided source file does simple assignments
     /// and does not perform null checks. This test is provided as a template and skipped. If you add null validation
     /// to the constructor, remove Skip and implement the arrange/act/assert commented code below.
@@ -159,8 +171,10 @@ public class ChangePasswordModelTests
         // The current implementation of ChangePasswordModel does not validate constructor arguments.
         // Verify that constructing with null managers does not throw (reflects current behavior).
         var loggerMock = new Mock<ILogger<ChangePasswordModel>>();
+
         // Act
         var exception = Record.Exception(() => new ChangePasswordModel(null!, null!, loggerMock.Object));
+
         // Assert
         Assert.Null(exception);
     }

@@ -21,7 +21,7 @@ public class GravatarServiceTests
         var service = new GravatarService(gravatarMock.Object);
 
         // Act
-        var result = await service.GetAvatarUrlAsync("user@example.com");
+        var result = await service.GetAvatarUrlAsync("user@example.com", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(expected, result);
@@ -39,7 +39,7 @@ public class GravatarServiceTests
         var service = new GravatarService(gravatarMock.Object);
 
         // Act
-        var result = await service.GetAvatarUrlAsync("user@example.com");
+        var result = await service.GetAvatarUrlAsync("user@example.com", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Null(result);
@@ -56,7 +56,7 @@ public class GravatarServiceTests
         var service = new GravatarService(gravatarMock.Object);
 
         // Act
-        var result = await service.GetAvatarUrlAsync("unknown@example.com");
+        var result = await service.GetAvatarUrlAsync("unknown@example.com", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Null(result);
@@ -73,7 +73,7 @@ public class GravatarServiceTests
         var service = new GravatarService(gravatarMock.Object);
 
         // Act & Assert
-        await Assert.ThrowsAsync<ApiException>(() => service.GetAvatarUrlAsync("user@example.com"));
+        await Assert.ThrowsAsync<ApiException>(() => service.GetAvatarUrlAsync("user@example.com", TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -92,7 +92,7 @@ public class GravatarServiceTests
         var service = new GravatarService(gravatarMock.Object);
 
         // Act
-        await service.GetAvatarUrlAsync(profileIdentifier);
+        await service.GetAvatarUrlAsync(profileIdentifier, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(expectedHash, capturedHash);
@@ -104,7 +104,7 @@ public class GravatarServiceTests
     public async Task GetAvatarUrlAsync_SupportsCancellationToken()
     {
         // Arrange
-        var cts = new CancellationTokenSource();
+        using var cts = new CancellationTokenSource();
         CancellationToken capturedToken = default;
         var profile = new Profile { Avatar_url = new Uri("https://gravatar.com/avatar/test") };
         var gravatarMock = new Mock<IGravatar>();

@@ -146,5 +146,4 @@ public class DeletePersonalDataModelTests
         var expectedMessage = $"Unable to load user with ID '{expectedUserId}'.";
         Assert.Equal(expectedMessage, notFound.Value);
     }
-
 }

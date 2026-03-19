@@ -20,6 +20,15 @@ using Moq;
 [Trait("Category", "Unit")]
 public class TwoFactorAuthenticationModelTests
 {
+    public static TheoryData<string?, bool, bool, int> GetOnGetAsyncCases() => new()
+    {
+        // Cover typical, boundary and unusual numeric values as RecoveryCodesLeft, and both null/non-null authenticator key.
+        { null, false, false, 0 },
+        { "auth-key-abc", true, true, 5 },
+        { "k", false, true, int.MaxValue },
+        { null, true, false, int.MinValue },
+    };
+
     /// <summary>
     /// Verifies that constructing TwoFactorAuthenticationModel with null userManager and signInManager
     /// and an optional logger does not throw and initializes public properties to their default values.
@@ -32,17 +41,12 @@ public class TwoFactorAuthenticationModelTests
     /// - Public properties are default: HasAuthenticator == false, RecoveryCodesLeft == 0,
     ///   Is2faEnabled == false, IsMachineRemembered == false, StatusMessage == null.
     /// </summary>
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void Constructor_NullUserManagerAndSignInManager_WithOptionalLogger_InitializesDefaults(bool provideLogger)
+    [Fact]
+    public void Constructor_NullUserManagerAndSignInManager_InitializesDefaults()
     {
         // Arrange
         UserManager<IdentityUser<Guid>>? userManager = null;
         SignInManager<IdentityUser<Guid>>? signInManager = null;
-        var logger = provideLogger
-            ? new Mock<ILogger<TwoFactorAuthenticationModel>>().Object
-            : null;
 
         // Act
         var ex = Record.Exception(() => new TwoFactorAuthenticationModel(userManager, signInManager));
@@ -74,7 +78,6 @@ public class TwoFactorAuthenticationModelTests
         // Arrange
         UserManager<IdentityUser<Guid>>? userManager = null;
         SignInManager<IdentityUser<Guid>>? signInManager = null;
-        var logger = new Mock<ILogger<TwoFactorAuthenticationModel>>().Object;
 
         var model = new TwoFactorAuthenticationModel(userManager, signInManager);
 
@@ -114,7 +117,6 @@ public class TwoFactorAuthenticationModelTests
             Mock.Of<IAuthenticationSchemeProvider>(),
             Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
 
-        var loggerMock = Mock.Of<ILogger<TwoFactorAuthenticationModel>>();
         var model = new TwoFactorAuthenticationModel(userManagerMock.Object, signInManagerMock.Object);
 
         // Prepare ClaimsPrincipal for the PageContext (User)
@@ -151,7 +153,14 @@ public class TwoFactorAuthenticationModelTests
         var userStoreMock = new Mock<IUserStore<IdentityUser<Guid>>>();
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
             userStoreMock.Object,
-            null, null, null, null, null, null, null, null);
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null);
 
         var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
             userManagerMock.Object,
@@ -162,7 +171,6 @@ public class TwoFactorAuthenticationModelTests
             Mock.Of<IAuthenticationSchemeProvider>(),
             Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
 
-        var loggerMock = Mock.Of<ILogger<TwoFactorAuthenticationModel>>();
         var model = new TwoFactorAuthenticationModel(userManagerMock.Object, signInManagerMock.Object);
 
         // Prepare ClaimsPrincipal for the PageContext (User)
@@ -211,8 +219,6 @@ public class TwoFactorAuthenticationModelTests
             Mock.Of<IAuthenticationSchemeProvider>(),
             Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
 
-        var mockLogger = new Mock<ILogger<TwoFactorAuthenticationModel>>();
-
         // Setup: GetUserAsync returns null and GetUserId returns a specific id string
         const string expectedId = "expected-id-123";
         mockUserManager
@@ -259,8 +265,6 @@ public class TwoFactorAuthenticationModelTests
             Mock.Of<IAuthenticationSchemeProvider>(),
             Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
 
-        var mockLogger = new Mock<ILogger<TwoFactorAuthenticationModel>>();
-
         var user = new IdentityUser<Guid>();
 
         // Setup manager behaviors according to parameters
@@ -293,13 +297,4 @@ public class TwoFactorAuthenticationModelTests
         Assert.Equal(isMachineRemembered, pageModel.IsMachineRemembered);
         Assert.Equal(recoveryCodes, pageModel.RecoveryCodesLeft);
     }
-
-    public static TheoryData<string?, bool, bool, int> GetOnGetAsyncCases() => new()
-    {
-        // Cover typical, boundary and unusual numeric values as RecoveryCodesLeft, and both null/non-null authenticator key.
-        { null, false, false, 0 },
-        { "auth-key-abc", true, true, 5 },
-        { "k", false, true, int.MaxValue },
-        { null, true, false, int.MinValue },
-    };
 }

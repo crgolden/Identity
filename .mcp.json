@@ -26,15 +26,6 @@
       "env": {
         "SONAR_TOKEN": "${SONAR_TOKEN}"
       }
-    },
-    "ef-dacpac-mcp": {
-      "command": "dotnet",
-      "args": [
-        "run",
-        "--project",
-        "tools/ef-dacpac-mcp/ef-dacpac-mcp.csproj",
-        "--no-launch-profile"
-      ]
     }
   }
 }

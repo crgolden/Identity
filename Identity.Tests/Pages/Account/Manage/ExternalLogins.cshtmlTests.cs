@@ -18,6 +18,23 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ExternalLoginsModelTests
 {
+    public static TheoryData<string?> Providers() => new()
+    {
+        "Google",
+        string.Empty, // empty provider
+        "   ", // whitespace-only provider
+        "prov!der@#%", // special chars
+    };
+
+    public static TheoryData<int, string?, bool> ShowRemoveData() => new()
+    {
+        // loginCount, passwordHash, expectedShowRemoveButton
+        { 0, null, false },          // no logins, no password -> cannot remove
+        { 0, "hash", true },         // no logins, but has password -> can remove
+        { 1, null, false },          // single external login, no password -> cannot remove
+        { 2, null, true },           // multiple external logins -> can remove
+    };
+
     /// <summary>
     /// Verifies that the ExternalLoginsModel constructor succeeds (does not throw) and that
     /// public properties remain at their default values when constructed with null or a mocked IUserStore.
@@ -46,6 +63,7 @@ public class ExternalLoginsModelTests
 
         // Assert
         Assert.NotNull(model);
+
         // Public auto-properties are initialized to empty collections by the class
         Assert.NotNull(model.CurrentLogins);
         Assert.Empty(model.CurrentLogins);
@@ -230,7 +248,7 @@ public class ExternalLoginsModelTests
         var actionResult = await model.OnGetLinkLoginCallbackAsync();
 
         // Assert
-        var redirect = Assert.IsType<RedirectToPageResult>(actionResult);
+        Assert.IsType<RedirectToPageResult>(actionResult);
         if (addSucceeded)
         {
             Assert.Equal("The external login was added.", model.StatusMessage);
@@ -356,7 +374,7 @@ public class ExternalLoginsModelTests
         var result = await model.OnPostRemoveLoginAsync(loginProvider, providerKey);
 
         // Assert
-        var redirect = Assert.IsType<RedirectToPageResult>(result);
+        Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("The external login was not removed.", model.StatusMessage);
 
         // Verify RemoveLoginAsync called with expected parameters
@@ -420,20 +438,12 @@ public class ExternalLoginsModelTests
         var result = await model.OnPostRemoveLoginAsync(loginProvider, providerKey);
 
         // Assert
-        var redirect = Assert.IsType<RedirectToPageResult>(result);
+        Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("The external login was removed.", model.StatusMessage);
 
         userManagerMock.Verify(u => u.RemoveLoginAsync(It.Is<IdentityUser<Guid>>(x => x == user), loginProvider, providerKey), Times.Once);
         signInManagerMock.Verify(s => s.RefreshSignInAsync(It.Is<IdentityUser<Guid>>(x => x == user)), Times.Once);
     }
-
-    public static TheoryData<string?> Providers() => new()
-    {
-        "Google",
-        "", // empty provider
-        "   ", // whitespace-only provider
-        "prov!der@#%", // special chars
-    };
 
     /// <summary>
     /// Verifies that OnPostLinkLoginAsync signs out the external cookie, configures external authentication properties,
@@ -480,11 +490,13 @@ public class ExternalLoginsModelTests
         // We'll set the UrlHelper to return this redirect
         const string expectedRedirect = "/ExternalLogins?handler=LinkLoginCallback";
         var mockUrlHelper = new Mock<IUrlHelper>();
+
         // ActionContext must be non-null because UrlHelperExtensions.Page always accesses it
         var urlRouteData = new RouteData();
         urlRouteData.Values["page"] = "/Account/Manage/ExternalLogins";
         mockUrlHelper.SetupGet(u => u.ActionContext).Returns(
             new ActionContext(new DefaultHttpContext(), urlRouteData, new ActionDescriptor()));
+
         // SetReturnsDefault covers all string?-returning methods including RouteUrl called by Url.Page
         mockUrlHelper.SetReturnsDefault<string?>(expectedRedirect);
 
@@ -538,11 +550,13 @@ public class ExternalLoginsModelTests
         Assert.Same(expectedProperties, challenge.Properties);
 
         // Verify SignOutAsync was invoked on the authentication service with the external scheme
-        mockAuthService.Verify(a =>
+        mockAuthService.Verify(
+            a =>
             a.SignOutAsync(httpContext, IdentityConstants.ExternalScheme, It.IsAny<AuthenticationProperties>()), Times.Once);
 
         // Verify ConfigureExternalAuthenticationProperties called once with expected arguments
-        mockSignInManager.Verify(s => s.ConfigureExternalAuthenticationProperties(
+        mockSignInManager.Verify(
+            s => s.ConfigureExternalAuthenticationProperties(
             It.Is<string>(p => p == provider),
             It.Is<string>(r => r == expectedRedirect),
             It.Is<string>(id => id == expectedUserId)), Times.Once);
@@ -550,13 +564,4 @@ public class ExternalLoginsModelTests
         // Verify GetUserId was called with the PageModel's User
         mockUserManager.Verify(u => u.GetUserId(httpContext.User), Times.Once);
     }
-
-    public static TheoryData<int, string?, bool> ShowRemoveData() => new()
-    {
-        // loginCount, passwordHash, expectedShowRemoveButton
-        { 0, null, false },          // no logins, no password -> cannot remove
-        { 0, "hash", true },         // no logins, but has password -> can remove
-        { 1, null, false },          // single external login, no password -> cannot remove
-        { 2, null, true },           // multiple external logins -> can remove
-    };
 }

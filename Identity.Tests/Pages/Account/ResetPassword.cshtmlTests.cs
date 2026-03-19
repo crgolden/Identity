@@ -21,6 +21,17 @@ using Moq;
 public class ResetPasswordModelTests
 {
     /// <summary>
+    /// Provides valid original strings to be encoded by Base64Url for tests.
+    /// Includes empty string and strings with special/unicode characters.
+    /// </summary>
+    public static TheoryData<string> GetValidEncodedCases() => new()
+    {
+        "abc",
+        "p@$$w0rd!",
+        "??????",
+    };
+
+    /// <summary>
     /// Verifies constructor behavior for ResetPasswordModel.
     /// Input conditions: A properly-constructed or mockable UserManager{IdentityUser{Guid}} must be provided to the constructor.
     /// Expected result: The constructor should complete without throwing and produce a usable ResetPasswordModel instance.
@@ -34,21 +45,6 @@ public class ResetPasswordModelTests
     public void ResetPasswordModel_ValidUserManager_ConstructsSuccessfully()
     {
         // Arrange
-        // NOTE: Per repository constraints, do NOT create any custom fake or stub classes.
-        // Provide a fully-configured UserManager<IdentityUser<Guid>> (constructed using mocks for its constructor params)
-        // or a Moq.Mock<UserManager<IdentityUser<Guid>>> with appropriate constructor args here.
-        // Example guidance (do NOT implement here inline as per constraints):
-        // var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        // var options = Options.Create(new IdentityOptions());
-        // var passwordHasherMock = new Mock<IPasswordHasher<IdentityUser<Guid>>>();
-        // var userValidators = new List<IUserValidator<IdentityUser<Guid>>>();
-        // var passwordValidators = new List<IPasswordValidator<IdentityUser<Guid>>>();
-        // var lookupNormalizerMock = new Mock<ILookupNormalizer>();
-        // var errors = new IdentityErrorDescriber();
-        // var services = new Mock<IServiceProvider>();
-        // var logger = new Mock<Microsoft.Extensions.Logging.ILogger<UserManager<IdentityUser<Guid>>>>();
-        // var userManager = new UserManager<IdentityUser<Guid>>(storeMock.Object, options, passwordHasherMock.Object, userValidators, passwordValidators, lookupNormalizerMock.Object, errors, services.Object, logger.Object);
-
         var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
         var options = Microsoft.Extensions.Options.Options.Create(new IdentityOptions());
         var passwordHasherMock = new Mock<IPasswordHasher<IdentityUser<Guid>>>();
@@ -129,17 +125,6 @@ public class ResetPasswordModelTests
     }
 
     /// <summary>
-    /// Provides valid original strings to be encoded by Base64Url for tests.
-    /// Includes empty string and strings with special/unicode characters.
-    /// </summary>
-    public static TheoryData<string> GetValidEncodedCases() => new()
-    {
-        "abc",
-        "p@$$w0rd!",
-        "??????",
-    };
-
-    /// <summary>
     /// The test verifies that malformed Base64Url inputs (containing whitespace or invalid chars)
     /// cause the decoder to throw a FormatException.
     /// Inputs: whitespace-only and clearly invalid Base64Url strings.
@@ -175,6 +160,7 @@ public class ResetPasswordModelTests
             userStoreMock.Object, null, null, null, null, null, null, null, null);
 
         var model = new ResetPasswordModel(userManagerMock.Object);
+
         // Create Input but ModelState will be invalid
         model.Input = new ResetPasswordModel.InputModel
         {
@@ -192,6 +178,7 @@ public class ResetPasswordModelTests
 
         // Assert
         Assert.IsType<PageResult>(result);
+
         // Ensure user manager methods were not called
         userManagerMock.Verify(um => um.FindByEmailAsync(It.IsAny<string>()), Times.Never);
         userManagerMock.Verify(um => um.ResetPasswordAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
@@ -208,7 +195,7 @@ public class ResetPasswordModelTests
     /// </summary>
     [Theory]
     [InlineData(false, false)] // user not found -> redirect
-    [InlineData(true, true)]   // user found and reset succeeds -> redirect
+    [InlineData(true, true)] // user found and reset succeeds -> redirect
     public async Task OnPostAsync_UserMissingOrResetSucceeds_RedirectsToConfirmation(bool userExists, bool resetSucceeds)
     {
         // Arrange

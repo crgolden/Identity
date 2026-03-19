@@ -6,34 +6,10 @@ using Infrastructure;
 [Collection(E2ECollection.Name)]
 public sealed class PasswordResetTests(PlaywrightFixture fixture)
 {
-    private async Task<(string Email, string Password)> CreateConfirmedUserAsync()
-    {
-        var email = $"e2e-{Guid.NewGuid()}@test.invalid";
-        const string password = "Test@123456!";
-
-        var (context, page) = await fixture.NewPageAsync();
-        await using (context)
-        {
-            await page.GotoAsync("/Account/Register");
-            await page.FillAsync("input[name='Input.Email']", email);
-            await page.FillAsync("input[name='Input.Password']", password);
-            await page.FillAsync("input[name='Input.ConfirmPassword']", password);
-            await page.ClickAsync("button[type='submit']");
-            await page.WaitForURLAsync("**/Account/RegisterConfirmation**");
-
-            var confirmEmail = await fixture.Email.WaitForEmailAsync(email);
-            var confirmLink = EmailCaptureService.ExtractLink(confirmEmail.HtmlBody, "http");
-            await page.GotoAsync(confirmLink);
-            await page.WaitForURLAsync("**/Account/ConfirmEmail**");
-        }
-
-        return (email, password);
-    }
-
     [Fact]
     public async Task ForgotPassword_Reset_LoginWithNewPassword_Succeeds()
     {
-        var (email, oldPassword) = await CreateConfirmedUserAsync();
+        var (email, _) = await CreateConfirmedUserAsync();
         const string newPassword = "NewTest@789012!";
 
         var (context, page) = await fixture.NewPageAsync();
@@ -99,5 +75,29 @@ public sealed class PasswordResetTests(PlaywrightFixture fixture)
             var errorText = await page.TextContentAsync(".validation-summary-errors, .text-danger");
             Assert.NotNull(errorText);
         }
+    }
+
+    private async Task<(string Email, string Password)> CreateConfirmedUserAsync()
+    {
+        var email = $"e2e-{Guid.NewGuid()}@test.invalid";
+        const string password = "Test@123456!";
+
+        var (context, page) = await fixture.NewPageAsync();
+        await using (context)
+        {
+            await page.GotoAsync("/Account/Register");
+            await page.FillAsync("input[name='Input.Email']", email);
+            await page.FillAsync("input[name='Input.Password']", password);
+            await page.FillAsync("input[name='Input.ConfirmPassword']", password);
+            await page.ClickAsync("button[type='submit']");
+            await page.WaitForURLAsync("**/Account/RegisterConfirmation**");
+
+            var confirmEmail = await fixture.Email.WaitForEmailAsync(email);
+            var confirmLink = EmailCaptureService.ExtractLink(confirmEmail.HtmlBody, "http");
+            await page.GotoAsync(confirmLink);
+            await page.WaitForURLAsync("**/Account/ConfirmEmail**");
+        }
+
+        return (email, password);
     }
 }

@@ -2,15 +2,18 @@
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
     <File Path=".gitignore" />
+    <File Path=".mcp.json" />
     <File Path="CLAUDE.md" />
+    <File Path="coverage.settings.xml" />
     <File Path="dotnet-tools.json" />
     <File Path="global.json" />
     <File Path="README.md" />
+    <File Path="TESTING.md" />
   </Folder>
+  <Project Path="Identity.Api/Identity.Api.csproj" />
   <Project Path="Identity.Data/Identity.Data.sqlproj" Id="83be4387-c65f-4485-8a85-c28367b0d014">
     <Build />
     <Deploy />
   </Project>
   <Project Path="Identity.Tests/Identity.Tests.csproj" />
-  <Project Path="Identity.Api/Identity.Api.csproj" />
 </Solution>

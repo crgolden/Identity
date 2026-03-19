@@ -22,6 +22,7 @@ public class DownloadPersonalDataModelTests
     {
         // Arrange
         var loggerMock = new Mock<ILogger<DownloadPersonalDataModel>>();
+
         // userManager is not used by OnGet; pass null with null-forgiving to satisfy compiler nullable analysis.
         var model = new DownloadPersonalDataModel(null!, loggerMock.Object);
 
@@ -50,6 +51,7 @@ public class DownloadPersonalDataModelTests
 
         // Assert
         Assert.Null(exception); // no exception thrown
+
         // Verify no calls were made to the logger
         loggerMock.VerifyNoOtherCalls();
     }
@@ -165,9 +167,7 @@ public class DownloadPersonalDataModelTests
         // Guidance:
         // If the desired behavior is to throw on null arguments, update the production constructor
         // to validate arguments (e.g., throw new ArgumentNullException(nameof(userManager))).
-        // Once that validation exists, create tests like:
-        // Assert.Throws<ArgumentNullException>(() => new DownloadPersonalDataModel(null!, loggerMock.Object));
-        //
+        // Once that validation exists, add explicit null-arg tests.
         // For now, mark test as skipped to avoid making invalid assumptions.
         Assert.True(true, "Skipped - null handling not defined in source; add explicit validation in production before asserting.");
     }

@@ -24,9 +24,9 @@ public partial class ConfirmEmailModelTests
         { null, "non-null-code" },
         { "non-null-user", null },
         { null, null },
-        { "", "non-null-code" },
+        { string.Empty, "non-null-code" },
         { "  ", "non-null-code" },
-        { "non-null-user", "" },
+        { "non-null-user", string.Empty },
         { "non-null-user", "  " },
     };
 

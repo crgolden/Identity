@@ -20,6 +20,21 @@ using Moq;
 [Trait("Category", "Unit")]
 public class RegisterModelTests
 {
+    public static TheoryData<IEnumerable<AuthenticationScheme>> ExternalSchemesData() => new()
+    {
+        Enumerable.Empty<AuthenticationScheme>(),
+        new List<AuthenticationScheme>
+        {
+            new AuthenticationScheme("Provider1", "Provider One", typeof(DummyAuthHandler))
+        },
+        new List<AuthenticationScheme>
+        {
+            new AuthenticationScheme("ProviderA", "A", typeof(DummyAuthHandler)),
+            new AuthenticationScheme("ProviderB", "B", typeof(DummyAuthHandler)),
+            new AuthenticationScheme("ProviderC", "C", typeof(DummyAuthHandler))
+        },
+    };
+
     /// <summary>
     /// Tests that OnGetAsync assigns the provided returnUrl value to the ReturnUrl property.
     /// Input conditions: various returnUrl values including null, empty, whitespace-only, long, and special characters.
@@ -47,8 +62,7 @@ public class RegisterModelTests
             Mock.Of<Microsoft.Extensions.Options.IOptions<IdentityOptions>>(),
             Mock.Of<ILogger<SignInManager<IdentityUser<Guid>>>>(),
             Mock.Of<IAuthenticationSchemeProvider>(),
-            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>()
-        );
+            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
 
         // Provide an empty external schemes result to focus this test on ReturnUrl assignment.
         signInManagerMock
@@ -70,6 +84,7 @@ public class RegisterModelTests
         var ex = await Record.ExceptionAsync(() => model.OnGetAsync(returnUrl));
         Assert.Null(ex);
         Assert.Equal(returnUrl, model.ReturnUrl);
+
         // ExternalLogins should be an empty list as set up
         Assert.NotNull(model.ExternalLogins);
         Assert.Empty(model.ExternalLogins);
@@ -98,8 +113,7 @@ public class RegisterModelTests
             Mock.Of<Microsoft.Extensions.Options.IOptions<IdentityOptions>>(),
             Mock.Of<ILogger<SignInManager<IdentityUser<Guid>>>>(),
             Mock.Of<IAuthenticationSchemeProvider>(),
-            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>()
-        );
+            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
 
         signInManagerMock
             .Setup(s => s.GetExternalAuthenticationSchemesAsync())
@@ -130,21 +144,6 @@ public class RegisterModelTests
         Assert.Equal(expectedNames, actualNames);
     }
 #pragma warning restore xUnit1045
-
-    public static TheoryData<IEnumerable<AuthenticationScheme>> ExternalSchemesData() => new()
-    {
-        Enumerable.Empty<AuthenticationScheme>(),
-        new List<AuthenticationScheme>
-        {
-            new AuthenticationScheme("Provider1", "Provider One", typeof(DummyAuthHandler))
-        },
-        new List<AuthenticationScheme>
-        {
-            new AuthenticationScheme("ProviderA", "A", typeof(DummyAuthHandler)),
-            new AuthenticationScheme("ProviderB", "B", typeof(DummyAuthHandler)),
-            new AuthenticationScheme("ProviderC", "C", typeof(DummyAuthHandler))
-        },
-    };
 
     /// <summary>
     /// Tests that when the PageModel's ModelState is invalid OnPostAsync returns PageResult
@@ -202,6 +201,7 @@ public class RegisterModelTests
         // Assert
         Assert.IsType<PageResult>(result);
         signInManagerMock.Verify(s => s.GetExternalAuthenticationSchemesAsync(), Times.Once);
+
         // Ensure no user creation call was attempted
         userManagerMock.Verify(u => u.CreateAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>()), Times.Never);
     }
@@ -219,6 +219,7 @@ public class RegisterModelTests
     {
         // Arrange
         var userEmailStoreMock = new Mock<IUserEmailStore<IdentityUser<Guid>>>();
+
         // Pass IdentityOptions with RequireConfirmedAccount through the constructor
         // (Options property is non-virtual and cannot be set up via Moq)
         var identityOptions = new IdentityOptions();
@@ -280,13 +281,16 @@ public class RegisterModelTests
         model.PageContext = new PageContext { HttpContext = ctx };
 
         var urlHelperMock = new Mock<IUrlHelper>();
+
         // ActionContext must be non-null because UrlHelperExtensions.Page always accesses it
         var urlRouteData = new RouteData();
         urlRouteData.Values["page"] = "/Account/Register";
         urlHelperMock.SetupGet(u => u.ActionContext).Returns(
             new ActionContext(new DefaultHttpContext(), urlRouteData, new ActionDescriptor()));
+
         // SetReturnsDefault covers all string?-returning methods including RouteUrl called by Url.Page
         urlHelperMock.SetReturnsDefault<string?>("https://example/confirm");
+
         // Url.Content explicit setup takes precedence over SetReturnsDefault
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
         model.Url = urlHelperMock.Object;
@@ -310,10 +314,12 @@ public class RegisterModelTests
         {
             var redirect = Assert.IsType<RedirectToPageResult>(actionResult);
             Assert.Equal("RegisterConfirmation", redirect.PageName);
+
             // RouteValues should contain email and returnUrl
             Assert.NotNull(redirect.RouteValues);
             Assert.Equal(model.Input.Email, redirect.RouteValues["email"]);
             Assert.Equal(returnUrl, redirect.RouteValues["returnUrl"]);
+
             // SignIn should not be called when RequireConfirmedAccount is true
             signInManagerMock.Verify(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<bool>(), It.IsAny<string>()), Times.Never);
         }
@@ -330,10 +336,13 @@ public class RegisterModelTests
     {
         public Task<AuthenticateResult> AuthenticateAsync()
             => Task.FromResult(AuthenticateResult.NoResult());
+
         public Task ChallengeAsync(AuthenticationProperties? properties)
             => Task.CompletedTask;
+
         public Task ForbidAsync(AuthenticationProperties? properties)
             => Task.CompletedTask;
+
         public Task InitializeAsync(AuthenticationScheme scheme, HttpContext context)
             => Task.CompletedTask;
     }

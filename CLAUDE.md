@@ -6,11 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 The solution (`Identity.slnx`) contains three projects:
 
-- **`Identity.Api/`** — ASP.NET Core 10 Razor Pages web application (the main app), also houses `ApplicationDbContext` and EF Core migrations
+- **`Identity.Api/`** — ASP.NET Core 10 Razor Pages web application (the main app), also houses `ApplicationDbContext`
 - **`Identity.Data/`** — SQL Server Database Project (SSDT); the schema source of truth for production, builds to a `.dacpac`
 - **`Identity.Tests/`** — xUnit v3 test project: unit tests (using `Microsoft.AspNetCore.Mvc.Testing`, `Moq`) and browser-based E2E tests (using `Microsoft.Playwright`)
-
-Additionally, `tools/ef-dacpac-mcp/` contains a custom MCP server (see [MCP Servers](#mcp-servers) below).
 
 ## What This App Does
 
@@ -39,16 +37,16 @@ Avatar/profile images are served via **Gravatar** (`GravatarService` implements 
 - `IConfigurationDbContext` — Duende IdentityServer clients/resources
 - `IPersistedGrantDbContext` — Duende IdentityServer grants/sessions
 
-Migrations live in `Identity.Api/Migrations/` and are registered with `.MigrationsAssembly(assembly)` in `Program.cs`.
+EF Core migrations are not currently present in the repository. The `Identity.Data` SQL project is the authoritative schema source for all environments.
 
 ### Database Change Strategy
 
 Two separate mechanisms are used depending on environment:
 
-- **Development** — EF Core migrations (`dotnet ef migrations add` / `dotnet ef database update`) are used to evolve the local database schema during development.
-- **Production** — The **`Identity.Data` SQL project** is the source of truth. Schema changes are deployed via `.dacpac` (built from `Identity.Data.sqlproj` and published with `SqlPackage`). Migrations are **not** run against production.
+- **Development** — Apply schema changes directly to the local SQL Server (see `Identity.Data/` for table definitions). EF Core migrations are not currently used.
+- **Production** — The **`Identity.Data` SQL project** is the source of truth. Schema changes are deployed via `.dacpac` (built from `Identity.Data.sqlproj` and published with `SqlPackage`).
 
-When making a schema change, update both the EF Core migration (for dev) and the corresponding table definition in `Identity.Data/` (for prod).
+When making a schema change, update the corresponding table definition in `Identity.Data/` for both environments.
 
 ### Passkey Endpoints
 
@@ -129,28 +127,32 @@ dotnet run
 ### Test
 ```bash
 # Unit tests only
-dotnet test --configuration Release -- --filter-trait "Category=Unit"
+dotnet test --project Identity.Tests --configuration Release -- --filter-trait "Category=Unit"
 
 # E2E tests only (local) — Development environment loads User Secrets and uses VS/VS Code credentials
-ASPNETCORE_ENVIRONMENT=Development dotnet test --configuration Release -- --filter-trait "Category=E2E"
+ASPNETCORE_ENVIRONMENT=Development dotnet test --project Identity.Tests --configuration Release -- --filter-trait "Category=E2E"
 
 # All tests (local)
-ASPNETCORE_ENVIRONMENT=Development dotnet test --configuration Release
+ASPNETCORE_ENVIRONMENT=Development dotnet test --project Identity.Tests --configuration Release
 ```
 
 E2E tests use Playwright (Chromium) against a real Kestrel server started in-process. They require the same User Secrets as `dotnet run` (database, Key Vault, etc.).
 
 In CI the workflow sets `ASPNETCORE_ENVIRONMENT=CLI`, which uses `AzureCliCredential` after the `azure/login` OIDC step instead of User Secrets. The `IdentityWebApplicationFactory` only replaces the Serilog logger factory (to avoid the Elasticsearch sink) when the environment is `Development`; in `CLI` the real sink is used.
 
-### EF Core Migrations (development only — not used in production)
-Run from the solution root:
+`PlaywrightFixture.InitializeAsync` unconditionally calls `Microsoft.Playwright.Program.Main(["install", "chromium"])` to ensure Chromium is present. In CI, the workflow also runs a dedicated `pwsh playwright.ps1 install --with-deps chromium` step beforehand to install system-level browser dependencies.
 
-```bash
-dotnet ef migrations add <MigrationName> --project Identity.Api
-dotnet ef database update --project Identity.Api
-```
+### Code Quality
 
-### SQL Database Project (production schema deployment)
+Both `Identity.Api` and `Identity.Tests` set `<TreatWarningsAsErrors>true</TreatWarningsAsErrors>`. All build warnings are errors — fix them before committing.
+
+`.editorconfig` suppresses StyleCop false positives for modern C# syntax:
+- `SA1000` — target-typed `new()` (C# 9+)
+- `SA1010` — collection expressions `[...]` (C# 12)
+- `SA1011` — nullable array types `T[]?`
+- `SA1313` — positional record parameters that define public properties
+
+### SQL Database Project (schema deployment)
 ```bash
 # Build the dacpac
 dotnet build Identity.Data/Identity.Data.sqlproj --configuration Release
@@ -172,7 +174,7 @@ The GitHub Actions workflow (`.github/workflows/main_crgolden-identity.yml`) tri
 1. Builds the full solution via `dotnet build --no-incremental --configuration Release` — this includes `Identity.Data.sqlproj`, which produces the `.dacpac`
 2. Runs unit tests with coverage using `dotnet-coverage collect ... -s "coverage.settings.xml"`, writing `coverage.xml`. `coverage.settings.xml` excludes `[GeneratedCode]`-decorated types (e.g. the NSwag-generated Gravatar client) from coverage metrics.
 3. Logs in to Azure via OIDC, then deploys the E2E test database schema and runs E2E tests with `ASPNETCORE_ENVIRONMENT=CLI`, writing `coverage-e2e.xml` with the same settings file
-4. Publishes the web app and uploads both the app artifact and the `.dacpac` artifact
+4. Publishes the web app (`-r win-x64 --self-contained false`) and uploads both the app artifact and the `.dacpac` artifact
 5. Runs SonarCloud analysis, reading both `coverage.xml` and `coverage-e2e.xml`
 
 **Deploy job** (runs after build):
@@ -185,7 +187,7 @@ In production, `IdentityPasskeyOptions.ValidateOrigin` is not overridden (the de
 
 ## MCP Servers
 
-Five MCP servers are configured in `.mcp.json` and auto-approved via `.claude/settings.json` (`enableAllProjectMcpServers: true`).
+Five MCP servers are configured in `.mcp.json`. `.claude/settings.json` explicitly allows `github` and `playwright`; `azure` and `sonarqube` are denied and require manual approval; `ef-dacpac-mcp` is not listed (defaults to prompt-on-use).
 
 | Server | Package / Source | Auth |
 |---|---|---|
@@ -193,11 +195,11 @@ Five MCP servers are configured in `.mcp.json` and auto-approved via `.claude/se
 | `azure` | `@azure/mcp@latest` | `DefaultAzureCredential` (`az login`) |
 | `playwright` | `@playwright/mcp@latest` | None |
 | `sonarqube` | `mcp/sonarqube` Docker image | `SONAR_TOKEN` env var; requires Docker Desktop |
-| `ef-dacpac-mcp` | `tools/ef-dacpac-mcp/` (this repo, .NET 9) | None |
+| `ef-dacpac-mcp` | `tools/ef-dacpac-mcp/ef-dacpac-mcp.csproj` (not currently present in repo) | None |
 
 ### ef-dacpac-mcp
 
-A custom MCP server that bridges the dual-track schema strategy (EF for dev, DACPAC for prod). Source lives in `tools/ef-dacpac-mcp/` and is OSS-ready (MIT license).
+A custom MCP server that bridges the EF Core / DACPAC schema strategy. The source project is referenced in `.mcp.json` at `tools/ef-dacpac-mcp/ef-dacpac-mcp.csproj` but the `tools/` directory is not currently present in the repository — the server will fail to start until the source is restored.
 
 **EF Core tools** (`dotnet-ef` global tool required):
 - `ef_list_migrations` — shows applied/pending migrations

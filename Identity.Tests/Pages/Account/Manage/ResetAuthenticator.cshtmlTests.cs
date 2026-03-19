@@ -16,6 +16,20 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ResetAuthenticatorModelTests
 {
+    public static TheoryData<bool, string?, Type, string?> OnGetTestCases()
+    {
+        const string missingUserId = "user-123";
+        var expectedMessage = $"Unable to load user with ID '{missingUserId}'.";
+        return new TheoryData<bool, string?, Type, string?>
+        {
+            // Case: user exists -> expect PageResult
+            { true, null, typeof(PageResult), null },
+
+            // Case: user not found -> expect NotFound with ID embedded in message
+            { false, missingUserId, typeof(NotFoundObjectResult), expectedMessage },
+        };
+    }
+
     /// <summary>
     /// Tests OnGet behavior for both when a user is present and when user retrieval returns null.
     /// Inputs:
@@ -40,8 +54,7 @@ public class ResetAuthenticatorModelTests
             null, // ILookupNormalizer
             null, // IdentityErrorDescriber
             null, // IServiceProvider
-            null  // ILogger<UserManager<TUser>>
-        );
+            null);  // ILogger<UserManager<TUser>>
 
         // Setup GetUserAsync to return a user or null based on input
         userManagerMock
@@ -68,15 +81,15 @@ public class ResetAuthenticatorModelTests
             options,
             loggerSignInMock.Object,
             schemesMock.Object,
-            confirmationMock.Object
-        );
+            confirmationMock.Object);
 
         var loggerMock = new Mock<ILogger<ResetAuthenticatorModel>>();
 
         var model = new ResetAuthenticatorModel(userManagerMock.Object, signInManager, loggerMock.Object);
 
         // Set up a minimal PageContext with a ClaimsPrincipal so PageModel.User is available
-        var principal = new ClaimsPrincipal(new ClaimsIdentity([
+        var principal = new ClaimsPrincipal(new ClaimsIdentity(
+            [
             new Claim(ClaimTypes.NameIdentifier, expectedUserId ?? string.Empty)
         ], "test"));
 
@@ -97,6 +110,7 @@ public class ResetAuthenticatorModelTests
         if (expectedResultType == typeof(NotFoundObjectResult))
         {
             var notFound = Assert.IsType<NotFoundObjectResult>(result);
+
             // The implementation constructs the message using _userManager.GetUserId(User)
             Assert.Equal(expectedMessage, notFound.Value as string);
         }
@@ -105,19 +119,6 @@ public class ResetAuthenticatorModelTests
             // Nothing else to assert for PageResult beyond type
             Assert.IsType<PageResult>(result);
         }
-    }
-
-    public static TheoryData<bool, string?, Type, string?> OnGetTestCases()
-    {
-        const string missingUserId = "user-123";
-        var expectedMessage = $"Unable to load user with ID '{missingUserId}'.";
-        return new TheoryData<bool, string?, Type, string?>
-        {
-            // Case: user exists -> expect PageResult
-            { true, null, typeof(PageResult), null },
-            // Case: user not found -> expect NotFound with ID embedded in message
-            { false, missingUserId, typeof(NotFoundObjectResult), expectedMessage },
-        };
     }
 
     /// <summary>
@@ -283,7 +284,7 @@ public class ResetAuthenticatorModelTests
         // helper-factory instances in real tests.
         var loggerMock = new Mock<ILogger<ResetAuthenticatorModel>>();
 
-        // TODO: Acquire or construct valid instances of these dependencies in the test environment.
+        // Passing null managers because the constructor only stores the references and does not access them.
         UserManager<IdentityUser<Guid>>? userManager = null;
         SignInManager<IdentityUser<Guid>>? signInManager = null;
 

@@ -103,13 +103,13 @@ Identity.Tests/     # xUnit v3 test project: unit tests (Moq) and E2E tests (Pla
 dotnet build
 
 # Unit tests only
-dotnet test --configuration Release -- --filter-trait "Category=Unit"
+dotnet test --project Identity.Tests --configuration Release -- --filter-trait "Category=Unit"
 
 # E2E tests (local) — requires Development environment for User Secrets
-ASPNETCORE_ENVIRONMENT=Development dotnet test --configuration Release -- --filter-trait "Category=E2E"
+ASPNETCORE_ENVIRONMENT=Development dotnet test --project Identity.Tests --configuration Release -- --filter-trait "Category=E2E"
 
 # All tests (unit + E2E, local)
-ASPNETCORE_ENVIRONMENT=Development dotnet test --configuration Release
+ASPNETCORE_ENVIRONMENT=Development dotnet test --project Identity.Tests --configuration Release
 
 # Add an EF Core migration (development only)
 dotnet ef migrations add <MigrationName> --project Identity.Api
@@ -123,13 +123,13 @@ dotnet build Identity.Data/Identity.Data.sqlproj --configuration Release
 # Deploy dacpac to production SQL Server
 sqlpackage /Action:Publish /SourceFile:Identity.Data/bin/Release/Identity.Data.dacpac /TargetConnectionString:"<connection-string>"
 
-# Publish web app
+# Publish web app (add -r win-x64 --self-contained false when targeting Windows App Service)
 dotnet publish Identity.Api -c Release -o ./publish
 ```
 
 ## AI Assistant Integration (Claude Code)
 
-This repo ships a `.mcp.json` that configures five MCP servers for use with Claude Code. All servers are auto-approved via `.claude/settings.json`.
+This repo ships a `.mcp.json` that configures five MCP servers for use with Claude Code. `.claude/settings.json` explicitly allows `github` and `playwright`; `azure` and `sonarqube` are denied by default; `ef-dacpac-mcp` prompts on first use.
 
 | Server | Source | Purpose |
 |---|---|---|
@@ -148,20 +148,6 @@ $env:SONAR_TOKEN = "squ_..."                     # SonarCloud user token
 
 `azure` uses `DefaultAzureCredential` (same as the app — `az login` covers it).
 `sonarqube` requires Docker Desktop.
-
-### ef-dacpac-mcp tools
-
-The custom MCP server at `tools/ef-dacpac-mcp/` exposes these tools to bridge the dual-track schema strategy (EF Core for dev, DACPAC for prod):
-
-- `ef_list_migrations` — lists applied and pending migrations
-- `ef_migration_script` — generates an idempotent SQL script for a migration range
-- `ef_dbcontext_info` / `ef_dbcontext_list` — DbContext metadata
-- `dacpac_build` — builds a `.dacpac` from `Identity.Data.sqlproj`
-- `dacpac_deploy_report` — XML report of changes sqlpackage would apply
-- `dacpac_drift_check` — human-readable schema drift summary
-- `dacpac_script` — full T-SQL deploy script for pre-deploy review
-
-Requires: `dotnet tool install -g dotnet-ef` and `dotnet tool install -g microsoft.sqlpackage`.
 
 ## Deployment
 

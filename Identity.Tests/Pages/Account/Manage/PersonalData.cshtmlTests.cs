@@ -1,4 +1,4 @@
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+ï»¿#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account.Manage;
 
 using System.Security.Claims;
@@ -14,6 +14,19 @@ using Moq;
 [Trait("Category", "Unit")]
 public class PersonalDataModelTests
 {
+    /// <summary>
+    /// Provides various user id values (including null, empty, whitespace, long, and special characters)
+    /// to validate the NotFound message formatting when the user cannot be loaded.
+    /// </summary>
+    public static TheoryData<string?> UserIdValues => new()
+    {
+        null,
+        string.Empty,
+        "   ",
+        new string('a', 1024),
+        "special\n\t!@#\ufffd",
+    };
+
     /// <summary>
     /// Verifies that the PersonalDataModel constructor accepts valid, non-null dependencies
     /// and constructs an instance that derives from PageModel without throwing.
@@ -46,8 +59,6 @@ public class PersonalDataModelTests
             errorDescriber,
             servicesMock.Object,
             userManagerLoggerMock.Object);
-
-        var loggerMock = new Mock<ILogger<PersonalDataModel>>();
 
         // Act
         PersonalDataModel? model = null;
@@ -90,9 +101,6 @@ public class PersonalDataModelTests
             servicesMock.Object,
             userManagerLoggerMock.Object);
 
-        var loggerMock1 = new Mock<ILogger<PersonalDataModel>>();
-        var loggerMock2 = new Mock<ILogger<PersonalDataModel>>();
-
         // Act
         var model1 = new PersonalDataModel(userManager);
         var model2 = new PersonalDataModel(userManager);
@@ -102,19 +110,6 @@ public class PersonalDataModelTests
         Assert.NotNull(model2);
         Assert.NotSame(model1, model2);
     }
-
-    /// <summary>
-    /// Provides various user id values (including null, empty, whitespace, long, and special characters)
-    /// to validate the NotFound message formatting when the user cannot be loaded.
-    /// </summary>
-    public static TheoryData<string?> UserIdValues => new()
-    {
-        null,
-        string.Empty,
-        "   ",
-        new string('a', 1024),
-        "special\n\t!@#€",
-    };
 
     /// <summary>
     /// The test verifies that when the user manager returns null for GetUserAsync,
@@ -137,8 +132,6 @@ public class PersonalDataModelTests
         userManagerMock
             .Setup(m => m.GetUserId(It.IsAny<ClaimsPrincipal>()))
             .Returns(userId);
-
-        var loggerMock = new Mock<ILogger<PersonalDataModel>>();
 
         var model = new PersonalDataModel(userManagerMock.Object)
         {
@@ -185,8 +178,6 @@ public class PersonalDataModelTests
             .Setup(m => m.GetUserId(It.IsAny<ClaimsPrincipal>()))
             .Throws(new Exception("GetUserId should not be called when user is found"));
 
-        var loggerMock = new Mock<ILogger<PersonalDataModel>>();
-
         var model = new PersonalDataModel(userManagerMock.Object)
         {
             PageContext = new PageContext
@@ -222,8 +213,6 @@ public class PersonalDataModelTests
         userManagerMock
             .Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
             .ThrowsAsync(new InvalidOperationException("boom"));
-
-        var loggerMock = new Mock<ILogger<PersonalDataModel>>();
 
         var model = new PersonalDataModel(userManagerMock.Object)
         {

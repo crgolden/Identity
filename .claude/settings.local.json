@@ -5,7 +5,13 @@
       "Bash(dotnet build:*)",
       "Bash(dotnet test:*)",
       "WebFetch(domain:sonarcloud.io)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(sed -n '1,15p' Identity.Tests/ApplicationDbContextTests.cs)",
+      "Bash(sed -n '79,105p' Identity.Tests/ApplicationDbContextTests.cs)",
+      "Bash(sed -n '8,14p' Identity.Tests/E2E/PasswordResetTests.cs)",
+      "Bash(sed -n '103,108p' Identity.Tests/GravatarServiceTests.cs)",
+      "Bash(sed -n '48,56p' Identity.Tests/Pages/Account/ResetPassword.cshtmlTests.cs)",
+      "Bash(sed -n '168,175p' \"Identity.Tests/Pages/Account/Manage/DownloadPersonalData.cshtmlTests.cs\")"
     ]
   }
 }

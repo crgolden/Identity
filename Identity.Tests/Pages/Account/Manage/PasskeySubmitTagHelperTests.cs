@@ -39,6 +39,7 @@ public class PasskeySubmitTagHelperTests
 
         // Assert
         Assert.NotNull(helper);
+
         // Read into nullable locals to respect nullable annotations in tests.
         var operation = helper.Operation;
         var name = helper.Name;
@@ -163,5 +164,4 @@ public class PasskeySubmitTagHelperTests
         Assert.Contains("request-token-name=\"\"", html, StringComparison.Ordinal);
         Assert.Contains("request-token-value=\"\"", html, StringComparison.Ordinal);
     }
-
 }

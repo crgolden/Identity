@@ -51,10 +51,13 @@ public class LoginModelTests
         Assert.Null(ex);
         Assert.NotNull(model);
         Assert.IsType<PageModel>(model, exactMatch: false);
+
         // Constructor initializes Input with a default InputModel instance.
         Assert.NotNull(model.Input);
+
         // ReturnUrl is not set by constructor; expect null.
         Assert.Null(model.ReturnUrl);
+
         // ExternalLogins is initialized to an empty list by the field initializer.
         Assert.NotNull(model.ExternalLogins);
         Assert.Empty(model.ExternalLogins);
@@ -78,55 +81,6 @@ public class LoginModelTests
         // Act & Assert
         var ex = Record.Exception(() => new LoginModel(signInManager, logger));
         Assert.Null(ex);
-    }
-
-    private static (LoginModel model, Mock<SignInManager<IdentityUser<Guid>>> signInManagerMock) CreateModelWithContext(
-        IList<AuthenticationScheme>? schemes = null)
-    {
-        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock.Object, null, null, null, null, null, null, null, null);
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManagerMock.Object,
-            Mock.Of<IHttpContextAccessor>(),
-            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
-            null, null, null, null);
-        signInManagerMock
-            .Setup(s => s.GetExternalAuthenticationSchemesAsync())
-            .ReturnsAsync(schemes ?? []);
-
-        var authServiceMock = new Mock<IAuthenticationService>();
-        authServiceMock
-            .Setup(a => a.SignOutAsync(It.IsAny<HttpContext>(), It.IsAny<string>(), It.IsAny<AuthenticationProperties?>()))
-            .Returns(Task.CompletedTask);
-
-        var serviceProvider = new ServiceCollection()
-            .AddSingleton(authServiceMock.Object)
-            .BuildServiceProvider();
-
-        var httpContext = new DefaultHttpContext { RequestServices = serviceProvider };
-        var model = new LoginModel(signInManagerMock.Object, Mock.Of<ILogger<LoginModel>>());
-        model.PageContext = new PageContext(new ActionContext(httpContext, new RouteData(), new PageActionDescriptor()));
-
-        var urlHelperMock = new Mock<IUrlHelper>();
-        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
-        model.Url = urlHelperMock.Object;
-
-        return (model, signInManagerMock);
-    }
-
-    private static Mock<SignInManager<IdentityUser<Guid>>> CreateSignInManagerMock()
-    {
-        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock.Object, null, null, null, null, null, null, null, null);
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManagerMock.Object,
-            Mock.Of<IHttpContextAccessor>(),
-            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
-            null, null, null, null);
-        signInManagerMock
-            .Setup(s => s.GetExternalAuthenticationSchemesAsync())
-            .ReturnsAsync([]);
-        return signInManagerMock;
     }
 
     [Fact]
@@ -358,7 +312,7 @@ public class LoginModelTests
                 signInLoggerMock.Object,
                 schemesMock.Object,
                 confirmationMock.Object)
-            { CallBase = false };
+        { CallBase = false };
 
         signInManagerMock.Setup(s => s.GetExternalAuthenticationSchemesAsync())
             .ReturnsAsync([]);
@@ -390,4 +344,58 @@ public class LoginModelTests
         signInManagerMock.Verify(s => s.PasswordSignInAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>()), Times.Never);
     }
 
+    private static (LoginModel model, Mock<SignInManager<IdentityUser<Guid>>> signInManagerMock) CreateModelWithContext(
+        IList<AuthenticationScheme>? schemes = null)
+    {
+        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
+        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock.Object, null, null, null, null, null, null, null, null);
+        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
+            userManagerMock.Object,
+            Mock.Of<IHttpContextAccessor>(),
+            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
+            null,
+            null,
+            null,
+            null);
+        signInManagerMock
+            .Setup(s => s.GetExternalAuthenticationSchemesAsync())
+            .ReturnsAsync(schemes ?? []);
+
+        var authServiceMock = new Mock<IAuthenticationService>();
+        authServiceMock
+            .Setup(a => a.SignOutAsync(It.IsAny<HttpContext>(), It.IsAny<string>(), It.IsAny<AuthenticationProperties?>()))
+            .Returns(Task.CompletedTask);
+
+        var serviceProvider = new ServiceCollection()
+            .AddSingleton(authServiceMock.Object)
+            .BuildServiceProvider();
+
+        var httpContext = new DefaultHttpContext { RequestServices = serviceProvider };
+        var model = new LoginModel(signInManagerMock.Object, Mock.Of<ILogger<LoginModel>>());
+        model.PageContext = new PageContext(new ActionContext(httpContext, new RouteData(), new PageActionDescriptor()));
+
+        var urlHelperMock = new Mock<IUrlHelper>();
+        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
+        model.Url = urlHelperMock.Object;
+
+        return (model, signInManagerMock);
+    }
+
+    private static Mock<SignInManager<IdentityUser<Guid>>> CreateSignInManagerMock()
+    {
+        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
+        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock.Object, null, null, null, null, null, null, null, null);
+        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
+            userManagerMock.Object,
+            Mock.Of<IHttpContextAccessor>(),
+            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
+            null,
+            null,
+            null,
+            null);
+        signInManagerMock
+            .Setup(s => s.GetExternalAuthenticationSchemesAsync())
+            .ReturnsAsync([]);
+        return signInManagerMock;
+    }
 }

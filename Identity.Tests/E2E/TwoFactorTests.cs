@@ -7,29 +7,6 @@ using OtpNet;
 [Collection(E2ECollection.Name)]
 public sealed class TwoFactorTests(PlaywrightFixture fixture)
 {
-    private async Task<(string Email, string Password)> CreateAndLoginAsync()
-    {
-        var email = $"e2e-{Guid.NewGuid()}@test.invalid";
-        const string password = "Test@123456!";
-
-        var (ctx, page) = await fixture.NewPageAsync();
-        await using (ctx)
-        {
-            await page.GotoAsync("/Account/Register");
-            await page.FillAsync("input[name='Input.Email']", email);
-            await page.FillAsync("input[name='Input.Password']", password);
-            await page.FillAsync("input[name='Input.ConfirmPassword']", password);
-            await page.ClickAsync("button[type='submit']");
-            await page.WaitForURLAsync("**/Account/RegisterConfirmation**");
-
-            var confirmEmail = await fixture.Email.WaitForEmailAsync(email);
-            var confirmLink = EmailCaptureService.ExtractLink(confirmEmail.HtmlBody, "http");
-            await page.GotoAsync(confirmLink);
-        }
-
-        return (email, password);
-    }
-
     [Fact]
     public async Task TwoFactor_Setup_Login_WithTotpCode_Succeeds()
     {
@@ -134,5 +111,28 @@ public sealed class TwoFactorTests(PlaywrightFixture fixture)
             await loginPage.WaitForURLAsync(url => !url.Contains("/Account/Login"));
             Assert.DoesNotContain("/Account/Login", loginPage.Url);
         }
+    }
+
+    private async Task<(string Email, string Password)> CreateAndLoginAsync()
+    {
+        var email = $"e2e-{Guid.NewGuid()}@test.invalid";
+        const string password = "Test@123456!";
+
+        var (ctx, page) = await fixture.NewPageAsync();
+        await using (ctx)
+        {
+            await page.GotoAsync("/Account/Register");
+            await page.FillAsync("input[name='Input.Email']", email);
+            await page.FillAsync("input[name='Input.Password']", password);
+            await page.FillAsync("input[name='Input.ConfirmPassword']", password);
+            await page.ClickAsync("button[type='submit']");
+            await page.WaitForURLAsync("**/Account/RegisterConfirmation**");
+
+            var confirmEmail = await fixture.Email.WaitForEmailAsync(email);
+            var confirmLink = EmailCaptureService.ExtractLink(confirmEmail.HtmlBody, "http");
+            await page.GotoAsync(confirmLink);
+        }
+
+        return (email, password);
     }
 }

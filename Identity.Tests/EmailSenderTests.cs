@@ -9,6 +9,12 @@ using Resend;
 [Trait("Category", "Unit")]
 public class EmailSenderTests
 {
+    public static TheoryData<MockBehavior> MockBehaviors() => new()
+    {
+        MockBehavior.Default,
+        MockBehavior.Strict,
+    };
+
     /// <summary>
     /// Verifies that SendEmailAsync constructs an EmailMessage with the expected properties
     /// and calls IResend.EmailSendAsync. Tests multiple combinations of toEmail / subject / message
@@ -19,7 +25,7 @@ public class EmailSenderTests
     [InlineData("user@example.com", "Hello", "Body text")]
     [InlineData("user+tag@example.com", "", "")] // empty subject and message
     [InlineData("user@example.com", "   ", "   ")] // whitespace-only subject and message
-    [InlineData("special@chars.example", "¡Hola! ?", "<p>HTML & <b>bold</b></p>")] // special chars / HTML
+    [InlineData("special@chars.example", "ï¿½Hola! ?", "<p>HTML & <b>bold</b></p>")] // special chars / HTML
     [InlineData("long@example.com", "L" /* placeholder */, "M" /* placeholder */)]
     public async Task SendEmailAsync_VariousInputs_CallsResendWithExpectedMessage(string toEmail, string subject, string message)
     {
@@ -42,6 +48,7 @@ public class EmailSenderTests
         mockResend
             .Setup(r => r.EmailSendAsync(It.IsAny<EmailMessage>(), It.IsAny<CancellationToken>()))
             .Callback<EmailMessage, CancellationToken>((m, ct) => capturedMessage = m)
+
             // Return a completed generic Task; the inner value is not used by EmailSender.
             .Returns(Task.FromResult<ResendResponse<Guid>>(null!));
 
@@ -140,10 +147,4 @@ public class EmailSenderTests
         Assert.IsType<EmailSender>(senderA);
         Assert.IsType<EmailSender>(senderB);
     }
-
-    public static TheoryData<MockBehavior> MockBehaviors() => new()
-    {
-        MockBehavior.Default,
-        MockBehavior.Strict,
-    };
 }

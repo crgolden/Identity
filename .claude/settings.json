@@ -6,7 +6,6 @@
     "dotnet-msbuild@dotnet-agent-skills": true
   },
   "allowedMcpServers": [
-    { "serverName": "ef-dacpac-mcp" },
     { "serverName": "github" },
     { "serverName": "playwright" }
   ],

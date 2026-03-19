@@ -18,6 +18,43 @@ using Moq;
 [Trait("Category", "Unit")]
 public class IndexModelTests
 {
+    public static TheoryData<string?, string?> ValidUserData() => new()
+    {
+        // Typical values
+        { "normalUser", "+1234567890" },
+
+        // Empty strings
+        { string.Empty, string.Empty },
+
+        // Whitespace and special unicode
+        { "   ", "??-?est" },
+
+        // Very long username and null phone number
+        { new string('a', 500), null },
+    };
+
+    public static TheoryData<string?, string?, bool, bool, bool, string> PhoneUpdateCases() => new()
+    {
+        // existingPhone, inputPhone, setSucceeds, expectSetCall, expectRefreshCall, expectedStatusMessage
+        // 1) Both null -> no change, refresh occurs, success message
+        { null, null, false, false, true, "Your profile has been updated" },
+
+        // 2) Same non-null phone -> no change, refresh occurs, success message
+        { "123", "123", false, false, true, "Your profile has been updated" },
+
+        // 3) Changed phone -> set succeeds -> refresh occurs, success message
+        { "123", "456", true, true, true, "Your profile has been updated" },
+
+        // 4) Changed phone -> set fails -> no refresh, unexpected error message
+        { "123", "456", false, true, false, "Unexpected error when trying to set phone number." },
+
+        // 5) existing not null, input null (attempt to remove phone) -> set succeeds -> refresh occurs
+        { "123", null, true, true, true, "Your profile has been updated" },
+
+        // 6) existing null, input empty string (attempt to set empty) -> set succeeds -> refresh occurs
+        { null, string.Empty, true, true, true, "Your profile has been updated" },
+    };
+
     /// <summary>
     /// Tests that OnGetAsync returns NotFoundObjectResult when no user is found.
     /// Input conditions:
@@ -33,13 +70,16 @@ public class IndexModelTests
         var userStoreMock = new Mock<IUserStore<IdentityUser<Guid>>>();
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(userStoreMock.Object, null, null, null, null, null, null, null, null);
         var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(userManagerMock.Object, Mock.Of<IHttpContextAccessor>(), Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(), null, null, null, null);
+
         // Configure to return null user and a known id for GetUserId
         const string expectedId = "expected-id-123";
-        userManagerMock.Setup(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync((IdentityUser<Guid>? )null);
+        userManagerMock.Setup(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync((IdentityUser<Guid>?)null);
         userManagerMock.Setup(u => u.GetUserId(It.IsAny<ClaimsPrincipal>())).Returns(expectedId);
         var model = new IndexModel(userManagerMock.Object, signInManagerMock.Object);
+
         // Act
         var result = await model.OnGetAsync();
+
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
         var expectedMessage = $"Unable to load user with ID '{expectedId}'.";
@@ -73,31 +113,22 @@ public class IndexModelTests
         userManagerMock.Setup(u => u.GetUserNameAsync(user)).ReturnsAsync(returnedUserName);
         userManagerMock.Setup(u => u.GetPhoneNumberAsync(user)).ReturnsAsync(returnedPhoneNumber);
         var model = new IndexModel(userManagerMock.Object, signInManagerMock.Object);
+
         // Act
         var result = await model.OnGetAsync();
+
         // Assert
         Assert.IsType<PageResult>(result);
         Assert.Equal(returnedUserName, model.Username);
         Assert.NotNull(model.Input);
         Assert.Equal(returnedPhoneNumber, model.Input.PhoneNumber);
+
         // Verify that LoadAsync invoked user manager calls (indirectly validated by above assertions),
         // but also verify explicit calls to ensure behavior.
         userManagerMock.Verify(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>()), Times.Once);
         userManagerMock.Verify(u => u.GetUserNameAsync(user), Times.Once);
         userManagerMock.Verify(u => u.GetPhoneNumberAsync(user), Times.Once);
     }
-
-    public static TheoryData<string?, string?> ValidUserData() => new()
-    {
-        // Typical values
-        { "normalUser", "+1234567890" },
-        // Empty strings
-        { string.Empty, string.Empty },
-        // Whitespace and special unicode
-        { "   ", "??-?est" },
-        // Very long username and null phone number
-        { new string('a', 500), null },
-    };
 
     /// <summary>
     /// Verifies that when no user is returned from UserManager.GetUserAsync the handler returns NotFound
@@ -113,14 +144,17 @@ public class IndexModelTests
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(userStore, null, null, null, null, null, null, null, null);
         var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(userManagerMock.Object, Mock.Of<IHttpContextAccessor>(), Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(), null, null, null, null);
         var expectedUserId = "expected-user-id";
-        userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync((IdentityUser<Guid>? )null);
+        userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync((IdentityUser<Guid>?)null);
         userManagerMock.Setup(um => um.GetUserId(It.IsAny<ClaimsPrincipal>())).Returns(expectedUserId);
         var page = new IndexModel(userManagerMock.Object, signInManagerMock.Object);
+
         // Act
         var result = await page.OnPostAsync();
+
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
         Assert.Contains(expectedUserId, notFound.Value?.ToString() ?? string.Empty);
+
         // Ensure no sign-in or phone update calls occurred
         signInManagerMock.Verify(s => s.RefreshSignInAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
         userManagerMock.Verify(u => u.SetPhoneNumberAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>()), Times.Never);
@@ -144,38 +178,25 @@ public class IndexModelTests
         };
         userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
         var page = new IndexModel(userManagerMock.Object, signInManagerMock.Object);
+
         // Make model state invalid
         page.ModelState.AddModelError("Input.PhoneNumber", "Invalid phone");
+
         // Provide an Input to exercise the branch but it should not be used beyond LoadAsync
         page.Input = new IndexModel.InputModel
         {
             PhoneNumber = "000"
         };
+
         // Act
         var result = await page.OnPostAsync();
+
         // Assert
         Assert.IsType<PageResult>(result);
         userManagerMock.Verify(u => u.GetPhoneNumberAsync(It.IsAny<IdentityUser<Guid>>()), Times.Once);
         userManagerMock.Verify(u => u.SetPhoneNumberAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>()), Times.Never);
         signInManagerMock.Verify(s => s.RefreshSignInAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
     }
-
-    public static TheoryData<string?, string?, bool, bool, bool, string> PhoneUpdateCases() => new()
-    {
-        // existingPhone, inputPhone, setSucceeds, expectSetCall, expectRefreshCall, expectedStatusMessage
-        // 1) Both null -> no change, refresh occurs, success message
-        { null, null, false, false, true, "Your profile has been updated" },
-        // 2) Same non-null phone -> no change, refresh occurs, success message
-        { "123", "123", false, false, true, "Your profile has been updated" },
-        // 3) Changed phone -> set succeeds -> refresh occurs, success message
-        { "123", "456", true, true, true, "Your profile has been updated" },
-        // 4) Changed phone -> set fails -> no refresh, unexpected error message
-        { "123", "456", false, true, false, "Unexpected error when trying to set phone number." },
-        // 5) existing not null, input null (attempt to remove phone) -> set succeeds -> refresh occurs
-        { "123", null, true, true, true, "Your profile has been updated" },
-        // 6) existing null, input empty string (attempt to set empty) -> set succeeds -> refresh occurs
-        { null, string.Empty, true, true, true, "Your profile has been updated" },
-    };
 
     /// <summary>
     /// Verifies the IndexModel constructor can be invoked with valid UserManager and SignInManager
@@ -204,10 +225,11 @@ public class IndexModelTests
         var schemeProviderMock = new Mock<IAuthenticationSchemeProvider>();
         var userConfirmationMock = new Mock<IUserConfirmation<IdentityUser<Guid>>>();
         var signInManager = new SignInManager<IdentityUser<Guid>>(userManager, httpContextAccessorMock.Object, claimsFactoryMock.Object, optionsMock.Object, signInManagerLoggerMock.Object, schemeProviderMock.Object, userConfirmationMock.Object);
+
         // Act
         var model = new IndexModel(userManager, signInManager);
+
         // Assert
         Assert.NotNull(model);
     }
-
 }

@@ -101,7 +101,13 @@ public partial class EnableAuthenticatorModelTests
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
             storeMock,
             Options.Create(new IdentityOptions { Tokens = new TokenOptions { AuthenticatorTokenProvider = "Authenticator" } }),
-            null, null, null, null, null, null, null);
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null);
         var loggerMock = new Mock<ILogger<EnableAuthenticatorModel>>();
         var urlEncoder = UrlEncoder.Default;
 
@@ -300,5 +306,4 @@ public partial class EnableAuthenticatorModelTests
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
         Assert.Equal($"Unable to load user with ID '{expectedId}'.", notFound.Value);
     }
-
 }

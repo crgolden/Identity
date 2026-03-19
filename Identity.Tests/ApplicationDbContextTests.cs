@@ -1,6 +1,6 @@
-using Microsoft.EntityFrameworkCore;
-
 namespace Identity.Tests;
+
+using Microsoft.EntityFrameworkCore;
 
 /// <summary>
 /// Tests for Identity.ApplicationDbContext.OnModelCreating behavior.
@@ -28,21 +28,14 @@ public class ApplicationDbContextTests
     };
 
     /// <summary>
-    /// Testable subclass to expose the protected OnModelCreating for direct invocation.
-    /// It lives inside the test class to avoid creating external helper types.
+    /// Provides valid DbContextOptions instances for parameterized tests.
+    /// Currently provides a default-built options instance. This covers the typical construction scenario
+    /// where options may not include a provider. Additional provider-backed options can be added if available.
     /// </summary>
-    private class TestableApplicationDbContext : ApplicationDbContext
+    public static TheoryData<DbContextOptions<ApplicationDbContext>> ValidOptions() => new()
     {
-        public TestableApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
-            : base(options)
-        {
-        }
-
-        /// <summary>
-        /// Exposes the protected OnModelCreating for testing.
-        /// </summary>
-        public void InvokeOnModelCreating(ModelBuilder builder) => base.OnModelCreating(builder);
-    }
+        new DbContextOptionsBuilder<ApplicationDbContext>().Options,
+    };
 
     /// <summary>
     /// Verifies that the constructor successfully creates an instance when provided with valid DbContextOptions.
@@ -80,14 +73,4 @@ public class ApplicationDbContextTests
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() => new ApplicationDbContext(options!));
     }
-
-    /// <summary>
-    /// Provides valid DbContextOptions instances for parameterized tests.
-    /// Currently provides a default-built options instance. This covers the typical construction scenario
-    /// where options may not include a provider. Additional provider-backed options can be added if available.
-    /// </summary>
-    public static TheoryData<DbContextOptions<ApplicationDbContext>> ValidOptions() => new()
-    {
-        new DbContextOptionsBuilder<ApplicationDbContext>().Options,
-    };
 }

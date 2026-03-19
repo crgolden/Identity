@@ -16,6 +16,14 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ForgotPasswordModelTests
 {
+    public static TheoryData<bool, bool> ConstructorNullCombinations() => new()
+    {
+        { false, false }, // both provided
+        { true, false },  // userManager null
+        { false, true },  // emailSender null
+        { true, true },   // both null
+    };
+
     /// <summary>
     /// Test Purpose:
     /// Verifies that when ModelState is invalid the handler returns PageResult without calling user manager or email sender.
@@ -47,6 +55,7 @@ public class ForgotPasswordModelTests
 
         // Assert
         Assert.IsType<PageResult>(result);
+
         // Ensure no calls were made to user manager or email sender
         userManagerMock.Verify(um => um.FindByEmailAsync(It.IsAny<string>()), Times.Never);
         emailSenderMock.Verify(es => es.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
@@ -135,6 +144,7 @@ public class ForgotPasswordModelTests
         {
             // Provide a minimal IUserStore mock required by UserManager constructor.
             var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
+
             // It's acceptable to pass null for many of the optional services in the UserManager ctor.
             userManager = new UserManager<IdentityUser<Guid>>(
                 storeMock.Object,
@@ -163,15 +173,8 @@ public class ForgotPasswordModelTests
         Assert.NotNull(model);
         Assert.IsType<ForgotPasswordModel>(model);
         Assert.IsType<PageModel>(model, exactMatch: false);
+
         // Constructor initializes Input with a default InputModel instance.
         Assert.NotNull(model.Input);
     }
-
-    public static TheoryData<bool, bool> ConstructorNullCombinations() => new()
-    {
-        { false, false }, // both provided
-        { true, false },  // userManager null
-        { false, true },  // emailSender null
-        { true, true },   // both null
-    };
 }

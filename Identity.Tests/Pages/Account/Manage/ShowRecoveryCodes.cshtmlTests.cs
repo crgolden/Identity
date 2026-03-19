@@ -10,6 +10,27 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 [Trait("Category", "Unit")]
 public class ShowRecoveryCodesModelTests
 {
+    private static readonly string[] SingleCode = ["ABC123"];
+    private static readonly string[] DuplicateCodes = ["code", "code"];
+    private static readonly string[] EmptyWhitespaceCodes = [string.Empty, "   "];
+
+    // MemberData for invalid cases: empty array
+    public static TheoryData<string[]?> InvalidRecoveryCodes() => new()
+    {
+        Array.Empty<string>(),
+    };
+
+    // MemberData for valid cases: single, duplicates, empty/whitespace codes, and a large array
+    public static TheoryData<string[]?> ValidRecoveryCodes() => new()
+    {
+        SingleCode,
+        DuplicateCodes,
+        EmptyWhitespaceCodes,
+
+        // Large but feasible array to exercise non-empty boundary
+        CreateLargeArray(10000, "X"),
+    };
+
     /// <summary>
     /// Verifies that when RecoveryCodes is null or an empty array the handler redirects to the TwoFactorAuthentication page.
     /// Input conditions:
@@ -63,31 +84,15 @@ public class ShowRecoveryCodesModelTests
         Assert.IsType<PageResult>(result);
     }
 
-    // MemberData for invalid cases: empty array
-    public static TheoryData<string[]?> InvalidRecoveryCodes() => new()
-    {
-        Array.Empty<string>(),
-    };
-
-    private static readonly string[] SingleCode = ["ABC123"];
-    private static readonly string[] DuplicateCodes = ["code", "code"];
-    private static readonly string[] EmptyWhitespaceCodes = ["", "   "];
-
-    // MemberData for valid cases: single, duplicates, empty/whitespace codes, and a large array
-    public static TheoryData<string[]?> ValidRecoveryCodes() => new()
-    {
-        SingleCode,
-        DuplicateCodes,
-        EmptyWhitespaceCodes,
-        // Large but feasible array to exercise non-empty boundary
-        CreateLargeArray(10000, "X"),
-    };
-
     private static string[] CreateLargeArray(int count, string value)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(count);
         var arr = new string[count];
-        for (var i = 0; i < count; i++) arr[i] = value;
+        for (var i = 0; i < count; i++)
+        {
+            arr[i] = value;
+        }
+
         return arr;
     }
 }

@@ -30,6 +30,13 @@ jobs:
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
 
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: ${{ runner.os }}-nuget-
+
       - name: Cache SonarQube Cloud packages
         uses: actions/cache@v4
         with:
@@ -72,7 +79,8 @@ jobs:
             /o:"$env:SONAR_ORGANIZATION" `
             /d:sonar.token="$env:SONAR_TOKEN" `
             /d:sonar.host.url="https://sonarcloud.io" `
-            /d:sonar.cs.vscoveragexml.reportsPaths="coverage.xml,coverage-e2e.xml"
+            /d:sonar.cs.vscoveragexml.reportsPaths="coverage.xml,coverage-e2e.xml" `
+            /d:sonar.scanner.skipJreProvisioning=true
 
       - name: Build with dotnet
         run: dotnet build --no-incremental --configuration Release
@@ -84,7 +92,7 @@ jobs:
             -f xml -o "coverage.xml" -s "coverage.settings.xml"
 
       - name: Login to Azure (for E2E tests)
-        uses: azure/login@a65d910e8af852a8061c627c456678983e180302 # v2
+        uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_4533A76F9560447CBA73C7D19BFDC764 }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_07B3DB796C7C4D409EFADCB306F23869 }}
@@ -129,6 +137,8 @@ jobs:
         run: >
           dotnet publish Identity.Api/Identity.Api.csproj
           -c Release
+          -r win-x64
+          --self-contained false
           -o ${{ github.workspace  }}\publish
 
       - name: Upload artifact for deployment job
@@ -169,7 +179,7 @@ jobs:
           name: sql-dacpac
 
       - name: Login to Azure
-        uses: azure/login@a65d910e8af852a8061c627c456678983e180302 # v2
+        uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_4533A76F9560447CBA73C7D19BFDC764 }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_07B3DB796C7C4D409EFADCB306F23869 }}
@@ -190,7 +200,7 @@ jobs:
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
-        uses: azure/webapps-deploy@657f0700ea5214d56a0400d8ac5e8023c963d25d # v3.0.6
+        uses: azure/webapps-deploy@v3
         with:
           app-name: 'crgolden-identity'
           slot-name: 'Production'

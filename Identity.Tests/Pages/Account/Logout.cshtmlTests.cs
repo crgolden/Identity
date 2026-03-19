@@ -1,4 +1,4 @@
-#pragma warning disable CS8604 // Possible null reference argument.
+﻿#pragma warning disable CS8604 // Possible null reference argument.
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account;
 
@@ -15,6 +15,21 @@ using Moq;
 [Trait("Category", "Unit")]
 public class LogoutModelTests
 {
+    public static TheoryData<string?, Type> GetCases() => new()
+    {
+        // non-null returnUrl => LocalRedirectResult expected
+        { "/", typeof(LocalRedirectResult) },
+
+        // null returnUrl => RedirectToPageResult expected
+        { null, typeof(RedirectToPageResult) },
+
+        // empty string is still non-null and will be treated as LocalRedirect by the implementation
+        { string.Empty, typeof(LocalRedirectResult) },
+
+        // whitespace is non-null => LocalRedirectResult (implementation does not validate content)
+        { "   ", typeof(LocalRedirectResult) },
+    };
+
     /// <summary>
     /// Verifies that the LogoutModel constructor does not throw when the SignInManager parameter is null
     /// and the logger parameter is provided or null. This checks that the constructor performs simple assignment
@@ -37,6 +52,7 @@ public class LogoutModelTests
         {
             // Act: construct the model
             var model = new LogoutModel(signInManager, logger);
+
             // Assert inside Act block: ensure the object is not null when constructor completes
             Assert.NotNull(model);
         });
@@ -44,16 +60,4 @@ public class LogoutModelTests
         // Assert
         Assert.Null(exception);
     }
-
-    public static TheoryData<string?, Type> GetCases() => new()
-    {
-        // non-null returnUrl => LocalRedirectResult expected
-        { "/", typeof(LocalRedirectResult) },
-        // null returnUrl => RedirectToPageResult expected
-        { null, typeof(RedirectToPageResult) },
-        // empty string is still non-null and will be treated as LocalRedirect by the implementation
-        { string.Empty, typeof(LocalRedirectResult) },
-        // whitespace is non-null => LocalRedirectResult (implementation does not validate content)
-        { "   ", typeof(LocalRedirectResult) },
-    };
 }

@@ -18,6 +18,160 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ManageNavPagesTests
 {
+    public static TheoryData<object?, bool, string?, string?> DeletePersonalDataCases() => new()
+    {
+        // activePageValue, hasActivePage, displayName, expectedResult
+        // 1) ViewData ActivePage exactly matches the page => active
+        { "DeletePersonalData", true, "/some/path/Irrelevant.cshtml", "active" },
+
+        // 2) Case-insensitive match => active
+        { "deletepersonaldata", true, "/some/path/Irrelevant.cshtml", "active" },
+
+        // 3) ActivePage present but different; DisplayName file name equals DeletePersonalData => fallback used => active
+        { "SomethingElse", true, "/Areas/Identity/Pages/Account/Manage/DeletePersonalData.cshtml", null },
+
+        // 4) No ActivePage key; DisplayName filename is DeletePersonalData => fallback should yield active
+        { null, false, "/Areas/Identity/Pages/Account/Manage/DeletePersonalData.cshtml", "active" },
+
+        // 5) ActivePage exists but is non-string (int): 'as string' yields null -> fallback to DisplayName filename
+        { 123, true, "/Areas/Identity/Pages/Account/Manage/DeletePersonalData.cshtml", "active" },
+
+        // 6) No ActivePage and DisplayName null => fallback is null => result null
+        { null, false, null, null },
+    };
+
+    public static TheoryData<object?, string?, string, string?> PageNavTestData()
+    {
+        var longStr = new string('a', 600);
+        return new TheoryData<object?, string?, string, string?>
+        {
+            // ActivePage is a string and matches exactly -> active
+            { "Index", "/Areas/Identity/Pages/Account/Manage/Index.cshtml", "Index", "active" },
+
+            // ActivePage is a different casing -> still active (case-insensitive)
+            { "index", "/Some/Path/Index.cshtml", "Index", "active" },
+
+            // ActivePage empty string matches empty page
+            { string.Empty, "/Any/Path/Ignore.cshtml", string.Empty, "active" },
+
+            // ActivePage is null -> fallback to DisplayName file name, matches -> active
+            { null, "/Areas/Identity/Pages/Account/Manage/ChangePassword.cshtml", "ChangePassword", "active" },
+
+            // ActivePage is non-string (int) -> 'as string' yields null -> fallback to DisplayName file name, matches -> active
+            { 123, "/some/path/Custom-Page.cshtml", "Custom-Page", "active" },
+
+            // ActivePage string exists but does not match page -> should be null even though DisplayName would match
+            { "OtherPage", "/path/Index.cshtml", "Index", null },
+
+            // ActivePage null and DisplayName null -> no match -> null
+            { null, null, "Index", null },
+
+            // ActivePage null and DisplayName has file name with special characters -> matches
+            { null, "/x/y/special_name!@#$.cshtml", "special_name!@#$", "active" },
+
+            // ActivePage has whitespace-only string and page matches same whitespace -> active
+            { "   ", "/ignored/path.cshtml", "   ", "active" },
+
+            // Long string match (boundary test)
+            { longStr, "/ignored/long.cshtml", longStr, "active" },
+
+            // DisplayName contains no directory, just filename -> fallback extracts name
+            { null, "PlainName.cshtml", "PlainName", "active" },
+        };
+    }
+
+    /// <summary>
+    /// Provides test cases covering:
+    /// - ViewData['ActivePage'] as matching string (exact and case-different)
+    /// - ViewData['ActivePage'] as non-matching string
+    /// - ViewData['ActivePage'] missing or non-string causing fallback to ActionDescriptor.DisplayName
+    /// - Both ViewData['ActivePage'] and DisplayName null
+    /// </summary>
+    public static TheoryData<object?, string?, string?> EmailNavClassCases() => new()
+    {
+        // When ViewData contains a matching page name (exact)
+        { "Email", null, "active" },
+
+        // When ViewData contains a matching page name but different case (case-insensitive match)
+        { "email", null, "active" },
+
+        // When ViewData contains a non-matching page name -> not active
+        { "Other", null, null },
+
+        // When ViewData does not contain a string (null) but DisplayName filename matches
+        { null, "/Pages/Account/Manage/Email.cshtml", "active" },
+
+        // When ViewData does not contain a string but DisplayName filename does not match
+        { null, "/Pages/Account/Manage/Other.cshtml", null },
+
+        // When ViewData contains a non-string object -> treated as null, fallback to DisplayName
+        { 123, "/Pages/Account/Manage/Email.cshtml", "active" },
+
+        // When both ViewData['ActivePage'] and DisplayName are null -> no active page
+        { null, null, null },
+
+        // When DisplayName filename differs only by case -> should be active (case-insensitive)
+        { null, "/Pages/Account/Manage/EMAIL.CSHTML", "active" },
+
+        // When ViewData contains whitespace-only string -> does not match (whitespace != "Email", no fallback to DisplayName)
+        { "   ", "/Pages/Account/Manage/Email.cshtml", null },
+    };
+
+    public static TheoryData<string?, string?, string?> PageCases() => new()
+    {
+        // activePage, displayName, expectedResult
+        { "ChangePassword", null, "active" }, // exact match in ActivePage
+        { "changepassword", null, "active" }, // case-insensitive match in ActivePage
+        { null, "/Views/Account/Manage/ChangePassword.cshtml", "active" }, // DisplayName filename matches page
+        { null, "/Views/Account/Manage/Other.cshtml", null }, // DisplayName filename does not match page
+        { null, null, null }, // both sources null -> no active
+    };
+
+    /// <summary>
+    /// Provides test cases for PersonalDataNavClass.
+    /// Contains cases that exercise:
+    /// - Direct ActivePage match (exact and different case)
+    /// - Null ActivePage falling back to ActionDescriptor.DisplayName filename
+    /// - Empty or whitespace ActivePage which prevents fallback and should not match
+    /// - Very long and special-character ActivePage values that should not match
+    /// - DisplayName values that do and do not produce the expected filename
+    /// </summary>
+    public static TheoryData<string?, string?, string?> GetPersonalDataNavCases() => new()
+    {
+        // ActivePage exactly matches -> active
+        { "PersonalData", null, "active" },
+
+        // ActivePage matches ignoring case -> active
+        { "personaldata", null, "active" },
+
+        // ActivePage null, DisplayName contains PersonalData filename -> active
+        { null, "Pages/Account/Manage/PersonalData.cshtml", "active" },
+
+        // ActivePage null, DisplayName with full path -> active
+        { null, "C:\\Views\\Account\\Manage\\PersonalData.cshtml", "active" },
+
+        // ActivePage null, DisplayName null -> no active (Path.GetFileNameWithoutExtension returns null)
+        { null, null, null },
+
+        // ActivePage empty string prevents fallback and does not match -> null
+        { string.Empty, "Pages/Account/Manage/PersonalData.cshtml", null },
+
+        // ActivePage whitespace prevents fallback and should not match -> null
+        { "   ", null, null },
+
+        // ActivePage close but with trailing space -> not equal -> null
+        { "PersonalData ", null, null },
+
+        // Very long ActivePage -> null
+        { new string('x', 1000), null, null },
+
+        // ActivePage with special characters -> null
+        { "PersonalData\u2603", null, null },
+
+        // DisplayName filename differs (contains prefix) -> null
+        { null, "Pages/Account/Manage/some.PersonalData.cshtml", null },
+    };
+
     /// <summary>
     /// Verifies that the Index property returns the expected page name.
     /// Input: none (static property access).
@@ -114,8 +268,8 @@ public class ManageNavPagesTests
 
         var metadataProvider = new EmptyModelMetadataProvider();
         var viewData = new ViewDataDictionary(metadataProvider, new ModelStateDictionary());
-        // ActivePage intentionally not set (null)
 
+        // ActivePage intentionally not set (null)
         var mockView = new Mock<IView>();
         var tempData = new TempDataDictionary(httpContext, Mock.Of<ITempDataProvider>());
         var viewContext = new ViewContext(actionContext, mockView.Object, viewData, tempData, TextWriter.Null, new HtmlHelperOptions());
@@ -236,28 +390,6 @@ public class ManageNavPagesTests
     }
 #pragma warning restore xUnit1045
 
-    public static TheoryData<object?, bool, string?, string?> DeletePersonalDataCases() => new()
-    {
-        // activePageValue, hasActivePage, displayName, expectedResult
-        // 1) ViewData ActivePage exactly matches the page => active
-        { "DeletePersonalData", true, "/some/path/Irrelevant.cshtml", "active" },
-
-        // 2) Case-insensitive match => active
-        { "deletepersonaldata", true, "/some/path/Irrelevant.cshtml", "active" },
-
-        // 3) ActivePage present but different; DisplayName file name equals DeletePersonalData => fallback used => active
-        { "SomethingElse", true, "/Areas/Identity/Pages/Account/Manage/DeletePersonalData.cshtml", null },
-
-        // 4) No ActivePage key; DisplayName filename is DeletePersonalData => fallback should yield active
-        { null, false, "/Areas/Identity/Pages/Account/Manage/DeletePersonalData.cshtml", "active" },
-
-        // 5) ActivePage exists but is non-string (int): 'as string' yields null -> fallback to DisplayName filename
-        { 123, true, "/Areas/Identity/Pages/Account/Manage/DeletePersonalData.cshtml", "active" },
-
-        // 6) No ActivePage and DisplayName null => fallback is null => result null
-        { null, false, null, null },
-    };
-
     /// <summary>
     /// Verifies that passing a null ViewContext to DeletePersonalDataNavClass results in a NullReferenceException.
     /// Input: viewContext = null.
@@ -291,6 +423,7 @@ public class ManageNavPagesTests
     {
         // Arrange
         var viewData = new ViewDataDictionary(new EmptyModelMetadataProvider(), new ModelStateDictionary());
+
         // Put the object into ViewData to simulate non-string values as well
         viewData["ActivePage"] = activePage;
         var viewContext = new ViewContext
@@ -306,46 +439,6 @@ public class ManageNavPagesTests
         Assert.Equal(expected, result);
     }
 #pragma warning restore xUnit1045
-
-    public static TheoryData<object?, string?, string, string?> PageNavTestData()
-    {
-        var longStr = new string('a', 600);
-        return new TheoryData<object?, string?, string, string?>
-        {
-            // ActivePage is a string and matches exactly -> active
-            { "Index", "/Areas/Identity/Pages/Account/Manage/Index.cshtml", "Index", "active" },
-
-            // ActivePage is a different casing -> still active (case-insensitive)
-            { "index", "/Some/Path/Index.cshtml", "Index", "active" },
-
-            // ActivePage empty string matches empty page
-            { string.Empty, "/Any/Path/Ignore.cshtml", "", "active" },
-
-            // ActivePage is null -> fallback to DisplayName file name, matches -> active
-            { null, "/Areas/Identity/Pages/Account/Manage/ChangePassword.cshtml", "ChangePassword", "active" },
-
-            // ActivePage is non-string (int) -> 'as string' yields null -> fallback to DisplayName file name, matches -> active
-            { 123, "/some/path/Custom-Page.cshtml", "Custom-Page", "active" },
-
-            // ActivePage string exists but does not match page -> should be null even though DisplayName would match
-            { "OtherPage", "/path/Index.cshtml", "Index", null },
-
-            // ActivePage null and DisplayName null -> no match -> null
-            { null, null, "Index", null },
-
-            // ActivePage null and DisplayName has file name with special characters -> matches
-            { null, "/x/y/special_name!@#$.cshtml", "special_name!@#$", "active" },
-
-            // ActivePage has whitespace-only string and page matches same whitespace -> active
-            { "   ", "/ignored/path.cshtml", "   ", "active" },
-
-            // Long string match (boundary test)
-            { longStr, "/ignored/long.cshtml", longStr, "active" },
-
-            // DisplayName contains no directory, just filename -> fallback extracts name
-            { null, "PlainName.cshtml", "PlainName", "active" },
-        };
-    }
 
     /// <summary>
     /// Verifies that the DownloadPersonalData property returns the exact expected page name.
@@ -475,43 +568,6 @@ public class ManageNavPagesTests
 #pragma warning restore xUnit1045
 
     /// <summary>
-    /// Provides test cases covering:
-    /// - ViewData['ActivePage'] as matching string (exact and case-different)
-    /// - ViewData['ActivePage'] as non-matching string
-    /// - ViewData['ActivePage'] missing or non-string causing fallback to ActionDescriptor.DisplayName
-    /// - Both ViewData['ActivePage'] and DisplayName null
-    /// </summary>
-    public static TheoryData<object?, string?, string?> EmailNavClassCases() => new()
-    {
-        // When ViewData contains a matching page name (exact)
-        { "Email", null, "active" },
-
-        // When ViewData contains a matching page name but different case (case-insensitive match)
-        { "email", null, "active" },
-
-        // When ViewData contains a non-matching page name -> not active
-        { "Other", null, null },
-
-        // When ViewData does not contain a string (null) but DisplayName filename matches
-        { null, "/Pages/Account/Manage/Email.cshtml", "active" },
-
-        // When ViewData does not contain a string but DisplayName filename does not match
-        { null, "/Pages/Account/Manage/Other.cshtml", null },
-
-        // When ViewData contains a non-string object -> treated as null, fallback to DisplayName
-        { 123, "/Pages/Account/Manage/Email.cshtml", "active" },
-
-        // When both ViewData['ActivePage'] and DisplayName are null -> no active page
-        { null, null, null },
-
-        // When DisplayName filename differs only by case -> should be active (case-insensitive)
-        { null, "/Pages/Account/Manage/EMAIL.CSHTML", "active" },
-
-        // When ViewData contains whitespace-only string -> does not match (whitespace != "Email", no fallback to DisplayName)
-        { "   ", "/Pages/Account/Manage/Email.cshtml", null },
-    };
-
-    /// <summary>
     /// Verifies ExternalLoginsNavClass returns "active" when the effective active page equals the ExternalLogins page name,
     /// and returns null otherwise. Tests combinations where ViewData["ActivePage"] is present (including case variations and
     /// empty/whitespace) and where it is absent so the ActionDescriptor.DisplayName file name is used.
@@ -523,16 +579,22 @@ public class ManageNavPagesTests
     ///   matches \"ExternalLogins\" ignoring case; otherwise null.
     /// </summary>
     [Theory]
+
     // ActivePage matches exactly -> active
     [InlineData("ExternalLogins", null, "active")]
+
     // ActivePage matches case-insensitively -> active
     [InlineData("externallogins", null, "active")]
+
     // ActivePage absent; DisplayName filename matches -> active
     [InlineData(null, "Areas/Identity/Pages/Account/Manage/ExternalLogins.cshtml", "active")]
+
     // ActivePage absent; DisplayName filename differs -> null
     [InlineData(null, "Areas/Identity/Pages/Account/Manage/SomeOther.cshtml", null)]
+
     // ActivePage present but empty -> should not fall back to DisplayName and should be treated as not matching -> null
     [InlineData("", "Areas/Identity/Pages/Account/Manage/ExternalLogins.cshtml", null)]
+
     // ActivePage present with surrounding whitespace -> does not equal the page value -> null
     [InlineData("  ExternalLogins  ", null, null)]
     public void ExternalLoginsNavClass_VariousActiveAndDisplayName_ReturnsExpected(string? activePage, string? displayName, string? expected)
@@ -566,37 +628,6 @@ public class ManageNavPagesTests
 
         // Act & Assert
         Assert.Throws<NullReferenceException>(() => ManageNavPages.ExternalLoginsNavClass(viewContext!));
-    }
-
-    // Helper to construct a ViewContext matching the expectations of ManageNavPages.PageNavClass.
-    private static ViewContext CreateViewContext(string? activePage, string? displayName)
-    {
-        // ActionContext
-        var httpContext = new DefaultHttpContext();
-        var routeData = new RouteData();
-        var actionDescriptor = new ActionDescriptor { DisplayName = displayName };
-        var actionContext = new ActionContext(httpContext, routeData, actionDescriptor);
-
-        // ViewData: use EmptyModelMetadataProvider per common usage
-        var viewData = new ViewDataDictionary(new EmptyModelMetadataProvider(), new ModelStateDictionary());
-        if (activePage is not null)
-        {
-            // The code uses 'as string' so storing a string is correct; storing null (or omitting) simulates absence.
-            viewData["ActivePage"] = activePage;
-        }
-
-        // TempData: a TempDataDictionary requires an ITempDataProvider
-        var tempDataProviderMock = new Mock<ITempDataProvider>();
-        var tempData = new TempDataDictionary(httpContext, tempDataProviderMock.Object);
-
-        // IView can be mocked; its instance is not used by the method under test
-        var viewMock = new Mock<IView>();
-
-        // Writer and HtmlHelperOptions for the ViewContext constructor
-        var writer = new StringWriter();
-        var htmlHelperOptions = new HtmlHelperOptions();
-
-        return new ViewContext(actionContext, viewMock.Object, viewData, tempData, writer, htmlHelperOptions);
     }
 
     /// <summary>
@@ -659,20 +690,6 @@ public class ManageNavPagesTests
         Assert.Equal(expected, result);
         Assert.False(string.IsNullOrWhiteSpace(result));
     }
-
-    /// <summary>
-    /// Provides test cases combining ViewData['ActivePage'] and ActionDescriptor.DisplayName inputs
-    /// to validate whether ChangePasswordNavClass returns "active" or null.
-    /// </summary>
-    public static TheoryData<string?, string?, string?> PageCases() => new()
-    {
-        // activePage, displayName, expectedResult
-        { "ChangePassword", null, "active" }, // exact match in ActivePage
-        { "changepassword", null, "active" }, // case-insensitive match in ActivePage
-        { null, "/Views/Account/Manage/ChangePassword.cshtml", "active" }, // DisplayName filename matches page
-        { null, "/Views/Account/Manage/Other.cshtml", null }, // DisplayName filename does not match page
-        { null, null, null }, // both sources null -> no active
-    };
 
     /// <summary>
     /// Tests that ChangePasswordNavClass returns "active" when either ViewData["ActivePage"]
@@ -766,51 +783,6 @@ public class ManageNavPagesTests
     }
 
     /// <summary>
-    /// Provides test cases for PersonalDataNavClass.
-    /// Contains cases that exercise:
-    /// - Direct ActivePage match (exact and different case)
-    /// - Null ActivePage falling back to ActionDescriptor.DisplayName filename
-    /// - Empty or whitespace ActivePage which prevents fallback and should not match
-    /// - Very long and special-character ActivePage values that should not match
-    /// - DisplayName values that do and do not produce the expected filename
-    /// </summary>
-    public static TheoryData<string?, string?, string?> GetPersonalDataNavCases() => new()
-    {
-        // ActivePage exactly matches -> active
-        { "PersonalData", null, "active" },
-
-        // ActivePage matches ignoring case -> active
-        { "personaldata", null, "active" },
-
-        // ActivePage null, DisplayName contains PersonalData filename -> active
-        { null, "Pages/Account/Manage/PersonalData.cshtml", "active" },
-
-        // ActivePage null, DisplayName with full path -> active
-        { null, "C:\\Views\\Account\\Manage\\PersonalData.cshtml", "active" },
-
-        // ActivePage null, DisplayName null -> no active (Path.GetFileNameWithoutExtension returns null)
-        { null, null, null },
-
-        // ActivePage empty string prevents fallback and does not match -> null
-        { string.Empty, "Pages/Account/Manage/PersonalData.cshtml", null },
-
-        // ActivePage whitespace prevents fallback and should not match -> null
-        { "   ", null, null },
-
-        // ActivePage close but with trailing space -> not equal -> null
-        { "PersonalData ", null, null },
-
-        // Very long ActivePage -> null
-        { new string('x', 1000), null, null },
-
-        // ActivePage with special characters -> null
-        { "PersonalData\u2603", null, null },
-
-        // DisplayName filename differs (contains prefix) -> null
-        { null, "Pages/Account/Manage/some.PersonalData.cshtml", null },
-    };
-
-    /// <summary>
     /// Ensures that when ViewData[\"ActivePage\"] equals the Passkeys page name (case-insensitive),
     /// PasskeysNavClass returns "active".
     /// Input conditions: viewContext.ViewData contains ActivePage values provided by InlineData.
@@ -862,8 +834,8 @@ public class ManageNavPagesTests
         var view = mockView.Object;
 
         var viewData = new ViewDataDictionary(new EmptyModelMetadataProvider(), new ModelStateDictionary());
-        // Note: Do not set ViewData["ActivePage"] to force fallback to ActionDescriptor.DisplayName
 
+        // Note: Do not set ViewData["ActivePage"] to force fallback to ActionDescriptor.DisplayName
         var tempData = new TempDataDictionary(actionContext.HttpContext, new Mock<ITempDataProvider>().Object);
         var viewContext = new ViewContext(actionContext, view, viewData, tempData, TextWriter.Null, new HtmlHelperOptions());
 
@@ -1165,5 +1137,36 @@ public class ManageNavPagesTests
 
         // Act & Assert
         Assert.Throws<NullReferenceException>(() => ManageNavPages.TwoFactorAuthenticationNavClass(viewContext!));
+    }
+
+    // Helper to construct a ViewContext matching the expectations of ManageNavPages.PageNavClass.
+    private static ViewContext CreateViewContext(string? activePage, string? displayName)
+    {
+        // ActionContext
+        var httpContext = new DefaultHttpContext();
+        var routeData = new RouteData();
+        var actionDescriptor = new ActionDescriptor { DisplayName = displayName };
+        var actionContext = new ActionContext(httpContext, routeData, actionDescriptor);
+
+        // ViewData: use EmptyModelMetadataProvider per common usage
+        var viewData = new ViewDataDictionary(new EmptyModelMetadataProvider(), new ModelStateDictionary());
+        if (activePage is not null)
+        {
+            // The code uses 'as string' so storing a string is correct; storing null (or omitting) simulates absence.
+            viewData["ActivePage"] = activePage;
+        }
+
+        // TempData: a TempDataDictionary requires an ITempDataProvider
+        var tempDataProviderMock = new Mock<ITempDataProvider>();
+        var tempData = new TempDataDictionary(httpContext, tempDataProviderMock.Object);
+
+        // IView can be mocked; its instance is not used by the method under test
+        var viewMock = new Mock<IView>();
+
+        // Writer and HtmlHelperOptions for the ViewContext constructor
+        var writer = new StringWriter();
+        var htmlHelperOptions = new HtmlHelperOptions();
+
+        return new ViewContext(actionContext, viewMock.Object, viewData, tempData, writer, htmlHelperOptions);
     }
 }

@@ -36,47 +36,6 @@ public class PasskeyEndpointRouteBuilderExtensionsTests
         Assert.Contains("endpoints", ex.ParamName ?? string.Empty, StringComparison.Ordinal);
     }
 
-    private static (Mock<UserManager<IdentityUser<Guid>>> userManagerMock,
-                    Mock<SignInManager<IdentityUser<Guid>>> signInManagerMock,
-                    Mock<IAntiforgery> antiforgeryMock) CreateMocks()
-    {
-        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
-            storeMock.Object, null, null, null, null, null, null, null, null);
-
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManagerMock.Object,
-            Mock.Of<IHttpContextAccessor>(),
-            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
-            null, null, null, null);
-
-        var antiforgeryMock = new Mock<IAntiforgery>();
-        antiforgeryMock
-            .Setup(a => a.ValidateRequestAsync(It.IsAny<HttpContext>()))
-            .Returns(Task.CompletedTask);
-
-        return (userManagerMock, signInManagerMock, antiforgeryMock);
-    }
-
-    private static async Task<(WebApplication app, HttpClient client)> BuildTestAppAsync(
-        Mock<UserManager<IdentityUser<Guid>>> userManagerMock,
-        Mock<SignInManager<IdentityUser<Guid>>> signInManagerMock,
-        Mock<IAntiforgery> antiforgeryMock)
-    {
-        var builder = WebApplication.CreateSlimBuilder();
-        builder.WebHost.UseTestServer();
-        builder.Services.AddRouting();
-        builder.Services.AddSingleton<UserManager<IdentityUser<Guid>>>(userManagerMock.Object);
-        builder.Services.AddSingleton<SignInManager<IdentityUser<Guid>>>(signInManagerMock.Object);
-        builder.Services.AddSingleton<IAntiforgery>(antiforgeryMock.Object);
-
-        var app = builder.Build();
-        app.UseRouting();
-        PasskeyEndpointRouteBuilderExtensions.MapAdditionalIdentityEndpoints(app);
-        await app.StartAsync();
-        return (app, app.GetTestClient());
-    }
-
     [Fact]
     public async Task PasskeyCreationOptions_UserNotFound_Returns404()
     {
@@ -92,7 +51,7 @@ public class PasskeyEndpointRouteBuilderExtensionsTests
         await using (app)
         {
             // Act
-            var response = await client.PostAsync("/Account/PasskeyCreationOptions", null);
+            var response = await client.PostAsync("/Account/PasskeyCreationOptions", null, TestContext.Current.CancellationToken);
 
             // Assert
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -121,12 +80,12 @@ public class PasskeyEndpointRouteBuilderExtensionsTests
         await using (app)
         {
             // Act
-            var response = await client.PostAsync("/Account/PasskeyCreationOptions", null);
+            var response = await client.PostAsync("/Account/PasskeyCreationOptions", null, TestContext.Current.CancellationToken);
 
             // Assert
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             Assert.Equal("application/json", response.Content.Headers.ContentType?.MediaType);
-            var body = await response.Content.ReadAsStringAsync();
+            var body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
             Assert.Equal("{\"type\":\"webauthn.create\"}", body);
         }
     }
@@ -151,7 +110,7 @@ public class PasskeyEndpointRouteBuilderExtensionsTests
         await using (app)
         {
             // Act
-            await client.PostAsync("/Account/PasskeyCreationOptions", null);
+            await client.PostAsync("/Account/PasskeyCreationOptions", null, TestContext.Current.CancellationToken);
 
             // Assert
             Assert.NotNull(capturedEntity);
@@ -173,7 +132,7 @@ public class PasskeyEndpointRouteBuilderExtensionsTests
         await using (app)
         {
             // Act
-            var response = await client.PostAsync("/Account/PasskeyRequestOptions", null);
+            var response = await client.PostAsync("/Account/PasskeyRequestOptions", null, TestContext.Current.CancellationToken);
 
             // Assert
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -194,7 +153,7 @@ public class PasskeyEndpointRouteBuilderExtensionsTests
         await using (app)
         {
             // Act
-            var response = await client.PostAsync("/Account/PasskeyRequestOptions?username=   ", null);
+            var response = await client.PostAsync("/Account/PasskeyRequestOptions?username=   ", null, TestContext.Current.CancellationToken);
 
             // Assert
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -219,7 +178,7 @@ public class PasskeyEndpointRouteBuilderExtensionsTests
         await using (app)
         {
             // Act
-            var response = await client.PostAsync("/Account/PasskeyRequestOptions?username=alice", null);
+            var response = await client.PostAsync("/Account/PasskeyRequestOptions?username=alice", null, TestContext.Current.CancellationToken);
 
             // Assert
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -239,13 +198,57 @@ public class PasskeyEndpointRouteBuilderExtensionsTests
         await using (app)
         {
             // Act
-            var response = await client.PostAsync("/Account/PasskeyRequestOptions", null);
+            var response = await client.PostAsync("/Account/PasskeyRequestOptions", null, TestContext.Current.CancellationToken);
 
             // Assert
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             Assert.Equal("application/json", response.Content.Headers.ContentType?.MediaType);
-            var body = await response.Content.ReadAsStringAsync();
+            var body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
             Assert.Equal("{\"challenge\":\"abc\"}", body);
         }
+    }
+
+    private static (Mock<UserManager<IdentityUser<Guid>>> userManagerMock,
+                    Mock<SignInManager<IdentityUser<Guid>>> signInManagerMock,
+                    Mock<IAntiforgery> antiforgeryMock) CreateMocks()
+    {
+        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
+        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
+            storeMock.Object, null, null, null, null, null, null, null, null);
+
+        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
+            userManagerMock.Object,
+            Mock.Of<IHttpContextAccessor>(),
+            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
+            null,
+            null,
+            null,
+            null);
+
+        var antiforgeryMock = new Mock<IAntiforgery>();
+        antiforgeryMock
+            .Setup(a => a.ValidateRequestAsync(It.IsAny<HttpContext>()))
+            .Returns(Task.CompletedTask);
+
+        return (userManagerMock, signInManagerMock, antiforgeryMock);
+    }
+
+    private static async Task<(WebApplication app, HttpClient client)> BuildTestAppAsync(
+        Mock<UserManager<IdentityUser<Guid>>> userManagerMock,
+        Mock<SignInManager<IdentityUser<Guid>>> signInManagerMock,
+        Mock<IAntiforgery> antiforgeryMock)
+    {
+        var builder = WebApplication.CreateSlimBuilder();
+        builder.WebHost.UseTestServer();
+        builder.Services.AddRouting();
+        builder.Services.AddSingleton<UserManager<IdentityUser<Guid>>>(userManagerMock.Object);
+        builder.Services.AddSingleton<SignInManager<IdentityUser<Guid>>>(signInManagerMock.Object);
+        builder.Services.AddSingleton<IAntiforgery>(antiforgeryMock.Object);
+
+        var app = builder.Build();
+        app.UseRouting();
+        PasskeyEndpointRouteBuilderExtensions.MapAdditionalIdentityEndpoints(app);
+        await app.StartAsync();
+        return (app, app.GetTestClient());
     }
 }
