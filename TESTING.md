@@ -3,8 +3,9 @@
 Maps every application path to the tests that cover it.
 
 **Test types**
-- **Unit** — xUnit page-model / service / API tests (`Category=Unit`) — 364 tests
-- **E2E** — Playwright browser tests (`Category=E2E`)
+- **Unit** — xUnit page-model / service / API tests (`Category=Unit`) — 393 tests; includes property-based (`PropertyBased/`) and resilience (`Resilience/`) sub-folders
+- **E2E** — Playwright browser tests (`Category=E2E`); includes OIDC discovery tests (`Oidc/`)
+- **Load** — throughput / failure-rate tests using `Parallel.ForEachAsync` + `HttpClient` (`Category=Load`); run separately (requires live server)
 
 **Coverage legend**
 | Symbol | Meaning |
@@ -34,6 +35,8 @@ Maps every application path to the tests that cover it.
 14. [Services](#14-services)
 15. [Root & Utility Pages](#15-root--utility-pages)
 16. [Coverage Summary Matrix](#16-coverage-summary-matrix)
+17. [Load, Property-Based & Resilience Tests](#17-load-property-based--resilience-tests)
+18. [Mutation Testing (Stryker)](#18-mutation-testing-stryker)
 
 ---
 
@@ -107,33 +110,33 @@ flowchart TD
     classDef partial fill:#fed7aa,stroke:#ea580c
     classDef noTest fill:#fee2e2,stroke:#dc2626
 
-    RegisterGET["GET /Account/Register\n────────────────────\n🟡 OnGetAsync_VariousReturnUrlValues\n🟡 OnGetAsync_ExternalSchemesReturned"]:::unitOnly
+    RegisterGET["GET /Account/Register"]:::unitOnly
 
     RegisterPOST{"POST /Account/Register"}
 
-    InvalidModel["Return page\n────────────────────\n🟡 OnPostAsync_ModelStateInvalid_ReturnsPage"]:::unitOnly
+    InvalidModel["Return page"]:::unitOnly
 
     CreateUser{"CreateUser\nsucceeds?"}
 
     RequireConfirm{"RequireConfirmed\nAccount?"}
 
-    RegConfirm["GET /Account/RegisterConfirmation\n────────────────────\n🔵 Constructor_MultipleValidDependencies\n✅ E2E: Register_ConfirmEmail_Login_Succeeds"]:::covered
+    RegConfirm["GET /Account/RegisterConfirmation"]:::covered
 
-    EmailSent["EmailSender sends\nconfirmation link\n────────────────────\n🟡 Unit: EmailSenderTests\n✅ E2E: Register_ConfirmEmail_Login_Succeeds"]:::covered
+    EmailSent["EmailSender sends confirmation link"]:::covered
 
-    SignInDirect["Signed in directly\n(no confirm required)\n────────────────────\n🟡 OnPostAsync_CreateSucceeds_RespectsRequireConfirmedAccount"]:::unitOnly
+    SignInDirect["Signed in directly (no confirm required)"]:::unitOnly
 
-    ConfirmEmailGET["GET /Account/ConfirmEmail\n────────────────────\n🟡 OnGetAsync_NullOrWhitespaceUserIdOrCode\n🟡 ConfirmEmailModel_Constructor\n✅ E2E: Register_ConfirmEmail_Login_Succeeds"]:::covered
+    ConfirmEmailGET["GET /Account/ConfirmEmail"]:::covered
 
-    ConfirmSuccess["Email confirmed\n➜ /Index\n────────────────────\n✅ E2E: Register_ConfirmEmail_Login_Succeeds"]:::covered
+    ConfirmSuccess["Email confirmed ➜ /Index"]:::covered
 
-    ConfirmFail["Error message on page\n────────────────────\n🟡 OnGetAsync_NullOrWhitespaceUserIdOrCode_RedirectsToIndex"]:::unitOnly
+    ConfirmFail["Error message on page"]:::unitOnly
 
-    NullParams["Redirect to /Index\n────────────────────\n🟡 OnGetAsync_NullOrWhitespaceUserIdOrCode_RedirectsToIndex"]:::unitOnly
+    NullParams["Redirect to /Index"]:::unitOnly
 
-    ResendGET["GET /Account/ResendEmailConfirmation\n────────────────────\n🔵 Constructor test"]:::partial
+    ResendGET["GET /Account/ResendEmailConfirmation"]:::partial
 
-    ResendPOST["POST /Account/ResendEmailConfirmation\n────────────────────\n🔵 Constructor test"]:::partial
+    ResendPOST["POST /Account/ResendEmailConfirmation"]:::partial
 
     RegisterGET --> RegisterPOST
     RegisterPOST -->|"invalid"| InvalidModel
@@ -175,47 +178,47 @@ flowchart TD
     classDef partial fill:#fed7aa,stroke:#ea580c
     classDef noTest fill:#fee2e2,stroke:#dc2626
 
-    LoginGET["GET /Account/Login\n────────────────────\n🟡 OnGetAsync_WithErrorMessage_AddsModelError\n🟡 OnGetAsync_WithoutErrorMessage_DoesNotAddModelError\n🟡 OnGetAsync_WithReturnUrl_SetsReturnUrl\n🟡 OnGetAsync_WithoutReturnUrl_DefaultsToRoot\n🟡 OnGetAsync_ExternalSchemesAvailable_PopulatesExternalLogins"]:::unitOnly
+    LoginGET["GET /Account/Login"]:::unitOnly
 
     LoginPOST{"POST /Account/Login\nMethod?"}
 
     PasswordPath{"PasswordSignInAsync\nresult"}
 
-    PasskeyPath["POST (passkey credential JSON)\n────────────────────\n🟡 OnPostAsync_PasskeySignIn_Succeeded_ReturnsLocalRedirect"]:::unitOnly
+    PasskeyPath["POST (passkey credential JSON)"]:::unitOnly
 
-    ModelInvalid["Return page (no sign-in)\n────────────────────\n🟡 OnPostAsync_InvalidModelState_ReturnsPageWithoutSignIn"]:::unitOnly
+    ModelInvalid["Return page (no sign-in)"]:::unitOnly
 
-    SignInSuccess["Redirect to returnUrl / /\n────────────────────\n✅ OnPostAsync_PasswordSignIn_Succeeded_ReturnsLocalRedirect\n✅ E2E: Login_ValidCredentials_Succeeds"]:::covered
+    SignInSuccess["Redirect to returnUrl / /"]:::covered
 
-    Requires2FA["Redirect to /Account/LoginWith2fa\n────────────────────\n✅ OnPostAsync_PasswordSignIn_RequiresTwoFactor_RedirectsToLoginWith2fa\n✅ E2E: TwoFactor_Setup_Login_WithTotpCode_Succeeds"]:::covered
+    Requires2FA["Redirect to /Account/LoginWith2fa"]:::covered
 
-    LockedOut["Redirect to /Account/Lockout\n────────────────────\n✅ OnPostAsync_PasswordSignIn_IsLockedOut_RedirectsToLockout\n✅ E2E: Login_FiveFailedAttempts_LocksAccount"]:::covered
+    LockedOut["Redirect to /Account/Lockout"]:::covered
 
-    SignInFailed["Return page with error\n────────────────────\n✅ OnPostAsync_PasswordSignIn_Failed_ReturnsPageWithModelError\n✅ E2E: Login_WrongPassword_ShowsError"]:::covered
+    SignInFailed["Return page with error"]:::covered
 
-    LockoutPage["GET /Account/Lockout\n────────────────────\n🔵 Constructor test"]:::partial
+    LockoutPage["GET /Account/Lockout"]:::partial
 
-    LoginWith2faPage["GET /Account/LoginWith2fa\n────────────────────\n🟡 OnGetAsync_TwoFactorUserExists_SetsReturnUrlAndReturnsPage\n🟡 OnGetAsync_UserIsNull_ThrowsInvalidOperationException"]:::unitOnly
+    LoginWith2faPage["GET /Account/LoginWith2fa"]:::unitOnly
 
     LoginWith2faPOST{"POST /Account/LoginWith2fa\nresult"}
 
-    TwoFASuccess["Redirect authenticated\n────────────────────\n✅ OnPostAsync_Succeeds_RedirectsAndSetsStatusMessageAndLogs\n✅ E2E: TwoFactor_Setup_Login_WithTotpCode_Succeeds"]:::covered
+    TwoFASuccess["Redirect authenticated"]:::covered
 
-    TwoFAInvalid["Return page with error\n────────────────────\n🟡 OnPostAsync_InvalidVerificationCode_AddsModelErrorAndReturnsPage"]:::unitOnly
+    TwoFAInvalid["Return page with error"]:::unitOnly
 
-    TwoFANoUser["Throws InvalidOperationException\n────────────────────\n🟡 OnPostAsync_NoTwoFactorUser_ThrowsInvalidOperationException"]:::unitOnly
+    TwoFANoUser["Throws InvalidOperationException"]:::unitOnly
 
     RecoveryLink["Link to /Account/LoginWithRecoveryCode"]
 
-    RecoveryGET["GET /Account/LoginWithRecoveryCode\n────────────────────\n🟡 OnGetAsync_ValidUser_SetsPropertiesAndReturnsPageResult\n🟡 LoginWithRecoveryCodeModel_Constructor_AllNulls_DoesNotThrowAndDefaults"]:::unitOnly
+    RecoveryGET["GET /Account/LoginWithRecoveryCode"]:::unitOnly
 
     RecoveryPOST{"POST /Account/LoginWithRecoveryCode\nresult"}
 
-    RecoverySuccess["Redirect authenticated\n────────────────────\n✅ E2E: TwoFactor_Login_WithRecoveryCode_Succeeds"]:::covered
+    RecoverySuccess["Redirect authenticated"]:::covered
 
-    RecoveryInvalid["Return page with error\n────────────────────\n🟡 OnPostAsync_ModelStateInvalid_ReturnsPageResult"]:::unitOnly
+    RecoveryInvalid["Return page with error"]:::unitOnly
 
-    LogoutPOST["POST /Account/Logout\n────────────────────\n🟡 Constructor_NullSignInManager_DoesNotThrow"]:::unitOnly
+    LogoutPOST["POST /Account/Logout"]:::unitOnly
 
     SignedOut["Redirect to /Index"]
 
@@ -281,37 +284,37 @@ flowchart TD
     classDef unitOnly fill:#fef9c3,stroke:#ca8a04
     classDef partial fill:#fed7aa,stroke:#ea580c
 
-    ForgotGET["GET /Account/ForgotPassword\n────────────────────\n🟡 ForgotPasswordModel_Constructor_DependencyNullAllowed"]:::unitOnly
+    ForgotGET["GET /Account/ForgotPassword"]:::unitOnly
 
     ForgotPOST{"POST /Account/ForgotPassword"}
 
-    ForgotInvalid["Return page\n────────────────────\n🟡 OnPostAsync_ModelStateInvalid_ReturnsPage"]:::unitOnly
+    ForgotInvalid["Return page"]:::unitOnly
 
-    ForgotNoUser["Redirect to Confirmation\n(no email sent — security)\n────────────────────\n🟡 OnPostAsync_UserNullOrUnconfirmed_RedirectsToConfirmation_DoesNotSendEmail"]:::unitOnly
+    ForgotNoUser["Redirect to Confirmation (no email sent — security)"]:::unitOnly
 
-    ForgotSendEmail["Generate token\nSend reset link\n────────────────────\n✅ E2E: ForgotPassword_Reset_LoginWithNewPassword_Succeeds"]:::covered
+    ForgotSendEmail["Generate token, send reset link"]:::covered
 
-    ForgotConfirmPage["GET /Account/ForgotPasswordConfirmation\n────────────────────\n🔵 Constructor test"]:::partial
+    ForgotConfirmPage["GET /Account/ForgotPasswordConfirmation"]:::partial
 
     ResetGET{"GET /Account/ResetPassword\ncode present?"}
 
-    ResetNullCode["Returns BadRequest\n────────────────────\n🟡 OnGet_CodeIsNull_ReturnsBadRequestWithMessage"]:::unitOnly
+    ResetNullCode["Returns BadRequest"]:::unitOnly
 
-    ResetMalformed["Throws FormatException\n────────────────────\n🟡 OnGet_MalformedCode_ThrowsFormatException"]:::unitOnly
+    ResetMalformed["Throws FormatException"]:::unitOnly
 
-    ResetForm["Show reset form\n────────────────────\n🟡 OnGet_ValidBase64UrlEncodedCode_SetsInputCodeAndReturnsPage\n🟡 ResetPasswordModel_ValidUserManager_ConstructsSuccessfully"]:::unitOnly
+    ResetForm["Show reset form"]:::unitOnly
 
     ResetPOST{"POST /Account/ResetPassword"}
 
-    ResetInvalid["Return page\n────────────────────\n🟡 OnPostAsync_ModelStateInvalid_ReturnsPage"]:::unitOnly
+    ResetInvalid["Return page"]:::unitOnly
 
-    ResetNoUser["Redirect to Confirmation\n(no error revealed)\n────────────────────\n🟡 OnPostAsync_UserMissingOrResetSucceeds_RedirectsToConfirmation"]:::unitOnly
+    ResetNoUser["Redirect to Confirmation (no error revealed)"]:::unitOnly
 
-    ResetFails["Return page with errors\n────────────────────\n🟡 OnPostAsync_ResetPasswordFails_AddsModelErrorsAndReturnsPage"]:::unitOnly
+    ResetFails["Return page with errors"]:::unitOnly
 
-    ResetSuccess["Redirect to /Account/ResetPasswordConfirmation\n────────────────────\n🟡 OnPostAsync_UserMissingOrResetSucceeds_RedirectsToConfirmation\n✅ E2E: ForgotPassword_Reset_LoginWithNewPassword_Succeeds"]:::covered
+    ResetSuccess["Redirect to /Account/ResetPasswordConfirmation"]:::covered
 
-    ResetConfirmPage["GET /Account/ResetPasswordConfirmation\n────────────────────\n🔵 Constructor test"]:::partial
+    ResetConfirmPage["GET /Account/ResetPasswordConfirmation"]:::partial
 
     ForgotGET --> ForgotPOST
     ForgotPOST -->|"invalid"| ForgotInvalid
@@ -359,53 +362,53 @@ flowchart TD
     classDef unitOnly fill:#fef9c3,stroke:#ca8a04
     classDef partial fill:#fed7aa,stroke:#ea580c
 
-    TwoFAPage["GET /Account/Manage/TwoFactorAuthentication\n────────────────────\n🟡 OnGetAsync_UserFound_SetsPropertiesAndReturnsPageResult\n🟡 OnGetAsync_UserNotFound_ReturnsNotFoundObjectResult"]:::unitOnly
+    TwoFAPage["GET /Account/Manage/TwoFactorAuthentication"]:::unitOnly
 
     EnableAuthGET{"GET /Account/Manage/EnableAuthenticator\nuser found?"}
 
-    EnableNotFound["NotFoundObjectResult\n────────────────────\n🟡 OnGetAsync_UserNotFound_ReturnsNotFoundWithMessage"]:::unitOnly
+    EnableNotFound["NotFoundObjectResult"]:::unitOnly
 
-    EnableForm["Show QR code + shared key\n────────────────────\n🟡 Constructor_WithValidDependencies_CreatesInstance\n✅ E2E: TwoFactor_Setup_Login_WithTotpCode_Succeeds"]:::covered
+    EnableForm["Show QR code + shared key"]:::covered
 
     EnablePOST{"POST /Account/Manage/EnableAuthenticator"}
 
-    EnableUserNotFound["NotFoundObjectResult\n────────────────────\n🟡 OnPostAsync_UserNotFound_ReturnsNotFoundObjectResult"]:::unitOnly
+    EnableUserNotFound["NotFoundObjectResult"]:::unitOnly
 
-    EnableInvalid["Return page with error\n────────────────────\n🟡 OnPostAsync_InvalidVerificationCode_AddsModelErrorAndReturnsPage"]:::unitOnly
+    EnableInvalid["Return page with error"]:::unitOnly
 
-    EnableSuccess["Redirect to ShowRecoveryCodes\n(or TwoFactorAuthentication if no codes)\n────────────────────\n🟡 OnPostAsync_ValidToken_RedirectsBasedOnRecoveryCodesCount\n✅ E2E: TwoFactor_Setup_Login_WithTotpCode_Succeeds"]:::covered
+    EnableSuccess["Redirect to ShowRecoveryCodes"]:::covered
 
     ShowCodes{"GET /Account/Manage/ShowRecoveryCodes\ncodes present?"}
 
-    ShowCodesEmpty["Redirect to /Account/Manage/TwoFactorAuthentication\n────────────────────\n🟡 OnGet_RecoveryCodesNullOrEmpty_RedirectsToTwoFactorAuthentication"]:::unitOnly
+    ShowCodesEmpty["Redirect to /Account/Manage/TwoFactorAuthentication"]:::unitOnly
 
-    ShowCodesPage["Display recovery codes\n────────────────────\n🟡 OnGet_RecoveryCodesHasItems_ReturnsPageResult\n✅ E2E: TwoFactor_Setup_Login_WithTotpCode_Succeeds"]:::covered
+    ShowCodesPage["Display recovery codes"]:::covered
 
     GenCodesGET{"GET /Account/Manage/GenerateRecoveryCodes\nstate check"}
 
-    GenCodesNotFound["NotFoundObjectResult\n────────────────────\n🟡 OnGetAsync_UserNotFound_ReturnsNotFoundWithUserIdMessage"]:::unitOnly
+    GenCodesNotFound["NotFoundObjectResult"]:::unitOnly
 
-    Gen2faDisabled["Throws InvalidOperationException\n────────────────────\n🟡 OnPostAsync_TwoFactorDisabled_ThrowsInvalidOperationException"]:::unitOnly
+    Gen2faDisabled["Throws InvalidOperationException"]:::unitOnly
 
-    GenCodesPOST["POST — generate new codes\n────────────────────\n🟡 OnPostAsync_TwoFactorEnabled_GeneratesCodesAndRedirects\n✅ E2E: TwoFactor_Login_WithRecoveryCode_Succeeds"]:::covered
+    GenCodesPOST["POST — generate new codes"]:::covered
 
     Disable2faGET{"GET /Account/Manage/Disable2fa\nstate check"}
 
-    DisableNotFound["NotFoundObjectResult\n────────────────────\n🟡 OnGet_UserIsNull_ReturnsNotFoundWithUserIdInMessage"]:::unitOnly
+    DisableNotFound["NotFoundObjectResult"]:::unitOnly
 
-    Disable2faNotEnabled["Throws InvalidOperationException\n────────────────────\n🟡 OnGet_TwoFactorState_BehavesAsExpected"]:::unitOnly
+    Disable2faNotEnabled["Throws InvalidOperationException"]:::unitOnly
 
-    Disable2faForm["Show confirmation form\n────────────────────\n🟡 OnGet_TwoFactorState_BehavesAsExpected"]:::unitOnly
+    Disable2faForm["Show confirmation form"]:::unitOnly
 
     Disable2faPOST{"POST /Account/Manage/Disable2fa"}
 
-    DisableFails["Throws InvalidOperationException\n────────────────────\n🟡 OnPostAsync_DisableFails_ThrowsInvalidOperationException"]:::unitOnly
+    DisableFails["Throws InvalidOperationException"]:::unitOnly
 
-    DisableSuccess["Redirect to /Account/Manage/TwoFactorAuthentication\n────────────────────\n🟡 OnPostAsync_Succeeds_RedirectsAndSetsStatusMessageAndLogs"]:::unitOnly
+    DisableSuccess["Redirect to /Account/Manage/TwoFactorAuthentication"]:::unitOnly
 
-    ResetAuthGET["GET /Account/Manage/ResetAuthenticator\n────────────────────\n🟡 OnGet_UserExistence_ReturnsExpectedResult\n🟡 ResetAuthenticatorModel_Constructor_WithValidDependencies_DoesNotThrow"]:::unitOnly
+    ResetAuthGET["GET /Account/Manage/ResetAuthenticator"]:::unitOnly
 
-    ResetAuthPOST["POST — reset authenticator\n────────────────────\n🟡 OnPostAsync_UserExists_ResetsAndRedirectsRegardlessOfIdentityResult\n🟡 OnPostAsync_UserNotFound_ReturnsNotFoundWithExpectedMessage"]:::unitOnly
+    ResetAuthPOST["POST — reset authenticator"]:::unitOnly
 
     TwoFAPage -->|"setup TOTP"| EnableAuthGET
     TwoFAPage -->|"generate new codes"| GenCodesGET
@@ -475,49 +478,47 @@ flowchart TD
 
     PasskeysGET{"GET /Account/Manage/Passkeys\nuser found?"}
 
-    PasskeysNotFound["NotFoundObjectResult\n────────────────────\n🟡 OnGetAsync_UserNotFound_ReturnsNotFoundObjectResult"]:::unitOnly
+    PasskeysNotFound["NotFoundObjectResult"]:::unitOnly
 
-    PasskeysList["Show passkey list\n────────────────────\n🟡 PasskeysModel_Ctor_ValidManagers_PropertiesInitializedToNull"]:::unitOnly
+    PasskeysList["Show passkey list"]:::unitOnly
 
-    CreationOptsEndpoint{"POST /Account/PasskeyCreationOptions\n(Minimal API)\nuser found?"}
+    CreationOptsEndpoint{"POST /Account/PasskeyCreationOptions\nuser found?"}
 
-    CreationOpts404["404 Not Found\n────────────────────\n🟡 PasskeyCreationOptions_UserNotFound_Returns404"]:::unitOnly
+    CreationOpts404["404 Not Found"]:::unitOnly
 
-    CreationOpts200["200 JSON creation options\n────────────────────\n🟡 PasskeyCreationOptions_UserFound_ReturnsOkWithJson\n🟡 PasskeyCreationOptions_UserFound_PassesUserEntityToSignInManager"]:::unitOnly
+    CreationOpts200["200 JSON creation options"]:::unitOnly
 
-    WebAuthnCeremony["Browser performs\nWebAuthn creation ceremony\n────────────────────\n❌ No automated test"]:::noTest
+    WebAuthnCeremony["Browser performs WebAuthn creation ceremony"]:::noTest
 
-    AddPasskeyPOST{"POST /Account/Manage/Passkeys\n(AddPasskey handler)\nuser found?"}
+    AddPasskeyPOST{"POST /Account/Manage/Passkeys\nAddPasskey handler — user found?"}
 
-    AddNotFound["NotFoundObjectResult\n────────────────────\n🟡 OnPostAddPasskeyAsync_UserNotFound_ReturnsNotFound"]:::unitOnly
+    AddNotFound["NotFoundObjectResult"]:::unitOnly
 
-    AttestFails["Redirect with failure message\n────────────────────\n⚠️ OnPostAddPasskeyAsync_AttestationFails_RedirectsWithFailureMessage_Partial\n(test marked Skip)"]:::partial
+    AttestFails["Redirect with failure message (skipped)"]:::partial
 
-    AddOrUpdateFails["Redirect with failure message\n────────────────────\n⚠️ OnPostAddPasskeyAsync_AddOrUpdateFails_RedirectsWithFailureMessage_Partial\n(test marked Skip)"]:::partial
+    AddOrUpdateFails["Redirect with failure message (skipped)"]:::partial
 
-    AddSuccess["Redirect to /Account/Manage/RenamePasskey\n────────────────────\n⚠️ OnPostAddPasskeyAsync_Success_RedirectsToRenamePasskey_Partial\n(test marked Skip)"]:::partial
+    AddSuccess["Redirect to /Account/Manage/RenamePasskey (skipped)"]:::partial
 
     RenameGET{"GET /Account/Manage/RenamePasskey?id\nstate check"}
 
-    RenameInvalidB64["Redirect to Passkeys + status\n────────────────────\n🟡 OnGetAsync_InvalidBase64Id_RedirectsToPasskeysAndSetsStatusMessage"]:::unitOnly
+    RenameInvalidB64["Redirect to Passkeys + status"]:::unitOnly
 
-    RenameNotFound["NotFoundObjectResult\n────────────────────\n🟡 OnGetAsync_PasskeyNotFound_ReturnsNotFoundWithMessage"]:::unitOnly
+    RenameNotFound["NotFoundObjectResult"]:::unitOnly
 
-    RenameForm["Show rename form\n────────────────────\n🟡 Constructor_ValidDependencies_CreatesInstance"]:::unitOnly
+    RenameForm["Show rename form"]:::unitOnly
 
-    RenamePOST["POST — update passkey name\n────────────────────\n🟡 OnPostAsync_UserNotFound_ReturnsNotFoundWithMessage"]:::unitOnly
+    RenamePOST["POST — update passkey name"]:::unitOnly
 
-    UpdatePasskeyPOST["POST /Account/Manage/Passkeys\n(UpdatePasskey handler)\n────────────────────\n🟡 OnPostUpdatePasskeyAsync_UserNotFound_ReturnsNotFoundObjectResult"]:::unitOnly
+    UpdatePasskeyPOST["POST /Account/Manage/Passkeys\nUpdatePasskey handler"]:::unitOnly
 
-    RequestOptsEndpoint{"POST /Account/PasskeyRequestOptions\n(Minimal API, during login)\nusername provided?"}
+    RequestOptsEndpoint{"POST /Account/PasskeyRequestOptions\nusername provided?"}
 
-    RequestOptsNull["Options with null user\n────────────────────\n🟡 PasskeyRequestOptions_NullUsername_MakesRequestOptionsWithNullUser\n🟡 PasskeyRequestOptions_WhitespaceUsername_MakesRequestOptionsWithNullUser"]:::unitOnly
+    RequestOptsNull["Options with null user"]:::unitOnly
 
-    RequestOptsUser["Find user, options with user entity\n────────────────────\n🟡 PasskeyRequestOptions_UsernameProvided_FindsUserAndMakesRequestOptions\n🟡 PasskeyRequestOptions_ReturnsOkWithJson"]:::unitOnly
+    RequestOptsUser["Find user, options with user entity"]:::unitOnly
 
-    PasskeySignIn["POST /Account/Login\n(passkey credential JSON)\n────────────────────\n🟡 OnPostAsync_PasskeySignIn_Succeeded_ReturnsLocalRedirect"]:::unitOnly
-
-    NullCheck["MapAdditionalIdentityEndpoints\nnull endpoint builder\n────────────────────\n🟡 MapAdditionalIdentityEndpoints_NullEndpoints_ThrowsArgumentNullException"]:::unitOnly
+    PasskeySignIn["POST /Account/Login (passkey credential JSON)"]:::unitOnly
 
     PasskeysGET -->|"not found"| PasskeysNotFound
     PasskeysGET -->|"found"| PasskeysList
@@ -548,14 +549,14 @@ flowchart TD
 
 | Path | File | Test Method |
 |---|---|---|
-| `MapAdditionalIdentityEndpoints` null guard | `PasskeyEndpointRouteBuilderExtensionsTests.cs` | `MapAdditionalIdentityEndpoints_NullEndpoints_ThrowsArgumentNullException` |
-| POST /PasskeyCreationOptions — user not found | `PasskeyEndpointRouteBuilderExtensionsTests.cs` | `PasskeyCreationOptions_UserNotFound_Returns404` |
-| POST /PasskeyCreationOptions — 200 + JSON | `PasskeyEndpointRouteBuilderExtensionsTests.cs` | `PasskeyCreationOptions_UserFound_ReturnsOkWithJson` |
-| POST /PasskeyCreationOptions — user entity | `PasskeyEndpointRouteBuilderExtensionsTests.cs` | `PasskeyCreationOptions_UserFound_PassesUserEntityToSignInManager` |
-| POST /PasskeyRequestOptions — null username | `PasskeyEndpointRouteBuilderExtensionsTests.cs` | `PasskeyRequestOptions_NullUsername_MakesRequestOptionsWithNullUser` |
-| POST /PasskeyRequestOptions — whitespace | `PasskeyEndpointRouteBuilderExtensionsTests.cs` | `PasskeyRequestOptions_WhitespaceUsername_MakesRequestOptionsWithNullUser` |
-| POST /PasskeyRequestOptions — with username | `PasskeyEndpointRouteBuilderExtensionsTests.cs` | `PasskeyRequestOptions_UsernameProvided_FindsUserAndMakesRequestOptions` |
-| POST /PasskeyRequestOptions — 200 | `PasskeyEndpointRouteBuilderExtensionsTests.cs` | `PasskeyRequestOptions_ReturnsOkWithJson` |
+| `MapAdditionalIdentityEndpoints` null guard | `EndpointRouteBuilderExtensionsTests.cs` | `MapAdditionalIdentityEndpoints_NullEndpoints_ThrowsArgumentNullException` |
+| POST /PasskeyCreationOptions — user not found | `EndpointRouteBuilderExtensionsTests.cs` | `PasskeyCreationOptions_UserNotFound_Returns404` |
+| POST /PasskeyCreationOptions — 200 + JSON | `EndpointRouteBuilderExtensionsTests.cs` | `PasskeyCreationOptions_UserFound_ReturnsOkWithJson` |
+| POST /PasskeyCreationOptions — user entity | `EndpointRouteBuilderExtensionsTests.cs` | `PasskeyCreationOptions_UserFound_PassesUserEntityToSignInManager` |
+| POST /PasskeyRequestOptions — null username | `EndpointRouteBuilderExtensionsTests.cs` | `PasskeyRequestOptions_NullUsername_MakesRequestOptionsWithNullUser` |
+| POST /PasskeyRequestOptions — whitespace | `EndpointRouteBuilderExtensionsTests.cs` | `PasskeyRequestOptions_WhitespaceUsername_MakesRequestOptionsWithNullUser` |
+| POST /PasskeyRequestOptions — with username | `EndpointRouteBuilderExtensionsTests.cs` | `PasskeyRequestOptions_UsernameProvided_FindsUserAndMakesRequestOptions` |
+| POST /PasskeyRequestOptions — 200 | `EndpointRouteBuilderExtensionsTests.cs` | `PasskeyRequestOptions_ReturnsOkWithJson` |
 | GET /Manage/Passkeys — not found | `Passkeys.cshtmlTests.cs` | `OnGetAsync_UserNotFound_ReturnsNotFoundObjectResult` |
 | GET /Manage/Passkeys — constructor | `Passkeys.cshtmlTests.cs` | `PasskeysModel_Ctor_ValidManagers_PropertiesInitializedToNull` |
 | AddPasskey — user not found | `Passkeys.cshtmlTests.cs` | `OnPostAddPasskeyAsync_UserNotFound_ReturnsNotFound` |
@@ -580,29 +581,29 @@ flowchart TD
     classDef partial fill:#fed7aa,stroke:#ea580c
     classDef noTest fill:#fee2e2,stroke:#dc2626
 
-    LoginPage["GET /Account/Login\n(Google button visible)\n────────────────────\n🟡 OnGetAsync_ExternalSchemesAvailable_PopulatesExternalLogins"]:::unitOnly
+    LoginPage["GET /Account/Login (Google button visible)"]:::unitOnly
 
-    GoogleChallenge["Challenge Google OIDC provider\n(browser redirect to Google)\n────────────────────\n❌ No automated test"]:::noTest
+    GoogleChallenge["Challenge Google OIDC provider (browser redirect to Google)"]:::noTest
 
-    GoogleCallback{"GET /Account/ExternalLogin\n?callback\nremote error?"}
+    GoogleCallback{"GET /Account/ExternalLogin\n?callback — remote error?"}
 
-    RemoteError["Redirect to /Account/Login\nwith error message\n────────────────────\n🟡 OnGetCallbackAsync_RemoteErrorProvided_SetsErrorMessageAndRedirectsToLogin"]:::unitOnly
+    RemoteError["Redirect to /Account/Login with error message"]:::unitOnly
 
-    InfoNull["Redirect to /Account/Login\nwith error message\n────────────────────\n🟡 OnGetCallbackAsync_InfoIsNull_SetsErrorMessageAndRedirectsToLogin"]:::unitOnly
+    InfoNull["Redirect to /Account/Login with error message"]:::unitOnly
 
-    ExistingUserSignIn["Existing user found\n→ Sign in directly\n────────────────────\n❌ No unit test for success path"]:::noTest
+    ExistingUserSignIn["Existing user found — sign in directly"]:::noTest
 
-    ConfirmationForm{"POST /Account/ExternalLogin\n/Confirmation\nstate check"}
+    ConfirmationForm{"POST /Account/ExternalLogin/Confirmation\nstate check"}
 
-    ConfirmModelInvalid["Return page\n────────────────────\n🟡 OnPostConfirmationAsync_ModelStateInvalid_ReturnsPageAndSetsProviderDisplayNameAndReturnUrl"]:::unitOnly
+    ConfirmModelInvalid["Return page"]:::unitOnly
 
-    ConfirmInfoNull["Redirect to Login with error\n────────────────────\n🟡 OnPostConfirmationAsync_InfoNull_ReturnsRedirectToLoginAndSetsErrorMessage"]:::unitOnly
+    ConfirmInfoNull["Redirect to Login with error"]:::unitOnly
 
     CreateAndAddLogin{"Create user\n+ AddLogin\nsucceeds?"}
 
-    ConfirmSuccess["Redirect (based on RequireConfirmedAccount)\n────────────────────\n🟡 OnPostConfirmationAsync_CreateAndAddLogin_Succeeds_ConditionalRedirect"]:::unitOnly
+    ConfirmSuccess["Redirect (based on RequireConfirmedAccount)"]:::unitOnly
 
-    ConfirmFail["Return page with errors\n────────────────────\n❌ No test for create failure path"]:::noTest
+    ConfirmFail["Return page with errors"]:::noTest
 
     LoginPage -->|"click Sign in with Google"| GoogleChallenge
     GoogleChallenge --> GoogleCallback
@@ -644,19 +645,19 @@ flowchart TD
 
     ProfileGET{"GET /Account/Manage/Index\nuser found?"}
 
-    ProfileNotFound["NotFoundObjectResult\n────────────────────\n🟡 OnGetAsync_UserNotFound_ReturnsNotFoundObjectResult"]:::unitOnly
+    ProfileNotFound["NotFoundObjectResult"]:::unitOnly
 
-    ProfilePage["Show profile form\n(username, phone, Gravatar avatar)\n────────────────────\n🟡 OnGetAsync_UserExists_LoadsUsernameAndPhoneAndReturnsPage\n🟡 Constructor_ValidDependencies_DoesNotThrow"]:::unitOnly
+    ProfilePage["Show profile form (username, phone, Gravatar avatar)"]:::unitOnly
 
     ProfilePOST{"POST /Account/Manage/Index\nstate check"}
 
-    ProfileUserNotFound["NotFoundObjectResult\n────────────────────\n🟡 OnPostAsync_UserNotFound_ReturnsNotFoundWithUserIdMessage"]:::unitOnly
+    ProfileUserNotFound["NotFoundObjectResult"]:::unitOnly
 
-    ProfileModelInvalid["Return page\n────────────────────\n🟡 OnPostAsync_ModelStateInvalid_ReturnsPageAndDoesNotChangePhoneOrSignIn"]:::unitOnly
+    ProfileModelInvalid["Return page"]:::unitOnly
 
-    ProfileSaved["Update phone → RefreshSignIn\n────────────────────\n✅ E2E: ChangePassword_Success_OldPasswordNoLongerWorks\n(visits profile page)"]:::covered
+    ProfileSaved["Update phone, RefreshSignIn"]:::covered
 
-    GravatarService["GravatarService.GetAvatarUrlAsync()\n────────────────────\n🟡 GetAvatarUrlAsync_ProfileFound_ReturnsAvatarUrl\n🟡 GetAvatarUrlAsync_ProfileNotFound_ReturnsNull\n🟡 GetAvatarUrlAsync_ProfileReturnsNullAvatarUrl_ReturnsNull\n🟡 GetAvatarUrlAsync_NonNotFoundApiException_PropagatesException\n🟡 GetAvatarUrlAsync_AlwaysHashesEmailToSha256Lowercase\n🟡 GetAvatarUrlAsync_PassesCancellationToken"]:::unitOnly
+    GravatarService["GravatarService.GetAvatarUrlAsync()"]:::unitOnly
 
     ProfileGET -->|"not found"| ProfileNotFound
     ProfileGET -->|"found"| ProfilePage
@@ -695,27 +696,31 @@ flowchart TD
 
     EmailGET{"GET /Account/Manage/Email\nuser found?"}
 
-    EmailNotFound["NotFoundObjectResult\n────────────────────\n🟡 OnGetAsync_UserNotFound_ReturnsNotFoundObjectResult\n(via EmailModel_Constructor tests)"]:::unitOnly
+    EmailNotFound["NotFoundObjectResult"]:::unitOnly
 
-    EmailPage["Show current email + change form\n────────────────────\n🟡 Constructor_ValidDependencies_InitializesDefaults\n🟡 Constructor_MultipleInstances_AreIndependent"]:::unitOnly
+    EmailPage["Show current email + change form"]:::unitOnly
 
     SendVerifPOST{"POST (SendVerificationEmail handler)\nstate check"}
 
-    SendVerifInvalid["Return page\n────────────────────\n🟡 OnPostSendVerificationEmailAsync_InvalidModelState_ReturnsPage"]:::unitOnly
+    SendVerifInvalid["Return page"]:::unitOnly
 
-    SendVerifNotFound["NotFoundObjectResult\n────────────────────\n🟡 OnPostSendVerificationEmailAsync_UserNotFound_ReturnsNotFoundWithUserId"]:::unitOnly
+    SendVerifNotFound["NotFoundObjectResult"]:::unitOnly
 
-    SendVerifSuccess["Send email → Redirect\n────────────────────\n🟡 OnPostSendVerificationEmailAsync_ValidUser_SendsEmailAndRedirects"]:::unitOnly
+    SendVerifSuccess["Send email, redirect"]:::unitOnly
 
-    ChangeEmailPOST["POST (ChangeEmail handler)\n────────────────────\n🟡 OnPostChangeEmailAsync_UserNotFound_ReturnsNotFound"]:::unitOnly
+    ChangeEmailPOST["POST (ChangeEmail handler)"]:::unitOnly
 
     ConfirmEmailChangeGET{"GET /Account/ConfirmEmailChange\nparams valid?"}
 
-    ConfirmNull["Redirect to /Account/Manage/Index\n────────────────────\n🟡 OnGetAsync_NullParameters_RedirectsToIndex"]:::unitOnly
+    ConfirmNull["Redirect to /Account/Manage/Index"]:::unitOnly
 
-    ConfirmChangeFails["Return page with error\n────────────────────\n🟡 OnGetAsync_ChangeEmailFails_ReturnsPageAndSetsStatusMessage"]:::unitOnly
+    ConfirmEmptyEmail["Redirect to /Account/Manage/Index"]:::unitOnly
 
-    ConfirmChangeSuccess["Change email → RefreshSignIn\n────────────────────\n🟡 OnGetAsync_AllOperationsSucceed_RefreshesSignInAndSetsSuccessMessage"]:::unitOnly
+    ConfirmChangeFails["Return page with error"]:::unitOnly
+
+    ConfirmSetUserNameFails["Return page with error"]:::unitOnly
+
+    ConfirmChangeSuccess["Change email, RefreshSignIn"]:::unitOnly
 
     EmailGET -->|"not found"| EmailNotFound
     EmailGET -->|"found"| EmailPage
@@ -729,7 +734,10 @@ flowchart TD
     ChangeEmailPOST -->|"email link"| ConfirmEmailChangeGET
     ConfirmEmailChangeGET -->|"null params"| ConfirmNull
     ConfirmNull -->|"redirect"| EmailPage
-    ConfirmEmailChangeGET -->|"change fails"| ConfirmChangeFails
+    ConfirmEmailChangeGET -->|"empty or whitespace email"| ConfirmEmptyEmail
+    ConfirmEmptyEmail -->|"redirect"| EmailPage
+    ConfirmEmailChangeGET -->|"change email fails"| ConfirmChangeFails
+    ConfirmEmailChangeGET -->|"set username fails"| ConfirmSetUserNameFails
     ConfirmEmailChangeGET -->|"success"| ConfirmChangeSuccess
 ```
 
@@ -761,33 +769,33 @@ flowchart TD
 
     ChangePwdGET{"GET /Account/Manage/ChangePassword\nuser found?"}
 
-    ChangePwdNotFound["NotFoundObjectResult\n────────────────────\n🟡 OnGetAsync_UserNotFound_ReturnsNotFoundObjectResult"]:::unitOnly
+    ChangePwdNotFound["NotFoundObjectResult"]:::unitOnly
 
-    ChangePwdForm["Show change password form\n────────────────────\n🟡 Constructor_WithValidDependencies_DoesNotThrow"]:::unitOnly
+    ChangePwdForm["Show change password form"]:::unitOnly
 
     ChangePwdPOST{"POST /Account/Manage/ChangePassword\nstate check"}
 
-    ChangePwdInvalid["Return page\n────────────────────\n🟡 OnPostAsync_ModelStateInvalid_ReturnsPage"]:::unitOnly
+    ChangePwdInvalid["Return page"]:::unitOnly
 
-    ChangePwdUserNotFound["NotFoundObjectResult\n────────────────────\n🟡 OnPostAsync_UserNotFound_ReturnsNotFoundWithUserId"]:::unitOnly
+    ChangePwdUserNotFound["NotFoundObjectResult"]:::unitOnly
 
-    ChangePwdSuccess["RefreshSignIn → Redirect\n────────────────────\n✅ E2E: ChangePassword_Success_OldPasswordNoLongerWorks"]:::covered
+    ChangePwdSuccess["RefreshSignIn, redirect"]:::covered
 
     SetPwdGET{"GET /Account/Manage/SetPassword\nstate check"}
 
-    SetPwdNotFound["NotFoundObjectResult\n────────────────────\n🟡 OnGetAsync_UserNotFound_ReturnsNotFoundWithUserIdInMessage"]:::unitOnly
+    SetPwdNotFound["NotFoundObjectResult"]:::unitOnly
 
-    SetPwdHasPwd["Redirect to ChangePassword\n────────────────────\n🟡 OnGetAsync_ExistingUser_BehavesBasedOnHasPassword"]:::unitOnly
+    SetPwdHasPwd["Redirect to ChangePassword"]:::unitOnly
 
-    SetPwdForm["Show set password form\n────────────────────\n🟡 OnGetAsync_ExistingUser_BehavesBasedOnHasPassword"]:::unitOnly
+    SetPwdForm["Show set password form"]:::unitOnly
 
     SetPwdPOST{"POST /Account/Manage/SetPassword\nstate check"}
 
-    SetPwdInvalid["Return page\n────────────────────\n🟡 OnPostAsync_ModelStateInvalid_ReturnsPage"]:::unitOnly
+    SetPwdInvalid["Return page"]:::unitOnly
 
-    SetPwdNotFoundPost["NotFoundObjectResult\n────────────────────\n🟡 OnPostAsync_UserNotFound_ReturnsNotFoundWithMessage"]:::unitOnly
+    SetPwdNotFoundPost["NotFoundObjectResult"]:::unitOnly
 
-    SetPwdSuccess["Set password → RefreshSignIn\n────────────────────\n🟡 OnPostAsync_ModelStateInvalid_ReturnsPage"]:::unitOnly
+    SetPwdSuccess["Set password, RefreshSignIn"]:::unitOnly
 
     ChangePwdGET -->|"not found"| ChangePwdNotFound
     ChangePwdGET -->|"found"| ChangePwdForm
@@ -833,29 +841,29 @@ flowchart TD
 
     ExtLoginsGET{"GET /Account/Manage/ExternalLogins\nuser found?"}
 
-    ExtLoginsNotFound["NotFoundObjectResult\n────────────────────\n🟡 OnGetAsync_UserNotFound_ReturnsNotFoundWithMessage"]:::unitOnly
+    ExtLoginsNotFound["NotFoundObjectResult"]:::unitOnly
 
-    ExtLoginsPage["Show linked / available providers\n────────────────────\n🟡 ExternalLoginsModel_Constructor_AllParametersNull_DoesNotThrowCreatesInstance\n🟡 ExternalLoginsModel_Constructor_NullAndMockedUserStore_ObjectConstructedAndDefaults"]:::unitOnly
+    ExtLoginsPage["Show linked / available providers"]:::unitOnly
 
-    LinkLoginPOST["POST LinkLogin handler\n→ Challenge provider\n────────────────────\n🟡 OnPostLinkLoginAsync_Provider_ReturnsChallengeAndSignsOut"]:::unitOnly
+    LinkLoginPOST["POST LinkLogin handler — challenge provider"]:::unitOnly
 
-    GoogleRedirect["Browser redirects to Google\n────────────────────\n❌ No automated test"]:::noTest
+    GoogleRedirect["Browser redirects to Google"]:::noTest
 
     LinkCallbackGET{"GET LinkLoginCallback\nstate check"}
 
-    CallbackNoInfo["Throws InvalidOperationException\n────────────────────\n🟡 OnGetLinkLoginCallbackAsync_NoExternalLoginInfo_ThrowsInvalidOperationException"]:::unitOnly
+    CallbackNoInfo["Throws InvalidOperationException"]:::unitOnly
 
-    CallbackNotFound["NotFoundObjectResult\n────────────────────\n🟡 OnGetLinkLoginCallbackAsync_UserNotFound_ReturnsNotFoundObjectResult"]:::unitOnly
+    CallbackNotFound["NotFoundObjectResult"]:::unitOnly
 
-    CallbackAddResult["Update status message → Redirect\n────────────────────\n🟡 OnGetLinkLoginCallbackAsync_AddLoginResult_UpdatesStatusMessageAndRedirects"]:::unitOnly
+    CallbackAddResult["Update status message, redirect"]:::unitOnly
 
     RemoveLoginPOST{"POST RemoveLogin handler\nuser found?"}
 
-    RemoveNotFound["NotFoundObjectResult\n────────────────────\n🟡 OnPostRemoveLoginAsync_UserNotFound_ReturnsNotFound"]:::unitOnly
+    RemoveNotFound["NotFoundObjectResult"]:::unitOnly
 
-    RemoveFails["Set failure message → Redirect\n────────────────────\n🟡 OnPostRemoveLoginAsync_RemoveLoginFails_SetsFailureMessageAndRedirects"]:::unitOnly
+    RemoveFails["Set failure message, redirect"]:::unitOnly
 
-    RemoveSuccess["RefreshSignIn → set success message\n────────────────────\n🟡 OnPostRemoveLoginAsync_RemoveLoginSucceeds_RefreshesSignInAndSetsSuccessMessage"]:::unitOnly
+    RemoveSuccess["RefreshSignIn, set success message"]:::unitOnly
 
     ExtLoginsGET -->|"not found"| ExtLoginsNotFound
     ExtLoginsGET -->|"found"| ExtLoginsPage
@@ -897,27 +905,27 @@ flowchart TD
     classDef unitOnly fill:#fef9c3,stroke:#ca8a04
     classDef partial fill:#fed7aa,stroke:#ea580c
 
-    PersonalDataGET["GET /Account/Manage/PersonalData\n────────────────────\n🟡 PersonalDataModel_WithValidDependencies_DoesNotThrowAndCreatesInstance\n🟡 PersonalDataModel_WithDifferentLoggerInstances_CreatesDistinctInstances"]:::unitOnly
+    PersonalDataGET["GET /Account/Manage/PersonalData"]:::unitOnly
 
     DownloadPOST{"POST /Account/Manage/DownloadPersonalData\nuser found?"}
 
-    DownloadNotFound["NotFoundObjectResult\n────────────────────\n🟡 OnGet_UserNotFound_ReturnsNotFoundObjectResultWithMessage"]:::unitOnly
+    DownloadNotFound["NotFoundObjectResult"]:::unitOnly
 
-    DownloadSuccess["Returns JSON file download\n(user data, claims, logins, recovery codes)\n────────────────────\n🔵 Constructor_WithValidDependencies_InstanceCreatedAndOnGetReturnsNotFound"]:::partial
+    DownloadSuccess["Returns JSON file download (user data, claims, logins, recovery codes)"]:::partial
 
     DeleteGET{"GET /Account/Manage/DeletePersonalData\nuser found?"}
 
-    DeleteGetNotFound["NotFoundObjectResult\n────────────────────\n🟡 OnGet_UserNotFound_ReturnsNotFoundObjectResultWithMessage"]:::unitOnly
+    DeleteGetNotFound["NotFoundObjectResult"]:::unitOnly
 
-    DeleteForm["Show confirmation form\n────────────────────\n🟡 Constructor_ValidDependencies_InitializesDefaults"]:::unitOnly
+    DeleteForm["Show confirmation form"]:::unitOnly
 
     DeletePOST{"POST /Account/Manage/DeletePersonalData\nstate check"}
 
-    DeleteModelInvalid["Return page\n────────────────────\n🟡 OnPostAsync_ModelStateInvalid_ReturnsPage"]:::unitOnly
+    DeleteModelInvalid["Return page"]:::unitOnly
 
-    DeletePostNotFound["NotFoundObjectResult\n────────────────────\n🟡 OnPostAsync_UserNotFound_ReturnsNotFoundObjectResult"]:::unitOnly
+    DeletePostNotFound["NotFoundObjectResult"]:::unitOnly
 
-    DeleteSuccess["Delete user → Sign out → Redirect\n────────────────────\n✅ E2E: DeleteAccount_Success_SubsequentLoginFails"]:::covered
+    DeleteSuccess["Delete user, sign out, redirect"]:::covered
 
     PersonalDataGET -->|"download link"| DownloadPOST
     PersonalDataGET -->|"delete link"| DeleteGET
@@ -954,21 +962,21 @@ flowchart LR
     classDef noTest fill:#fee2e2,stroke:#dc2626
 
     subgraph CreationOpts["POST /Account/PasskeyCreationOptions"]
-        CO_Guard["Null endpoint builder\n→ ArgumentNullException\n────────────────────\n🟡 MapAdditionalIdentityEndpoints_NullEndpoints_ThrowsArgumentNullException"]:::unitOnly
+        CO_Guard["Null endpoint builder\nthrows ArgumentNullException"]:::unitOnly
 
-        CO_Auth["Requires authenticated user\n+ antiforgery token\n────────────────────\n❌ No integration test for auth rejection"]:::noTest
+        CO_Auth["Requires authenticated user\n+ antiforgery token"]:::noTest
 
-        CO_NotFound["GetUserAsync returns null\n→ 404\n────────────────────\n🟡 PasskeyCreationOptions_UserNotFound_Returns404"]:::unitOnly
+        CO_NotFound["GetUserAsync returns null\n404"]:::unitOnly
 
-        CO_Found["Build PasskeyUserEntity\n→ MakePasskeyCreationOptionsAsync\n→ 200 JSON\n────────────────────\n🟡 PasskeyCreationOptions_UserFound_ReturnsOkWithJson\n🟡 PasskeyCreationOptions_UserFound_PassesUserEntityToSignInManager"]:::unitOnly
+        CO_Found["Build PasskeyUserEntity\nMakePasskeyCreationOptionsAsync\n200 JSON"]:::unitOnly
     end
 
     subgraph RequestOpts["POST /Account/PasskeyRequestOptions"]
-        RO_Auth["Requires antiforgery token\n────────────────────\n❌ No integration test for auth rejection"]:::noTest
+        RO_Auth["Requires antiforgery token"]:::noTest
 
-        RO_Null["username null / whitespace\n→ MakePasskeyRequestOptionsAsync(null)\n────────────────────\n🟡 PasskeyRequestOptions_NullUsername_MakesRequestOptionsWithNullUser\n🟡 PasskeyRequestOptions_WhitespaceUsername_MakesRequestOptionsWithNullUser"]:::unitOnly
+        RO_Null["username null or whitespace\nMakePasskeyRequestOptionsAsync(null)"]:::unitOnly
 
-        RO_Found["username provided\n→ FindByNameAsync(username)\n→ MakePasskeyRequestOptionsAsync(user)\n────────────────────\n🟡 PasskeyRequestOptions_UsernameProvided_FindsUserAndMakesRequestOptions\n🟡 PasskeyRequestOptions_ReturnsOkWithJson"]:::unitOnly
+        RO_Found["username provided\nFindByNameAsync\nMakePasskeyRequestOptionsAsync(user)"]:::unitOnly
     end
 ```
 
@@ -981,25 +989,25 @@ flowchart TD
     classDef unitOnly fill:#fef9c3,stroke:#ca8a04
 
     subgraph GravatarSvc["GravatarService (IAvatarService)"]
-        GV_Hash["SHA-256 hash email\n(lowercase)\n────────────────────\n🟡 GetAvatarUrlAsync_AlwaysHashesEmailToSha256Lowercase"]:::unitOnly
+        GV_Hash["SHA-256 hash email (lowercase)"]:::unitOnly
 
-        GV_Found["Gravatar profile found\n→ return avatar URL\n────────────────────\n🟡 GetAvatarUrlAsync_ProfileFound_ReturnsAvatarUrl"]:::unitOnly
+        GV_Found["Gravatar profile found\nreturn avatar URL"]:::unitOnly
 
-        GV_NotFound["Gravatar profile not found (404)\n→ return null\n────────────────────\n🟡 GetAvatarUrlAsync_ProfileNotFound_ReturnsNull"]:::unitOnly
+        GV_NotFound["Gravatar profile not found (404)\nreturn null"]:::unitOnly
 
-        GV_NullUrl["Profile found but no avatar URL\n→ return null\n────────────────────\n🟡 GetAvatarUrlAsync_ProfileReturnsNullAvatarUrl_ReturnsNull"]:::unitOnly
+        GV_NullUrl["Profile found but no avatar URL\nreturn null"]:::unitOnly
 
-        GV_OtherErr["Non-404 API exception\n→ propagates\n────────────────────\n🟡 GetAvatarUrlAsync_NonNotFoundApiException_PropagatesException"]:::unitOnly
+        GV_OtherErr["Non-404 API exception\npropagates"]:::unitOnly
 
-        GV_Cancel["Cancellation token\n→ propagates\n────────────────────\n🟡 GetAvatarUrlAsync_PassesCancellationToken"]:::unitOnly
+        GV_Cancel["Cancellation token\npropagates"]:::unitOnly
     end
 
     subgraph EmailSvc["EmailSender (IEmailSender via Resend)"]
-        ES_Send["SendEmailAsync → Resend API\n────────────────────\n🟡 SendEmailAsync_VariousInputs_CallsResendWithExpectedMessage"]:::unitOnly
+        ES_Send["SendEmailAsync calls Resend API"]:::unitOnly
 
-        ES_Throw["Resend throws\n→ exception propagates\n────────────────────\n🟡 SendEmailAsync_ResendThrows_PropagatesException"]:::unitOnly
+        ES_Throw["Resend throws\nexception propagates"]:::unitOnly
 
-        ES_Ctor["Constructor variants\n────────────────────\n🟡 Constructor_ValidResend_CreatesInstance\n🟡 Constructor_DifferentResendInstances_CreatesDistinctInstances"]:::unitOnly
+        ES_Ctor["Constructor variants"]:::unitOnly
     end
 
     GV_Hash --> GV_Found
@@ -1033,15 +1041,15 @@ flowchart TD
     classDef partial fill:#fed7aa,stroke:#ea580c
     classDef noTest fill:#fee2e2,stroke:#dc2626
 
-    IndexPage["GET /\n(Home page)\n────────────────────\n🔵 Constructor_BothDependenciesNull_DoesNotThrowAndCreatesInstance"]:::partial
+    IndexPage["GET / (Home page)"]:::partial
 
-    PrivacyPage["GET /Privacy\n────────────────────\n🔵 Constructor test"]:::partial
+    PrivacyPage["GET /Privacy"]:::partial
 
-    ErrorPage["GET /Error\n────────────────────\n🟡 Constructor_ValidInteractionService_InitializesDefaults\n🟡 OnGetAsync_NullOrWhitespaceErrorId_SkipsInteractionService\n🟡 OnGetAsync_ValidErrorId_CallsInteractionService\n🟡 OnGetAsync_ValidErrorId_WithErrorMessage_LogsError\n🟡 ShowRequestId_VariousValues_ReturnsExpected"]:::unitOnly
+    ErrorPage["GET /Error"]:::unitOnly
 
-    HealthEndpoint["GET /Health\n(DbContext health check)\n────────────────────\n❌ No unit test\n❌ No E2E test"]:::noTest
+    HealthEndpoint["GET /Health (DbContext health check)"]:::noTest
 
-    AccessDeniedPage["GET /Account/AccessDenied\n────────────────────\n🔵 Constructor test"]:::partial
+    AccessDeniedPage["GET /Account/AccessDenied"]:::partial
 
     IndexPage -.-> ErrorPage
     PrivacyPage -.-> ErrorPage
@@ -1064,8 +1072,8 @@ flowchart TD
 ```mermaid
 quadrantChart
     title Test Coverage by Path Category
-    x-axis "Low Path Count" --> "High Path Count"
-    y-axis "Unit Only" --> "Unit + E2E"
+    x-axis Low Path Count --> High Path Count
+    y-axis Unit Only --> Unit + E2E
     quadrant-1 Well Tested
     quadrant-2 Needs E2E
     quadrant-3 Needs More Tests
@@ -1092,7 +1100,7 @@ quadrantChart
 | `/Account/Register` | ✅ | ✅ | ✅ | |
 | `/Account/RegisterConfirmation` | 🔵 | — | ✅ | Constructor only |
 | `/Account/ConfirmEmail` | ✅ | — | ✅ | |
-| `/Account/ConfirmEmailChange` | ✅ | — | ❌ | |
+| `/Account/ConfirmEmailChange` | ✅ | — | ✅ | Via EmailChangeTests |
 | `/Account/ResendEmailConfirmation` | 🔵 | 🔵 | ❌ | Constructor only |
 | `/Account/Login` | ✅ | ✅ | ✅ | |
 | `/Account/LoginWith2fa` | ✅ | ✅ | ✅ | |
@@ -1106,15 +1114,14 @@ quadrantChart
 | `/Account/ExternalLogin` | ✅ | ✅ | ❌ | No live OIDC in tests |
 | `/Account/AccessDenied` | 🔵 | — | ❌ | Constructor only |
 | `/Account/Manage/Index` | ✅ | ✅ | ✅ | Via AccountManagementTests |
-| `/Account/Manage/Email` | ✅ | ✅ | ❌ | |
-| `/Account/ConfirmEmailChange` | ✅ | — | ❌ | |
+| `/Account/Manage/Email` | ✅ | ✅ | ✅ | Via EmailChangeTests |
 | `/Account/Manage/ChangePassword` | ✅ | ✅ | ✅ | |
 | `/Account/Manage/SetPassword` | ✅ | ✅ | ❌ | |
 | `/Account/Manage/TwoFactorAuthentication` | ✅ | — | ✅ | |
 | `/Account/Manage/EnableAuthenticator` | ✅ | ✅ | ✅ | |
 | `/Account/Manage/ShowRecoveryCodes` | ✅ | — | ✅ | |
 | `/Account/Manage/GenerateRecoveryCodes` | ✅ | ✅ | ✅ | |
-| `/Account/Manage/Disable2fa` | ✅ | ✅ | ❌ | |
+| `/Account/Manage/Disable2fa` | ✅ | ✅ | ✅ | Via Disable2faTests |
 | `/Account/Manage/ResetAuthenticator` | ✅ | ✅ | ❌ | |
 | `/Account/Manage/Passkeys` | ✅ | ⚠️ | ❌ | 3 tests Skipped |
 | `/Account/Manage/RenamePasskey` | ✅ | ✅ | ❌ | |
@@ -1144,3 +1151,65 @@ The following paths have no meaningful behavioral test coverage and are candidat
 | `/Account/Logout` — actual sign-out behavior | Low | E2E: verify session cookie cleared |
 | `POST /Account/Manage/DownloadPersonalData` — download content | Low | Verify JSON shape and data presence |
 | `GET /Account/ResendEmailConfirmation` + `POST` | Low | Unit tests for OnGet/OnPost handlers |
+
+---
+
+## 17. Load, Property-Based & Resilience Tests
+
+### Load Tests (`Identity.Tests/Load/`)
+
+```bash
+ASPNETCORE_ENVIRONMENT=Development dotnet test --project Identity.Tests --configuration Release -- --filter-trait "Category=Load"
+```
+
+Load tests use `Parallel.ForEachAsync` + `HttpClient` (self-signed cert ignored) against the real Kestrel server started by `PlaywrightFixture`. They are excluded from normal CI runs and only execute on `schedule` or `workflow_dispatch`.
+
+| Test | Endpoint | RPS | Pass Criterion |
+|---|---|---|---|
+| `DiscoveryEndpoint_Under50Rps_HasNegligibleFailures` | `/.well-known/openid-configuration` | ~50 | < 1% failure |
+| `LoginPage_Under30Rps_HasNegligibleFailures` | `/Account/Login` | ~30 | < 2% failure |
+| `JwksEndpoint_Under100Rps_HasNegligibleFailures` | `/.well-known/openid-configuration/jwks` | ~100 | < 1% failure |
+| `HealthEndpoint_Under20Rps_AllSucceed` | `/Health` | ~20 | 0 failures |
+
+### Property-Based Tests (`Identity.Tests/PropertyBased/`)
+
+`[Trait("Category", "Unit")]` — run with the normal unit test suite.
+
+| File | Focus |
+|---|---|
+| `PasswordHashingTests.cs` | Verifies `PasswordHasher<IdentityUser<Guid>>` round-trips any valid password (up to 72 bytes), rejects tampered hashes, and produces consistent results across instances |
+| `InputSanitizationTests.cs` | Verifies Gravatar hash is lowercase hex for arbitrary email strings; verifies email sender passes through arbitrary subjects/bodies unchanged |
+
+### Resilience Tests (`Identity.Tests/Resilience/`)
+
+`[Trait("Category", "Unit")]` — run with the normal unit test suite.
+
+| File | Focus |
+|---|---|
+| `ServiceResilienceTests.cs` | `EmailSender` propagates `ResendException`; `GravatarService` surfaces non-404 API exceptions; `SecretClient` propagates `RequestFailedException`; services tolerate `CancellationToken` cancellation |
+
+---
+
+## 18. Mutation Testing (Stryker)
+
+Stryker.NET is configured in `stryker-config.json` with `mutation-level: Advanced`. It targets five core source files:
+
+| File | Why it's targeted |
+|---|---|
+| `Identity.Api/EmailSender.cs` | Only production email path |
+| `Identity.Api/GravatarService.cs` | Hash computation and error handling |
+| `Identity.Api/Extensions/SecretClientExtensions.cs` | Key Vault secret fetch coordination |
+| `Identity.Api/Extensions/ConfigurationExtensions.cs` | Startup config extraction |
+| `Identity.Api/Extensions/EndpointRouteBuilderExtensions.cs` | Passkey endpoint registration |
+
+**Thresholds:** high=80, low=60, break=50 (CI fails if mutation score < 50).
+
+```bash
+# Install once
+dotnet tool install -g dotnet-stryker
+
+# Run (slow — allow 10–30 minutes depending on machine)
+dotnet stryker --config-file stryker-config.json
+```
+
+The CI `mutation` job runs on schedule (Monday 02:00 UTC) and on manual dispatch. Reports are uploaded as the `stryker-report` artifact (HTML + JSON).

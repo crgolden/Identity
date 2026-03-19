@@ -1,4 +1,5 @@
-﻿#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+﻿#pragma warning disable CS8604 // Possible null reference argument.
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account;
 
 using System.Text;
@@ -91,7 +92,7 @@ public partial class ConfirmEmailModelTests
         UserManager<IdentityUser<Guid>>? userManager = null;
 
         // Act
-        var model = new ConfirmEmailModel(userManager!);
+        var model = new ConfirmEmailModel(userManager);
 
         // Assert
         Assert.NotNull(model);

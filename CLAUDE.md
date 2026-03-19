@@ -4,11 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Solution Structure
 
-The solution (`Identity.slnx`) contains three projects:
+The solution (`Identity.slnx`) contains four projects:
 
 - **`Identity.Api/`** — ASP.NET Core 10 Razor Pages web application (the main app), also houses `ApplicationDbContext`
 - **`Identity.Data/`** — SQL Server Database Project (SSDT); the schema source of truth for production, builds to a `.dacpac`
 - **`Identity.Tests/`** — xUnit v3 test project: unit tests (using `Microsoft.AspNetCore.Mvc.Testing`, `Moq`) and browser-based E2E tests (using `Microsoft.Playwright`)
+- **`Identity.Benchmarks/`** — BenchmarkDotNet microbenchmarks for authentication-critical hot paths (password hashing, Gravatar hash computation)
 
 ## What This App Does
 
@@ -50,7 +51,7 @@ When making a schema change, update the corresponding table definition in `Ident
 
 ### Passkey Endpoints
 
-Two minimal API endpoints are registered in `PasskeyEndpointRouteBuilderExtensions.cs` (called via `app.MapAdditionalIdentityEndpoints()`):
+Two minimal API endpoints are registered in `EndpointRouteBuilderExtensions.cs` (called via `app.MapAdditionalIdentityEndpoints()`):
 - `POST /Account/PasskeyCreationOptions` — returns WebAuthn creation options JSON
 - `POST /Account/PasskeyRequestOptions` — returns WebAuthn request options JSON
 
@@ -77,7 +78,7 @@ All sensitive values are retrieved at startup from **Azure Key Vault** using `De
 | Environment | Enabled credential | Typical use |
 |---|---|---|
 | `Development` | `VisualStudioCredential`, `SharedTokenCacheCredential` | Local dev via VS / VS Code |
-| `CLI` | `AzureCliCredential` | CI — after `azure/login` OIDC step |
+| `CI` | `AzureCliCredential` | CI — after `azure/login` OIDC step |
 | `Production` (default) | All credentials (full `DefaultAzureCredential` chain) | Azure App Service managed identity |
 
 Non-secret infrastructure values are set via `appsettings.json` (nulled out) and supplied through User Secrets (development) or environment/Azure App Configuration (production):
@@ -138,7 +139,7 @@ ASPNETCORE_ENVIRONMENT=Development dotnet test --project Identity.Tests --config
 
 E2E tests use Playwright (Chromium) against a real Kestrel server started in-process. They require the same User Secrets as `dotnet run` (database, Key Vault, etc.).
 
-In CI the workflow sets `ASPNETCORE_ENVIRONMENT=CLI`, which uses `AzureCliCredential` after the `azure/login` OIDC step instead of User Secrets. The `IdentityWebApplicationFactory` only replaces the Serilog logger factory (to avoid the Elasticsearch sink) when the environment is `Development`; in `CLI` the real sink is used.
+In CI the workflow sets `ASPNETCORE_ENVIRONMENT=CI`, which loads `appsettings.CI.json` (enables only `AzureCliCredential`) after the `azure/login` OIDC step instead of User Secrets. The `IdentityWebApplicationFactory` replaces the Serilog logger factory (to avoid the Elasticsearch sink) for any non-Production environment; in `CI` the console logger is used instead.
 
 `PlaywrightFixture.InitializeAsync` unconditionally calls `Microsoft.Playwright.Program.Main(["install", "chromium"])` to ensure Chromium is present. In CI, the workflow also runs a dedicated `pwsh playwright.ps1 install --with-deps chromium` step beforehand to install system-level browser dependencies.
 
@@ -146,11 +147,36 @@ In CI the workflow sets `ASPNETCORE_ENVIRONMENT=CLI`, which uses `AzureCliCreden
 
 Both `Identity.Api` and `Identity.Tests` set `<TreatWarningsAsErrors>true</TreatWarningsAsErrors>`. All build warnings are errors — fix them before committing.
 
+**Never set `TreatWarningsAsErrors` to `false` and never add suppressions to `.editorconfig` just to make your changes build.** If new code triggers a warning, fix the code — change the approach, restructure the type, rename the parameter, etc. These settings exist to enforce quality; working around them defeats the purpose.
+
 `.editorconfig` suppresses StyleCop false positives for modern C# syntax:
 - `SA1000` — target-typed `new()` (C# 9+)
 - `SA1010` — collection expressions `[...]` (C# 12)
 - `SA1011` — nullable array types `T[]?`
 - `SA1313` — positional record parameters that define public properties
+
+### Benchmarks
+```bash
+# Run all benchmarks (release build required)
+dotnet run --project Identity.Benchmarks -c Release
+```
+
+### Mutation Testing (Stryker)
+```bash
+# Install Stryker globally (once)
+dotnet tool install -g dotnet-stryker
+
+# Run mutation tests against the five core source files
+dotnet stryker --config-file stryker-config.json
+```
+
+Stryker targets `EmailSender.cs`, `GravatarService.cs`, `SecretClientExtensions.cs`, `ConfigurationExtensions.cs`, and `EndpointRouteBuilderExtensions.cs`. Thresholds: high=80, low=60, break=50. The CI workflow runs mutation tests weekly (Monday 02:00 UTC) and on manual dispatch; results are uploaded as the `stryker-report` artifact.
+
+### Load Tests
+```bash
+# Run load tests only (requires a running server — uses E2E infrastructure)
+ASPNETCORE_ENVIRONMENT=Development dotnet test --project Identity.Tests --configuration Release -- --filter-trait "Category=Load"
+```
 
 ### SQL Database Project (schema deployment)
 ```bash
@@ -173,7 +199,7 @@ The GitHub Actions workflow (`.github/workflows/main_crgolden-identity.yml`) tri
 **Build job:**
 1. Builds the full solution via `dotnet build --no-incremental --configuration Release` — this includes `Identity.Data.sqlproj`, which produces the `.dacpac`
 2. Runs unit tests with coverage using `dotnet-coverage collect ... -s "coverage.settings.xml"`, writing `coverage.xml`. `coverage.settings.xml` excludes `[GeneratedCode]`-decorated types (e.g. the NSwag-generated Gravatar client) from coverage metrics.
-3. Logs in to Azure via OIDC, then deploys the E2E test database schema and runs E2E tests with `ASPNETCORE_ENVIRONMENT=CLI`, writing `coverage-e2e.xml` with the same settings file
+3. Logs in to Azure via OIDC, then deploys the E2E test database schema and runs E2E tests with `ASPNETCORE_ENVIRONMENT=CI`, writing `coverage-e2e.xml` with the same settings file
 4. Publishes the web app (`-r win-x64 --self-contained false`) and uploads both the app artifact and the `.dacpac` artifact
 5. Runs SonarCloud analysis, reading both `coverage.xml` and `coverage-e2e.xml`
 

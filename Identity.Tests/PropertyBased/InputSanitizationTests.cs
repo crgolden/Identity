@@ -11,17 +11,10 @@ using CsCheck;
 [Trait("Category", "Unit")]
 public sealed class InputSanitizationTests
 {
-    // Mirrors the implementation in GravatarService to test it as a pure function.
-    private static string ComputeGravatarHash(string identifier)
-    {
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(identifier.Trim().ToLowerInvariant()));
-        return Convert.ToHexString(bytes).ToLowerInvariant();
-    }
-
     [Fact]
     public void GravatarHash_IsAlwaysLowercase()
     {
-        Gen.String[1..200]
+        Gen.String[1, 200]
             .Sample(email =>
             {
                 var hash = ComputeGravatarHash(email);
@@ -32,7 +25,7 @@ public sealed class InputSanitizationTests
     [Fact]
     public void GravatarHash_IsAlways64HexChars()
     {
-        Gen.String[1..200]
+        Gen.String[1, 200]
             .Sample(email =>
             {
                 var hash = ComputeGravatarHash(email);
@@ -44,7 +37,7 @@ public sealed class InputSanitizationTests
     [Fact]
     public void GravatarHash_IsDeterministic()
     {
-        Gen.String[1..200]
+        Gen.String[1, 200]
             .Sample(email =>
             {
                 var hash1 = ComputeGravatarHash(email);
@@ -58,13 +51,13 @@ public sealed class InputSanitizationTests
     {
         // The Gravatar spec mandates trimming and lowercasing before hashing.
         // Verify the hash is the same regardless of the email's case.
-        Gen.String[1..50]
+        Gen.String[1, 50]
             .Select(s => s.Replace('\0', 'a').Trim()) // avoid control chars
             .Where(s => s.Length > 0)
-            .Sample(base64 =>
+            .Sample(input =>
             {
-                var lower = base64.ToLowerInvariant();
-                var upper = base64.ToUpperInvariant();
+                var lower = input.ToLowerInvariant();
+                var upper = input.ToUpperInvariant();
                 Assert.Equal(ComputeGravatarHash(lower), ComputeGravatarHash(upper));
             });
     }
@@ -119,6 +112,13 @@ public sealed class InputSanitizationTests
         {
             Assert.True(IsLocalUrl(url), $"URL '{url}' should be local.");
         }
+    }
+
+    // Mirrors the implementation in GravatarService to test it as a pure function.
+    private static string ComputeGravatarHash(string identifier)
+    {
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(identifier.Trim().ToLowerInvariant()));
+        return Convert.ToHexString(bytes).ToLowerInvariant();
     }
 
     /// <summary>

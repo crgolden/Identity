@@ -20,7 +20,7 @@
       "Identity.Api/GravatarService.cs",
       "Identity.Api/Extensions/SecretClientExtensions.cs",
       "Identity.Api/Extensions/ConfigurationExtensions.cs",
-      "Identity.Api/Extensions/PasskeyEndpointRouteBuilderExtensions.cs"
+      "Identity.Api/Extensions/EndpointRouteBuilderExtensions.cs"
     ],
     "since": {
       "enabled": false

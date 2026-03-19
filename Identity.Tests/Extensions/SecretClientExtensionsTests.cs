@@ -90,8 +90,8 @@ public class SecretClientExtensionsTests
 
         public override Task<Response<KeyVaultSecret>> GetSecretAsync(
             string name,
-            string? version,
-            SecretContentType? contentType,
+            string? version = null,
+            SecretContentType? outContentType = null,
             CancellationToken cancellationToken = default)
         {
             if (name == _throwOn)
@@ -110,11 +110,21 @@ public class SecretClientExtensionsTests
 
         public override string ReasonPhrase => "OK";
 
-        public override Stream? ContentStream { get => null; set { } }
+        public override Stream? ContentStream
+        {
+            get => null;
+            set => _ = value;
+        }
 
-        public override string ClientRequestId { get => string.Empty; set { } }
+        public override string ClientRequestId
+        {
+            get => string.Empty;
+            set => _ = value;
+        }
 
-        public override void Dispose() { }
+        public override void Dispose()
+        {
+        }
 
         protected override bool TryGetHeader(string name, [NotNullWhen(true)] out string? value)
         {

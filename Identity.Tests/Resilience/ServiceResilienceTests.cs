@@ -1,5 +1,6 @@
 namespace Identity.Tests.Resilience;
 
+using System.Net;
 using Azure;
 using Identity.Extensions;
 using Microsoft.AspNetCore.Identity.UI.Services;
@@ -13,26 +14,19 @@ using Resend;
 [Trait("Category", "Unit")]
 public sealed class ServiceResilienceTests
 {
-    // -------------------------------------------------------------------------
     // EmailSender resilience
-    // -------------------------------------------------------------------------
-
     [Fact]
     public async Task EmailSender_WhenResendThrowsApiException_PropagatesException()
     {
         var mockResend = new Mock<IResend>();
         mockResend
             .Setup(r => r.EmailSendAsync(It.IsAny<EmailMessage>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new ResendException("Resend API error", innerException: null));
+            .ThrowsAsync(new ResendException(HttpStatusCode.TooManyRequests, ErrorType.RateLimitExceeded, "Rate limited", null, null));
 
         IEmailSender sender = new EmailSender(mockResend.Object);
 
         await Assert.ThrowsAsync<ResendException>(
-            () => sender.SendEmailAsync(
-                "to@example.com",
-                "Subject",
-                "Body",
-                TestContext.Current.CancellationToken));
+            () => sender.SendEmailAsync("to@example.com", "Subject", "Body"));
     }
 
     [Fact]
@@ -46,34 +40,24 @@ public sealed class ServiceResilienceTests
         IEmailSender sender = new EmailSender(mockResend.Object);
 
         await Assert.ThrowsAsync<HttpRequestException>(
-            () => sender.SendEmailAsync(
-                "to@example.com",
-                "Subject",
-                "Body",
-                TestContext.Current.CancellationToken));
+            () => sender.SendEmailAsync("to@example.com", "Subject", "Body"));
     }
 
     [Fact]
-    public async Task EmailSender_WhenCancelled_PropagatesCancellation()
+    public async Task EmailSender_WhenResendThrowsOperationCanceled_PropagatesException()
     {
-        using var cts = new CancellationTokenSource();
-        await cts.CancelAsync();
-
         var mockResend = new Mock<IResend>();
         mockResend
-            .Setup(r => r.EmailSendAsync(It.IsAny<EmailMessage>(), cts.Token))
-            .ThrowsAsync(new OperationCanceledException(cts.Token));
+            .Setup(r => r.EmailSendAsync(It.IsAny<EmailMessage>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new OperationCanceledException());
 
         IEmailSender sender = new EmailSender(mockResend.Object);
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
-            () => sender.SendEmailAsync("to@example.com", "Subject", "Body", cts.Token));
+            () => sender.SendEmailAsync("to@example.com", "Subject", "Body"));
     }
 
-    // -------------------------------------------------------------------------
     // SecretClient resilience
-    // -------------------------------------------------------------------------
-
     [Fact]
     public async Task GetSecrets_AllSecretNames_AreCorrect()
     {
@@ -117,10 +101,6 @@ public sealed class ServiceResilienceTests
         Assert.Equal(8, actualNames.Count);
     }
 
-    // -------------------------------------------------------------------------
-    // Fake SecretClient helpers
-    // -------------------------------------------------------------------------
-
     private sealed class RecordingSecretClient : Azure.Security.KeyVault.Secrets.SecretClient
     {
         private readonly List<string> _calls;
@@ -129,8 +109,8 @@ public sealed class ServiceResilienceTests
 
         public override Task<Response<Azure.Security.KeyVault.Secrets.KeyVaultSecret>> GetSecretAsync(
             string name,
-            string? version,
-            Azure.Security.KeyVault.Secrets.SecretContentType? contentType,
+            string? version = null,
+            Azure.Security.KeyVault.Secrets.SecretContentType? outContentType = null,
             CancellationToken cancellationToken = default)
         {
             _calls.Add(name);
@@ -147,8 +127,8 @@ public sealed class ServiceResilienceTests
 
         public override Task<Response<Azure.Security.KeyVault.Secrets.KeyVaultSecret>> GetSecretAsync(
             string name,
-            string? version,
-            Azure.Security.KeyVault.Secrets.SecretContentType? contentType,
+            string? version = null,
+            Azure.Security.KeyVault.Secrets.SecretContentType? outContentType = null,
             CancellationToken cancellationToken = default)
         {
             if (name == _failOn)
@@ -168,11 +148,21 @@ public sealed class ServiceResilienceTests
 
         public override string ReasonPhrase => "OK";
 
-        public override Stream? ContentStream { get => null; set { } }
+        public override Stream? ContentStream
+        {
+            get => null;
+            set => _ = value;
+        }
 
-        public override string ClientRequestId { get => string.Empty; set { } }
+        public override string ClientRequestId
+        {
+            get => string.Empty;
+            set => _ = value;
+        }
 
-        public override void Dispose() { }
+        public override void Dispose()
+        {
+        }
 
         protected override bool TryGetHeader(string name, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out string? value)
         {

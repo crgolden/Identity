@@ -11,7 +11,8 @@
 
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.14.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Identity" Version="10.0.5" />
+    <PackageReference Include="Microsoft.Extensions.Identity.Core" Version="10.0.5" />
+    <PackageReference Include="Microsoft.Extensions.Identity.Stores" Version="10.0.5" />
   </ItemGroup>
 
 </Project>

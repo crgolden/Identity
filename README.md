@@ -94,9 +94,10 @@ App is available at `https://localhost:7261` (HTTPS) or `http://localhost:5021` 
 ## Project Structure
 
 ```
-Identity.Api/       # ASP.NET Core 10 Razor Pages web app and DbContext
-Identity.Data/      # SQL Server Database Project — schema source of truth, builds to .dacpac
-Identity.Tests/     # xUnit v3 test project: unit tests (Moq) and E2E tests (Playwright/Chromium)
+Identity.Api/        # ASP.NET Core 10 Razor Pages web app and DbContext
+Identity.Data/       # SQL Server Database Project — schema source of truth, builds to .dacpac
+Identity.Tests/      # xUnit v3 test project: unit tests (Moq), E2E tests (Playwright/Chromium), load tests
+Identity.Benchmarks/ # BenchmarkDotNet microbenchmarks for authentication hot paths
 ```
 
 ## Commands
@@ -114,11 +115,20 @@ ASPNETCORE_ENVIRONMENT=Development dotnet test --project Identity.Tests --config
 # All tests (unit + E2E, local)
 ASPNETCORE_ENVIRONMENT=Development dotnet test --project Identity.Tests --configuration Release
 
+# Load tests (requires E2E infrastructure — database + Key Vault)
+ASPNETCORE_ENVIRONMENT=Development dotnet test --project Identity.Tests --configuration Release -- --filter-trait "Category=Load"
+
 # Build dacpac (schema deployment)
 dotnet build Identity.Data/Identity.Data.sqlproj --configuration Release
 
 # Deploy dacpac to production SQL Server
 sqlpackage /Action:Publish /SourceFile:Identity.Data/bin/Release/Identity.Data.dacpac /TargetConnectionString:"<connection-string>"
+
+# Run benchmarks
+dotnet run --project Identity.Benchmarks -c Release
+
+# Run mutation tests (Stryker — slow, runs against 5 core source files)
+dotnet stryker --config-file stryker-config.json
 
 # Publish web app (add -r win-x64 --self-contained false when targeting Windows App Service)
 dotnet publish Identity.Api -c Release -o ./publish
@@ -150,11 +160,17 @@ $env:SONAR_TOKEN = "squ_..."                     # SonarCloud user token
 
 The GitHub Actions workflow triggers on pushes to `main`, pull requests, and manual dispatch.
 
+The workflow also runs on a **weekly schedule** (Monday 02:00 UTC).
+
 **Build job** — runs on every trigger:
 1. Builds the full solution (`dotnet build --configuration Release`), which also compiles `Identity.Data.sqlproj` and produces the `.dacpac`
 2. Runs unit tests with coverage
-3. Logs in to Azure via OIDC, deploys the E2E test database schema, then runs E2E tests with `ASPNETCORE_ENVIRONMENT=CLI` — the `CLI` environment enables only `AzureCliCredential` so the in-process test server authenticates against Key Vault using the workflow's OIDC identity
-4. Runs SonarCloud analysis, publishes the web app, and uploads both artifacts
+3. Logs in to Azure via OIDC, deploys the E2E test database schema, then runs E2E tests with `ASPNETCORE_ENVIRONMENT=CI` — the `CI` environment loads `appsettings.CI.json` which enables only `AzureCliCredential`, so the in-process test server authenticates against Key Vault using the workflow's OIDC identity
+4. Runs load tests (on `schedule` or `workflow_dispatch` only)
+5. Runs SonarCloud analysis, publishes the web app, and uploads both artifacts
+
+**Mutation job** — runs on `schedule` or `workflow_dispatch`:
+- Runs Stryker mutation testing against five core source files; uploads the HTML/JSON report as `stryker-report`
 
 **Deploy job** — runs after a successful build:
 1. Deploys the `.dacpac` to the production SQL Server via `SqlPackage`

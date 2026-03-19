@@ -16,9 +16,8 @@ public sealed class PasswordHashingTests
     [Fact]
     public void HashPassword_ThenVerify_AlwaysSucceeds()
     {
-        // Generate non-empty printable strings up to 72 chars (bcrypt limit is 72 bytes;
-        // ASP.NET Core Identity uses PBKDF2 but 72 chars is a realistic upper bound for UX).
-        Gen.String[1..72]
+        // Generate non-empty strings up to 72 chars, a realistic UX upper bound.
+        Gen.String[1, 72]
             .Sample(password =>
             {
                 var user = new IdentityUser<Guid>();
@@ -33,7 +32,7 @@ public sealed class PasswordHashingTests
     {
         // PBKDF2 uses a random salt per invocation — the same password must
         // never produce the same hash twice.
-        Gen.String[1..72]
+        Gen.String[1, 72]
             .Sample(password =>
             {
                 var user = new IdentityUser<Guid>();
@@ -46,7 +45,7 @@ public sealed class PasswordHashingTests
     [Fact]
     public void HashPassword_WrongPassword_NeverVerifies()
     {
-        Gen.String[1..72]
+        Gen.String[1, 72]
             .Select(p => (Password: p, Wrong: p + "X"))
             .Sample(pair =>
             {

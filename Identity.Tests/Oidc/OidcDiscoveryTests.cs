@@ -1,6 +1,7 @@
 namespace Identity.Tests.Oidc;
 
 using System.Net;
+using System.Net.Http.Json;
 using System.Text.Json;
 using Infrastructure;
 using Microsoft.AspNetCore.Mvc.Testing;
