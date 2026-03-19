@@ -10,6 +10,12 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
+  schedule:
+    # Run mutation tests weekly on Monday at 02:00 UTC
+    - cron: '0 2 * * 1'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build:
@@ -21,24 +27,24 @@ jobs:
 
     steps:
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: 17
           distribution: 'zulu' # Alternative distribution options are available.
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
 
       - name: Cache NuGet packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.nuget/packages
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
           restore-keys: ${{ runner.os }}-nuget-
 
       - name: Cache SonarQube Cloud packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~\sonar\cache
           key: ${{ runner.os }}-sonar
@@ -46,7 +52,7 @@ jobs:
 
       - name: Cache SonarQube Cloud scanner
         id: cache-sonar-scanner
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ runner.temp }}\scanner
           key: ${{ runner.os }}-sonar-scanner
@@ -60,7 +66,7 @@ jobs:
           dotnet tool update dotnet-sonarscanner --tool-path ${{ runner.temp }}\scanner
 
       - name: Set up .NET Core
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.x'
 
@@ -100,7 +106,7 @@ jobs:
 
       - name: Set E2E test environment
         run: |
-          echo "ASPNETCORE_ENVIRONMENT=CLI" >> $env:GITHUB_ENV
+          echo "ASPNETCORE_ENVIRONMENT=CI" >> $env:GITHUB_ENV
           echo "KeyVaultUri=${{ vars.KEYVAULT_URI }}" >> $env:GITHUB_ENV
           echo "BlobUri=${{ vars.BLOB_URI }}" >> $env:GITHUB_ENV
           echo "DataProtectionKeyIdentifier=${{ vars.DATA_PROTECTION_KEY_IDENTIFIER }}" >> $env:GITHUB_ENV
@@ -133,6 +139,11 @@ jobs:
             "dotnet test --project Identity.Tests --no-build --configuration Release -- --filter-trait Category=E2E" `
             -f xml -o "coverage-e2e.xml" -s "coverage.settings.xml"
 
+      - name: Run load tests
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+        run: |
+          dotnet test --project Identity.Tests --no-build --configuration Release -- --filter-trait Category=Load
+
       - name: dotnet publish
         run: >
           dotnet publish Identity.Api/Identity.Api.csproj
@@ -142,13 +153,13 @@ jobs:
           -o ${{ github.workspace  }}\publish
 
       - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: .net-app
           path: ${{ github.workspace }}\publish
 
       - name: Upload dacpac for deployment job
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: sql-dacpac
           path: Identity.Data/bin/Release/Identity.Data.dacpac
@@ -169,12 +180,12 @@ jobs:
 
     steps:
       - name: Download artifact from build job
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: .net-app
 
       - name: Download dacpac from build job
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: sql-dacpac
 
@@ -205,3 +216,40 @@ jobs:
           app-name: 'crgolden-identity'
           slot-name: 'Production'
           package: .
+
+  mutation:
+    name: Mutation testing
+    runs-on: windows-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v5
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: ${{ runner.os }}-nuget-
+
+      - name: Set up .NET Core
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.x'
+
+      - name: Install dotnet-stryker
+        run: dotnet tool install --global dotnet-stryker
+
+      - name: Build solution
+        run: dotnet build --configuration Release
+
+      - name: Run Stryker mutation tests
+        run: dotnet stryker --config-file stryker-config.json
+
+      - name: Upload Stryker report
+        uses: actions/upload-artifact@v6
+        with:
+          name: stryker-report
+          path: StrykerOutput/**/*

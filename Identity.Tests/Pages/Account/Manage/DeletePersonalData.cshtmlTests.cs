@@ -29,7 +29,7 @@ public class DeletePersonalDataModelTests
     /// - Public property 'RequirePassword' is false by default.
     /// </summary>
     [Fact]
-    public void DeletePersonalDataModel_ValidDependencies_InstanceCreatedAndDefaultsSet()
+    public void Constructor_ValidDependencies_InitializesDefaults()
     {
         // Arrange
         // Create required mocks and helper objects for UserManager dependencies.

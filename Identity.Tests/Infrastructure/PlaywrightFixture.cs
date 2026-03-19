@@ -46,6 +46,13 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         {
             Headless = headless
         });
+
+        // Warm up the server so connection pool / IdentityServer keys are ready
+        var (warmupCtx, warmupPage) = await NewPageAsync();
+        await using (warmupCtx)
+        {
+            await warmupPage.GotoAsync("/Account/Login");
+        }
     }
 
     /// <summary>

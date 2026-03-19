@@ -44,7 +44,7 @@ public sealed class PasswordResetTests(PlaywrightFixture fixture)
     }
 
     [Fact]
-    public async Task ForgotPassword_OldPassword_NoLongerWorks()
+    public async Task ForgotPassword_Reset_OldPasswordNoLongerWorks()
     {
         var (email, oldPassword) = await CreateConfirmedUserAsync();
         const string newPassword = "NewTest@789012!";

@@ -1,4 +1,4 @@
-﻿namespace Identity;
+﻿namespace Identity.Extensions;
 
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Identity;
@@ -7,7 +7,7 @@ using static ArgumentNullException;
 using static String;
 using static System.Net.Mime.MediaTypeNames.Application;
 
-public static class PasskeyEndpointRouteBuilderExtensions
+public static class EndpointRouteBuilderExtensions
 {
     public static IEndpointConventionBuilder MapAdditionalIdentityEndpoints(this IEndpointRouteBuilder endpoints)
     {

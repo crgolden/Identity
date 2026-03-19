@@ -1,11 +1,10 @@
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
-namespace Identity.Tests.Pages.Account.Manage;
+namespace Identity.Tests.Extensions;
 
 using System.Net;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Routing;
@@ -14,10 +13,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Moq;
 
 /// <summary>
-/// Tests for PasskeyEndpointRouteBuilderExtensions.
+/// Tests for EndpointRouteBuilderExtensions.
 /// </summary>
 [Trait("Category", "Unit")]
-public class PasskeyEndpointRouteBuilderExtensionsTests
+public class EndpointRouteBuilderExtensionsTests
 {
     /// <summary>
     /// Verifies that MapAdditionalIdentityEndpoints throws an ArgumentNullException
@@ -30,8 +29,7 @@ public class PasskeyEndpointRouteBuilderExtensionsTests
         IEndpointRouteBuilder? endpoints = null;
 
         // Act & Assert
-        var ex = Assert.Throws<ArgumentNullException>(() =>
-            PasskeyEndpointRouteBuilderExtensions.MapAdditionalIdentityEndpoints(endpoints!));
+        var ex = Assert.Throws<ArgumentNullException>(() => Identity.Extensions.EndpointRouteBuilderExtensions.MapAdditionalIdentityEndpoints(endpoints!));
 
         Assert.Contains("endpoints", ex.ParamName ?? string.Empty, StringComparison.Ordinal);
     }
@@ -59,7 +57,7 @@ public class PasskeyEndpointRouteBuilderExtensionsTests
     }
 
     [Fact]
-    public async Task PasskeyCreationOptions_UserFound_Returns200WithJsonContent()
+    public async Task PasskeyCreationOptions_UserFound_ReturnsOkWithJson()
     {
         // Arrange
         var (userManagerMock, signInManagerMock, antiforgeryMock) = CreateMocks();
@@ -91,7 +89,7 @@ public class PasskeyEndpointRouteBuilderExtensionsTests
     }
 
     [Fact]
-    public async Task PasskeyCreationOptions_UserFound_PassesCorrectUserEntityToSignInManager()
+    public async Task PasskeyCreationOptions_UserFound_PassesUserEntityToSignInManager()
     {
         // Arrange
         var (userManagerMock, signInManagerMock, antiforgeryMock) = CreateMocks();
@@ -121,7 +119,7 @@ public class PasskeyEndpointRouteBuilderExtensionsTests
     }
 
     [Fact]
-    public async Task PasskeyRequestOptions_NullUsername_CallsMakeRequestOptionsWithNullUser()
+    public async Task PasskeyRequestOptions_NullUsername_MakesRequestOptionsWithNullUser()
     {
         // Arrange
         var (userManagerMock, signInManagerMock, antiforgeryMock) = CreateMocks();
@@ -142,7 +140,7 @@ public class PasskeyEndpointRouteBuilderExtensionsTests
     }
 
     [Fact]
-    public async Task PasskeyRequestOptions_WhitespaceUsername_CallsMakeRequestOptionsWithNullUser()
+    public async Task PasskeyRequestOptions_WhitespaceUsername_MakesRequestOptionsWithNullUser()
     {
         // Arrange
         var (userManagerMock, signInManagerMock, antiforgeryMock) = CreateMocks();
@@ -163,7 +161,7 @@ public class PasskeyEndpointRouteBuilderExtensionsTests
     }
 
     [Fact]
-    public async Task PasskeyRequestOptions_UsernameProvided_FindsUserAndCallsRequestOptionsWithUser()
+    public async Task PasskeyRequestOptions_UsernameProvided_FindsUserAndMakesRequestOptions()
     {
         // Arrange
         var (userManagerMock, signInManagerMock, antiforgeryMock) = CreateMocks();
@@ -187,7 +185,7 @@ public class PasskeyEndpointRouteBuilderExtensionsTests
     }
 
     [Fact]
-    public async Task PasskeyRequestOptions_Returns200WithJsonContent()
+    public async Task PasskeyRequestOptions_ReturnsOkWithJson()
     {
         // Arrange
         var (userManagerMock, signInManagerMock, antiforgeryMock) = CreateMocks();
@@ -247,7 +245,7 @@ public class PasskeyEndpointRouteBuilderExtensionsTests
 
         var app = builder.Build();
         app.UseRouting();
-        PasskeyEndpointRouteBuilderExtensions.MapAdditionalIdentityEndpoints(app);
+        Identity.Extensions.EndpointRouteBuilderExtensions.MapAdditionalIdentityEndpoints(app);
         await app.StartAsync();
         return (app, app.GetTestClient());
     }

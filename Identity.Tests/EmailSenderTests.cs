@@ -79,7 +79,7 @@ public class EmailSenderTests
     /// Input: valid toEmail, subject and message. Expected: the same exception type is thrown to caller.
     /// </summary>
     [Fact]
-    public async Task SendEmailAsync_WhenResendThrows_ExceptionPropagated()
+    public async Task SendEmailAsync_ResendThrows_PropagatesException()
     {
         // Arrange
         var toEmail = "user@example.com";
@@ -110,7 +110,7 @@ public class EmailSenderTests
     /// </summary>
     [Theory]
     [MemberData(nameof(MockBehaviors))]
-    public void EmailSender_WithValidResend_DoesNotThrowAndCreatesInstance(MockBehavior behavior)
+    public void Constructor_ValidResend_CreatesInstance(MockBehavior behavior)
     {
         // Arrange
         var mockResend = new Mock<IResend>(behavior);
@@ -132,7 +132,7 @@ public class EmailSenderTests
     /// Expected result: two EmailSender instances are not the same reference.
     /// </summary>
     [Fact]
-    public void EmailSender_WithDifferentResendInstances_ProducesDistinctInstances()
+    public void Constructor_DifferentResendInstances_CreatesDistinctInstances()
     {
         // Arrange
         var mockA = new Mock<IResend>(MockBehavior.Default);

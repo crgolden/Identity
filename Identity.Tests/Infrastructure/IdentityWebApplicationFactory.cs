@@ -43,7 +43,7 @@ public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Progra
 
         var server = _kestrelHost.Services.GetRequiredService<IServer>();
         var addresses = server.Features.GetRequiredFeature<IServerAddressesFeature>();
-        _serverAddress = addresses.Addresses.Last().TrimEnd('/');
+        _serverAddress = addresses.Addresses.First().TrimEnd('/');
 
         return testHost;
     }
@@ -52,7 +52,7 @@ public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Progra
     {
         builder.ConfigureServices((context, services) =>
         {
-            if (context.HostingEnvironment.IsDevelopment())
+            if (!context.HostingEnvironment.IsProduction())
             {
                 // Replace the Serilog ILoggerFactory (which connects to Elasticsearch on startup)
                 // with the default logging infrastructure to avoid external sink failures in tests.

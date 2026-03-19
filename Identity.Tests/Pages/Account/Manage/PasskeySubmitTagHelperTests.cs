@@ -28,7 +28,7 @@ public class PasskeySubmitTagHelperTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void Constructor_ValidHttpContextAccessor_InstanceCreatedAndDefaultsSet(bool useStrictMock)
+    public void Constructor_ValidDependencies_InitializesDefaults(bool useStrictMock)
     {
         // Arrange
         var behavior = useStrictMock ? MockBehavior.Strict : MockBehavior.Loose;
@@ -60,7 +60,7 @@ public class PasskeySubmitTagHelperTests
     /// - Each created instance is independent and has the expected default values.
     /// </summary>
     [Fact]
-    public void Constructor_DifferentHttpContextAccessors_InstancesAreIndependent()
+    public void Constructor_DifferentAccessors_CreatesIndependentInstances()
     {
         // Arrange
         var mockA = new Mock<IHttpContextAccessor>(MockBehavior.Loose);
@@ -100,7 +100,7 @@ public class PasskeySubmitTagHelperTests
     /// as button attributes.
     /// </summary>
     [Fact]
-    public async Task ProcessAsync_TokensNull_EmailNameNull_EmitsEmptyTokenAttributes()
+    public async Task ProcessAsync_NullAntiforgeryTokens_EmitsEmptyTokenAttributes()
     {
         // Arrange
         var httpContext = new DefaultHttpContext();

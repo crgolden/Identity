@@ -10,6 +10,7 @@ using Elastic.Serilog.Sinks;
 using Elastic.Transport;
 using Google.Apis.Auth.AspNetCore3;
 using Identity;
+using Identity.Extensions;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
@@ -28,47 +29,13 @@ Log.Logger = new LoggerConfiguration().WriteTo.Console().CreateBootstrapLogger()
 
 try
 {
-    static (IConfigurationSection, IConfigurationSection, IConfigurationSection) GetSections(ConfigurationManager configuration)
-    {
-        var corsPolicySection = configuration.GetSection(nameof(CorsPolicy));
-        var sqlConnectionStringBuilderSection = configuration.GetSection(nameof(SqlConnectionStringBuilder));
-        var defaultAzureCredentialOptionsSection = configuration.GetSection(nameof(DefaultAzureCredentialOptions));
-        return (corsPolicySection, sqlConnectionStringBuilderSection, defaultAzureCredentialOptionsSection);
-    }
-
-    static (Uri, Uri, Uri, Uri) GetUris(ConfigurationManager configuration)
-    {
-        var elasticsearchNode = configuration.GetValue<Uri>("ElasticsearchNode") ?? throw new InvalidOperationException("Invalid 'ElasticsearchNode'.");
-        var keyVaultUrl = configuration.GetValue<Uri>("KeyVaultUri") ?? throw new InvalidOperationException("Invalid 'KeyVaultUri'.");
-        var blobUrl = configuration.GetValue<Uri>("BlobUri") ?? throw new InvalidOperationException("Invalid 'BlobUri'.");
-        var dataProtectionKeyIdentifier = configuration.GetValue<Uri>("DataProtectionKeyIdentifier") ?? throw new InvalidOperationException("Invalid 'DataProtectionKeyIdentifier'.");
-        return (elasticsearchNode, keyVaultUrl, blobUrl, dataProtectionKeyIdentifier);
-    }
-
-    static async Task<(KeyVaultSecret, KeyVaultSecret, KeyVaultSecret, KeyVaultSecret, KeyVaultSecret, KeyVaultSecret, KeyVaultSecret, KeyVaultSecret)> GetSecrets(Uri keyVaultUrl, TokenCredential tokenCredential, CancellationToken cancellationToken = default)
-    {
-        var secretClient = new SecretClient(keyVaultUrl, tokenCredential);
-        var tasks = new[]
-        {
-            secretClient.GetSecretAsync("GravatarApiSecretKey", cancellationToken: cancellationToken),
-            secretClient.GetSecretAsync("ElasticsearchUsername", cancellationToken: cancellationToken),
-            secretClient.GetSecretAsync("ElasticsearchPassword", cancellationToken: cancellationToken),
-            secretClient.GetSecretAsync("SqlServerUserId", cancellationToken: cancellationToken),
-            secretClient.GetSecretAsync("SqlServerPassword", cancellationToken: cancellationToken),
-            secretClient.GetSecretAsync("GoogleClientId", cancellationToken: cancellationToken),
-            secretClient.GetSecretAsync("GoogleClientSecret", cancellationToken: cancellationToken),
-            secretClient.GetSecretAsync("ResendApiToken", cancellationToken: cancellationToken)
-        };
-        var result = await Task.WhenAll(tasks);
-        return (result[0].Value, result[1].Value, result[2].Value, result[3].Value, result[4].Value, result[5].Value, result[6].Value, result[7].Value);
-    }
-
     var builder = WebApplication.CreateBuilder(args);
-    var (corsPolicySection, sqlConnectionStringBuilderSection, defaultAzureCredentialOptionsSection) = GetSections(builder.Configuration);
+    var (corsPolicySection, sqlConnectionStringBuilderSection, defaultAzureCredentialOptionsSection) = builder.Configuration.GetSections();
     var defaultAzureCredentialOptions = defaultAzureCredentialOptionsSection.Get<DefaultAzureCredentialOptions>() ?? throw new InvalidOperationException($"Invalid '{nameof(DefaultAzureCredentialOptions)}'");
     TokenCredential tokenCredential = new DefaultAzureCredential(defaultAzureCredentialOptions);
-    var (elasticsearchNode, keyVaultUrl, blobUrl, dataProtectionKeyIdentifier) = GetUris(builder.Configuration);
-    var (gravatarApiKeySecret, elasticsearchUsername, elasticsearchPassword, sqlServerUserId, sqlServerPassword, googleClientId, googleClientSecret, resendApiToken) = await GetSecrets(keyVaultUrl, tokenCredential);
+    var (elasticsearchNode, keyVaultUrl, blobUrl, dataProtectionKeyIdentifier) = builder.Configuration.GetUris();
+    var secretClient = new SecretClient(keyVaultUrl, tokenCredential);
+    var (gravatarApiKeySecret, elasticsearchUsername, elasticsearchPassword, sqlServerUserId, sqlServerPassword, googleClientId, googleClientSecret, resendApiToken) = await secretClient.GetSecrets();
     builder.Services
         .AddOpenTelemetry()
         .UseAzureMonitor()

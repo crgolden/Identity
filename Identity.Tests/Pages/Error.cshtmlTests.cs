@@ -89,7 +89,7 @@ public class ErrorModelTests
     /// </summary>
     [Theory]
     [MemberData(nameof(GetMockBehaviors))]
-    public void ErrorModel_WithValidInteractionService_DoesNotThrowAndInitializesProperties(MockBehavior mockBehavior)
+    public void Constructor_ValidInteractionService_InitializesDefaults(MockBehavior mockBehavior)
     {
         // Arrange
         var mockLogger = new Mock<ILogger<ErrorModel>>();
@@ -118,7 +118,7 @@ public class ErrorModelTests
     /// </summary>
     [Theory]
     [MemberData(nameof(NoErrorIdCases))]
-    public async Task OnGetAsync_ErrorIdNullOrWhitespace_DoesNotCallGetErrorContextAndSetsRequestId(string? errorId, bool setActivity)
+    public async Task OnGetAsync_NullOrWhitespaceErrorId_SkipsInteractionService(string? errorId, bool setActivity)
     {
         // Arrange
         var mockLogger = new Mock<ILogger<ErrorModel>>();
@@ -183,7 +183,7 @@ public class ErrorModelTests
     /// </summary>
     [Theory]
     [MemberData(nameof(NonEmptyErrorIdCases))]
-    public async Task OnGetAsync_NonEmptyErrorId_CallsGetErrorContextAndSetsRequestId(string errorId, bool setActivity)
+    public async Task OnGetAsync_ValidErrorId_CallsInteractionService(string errorId, bool setActivity)
     {
         // Arrange
         var mockLogger = new Mock<ILogger<ErrorModel>>();
@@ -246,7 +246,7 @@ public class ErrorModelTests
     /// </summary>
     [Theory]
     [MemberData(nameof(RequestIdTestCases))]
-    public void ShowRequestId_RequestIdValue_ExpectedResult(string? requestId, bool expected)
+    public void ShowRequestId_VariousValues_ReturnsExpected(string? requestId, bool expected)
     {
         // Arrange
         var mockLogger = new Mock<ILogger<ErrorModel>>();
@@ -270,7 +270,7 @@ public class ErrorModelTests
     /// Expected: ILogger.Log called exactly once at LogLevel.Error.
     /// </summary>
     [Fact]
-    public async Task OnGetAsync_NonEmptyErrorIdWithErrorMessage_LogsError()
+    public async Task OnGetAsync_ValidErrorId_WithErrorMessage_LogsError()
     {
         // Arrange
         var mockLogger = new Mock<ILogger<ErrorModel>>();

@@ -218,7 +218,7 @@ public class EmailModelTests
     /// - Email and StatusMessage are null, IsEmailConfirmed is false, and Input is null.
     /// </summary>
     [Fact]
-    public void EmailModel_Constructor_WithValidDependencies_InitializesDefaults()
+    public void Constructor_ValidDependencies_InitializesDefaults()
     {
         // Arrange
         var userManager = CreateUserManager();
@@ -244,7 +244,7 @@ public class EmailModelTests
     /// - Both instances are constructed without exception and expose identical default public property values.
     /// </summary>
     [Fact]
-    public void EmailModel_Constructor_MultipleInstances_IndependentDefaults()
+    public void Constructor_MultipleInstances_AreIndependent()
     {
         // Arrange - first instance
         var userManager1 = CreateUserManager();
@@ -279,7 +279,7 @@ public class EmailModelTests
     /// OnPostChangeEmailAsync returns a NotFoundObjectResult containing the user id returned by UserManager.GetUserId.
     /// </summary>
     [Fact]
-    public async Task OnPostChangeEmailAsync_UserNotFound_ReturnsNotFoundObjectResult()
+    public async Task OnPostChangeEmailAsync_UserNotFound_ReturnsNotFound()
     {
         // Arrange
         var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();

@@ -63,7 +63,7 @@ public class GravatarServiceTests
     }
 
     [Fact]
-    public async Task GetAvatarUrlAsync_NonNotFoundApiException_Propagates()
+    public async Task GetAvatarUrlAsync_NonNotFoundApiException_PropagatesException()
     {
         // Arrange
         var gravatarMock = new Mock<IGravatar>();
@@ -77,7 +77,7 @@ public class GravatarServiceTests
     }
 
     [Fact]
-    public async Task GetAvatarUrlAsync_PassesLowercaseSha256HashToGravatar()
+    public async Task GetAvatarUrlAsync_AlwaysHashesEmailToSha256Lowercase()
     {
         // Arrange
         const string profileIdentifier = "User@Example.COM";
@@ -101,7 +101,7 @@ public class GravatarServiceTests
     }
 
     [Fact]
-    public async Task GetAvatarUrlAsync_SupportsCancellationToken()
+    public async Task GetAvatarUrlAsync_PassesCancellationToken()
     {
         // Arrange
         using var cts = new CancellationTokenSource();

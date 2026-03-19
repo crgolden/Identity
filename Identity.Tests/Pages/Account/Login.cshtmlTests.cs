@@ -35,7 +35,7 @@ public class LoginModelTests
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public void Constructor_SignInManagerNull_LoggerOptional_NoThrowAndInitialState(bool provideLogger)
+    public void Constructor_NullSignInManager_DoesNotThrow(bool provideLogger)
     {
         // Arrange
         SignInManager<IdentityUser<Guid>>? signInManager = null;
@@ -138,7 +138,7 @@ public class LoginModelTests
     }
 
     [Fact]
-    public async Task OnGetAsync_PopulatesExternalLogins()
+    public async Task OnGetAsync_ExternalSchemesAvailable_PopulatesExternalLogins()
     {
         // Arrange
         var scheme = new AuthenticationScheme("Google", "Google", typeof(IAuthenticationHandler));
@@ -291,7 +291,7 @@ public class LoginModelTests
     /// Expected result: returns PageResult and PasswordSignInAsync is not invoked.
     /// </summary>
     [Fact]
-    public async Task OnPostAsync_Password_ModelStateInvalid_ReturnsPageWithoutSignInCall()
+    public async Task OnPostAsync_InvalidModelState_ReturnsPageWithoutSignIn()
     {
         // Arrange
         var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();

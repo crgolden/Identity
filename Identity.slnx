@@ -11,6 +11,7 @@
     <File Path="TESTING.md" />
   </Folder>
   <Project Path="Identity.Api/Identity.Api.csproj" />
+  <Project Path="Identity.Benchmarks/Identity.Benchmarks.csproj" />
   <Project Path="Identity.Data/Identity.Data.sqlproj" Id="83be4387-c65f-4485-8a85-c28367b0d014">
     <Build />
     <Deploy />

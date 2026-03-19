@@ -179,7 +179,7 @@ public class ManageNavPagesTests
     /// </summary>
     [Theory]
     [InlineData("Index")]
-    public void Index_ReturnsExpectedValue(string expected)
+    public void Index_Property_ReturnsExpected(string expected)
     {
         // Arrange
         // (No setup required for static property.)
@@ -200,7 +200,7 @@ public class ManageNavPagesTests
     /// </summary>
     [Theory]
     [InlineData("ExternalLogins")]
-    public void ExternalLogins_Value_IsExpected(string expected)
+    public void ExternalLogins_Property_ReturnsExpected(string expected)
     {
         // Arrange
         // (No setup required for a static string property.)
@@ -259,7 +259,7 @@ public class ManageNavPagesTests
     [InlineData("index.cshtml")]
     [InlineData("/Areas/Identity/Pages/Account/Manage/Index.cshtml")]
     [InlineData("Index")]
-    public void IndexNavClass_DisplayNameUsedWhenActivePageNull_ReturnsActive(string displayName)
+    public void IndexNavClass_NullActivePage_UsesDisplayNameFilename_ReturnsActive(string displayName)
     {
         // Arrange
         var httpContext = new DefaultHttpContext();
@@ -360,7 +360,7 @@ public class ManageNavPagesTests
 #pragma warning disable xUnit1045
     [Theory]
     [MemberData(nameof(DeletePersonalDataCases))]
-    public void DeletePersonalDataNavClass_VariousViewContexts_ReturnsExpectedNavClass(object? activePageValue, bool hasActivePage, string? displayName, string? expected)
+    public void DeletePersonalDataNavClass_VariousViewContexts_ReturnsExpected(object? activePageValue, bool hasActivePage, string? displayName, string? expected)
     {
         // Arrange
         var viewContext = new ViewContext
@@ -419,7 +419,7 @@ public class ManageNavPagesTests
 #pragma warning disable xUnit1045
     [Theory]
     [MemberData(nameof(PageNavTestData))]
-    public void PageNavClass_VariousActivePageAndDisplayName_ComputesExpected(object? activePage, string? displayName, string page, string? expected)
+    public void PageNavClass_VariousInputs_ReturnsExpected(object? activePage, string? displayName, string page, string? expected)
     {
         // Arrange
         var viewData = new ViewDataDictionary(new EmptyModelMetadataProvider(), new ModelStateDictionary());
@@ -447,7 +447,7 @@ public class ManageNavPagesTests
     /// </summary>
     [Theory]
     [InlineData("DownloadPersonalData")]
-    public void DownloadPersonalData_Property_ReturnsExpectedConstant(string expected)
+    public void DownloadPersonalData_Property_ReturnsExpected(string expected)
     {
         // Arrange
         // (No setup required for a static literal property.)
@@ -467,7 +467,7 @@ public class ManageNavPagesTests
     /// </summary>
     [Theory]
     [InlineData("PersonalData", 12)]
-    public void PersonalData_Property_ReturnsExpectedValueAndIsWellFormed(string expected, int expectedLength)
+    public void PersonalData_Property_ReturnsExpected(string expected, int expectedLength)
     {
         // Arrange
         // (no arrangement needed for a static literal property)
@@ -500,7 +500,7 @@ public class ManageNavPagesTests
     /// Expected: value remains identical and reference-equality is allowed for interned strings.
     /// </summary>
     [Fact]
-    public void PersonalData_Property_IsStableAcrossMultipleAccesses()
+    public void PersonalData_Property_IsStableAcrossAccesses()
     {
         // Arrange
         // (no arrangement required)
@@ -597,7 +597,7 @@ public class ManageNavPagesTests
 
     // ActivePage present with surrounding whitespace -> does not equal the page value -> null
     [InlineData("  ExternalLogins  ", null, null)]
-    public void ExternalLoginsNavClass_VariousActiveAndDisplayName_ReturnsExpected(string? activePage, string? displayName, string? expected)
+    public void ExternalLoginsNavClass_VariousActivePageAndDisplayName_ReturnsExpected(string? activePage, string? displayName, string? expected)
     {
         // Arrange
         var viewContext = CreateViewContext(activePage, displayName);
@@ -638,7 +638,7 @@ public class ManageNavPagesTests
     /// <param name="expected">The expected literal value returned by the property.</param>
     [Theory]
     [InlineData("ChangePassword")]
-    public void ChangePassword_Property_ReturnsExpectedString(string expected)
+    public void ChangePassword_Property_ReturnsExpected(string expected)
     {
         // Arrange
         // (No setup required for a static literal property.)
@@ -658,7 +658,7 @@ public class ManageNavPagesTests
     /// Expected: subsequent calls return equal strings (reference equality is not guaranteed by C#, but we still assert value equality and immutability).
     /// </summary>
     [Fact]
-    public void ChangePassword_Property_RepeatedAccess_ReturnsEqualValue()
+    public void ChangePassword_Property_IsStableAcrossAccesses()
     {
         // Arrange
         // Act
@@ -678,7 +678,7 @@ public class ManageNavPagesTests
     /// </summary>
     [Theory]
     [InlineData("TwoFactorAuthentication")]
-    public void TwoFactorAuthentication_Property_ReturnsExpectedString(string expected)
+    public void TwoFactorAuthentication_Property_ReturnsExpected(string expected)
     {
         // Arrange
         // (No setup required for a static literal property.)
@@ -704,7 +704,7 @@ public class ManageNavPagesTests
     /// </summary>
     [Theory]
     [MemberData(nameof(PageCases))]
-    public void ChangePasswordNavClass_VariousActivePageAndDisplayName_ExpectedResult(string? activePage, string? displayName, string? expected)
+    public void ChangePasswordNavClass_VariousActivePageAndDisplayName_ReturnsExpected(string? activePage, string? displayName, string? expected)
     {
         // Arrange
         var actionDescriptor = new ActionDescriptor { DisplayName = displayName };
@@ -770,7 +770,7 @@ public class ManageNavPagesTests
     /// </summary>
     [Theory]
     [MemberData(nameof(GetPersonalDataNavCases))]
-    public void PersonalDataNavClass_ActivePageAndDisplayName_ReturnsExpectedCssClass(string? activePage, string? actionDisplayName, string? expected)
+    public void PersonalDataNavClass_VariousActivePageAndDisplayName_ReturnsExpected(string? activePage, string? actionDisplayName, string? expected)
     {
         // Arrange
         var viewContext = CreateViewContext(activePage, actionDisplayName);
@@ -823,7 +823,7 @@ public class ManageNavPagesTests
     /// Expected: "active" when filename without extension equals Passkeys.
     /// </summary>
     [Fact]
-    public void PasskeysNavClass_NoActivePage_UsesActionDescriptorFilename_ReturnsActive()
+    public void PasskeysNavClass_NullActivePage_UsesDisplayNameFilename_ReturnsActive()
     {
         // Arrange
         var displayName = "/Areas/Identity/Pages/Account/Manage/Passkeys.cshtml";
@@ -899,7 +899,7 @@ public class ManageNavPagesTests
     /// </summary>
     [Theory]
     [InlineData("Email")]
-    public void Email_ReturnsLiteralEmail(string expected)
+    public void Email_Property_ReturnsExpected(string expected)
     {
         // Arrange
         // (no setup required for static literal property)
@@ -923,7 +923,7 @@ public class ManageNavPagesTests
     /// <param name="expectedLength">Expected length of the returned string.</param>
     [Theory]
     [InlineData("DeletePersonalData", 18)]
-    public void DeletePersonalData_WhenAccessed_ReturnsExpectedString(string expected, int expectedLength)
+    public void DeletePersonalData_Property_ReturnsExpected(string expected, int expectedLength)
     {
         // Arrange
         // (No setup required for a static constant string property.)
@@ -944,7 +944,7 @@ public class ManageNavPagesTests
     /// Expected result: returns the string "Passkeys" and is not null/whitespace.
     /// </summary>
     [Fact]
-    public void Passkeys_Property_ReturnsExpectedLiteral()
+    public void Passkeys_Property_ReturnsExpected()
     {
         // Arrange
         // (No setup required for a static literal property)
@@ -967,7 +967,7 @@ public class ManageNavPagesTests
     [InlineData(1)]
     [InlineData(3)]
     [InlineData(10)]
-    public void Passkeys_MultipleAccesses_ReturnsExpectedAndConsistent(int readCount)
+    public void Passkeys_Property_IsStableAcrossAccesses(int readCount)
     {
         // Arrange
         // (No external dependencies required; this verifies property stability)
@@ -1005,7 +1005,7 @@ public class ManageNavPagesTests
     [InlineData(null, "/Areas/Identity/Pages/Account/Manage/DownloadPersonalData.cshtml", "active")]
     [InlineData("OtherPage", "/Areas/Identity/Pages/Account/Manage/DownloadPersonalData.cshtml", null)]
     [InlineData(null, null, null)]
-    public void DownloadPersonalDataNavClass_ActivePageOrDisplayName_ReturnsActiveOrNull(string? activePage, string? actionDisplayName, string? expected)
+    public void DownloadPersonalDataNavClass_VariousActivePageAndDisplayName_ReturnsExpected(string? activePage, string? actionDisplayName, string? expected)
     {
         // Arrange
         var metadataProvider = new EmptyModelMetadataProvider();

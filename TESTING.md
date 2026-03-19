@@ -175,7 +175,7 @@ flowchart TD
     classDef partial fill:#fed7aa,stroke:#ea580c
     classDef noTest fill:#fee2e2,stroke:#dc2626
 
-    LoginGET["GET /Account/Login\n────────────────────\n🟡 OnGetAsync_WithErrorMessage_AddsModelError\n🟡 OnGetAsync_WithoutErrorMessage_DoesNotAddModelError\n🟡 OnGetAsync_WithReturnUrl_SetsReturnUrl\n🟡 OnGetAsync_WithoutReturnUrl_DefaultsToRoot\n🟡 OnGetAsync_PopulatesExternalLogins"]:::unitOnly
+    LoginGET["GET /Account/Login\n────────────────────\n🟡 OnGetAsync_WithErrorMessage_AddsModelError\n🟡 OnGetAsync_WithoutErrorMessage_DoesNotAddModelError\n🟡 OnGetAsync_WithReturnUrl_SetsReturnUrl\n🟡 OnGetAsync_WithoutReturnUrl_DefaultsToRoot\n🟡 OnGetAsync_ExternalSchemesAvailable_PopulatesExternalLogins"]:::unitOnly
 
     LoginPOST{"POST /Account/Login\nMethod?"}
 
@@ -183,13 +183,13 @@ flowchart TD
 
     PasskeyPath["POST (passkey credential JSON)\n────────────────────\n🟡 OnPostAsync_PasskeySignIn_Succeeded_ReturnsLocalRedirect"]:::unitOnly
 
-    ModelInvalid["Return page (no sign-in)\n────────────────────\n🟡 OnPostAsync_Password_ModelStateInvalid_ReturnsPageWithoutSignInCall"]:::unitOnly
+    ModelInvalid["Return page (no sign-in)\n────────────────────\n🟡 OnPostAsync_InvalidModelState_ReturnsPageWithoutSignIn"]:::unitOnly
 
     SignInSuccess["Redirect to returnUrl / /\n────────────────────\n✅ OnPostAsync_PasswordSignIn_Succeeded_ReturnsLocalRedirect\n✅ E2E: Login_ValidCredentials_Succeeds"]:::covered
 
     Requires2FA["Redirect to /Account/LoginWith2fa\n────────────────────\n✅ OnPostAsync_PasswordSignIn_RequiresTwoFactor_RedirectsToLoginWith2fa\n✅ E2E: TwoFactor_Setup_Login_WithTotpCode_Succeeds"]:::covered
 
-    LockedOut["Redirect to /Account/Lockout\n────────────────────\n✅ OnPostAsync_PasswordSignIn_IsLockedOut_RedirectsToLockout\n✅ E2E: Login_Lockout_AfterFiveFailedAttempts"]:::covered
+    LockedOut["Redirect to /Account/Lockout\n────────────────────\n✅ OnPostAsync_PasswordSignIn_IsLockedOut_RedirectsToLockout\n✅ E2E: Login_FiveFailedAttempts_LocksAccount"]:::covered
 
     SignInFailed["Return page with error\n────────────────────\n✅ OnPostAsync_PasswordSignIn_Failed_ReturnsPageWithModelError\n✅ E2E: Login_WrongPassword_ShowsError"]:::covered
 
@@ -215,7 +215,7 @@ flowchart TD
 
     RecoveryInvalid["Return page with error\n────────────────────\n🟡 OnPostAsync_ModelStateInvalid_ReturnsPageResult"]:::unitOnly
 
-    LogoutPOST["POST /Account/Logout\n────────────────────\n🟡 LogoutModel_Constructor_AllowsNullSignInManager_LoggerNullability"]:::unitOnly
+    LogoutPOST["POST /Account/Logout\n────────────────────\n🟡 Constructor_NullSignInManager_DoesNotThrow"]:::unitOnly
 
     SignedOut["Redirect to /Index"]
 
@@ -251,13 +251,13 @@ flowchart TD
 | GET /Account/Login — no error | `Login.cshtmlTests.cs` | `OnGetAsync_WithoutErrorMessage_DoesNotAddModelError` |
 | GET /Account/Login — return URL | `Login.cshtmlTests.cs` | `OnGetAsync_WithReturnUrl_SetsReturnUrl` |
 | GET /Account/Login — default return URL | `Login.cshtmlTests.cs` | `OnGetAsync_WithoutReturnUrl_DefaultsToRoot` |
-| GET /Account/Login — external schemes | `Login.cshtmlTests.cs` | `OnGetAsync_PopulatesExternalLogins` |
+| GET /Account/Login — external schemes | `Login.cshtmlTests.cs` | `OnGetAsync_ExternalSchemesAvailable_PopulatesExternalLogins` |
 | POST — password success | `Login.cshtmlTests.cs` | `OnPostAsync_PasswordSignIn_Succeeded_ReturnsLocalRedirect` |
 | POST — requires 2FA | `Login.cshtmlTests.cs` | `OnPostAsync_PasswordSignIn_RequiresTwoFactor_RedirectsToLoginWith2fa` |
 | POST — locked out | `Login.cshtmlTests.cs` | `OnPostAsync_PasswordSignIn_IsLockedOut_RedirectsToLockout` |
 | POST — password failed | `Login.cshtmlTests.cs` | `OnPostAsync_PasswordSignIn_Failed_ReturnsPageWithModelError` |
 | POST — passkey success | `Login.cshtmlTests.cs` | `OnPostAsync_PasskeySignIn_Succeeded_ReturnsLocalRedirect` |
-| POST — invalid model | `Login.cshtmlTests.cs` | `OnPostAsync_Password_ModelStateInvalid_ReturnsPageWithoutSignInCall` |
+| POST — invalid model | `Login.cshtmlTests.cs` | `OnPostAsync_InvalidModelState_ReturnsPageWithoutSignIn` |
 | GET /Account/LoginWith2fa — valid state | `LoginWith2fa.cshtmlTests.cs` | `OnGetAsync_TwoFactorUserExists_SetsReturnUrlAndReturnsPage` |
 | GET /Account/LoginWith2fa — null user | `LoginWith2fa.cshtmlTests.cs` | `OnGetAsync_UserIsNull_ThrowsInvalidOperationException` |
 | POST /Account/LoginWith2fa — success | `LoginWith2fa.cshtmlTests.cs` | `OnPostAsync_Succeeds_RedirectsAndSetsStatusMessageAndLogs` |
@@ -267,7 +267,7 @@ flowchart TD
 | POST /Account/LoginWithRecoveryCode — invalid | `LoginWithRecoveryCode.cshtmlTests.cs` | `OnPostAsync_ModelStateInvalid_ReturnsPageResult` |
 | E2E: valid credentials | `LoginTests.cs` (E2E) | `Login_ValidCredentials_Succeeds` |
 | E2E: wrong password | `LoginTests.cs` (E2E) | `Login_WrongPassword_ShowsError` |
-| E2E: lockout after 5 failures | `LoginTests.cs` (E2E) | `Login_Lockout_AfterFiveFailedAttempts` |
+| E2E: lockout after 5 failures | `LoginTests.cs` (E2E) | `Login_FiveFailedAttempts_LocksAccount` |
 | E2E: TOTP 2FA login | `TwoFactorTests.cs` (E2E) | `TwoFactor_Setup_Login_WithTotpCode_Succeeds` |
 | E2E: recovery code login | `TwoFactorTests.cs` (E2E) | `TwoFactor_Login_WithRecoveryCode_Succeeds` |
 
@@ -483,7 +483,7 @@ flowchart TD
 
     CreationOpts404["404 Not Found\n────────────────────\n🟡 PasskeyCreationOptions_UserNotFound_Returns404"]:::unitOnly
 
-    CreationOpts200["200 JSON creation options\n────────────────────\n🟡 PasskeyCreationOptions_UserFound_Returns200WithJsonContent\n🟡 PasskeyCreationOptions_UserFound_PassesCorrectUserEntityToSignInManager"]:::unitOnly
+    CreationOpts200["200 JSON creation options\n────────────────────\n🟡 PasskeyCreationOptions_UserFound_ReturnsOkWithJson\n🟡 PasskeyCreationOptions_UserFound_PassesUserEntityToSignInManager"]:::unitOnly
 
     WebAuthnCeremony["Browser performs\nWebAuthn creation ceremony\n────────────────────\n❌ No automated test"]:::noTest
 
@@ -511,9 +511,9 @@ flowchart TD
 
     RequestOptsEndpoint{"POST /Account/PasskeyRequestOptions\n(Minimal API, during login)\nusername provided?"}
 
-    RequestOptsNull["Options with null user\n────────────────────\n🟡 PasskeyRequestOptions_NullUsername_CallsMakeRequestOptionsWithNullUser\n🟡 PasskeyRequestOptions_WhitespaceUsername_CallsMakeRequestOptionsWithNullUser"]:::unitOnly
+    RequestOptsNull["Options with null user\n────────────────────\n🟡 PasskeyRequestOptions_NullUsername_MakesRequestOptionsWithNullUser\n🟡 PasskeyRequestOptions_WhitespaceUsername_MakesRequestOptionsWithNullUser"]:::unitOnly
 
-    RequestOptsUser["Find user, options with user entity\n────────────────────\n🟡 PasskeyRequestOptions_UsernameProvided_FindsUserAndCallsRequestOptionsWithUser\n🟡 PasskeyRequestOptions_Returns200WithJsonContent"]:::unitOnly
+    RequestOptsUser["Find user, options with user entity\n────────────────────\n🟡 PasskeyRequestOptions_UsernameProvided_FindsUserAndMakesRequestOptions\n🟡 PasskeyRequestOptions_ReturnsOkWithJson"]:::unitOnly
 
     PasskeySignIn["POST /Account/Login\n(passkey credential JSON)\n────────────────────\n🟡 OnPostAsync_PasskeySignIn_Succeeded_ReturnsLocalRedirect"]:::unitOnly
 
@@ -550,12 +550,12 @@ flowchart TD
 |---|---|---|
 | `MapAdditionalIdentityEndpoints` null guard | `PasskeyEndpointRouteBuilderExtensionsTests.cs` | `MapAdditionalIdentityEndpoints_NullEndpoints_ThrowsArgumentNullException` |
 | POST /PasskeyCreationOptions — user not found | `PasskeyEndpointRouteBuilderExtensionsTests.cs` | `PasskeyCreationOptions_UserNotFound_Returns404` |
-| POST /PasskeyCreationOptions — 200 + JSON | `PasskeyEndpointRouteBuilderExtensionsTests.cs` | `PasskeyCreationOptions_UserFound_Returns200WithJsonContent` |
-| POST /PasskeyCreationOptions — user entity | `PasskeyEndpointRouteBuilderExtensionsTests.cs` | `PasskeyCreationOptions_UserFound_PassesCorrectUserEntityToSignInManager` |
-| POST /PasskeyRequestOptions — null username | `PasskeyEndpointRouteBuilderExtensionsTests.cs` | `PasskeyRequestOptions_NullUsername_CallsMakeRequestOptionsWithNullUser` |
-| POST /PasskeyRequestOptions — whitespace | `PasskeyEndpointRouteBuilderExtensionsTests.cs` | `PasskeyRequestOptions_WhitespaceUsername_CallsMakeRequestOptionsWithNullUser` |
-| POST /PasskeyRequestOptions — with username | `PasskeyEndpointRouteBuilderExtensionsTests.cs` | `PasskeyRequestOptions_UsernameProvided_FindsUserAndCallsRequestOptionsWithUser` |
-| POST /PasskeyRequestOptions — 200 | `PasskeyEndpointRouteBuilderExtensionsTests.cs` | `PasskeyRequestOptions_Returns200WithJsonContent` |
+| POST /PasskeyCreationOptions — 200 + JSON | `PasskeyEndpointRouteBuilderExtensionsTests.cs` | `PasskeyCreationOptions_UserFound_ReturnsOkWithJson` |
+| POST /PasskeyCreationOptions — user entity | `PasskeyEndpointRouteBuilderExtensionsTests.cs` | `PasskeyCreationOptions_UserFound_PassesUserEntityToSignInManager` |
+| POST /PasskeyRequestOptions — null username | `PasskeyEndpointRouteBuilderExtensionsTests.cs` | `PasskeyRequestOptions_NullUsername_MakesRequestOptionsWithNullUser` |
+| POST /PasskeyRequestOptions — whitespace | `PasskeyEndpointRouteBuilderExtensionsTests.cs` | `PasskeyRequestOptions_WhitespaceUsername_MakesRequestOptionsWithNullUser` |
+| POST /PasskeyRequestOptions — with username | `PasskeyEndpointRouteBuilderExtensionsTests.cs` | `PasskeyRequestOptions_UsernameProvided_FindsUserAndMakesRequestOptions` |
+| POST /PasskeyRequestOptions — 200 | `PasskeyEndpointRouteBuilderExtensionsTests.cs` | `PasskeyRequestOptions_ReturnsOkWithJson` |
 | GET /Manage/Passkeys — not found | `Passkeys.cshtmlTests.cs` | `OnGetAsync_UserNotFound_ReturnsNotFoundObjectResult` |
 | GET /Manage/Passkeys — constructor | `Passkeys.cshtmlTests.cs` | `PasskeysModel_Ctor_ValidManagers_PropertiesInitializedToNull` |
 | AddPasskey — user not found | `Passkeys.cshtmlTests.cs` | `OnPostAddPasskeyAsync_UserNotFound_ReturnsNotFound` |
@@ -580,7 +580,7 @@ flowchart TD
     classDef partial fill:#fed7aa,stroke:#ea580c
     classDef noTest fill:#fee2e2,stroke:#dc2626
 
-    LoginPage["GET /Account/Login\n(Google button visible)\n────────────────────\n🟡 OnGetAsync_PopulatesExternalLogins"]:::unitOnly
+    LoginPage["GET /Account/Login\n(Google button visible)\n────────────────────\n🟡 OnGetAsync_ExternalSchemesAvailable_PopulatesExternalLogins"]:::unitOnly
 
     GoogleChallenge["Challenge Google OIDC provider\n(browser redirect to Google)\n────────────────────\n❌ No automated test"]:::noTest
 
@@ -623,7 +623,7 @@ flowchart TD
 
 | Path | File | Test Method |
 |---|---|---|
-| GET /Login — external schemes | `Login.cshtmlTests.cs` | `OnGetAsync_PopulatesExternalLogins` |
+| GET /Login — external schemes | `Login.cshtmlTests.cs` | `OnGetAsync_ExternalSchemesAvailable_PopulatesExternalLogins` |
 | Callback — remote error | `ExternalLogin.cshtmlTests.cs` | `OnGetCallbackAsync_RemoteErrorProvided_SetsErrorMessageAndRedirectsToLogin` |
 | Callback — info null | `ExternalLogin.cshtmlTests.cs` | `OnGetCallbackAsync_InfoIsNull_SetsErrorMessageAndRedirectsToLogin` |
 | Confirmation — model invalid | `ExternalLogin.cshtmlTests.cs` | `OnPostConfirmationAsync_ModelStateInvalid_ReturnsPageAndSetsProviderDisplayNameAndReturnUrl` |
@@ -646,7 +646,7 @@ flowchart TD
 
     ProfileNotFound["NotFoundObjectResult\n────────────────────\n🟡 OnGetAsync_UserNotFound_ReturnsNotFoundObjectResult"]:::unitOnly
 
-    ProfilePage["Show profile form\n(username, phone, Gravatar avatar)\n────────────────────\n🟡 OnGetAsync_UserExists_LoadsUsernameAndPhoneAndReturnsPage\n🟡 IndexModel_Constructor_WithValidDependencies_DoesNotThrow"]:::unitOnly
+    ProfilePage["Show profile form\n(username, phone, Gravatar avatar)\n────────────────────\n🟡 OnGetAsync_UserExists_LoadsUsernameAndPhoneAndReturnsPage\n🟡 Constructor_ValidDependencies_DoesNotThrow"]:::unitOnly
 
     ProfilePOST{"POST /Account/Manage/Index\nstate check"}
 
@@ -654,9 +654,9 @@ flowchart TD
 
     ProfileModelInvalid["Return page\n────────────────────\n🟡 OnPostAsync_ModelStateInvalid_ReturnsPageAndDoesNotChangePhoneOrSignIn"]:::unitOnly
 
-    ProfileSaved["Update phone → RefreshSignIn\n────────────────────\n✅ E2E: ChangePassword_OldPasswordNoLongerWorks\n(visits profile page)"]:::covered
+    ProfileSaved["Update phone → RefreshSignIn\n────────────────────\n✅ E2E: ChangePassword_Success_OldPasswordNoLongerWorks\n(visits profile page)"]:::covered
 
-    GravatarService["GravatarService.GetAvatarUrlAsync()\n────────────────────\n🟡 GetAvatarUrlAsync_ProfileFound_ReturnsAvatarUrl\n🟡 GetAvatarUrlAsync_ProfileNotFound_ReturnsNull\n🟡 GetAvatarUrlAsync_ProfileReturnsNullAvatarUrl_ReturnsNull\n🟡 GetAvatarUrlAsync_NonNotFoundApiException_Propagates\n🟡 GetAvatarUrlAsync_PassesLowercaseSha256HashToGravatar\n🟡 GetAvatarUrlAsync_SupportsCancellationToken"]:::unitOnly
+    GravatarService["GravatarService.GetAvatarUrlAsync()\n────────────────────\n🟡 GetAvatarUrlAsync_ProfileFound_ReturnsAvatarUrl\n🟡 GetAvatarUrlAsync_ProfileNotFound_ReturnsNull\n🟡 GetAvatarUrlAsync_ProfileReturnsNullAvatarUrl_ReturnsNull\n🟡 GetAvatarUrlAsync_NonNotFoundApiException_PropagatesException\n🟡 GetAvatarUrlAsync_AlwaysHashesEmailToSha256Lowercase\n🟡 GetAvatarUrlAsync_PassesCancellationToken"]:::unitOnly
 
     ProfileGET -->|"not found"| ProfileNotFound
     ProfileGET -->|"found"| ProfilePage
@@ -679,9 +679,9 @@ flowchart TD
 | Gravatar — profile found | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_ProfileFound_ReturnsAvatarUrl` |
 | Gravatar — not found | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_ProfileNotFound_ReturnsNull` |
 | Gravatar — null avatar URL | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_ProfileReturnsNullAvatarUrl_ReturnsNull` |
-| Gravatar — non-404 exception | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_NonNotFoundApiException_Propagates` |
-| Gravatar — SHA-256 hash casing | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_PassesLowercaseSha256HashToGravatar` |
-| Gravatar — cancellation | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_SupportsCancellationToken` |
+| Gravatar — non-404 exception | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_NonNotFoundApiException_PropagatesException` |
+| Gravatar — SHA-256 hash casing | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_AlwaysHashesEmailToSha256Lowercase` |
+| Gravatar — cancellation | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_PassesCancellationToken` |
 
 ---
 
@@ -697,7 +697,7 @@ flowchart TD
 
     EmailNotFound["NotFoundObjectResult\n────────────────────\n🟡 OnGetAsync_UserNotFound_ReturnsNotFoundObjectResult\n(via EmailModel_Constructor tests)"]:::unitOnly
 
-    EmailPage["Show current email + change form\n────────────────────\n🟡 EmailModel_Constructor_WithValidDependencies_InitializesDefaults\n🟡 EmailModel_Constructor_MultipleInstances_IndependentDefaults"]:::unitOnly
+    EmailPage["Show current email + change form\n────────────────────\n🟡 Constructor_ValidDependencies_InitializesDefaults\n🟡 Constructor_MultipleInstances_AreIndependent"]:::unitOnly
 
     SendVerifPOST{"POST (SendVerificationEmail handler)\nstate check"}
 
@@ -707,7 +707,7 @@ flowchart TD
 
     SendVerifSuccess["Send email → Redirect\n────────────────────\n🟡 OnPostSendVerificationEmailAsync_ValidUser_SendsEmailAndRedirects"]:::unitOnly
 
-    ChangeEmailPOST["POST (ChangeEmail handler)\n────────────────────\n🟡 OnPostChangeEmailAsync_UserNotFound_ReturnsNotFoundObjectResult"]:::unitOnly
+    ChangeEmailPOST["POST (ChangeEmail handler)\n────────────────────\n🟡 OnPostChangeEmailAsync_UserNotFound_ReturnsNotFound"]:::unitOnly
 
     ConfirmEmailChangeGET{"GET /Account/ConfirmEmailChange\nparams valid?"}
 
@@ -737,11 +737,11 @@ flowchart TD
 
 | Path | File | Test Method |
 |---|---|---|
-| GET — constructor defaults | `Manage/Email.cshtmlTests.cs` | `EmailModel_Constructor_WithValidDependencies_InitializesDefaults` |
+| GET — constructor defaults | `Manage/Email.cshtmlTests.cs` | `Constructor_ValidDependencies_InitializesDefaults` |
 | POST SendVerification — invalid model | `Manage/Email.cshtmlTests.cs` | `OnPostSendVerificationEmailAsync_InvalidModelState_ReturnsPage` |
 | POST SendVerification — user not found | `Manage/Email.cshtmlTests.cs` | `OnPostSendVerificationEmailAsync_UserNotFound_ReturnsNotFoundWithUserId` |
 | POST SendVerification — success | `Manage/Email.cshtmlTests.cs` | `OnPostSendVerificationEmailAsync_ValidUser_SendsEmailAndRedirects` |
-| POST ChangeEmail — user not found | `Manage/Email.cshtmlTests.cs` | `OnPostChangeEmailAsync_UserNotFound_ReturnsNotFoundObjectResult` |
+| POST ChangeEmail — user not found | `Manage/Email.cshtmlTests.cs` | `OnPostChangeEmailAsync_UserNotFound_ReturnsNotFound` |
 | GET /ConfirmEmailChange — null params | `ConfirmEmailChange.cshtmlTests.cs` | `OnGetAsync_NullParameters_RedirectsToIndex` |
 | GET /ConfirmEmailChange — special char email | `ConfirmEmailChange.cshtmlTests.cs` | `OnGetAsync_SpecialCharacterEmail_ProceedsAndReturnSuccess` |
 | GET /ConfirmEmailChange — empty email | `ConfirmEmailChange.cshtmlTests.cs` | `OnGetAsync_EmptyOrWhitespaceEmail_RedirectsToIndex` |
@@ -771,7 +771,7 @@ flowchart TD
 
     ChangePwdUserNotFound["NotFoundObjectResult\n────────────────────\n🟡 OnPostAsync_UserNotFound_ReturnsNotFoundWithUserId"]:::unitOnly
 
-    ChangePwdSuccess["RefreshSignIn → Redirect\n────────────────────\n✅ E2E: ChangePassword_OldPasswordNoLongerWorks"]:::covered
+    ChangePwdSuccess["RefreshSignIn → Redirect\n────────────────────\n✅ E2E: ChangePassword_Success_OldPasswordNoLongerWorks"]:::covered
 
     SetPwdGET{"GET /Account/Manage/SetPassword\nstate check"}
 
@@ -818,7 +818,7 @@ flowchart TD
 | GET /SetPassword — hasPassword check | `Manage/SetPassword.cshtmlTests.cs` | `OnGetAsync_ExistingUser_BehavesBasedOnHasPassword` |
 | POST /SetPassword — invalid model | `Manage/SetPassword.cshtmlTests.cs` | `OnPostAsync_ModelStateInvalid_ReturnsPage` |
 | POST /SetPassword — user not found | `Manage/SetPassword.cshtmlTests.cs` | `OnPostAsync_UserNotFound_ReturnsNotFoundWithMessage` |
-| E2E: change password, old no longer works | `AccountManagementTests.cs` (E2E) | `ChangePassword_OldPasswordNoLongerWorks` |
+| E2E: change password, old no longer works | `AccountManagementTests.cs` (E2E) | `ChangePassword_Success_OldPasswordNoLongerWorks` |
 
 ---
 
@@ -909,7 +909,7 @@ flowchart TD
 
     DeleteGetNotFound["NotFoundObjectResult\n────────────────────\n🟡 OnGet_UserNotFound_ReturnsNotFoundObjectResultWithMessage"]:::unitOnly
 
-    DeleteForm["Show confirmation form\n────────────────────\n🟡 DeletePersonalDataModel_ValidDependencies_InstanceCreatedAndDefaultsSet"]:::unitOnly
+    DeleteForm["Show confirmation form\n────────────────────\n🟡 Constructor_ValidDependencies_InitializesDefaults"]:::unitOnly
 
     DeletePOST{"POST /Account/Manage/DeletePersonalData\nstate check"}
 
@@ -917,7 +917,7 @@ flowchart TD
 
     DeletePostNotFound["NotFoundObjectResult\n────────────────────\n🟡 OnPostAsync_UserNotFound_ReturnsNotFoundObjectResult"]:::unitOnly
 
-    DeleteSuccess["Delete user → Sign out → Redirect\n────────────────────\n✅ E2E: DeleteAccount_LoginFails"]:::covered
+    DeleteSuccess["Delete user → Sign out → Redirect\n────────────────────\n✅ E2E: DeleteAccount_Success_SubsequentLoginFails"]:::covered
 
     PersonalDataGET -->|"download link"| DownloadPOST
     PersonalDataGET -->|"delete link"| DeleteGET
@@ -942,7 +942,7 @@ flowchart TD
 | GET /DeletePersonalData — not found | `Manage/DeletePersonalData.cshtmlTests.cs` | `OnGet_UserNotFound_ReturnsNotFoundObjectResultWithMessage` |
 | POST /DeletePersonalData — invalid model | `Manage/DeletePersonalData.cshtmlTests.cs` | `OnPostAsync_ModelStateInvalid_ReturnsPage` |
 | POST /DeletePersonalData — not found | `Manage/DeletePersonalData.cshtmlTests.cs` | `OnPostAsync_UserNotFound_ReturnsNotFoundObjectResult` |
-| E2E: delete account, login fails | `AccountManagementTests.cs` (E2E) | `DeleteAccount_LoginFails` |
+| E2E: delete account, login fails | `AccountManagementTests.cs` (E2E) | `DeleteAccount_Success_SubsequentLoginFails` |
 
 ---
 
@@ -960,15 +960,15 @@ flowchart LR
 
         CO_NotFound["GetUserAsync returns null\n→ 404\n────────────────────\n🟡 PasskeyCreationOptions_UserNotFound_Returns404"]:::unitOnly
 
-        CO_Found["Build PasskeyUserEntity\n→ MakePasskeyCreationOptionsAsync\n→ 200 JSON\n────────────────────\n🟡 PasskeyCreationOptions_UserFound_Returns200WithJsonContent\n🟡 PasskeyCreationOptions_UserFound_PassesCorrectUserEntityToSignInManager"]:::unitOnly
+        CO_Found["Build PasskeyUserEntity\n→ MakePasskeyCreationOptionsAsync\n→ 200 JSON\n────────────────────\n🟡 PasskeyCreationOptions_UserFound_ReturnsOkWithJson\n🟡 PasskeyCreationOptions_UserFound_PassesUserEntityToSignInManager"]:::unitOnly
     end
 
     subgraph RequestOpts["POST /Account/PasskeyRequestOptions"]
         RO_Auth["Requires antiforgery token\n────────────────────\n❌ No integration test for auth rejection"]:::noTest
 
-        RO_Null["username null / whitespace\n→ MakePasskeyRequestOptionsAsync(null)\n────────────────────\n🟡 PasskeyRequestOptions_NullUsername_CallsMakeRequestOptionsWithNullUser\n🟡 PasskeyRequestOptions_WhitespaceUsername_CallsMakeRequestOptionsWithNullUser"]:::unitOnly
+        RO_Null["username null / whitespace\n→ MakePasskeyRequestOptionsAsync(null)\n────────────────────\n🟡 PasskeyRequestOptions_NullUsername_MakesRequestOptionsWithNullUser\n🟡 PasskeyRequestOptions_WhitespaceUsername_MakesRequestOptionsWithNullUser"]:::unitOnly
 
-        RO_Found["username provided\n→ FindByNameAsync(username)\n→ MakePasskeyRequestOptionsAsync(user)\n────────────────────\n🟡 PasskeyRequestOptions_UsernameProvided_FindsUserAndCallsRequestOptionsWithUser\n🟡 PasskeyRequestOptions_Returns200WithJsonContent"]:::unitOnly
+        RO_Found["username provided\n→ FindByNameAsync(username)\n→ MakePasskeyRequestOptionsAsync(user)\n────────────────────\n🟡 PasskeyRequestOptions_UsernameProvided_FindsUserAndMakesRequestOptions\n🟡 PasskeyRequestOptions_ReturnsOkWithJson"]:::unitOnly
     end
 ```
 
@@ -981,7 +981,7 @@ flowchart TD
     classDef unitOnly fill:#fef9c3,stroke:#ca8a04
 
     subgraph GravatarSvc["GravatarService (IAvatarService)"]
-        GV_Hash["SHA-256 hash email\n(lowercase)\n────────────────────\n🟡 GetAvatarUrlAsync_PassesLowercaseSha256HashToGravatar"]:::unitOnly
+        GV_Hash["SHA-256 hash email\n(lowercase)\n────────────────────\n🟡 GetAvatarUrlAsync_AlwaysHashesEmailToSha256Lowercase"]:::unitOnly
 
         GV_Found["Gravatar profile found\n→ return avatar URL\n────────────────────\n🟡 GetAvatarUrlAsync_ProfileFound_ReturnsAvatarUrl"]:::unitOnly
 
@@ -989,17 +989,17 @@ flowchart TD
 
         GV_NullUrl["Profile found but no avatar URL\n→ return null\n────────────────────\n🟡 GetAvatarUrlAsync_ProfileReturnsNullAvatarUrl_ReturnsNull"]:::unitOnly
 
-        GV_OtherErr["Non-404 API exception\n→ propagates\n────────────────────\n🟡 GetAvatarUrlAsync_NonNotFoundApiException_Propagates"]:::unitOnly
+        GV_OtherErr["Non-404 API exception\n→ propagates\n────────────────────\n🟡 GetAvatarUrlAsync_NonNotFoundApiException_PropagatesException"]:::unitOnly
 
-        GV_Cancel["Cancellation token\n→ propagates\n────────────────────\n🟡 GetAvatarUrlAsync_SupportsCancellationToken"]:::unitOnly
+        GV_Cancel["Cancellation token\n→ propagates\n────────────────────\n🟡 GetAvatarUrlAsync_PassesCancellationToken"]:::unitOnly
     end
 
     subgraph EmailSvc["EmailSender (IEmailSender via Resend)"]
         ES_Send["SendEmailAsync → Resend API\n────────────────────\n🟡 SendEmailAsync_VariousInputs_CallsResendWithExpectedMessage"]:::unitOnly
 
-        ES_Throw["Resend throws\n→ exception propagates\n────────────────────\n🟡 SendEmailAsync_WhenResendThrows_ExceptionPropagated"]:::unitOnly
+        ES_Throw["Resend throws\n→ exception propagates\n────────────────────\n🟡 SendEmailAsync_ResendThrows_PropagatesException"]:::unitOnly
 
-        ES_Ctor["Constructor variants\n────────────────────\n🟡 EmailSender_WithValidResend_DoesNotThrowAndCreatesInstance\n🟡 EmailSender_WithDifferentResendInstances_ProducesDistinctInstances"]:::unitOnly
+        ES_Ctor["Constructor variants\n────────────────────\n🟡 Constructor_ValidResend_CreatesInstance\n🟡 Constructor_DifferentResendInstances_CreatesDistinctInstances"]:::unitOnly
     end
 
     GV_Hash --> GV_Found
@@ -1016,12 +1016,12 @@ flowchart TD
 | Gravatar — profile found | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_ProfileFound_ReturnsAvatarUrl` |
 | Gravatar — profile not found | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_ProfileNotFound_ReturnsNull` |
 | Gravatar — null avatar URL | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_ProfileReturnsNullAvatarUrl_ReturnsNull` |
-| Gravatar — non-404 exception | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_NonNotFoundApiException_Propagates` |
-| Gravatar — SHA-256 hash casing | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_PassesLowercaseSha256HashToGravatar` |
-| Gravatar — cancellation token | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_SupportsCancellationToken` |
+| Gravatar — non-404 exception | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_NonNotFoundApiException_PropagatesException` |
+| Gravatar — SHA-256 hash casing | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_AlwaysHashesEmailToSha256Lowercase` |
+| Gravatar — cancellation token | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_PassesCancellationToken` |
 | EmailSender — sends via Resend | `EmailSenderTests.cs` | `SendEmailAsync_VariousInputs_CallsResendWithExpectedMessage` |
-| EmailSender — Resend throws | `EmailSenderTests.cs` | `SendEmailAsync_WhenResendThrows_ExceptionPropagated` |
-| EmailSender — constructor | `EmailSenderTests.cs` | `EmailSender_WithValidResend_DoesNotThrowAndCreatesInstance` |
+| EmailSender — Resend throws | `EmailSenderTests.cs` | `SendEmailAsync_ResendThrows_PropagatesException` |
+| EmailSender — constructor | `EmailSenderTests.cs` | `Constructor_ValidResend_CreatesInstance` |
 
 ---
 
@@ -1037,7 +1037,7 @@ flowchart TD
 
     PrivacyPage["GET /Privacy\n────────────────────\n🔵 Constructor test"]:::partial
 
-    ErrorPage["GET /Error\n────────────────────\n🟡 ErrorModel_WithValidInteractionService_DoesNotThrowAndInitializesProperties\n🟡 OnGetAsync_ErrorIdNullOrWhitespace_DoesNotCallGetErrorContextAndSetsRequestId\n🟡 OnGetAsync_NonEmptyErrorId_CallsGetErrorContextAndSetsRequestId\n🟡 OnGetAsync_NonEmptyErrorIdWithErrorMessage_LogsError\n🟡 ShowRequestId_RequestIdValue_ExpectedResult"]:::unitOnly
+    ErrorPage["GET /Error\n────────────────────\n🟡 Constructor_ValidInteractionService_InitializesDefaults\n🟡 OnGetAsync_NullOrWhitespaceErrorId_SkipsInteractionService\n🟡 OnGetAsync_ValidErrorId_CallsInteractionService\n🟡 OnGetAsync_ValidErrorId_WithErrorMessage_LogsError\n🟡 ShowRequestId_VariousValues_ReturnsExpected"]:::unitOnly
 
     HealthEndpoint["GET /Health\n(DbContext health check)\n────────────────────\n❌ No unit test\n❌ No E2E test"]:::noTest
 
@@ -1052,10 +1052,10 @@ flowchart TD
 | Path | File | Test Method |
 |---|---|---|
 | GET / — constructor | `Pages/Index.cshtmlTests.cs` | `Constructor_BothDependenciesNull_DoesNotThrowAndCreatesInstance` |
-| GET /Error — no error ID | `Pages/Error.cshtmlTests.cs` | `OnGetAsync_ErrorIdNullOrWhitespace_DoesNotCallGetErrorContextAndSetsRequestId` |
-| GET /Error — with error ID | `Pages/Error.cshtmlTests.cs` | `OnGetAsync_NonEmptyErrorId_CallsGetErrorContextAndSetsRequestId` |
-| GET /Error — with error message (logs) | `Pages/Error.cshtmlTests.cs` | `OnGetAsync_NonEmptyErrorIdWithErrorMessage_LogsError` |
-| GET /Error — ShowRequestId property | `Pages/Error.cshtmlTests.cs` | `ShowRequestId_RequestIdValue_ExpectedResult` |
+| GET /Error — no error ID | `Pages/Error.cshtmlTests.cs` | `OnGetAsync_NullOrWhitespaceErrorId_SkipsInteractionService` |
+| GET /Error — with error ID | `Pages/Error.cshtmlTests.cs` | `OnGetAsync_ValidErrorId_CallsInteractionService` |
+| GET /Error — with error message (logs) | `Pages/Error.cshtmlTests.cs` | `OnGetAsync_ValidErrorId_WithErrorMessage_LogsError` |
+| GET /Error — ShowRequestId property | `Pages/Error.cshtmlTests.cs` | `ShowRequestId_VariousValues_ReturnsExpected` |
 
 ---
 

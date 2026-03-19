@@ -71,13 +71,16 @@ The following secrets must be present in Azure Key Vault (fetched at startup via
 
 ### 2. Set Up the Database
 
-**Development** — use EF Core migrations to create/update your local database:
+The schema is managed entirely via the `Identity.Data` SQL Server Database Project (dacpac).
+
+**Development** — build and publish the dacpac to your local SQL Server:
 
 ```bash
-dotnet ef database update --project Identity.Api
+dotnet build Identity.Data/Identity.Data.sqlproj --configuration Release
+sqlpackage /Action:Publish /SourceFile:Identity.Data/bin/Release/Identity.Data.dacpac /TargetConnectionString:"<your-local-connection-string>"
 ```
 
-**Production** — the schema is deployed via dacpac (see [Deployment](#deployment) below). Migrations are not run against production.
+**Production** — the schema is deployed automatically via the CI/CD pipeline (see [Deployment](#deployment) below).
 
 ### 3. Run
 
@@ -91,7 +94,7 @@ App is available at `https://localhost:7261` (HTTPS) or `http://localhost:5021` 
 ## Project Structure
 
 ```
-Identity.Api/       # ASP.NET Core 10 Razor Pages web app, DbContext, and EF Core migrations
+Identity.Api/       # ASP.NET Core 10 Razor Pages web app and DbContext
 Identity.Data/      # SQL Server Database Project — schema source of truth, builds to .dacpac
 Identity.Tests/     # xUnit v3 test project: unit tests (Moq) and E2E tests (Playwright/Chromium)
 ```
@@ -111,13 +114,7 @@ ASPNETCORE_ENVIRONMENT=Development dotnet test --project Identity.Tests --config
 # All tests (unit + E2E, local)
 ASPNETCORE_ENVIRONMENT=Development dotnet test --project Identity.Tests --configuration Release
 
-# Add an EF Core migration (development only)
-dotnet ef migrations add <MigrationName> --project Identity.Api
-
-# Apply migrations to local database (development only)
-dotnet ef database update --project Identity.Api
-
-# Build dacpac (production schema deployment)
+# Build dacpac (schema deployment)
 dotnet build Identity.Data/Identity.Data.sqlproj --configuration Release
 
 # Deploy dacpac to production SQL Server

@@ -1,0 +1,32 @@
+{
+  "stryker-config": {
+    "project": "Identity.Api/Identity.Api.csproj",
+    "test-projects": [
+      "Identity.Tests/Identity.Tests.csproj"
+    ],
+    "reporters": [
+      "html",
+      "json",
+      "progress"
+    ],
+    "mutation-level": "Advanced",
+    "threshold": {
+      "high": 80,
+      "low": 60,
+      "break": 50
+    },
+    "mutate": [
+      "Identity.Api/EmailSender.cs",
+      "Identity.Api/GravatarService.cs",
+      "Identity.Api/Extensions/SecretClientExtensions.cs",
+      "Identity.Api/Extensions/ConfigurationExtensions.cs",
+      "Identity.Api/Extensions/PasskeyEndpointRouteBuilderExtensions.cs"
+    ],
+    "since": {
+      "enabled": false
+    },
+    "additional-timeout": 30,
+    "test-runner": "dotnet-test",
+    "coverage-analysis": "perTest"
+  }
+}

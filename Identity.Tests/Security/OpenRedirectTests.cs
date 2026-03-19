@@ -1,79 +1,72 @@
-namespace Identity.Tests.E2E;
+namespace Identity.Tests.Security;
 
 using Infrastructure;
 
 [Trait("Category", "E2E")]
 [Collection(E2ECollection.Name)]
-public sealed class LoginTests(PlaywrightFixture fixture)
+public sealed class OpenRedirectTests(PlaywrightFixture fixture)
 {
     [Fact]
-    public async Task Login_ValidCredentials_Succeeds()
+    public async Task Login_WithAbsoluteReturnUrl_DoesNotRedirectExternally()
     {
         var (email, password) = await CreateConfirmedUserAsync();
 
         var (context, page) = await fixture.NewPageAsync();
         await using (context)
         {
-            await page.GotoAsync("/Account/Login");
+            await page.GotoAsync("/Account/Login?ReturnUrl=https%3A%2F%2Fevil.com");
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("button[type='submit']");
+            await page.WaitForLoadStateAsync(Microsoft.Playwright.LoadState.NetworkIdle);
 
+            Assert.DoesNotContain("evil.com", page.Url, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    [Fact]
+    public async Task Login_WithProtocolRelativeReturnUrl_DoesNotRedirectExternally()
+    {
+        var (email, password) = await CreateConfirmedUserAsync();
+
+        var (context, page) = await fixture.NewPageAsync();
+        await using (context)
+        {
+            await page.GotoAsync("/Account/Login?ReturnUrl=%2F%2Fevil.com");
+            await page.FillAsync("input[name='Input.Email']", email);
+            await page.FillAsync("input[name='Input.Password']", password);
+            await page.ClickAsync("button[type='submit']");
+            await page.WaitForLoadStateAsync(Microsoft.Playwright.LoadState.NetworkIdle);
+
+            Assert.DoesNotContain("evil.com", page.Url, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    [Fact]
+    public async Task Login_WithValidLocalReturnUrl_Succeeds()
+    {
+        var (email, password) = await CreateConfirmedUserAsync();
+
+        var (context, page) = await fixture.NewPageAsync();
+        await using (context)
+        {
+            await page.GotoAsync("/Account/Login?ReturnUrl=%2FAccount%2FManage");
+            await page.FillAsync("input[name='Input.Email']", email);
+            await page.FillAsync("input[name='Input.Password']", password);
+            await page.ClickAsync("button[type='submit']");
             await page.WaitForURLAsync(url => !url.Contains("/Account/Login"));
+
             Assert.DoesNotContain("/Account/Login", page.Url);
         }
     }
 
-    [Fact]
-    public async Task Login_WrongPassword_ShowsError()
-    {
-        var (email, _) = await CreateConfirmedUserAsync();
-
-        var (context, page) = await fixture.NewPageAsync();
-        await using (context)
-        {
-            await page.GotoAsync("/Account/Login");
-            await page.FillAsync("input[name='Input.Email']", email);
-            await page.FillAsync("input[name='Input.Password']", "WrongPassword!99");
-            await page.ClickAsync("button[type='submit']");
-
-            // Should stay on login page with a validation error
-            await page.WaitForURLAsync("**/Account/Login**");
-            var errorText = await page.TextContentAsync(".validation-summary-errors, .text-danger");
-            Assert.NotNull(errorText);
-        }
-    }
-
-    [Fact]
-    public async Task Login_FiveFailedAttempts_LocksAccount()
-    {
-        var (email, _) = await CreateConfirmedUserAsync();
-
-        var (context, page) = await fixture.NewPageAsync();
-        await using (context)
-        {
-            for (var i = 0; i < 5; i++)
-            {
-                await page.GotoAsync("/Account/Login");
-                await page.FillAsync("input[name='Input.Email']", email);
-                await page.FillAsync("input[name='Input.Password']", "BadPassword!99");
-                await page.ClickAsync("button[type='submit']");
-            }
-
-            // After 5 failures the account should be locked out
-            await page.WaitForURLAsync("**/Account/Lockout**");
-            Assert.Contains("/Account/Lockout", page.Url);
-        }
-    }
-
-    /// <summary>Registers and confirms an account, then returns email+password.</summary>
     private async Task<(string Email, string Password)> CreateConfirmedUserAsync()
     {
         var email = $"e2e-{Guid.NewGuid()}@test.invalid";
         const string password = "Test@123456!";
 
-        var (context, page) = await fixture.NewPageAsync();
-        await using (context)
+        var (ctx, page) = await fixture.NewPageAsync();
+        await using (ctx)
         {
             await page.GotoAsync("/Account/Register");
             await page.FillAsync("input[name='Input.Email']", email);

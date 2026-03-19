@@ -165,7 +165,7 @@ public class ChangePasswordModelTests
     /// to the constructor, remove Skip and implement the arrange/act/assert commented code below.
     /// </summary>
     [Fact]
-    public void Constructor_NullParameters_ThrowsArgumentNullException_Template()
+    public void Constructor_NullParameters_DoesNotThrow()
     {
         // Arrange
         // The current implementation of ChangePasswordModel does not validate constructor arguments.

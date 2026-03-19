@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS8604 // Possible null reference argument.
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+﻿#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account;
 
 using Identity.Pages.Account;
@@ -41,7 +40,7 @@ public class LogoutModelTests
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public void LogoutModel_Constructor_AllowsNullSignInManager_LoggerNullability(bool loggerIsNull)
+    public void Constructor_NullSignInManager_DoesNotThrow(bool loggerIsNull)
     {
         // Arrange
         SignInManager<IdentityUser<Guid>>? signInManager = null;
@@ -51,7 +50,7 @@ public class LogoutModelTests
         var exception = Record.Exception(() =>
         {
             // Act: construct the model
-            var model = new LogoutModel(signInManager, logger);
+            var model = new LogoutModel(signInManager!, logger!);
 
             // Assert inside Act block: ensure the object is not null when constructor completes
             Assert.NotNull(model);

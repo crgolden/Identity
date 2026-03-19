@@ -16,7 +16,7 @@ using Moq;
 /// Tests for Identity.Pages.Account.Manage.IndexModel OnGetAsync behavior.
 /// </summary>
 [Trait("Category", "Unit")]
-public class IndexModelTests
+public class ManageIndexModelTests
 {
     public static TheoryData<string?, string?> ValidUserData() => new()
     {
@@ -205,7 +205,7 @@ public class IndexModelTests
     /// Expected result: constructor returns a non-null IndexModel instance and does not throw.
     /// </summary>
     [Fact]
-    public void IndexModel_Constructor_WithValidDependencies_DoesNotThrow()
+    public void Constructor_ValidDependencies_DoesNotThrow()
     {
         // Arrange
         var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
