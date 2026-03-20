@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
+/// <summary>Page model for the Confirm Email Change page.</summary>
 [AllowAnonymous]
 public class ConfirmEmailChangeModel : PageModel
 {
@@ -20,6 +21,11 @@ public class ConfirmEmailChangeModel : PageModel
     [TempData]
     public string? StatusMessage { get; set; }
 
+    /// <summary>Handles the GET request to confirm the user's email address change.</summary>
+    /// <param name="userId">The user's ID.</param>
+    /// <param name="email">The new email address to confirm.</param>
+    /// <param name="code">The base64url-encoded email change confirmation token.</param>
+    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnGetAsync(string? userId, string? email, string? code)
     {
         if (IsNullOrWhiteSpace(userId) || IsNullOrWhiteSpace(email) || IsNullOrWhiteSpace(code))

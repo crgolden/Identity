@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
+/// <summary>Page model for the Error page.</summary>
 [AllowAnonymous]
 [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
 [IgnoreAntiforgeryToken]
@@ -27,6 +28,8 @@ public class ErrorModel : PageModel
 
     public bool ShowRequestId => !IsNullOrWhiteSpace(RequestId);
 
+    /// <summary>Handles the GET request, logging any IdentityServer error context for the given error ID.</summary>
+    /// <param name="errorId">The IdentityServer error identifier, if any.</param>
     public async Task OnGetAsync(string? errorId = null)
     {
         RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;

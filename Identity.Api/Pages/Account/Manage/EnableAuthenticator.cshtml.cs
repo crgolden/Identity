@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using static String;
 
+/// <summary>Page model for the Enable Authenticator page.</summary>
 public class EnableAuthenticatorModel : PageModel
 {
 #pragma warning disable S1075
@@ -42,6 +43,8 @@ public class EnableAuthenticatorModel : PageModel
     [BindProperty]
     public InputModel Input { get; set; } = new InputModel();
 
+    /// <summary>Handles the GET request to display the authenticator setup page.</summary>
+    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnGetAsync()
     {
         var user = await _userManager.GetUserAsync(User);
@@ -54,6 +57,8 @@ public class EnableAuthenticatorModel : PageModel
         return Page();
     }
 
+    /// <summary>Handles the POST request to verify and enable the authenticator app.</summary>
+    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnPostAsync()
     {
         var user = await _userManager.GetUserAsync(User);
@@ -153,6 +158,7 @@ public class EnableAuthenticatorModel : PageModel
             unformattedKey);
     }
 
+    /// <summary>Provides the form input values bound from the request.</summary>
     public class InputModel
     {
         [Required]

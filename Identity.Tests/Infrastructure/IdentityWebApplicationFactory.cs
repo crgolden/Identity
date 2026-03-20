@@ -29,6 +29,7 @@ public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Progra
 
     public string ServerAddress => _serverAddress ?? throw new InvalidOperationException("Server address is not available. Call Factory.CreateClient() first.");
 
+    /// <inheritdoc/>
     protected override IHost CreateHost(IHostBuilder builder)
     {
         // Build the in-memory TestHost used by Factory.CreateClient().
@@ -46,6 +47,7 @@ public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Progra
         return testHost;
     }
 
+    /// <inheritdoc/>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.ConfigureServices((context, services) =>
@@ -68,6 +70,7 @@ public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Progra
         });
     }
 
+    /// <inheritdoc/>
     protected override void Dispose(bool disposing)
     {
         if (disposing)

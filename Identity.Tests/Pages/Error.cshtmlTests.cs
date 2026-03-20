@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
 using Moq;
 
+/// <summary>Unit tests for <see cref="Identity.Pages.ErrorModel"/>.</summary>
 [Trait("Category", "Unit")]
 public class ErrorModelTests
 {

@@ -7,8 +7,12 @@ using static ArgumentNullException;
 using static String;
 using static System.Net.Mime.MediaTypeNames.Application;
 
+/// <summary>Provides additional Identity endpoint registrations for passkey creation and request options.</summary>
 public static class EndpointRouteBuilderExtensions
 {
+    /// <summary>Maps the <c>/Account/PasskeyCreationOptions</c> and <c>/Account/PasskeyRequestOptions</c> POST endpoints.</summary>
+    /// <param name="endpoints">The <see cref="IEndpointRouteBuilder"/> to register endpoints on.</param>
+    /// <returns>An <see cref="IEndpointConventionBuilder"/> for the mapped account group.</returns>
     public static IEndpointConventionBuilder MapAdditionalIdentityEndpoints(this IEndpointRouteBuilder endpoints)
     {
         ThrowIfNull(endpoints);

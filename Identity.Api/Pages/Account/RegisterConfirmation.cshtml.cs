@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
+/// <summary>Page model for the Register Confirmation page.</summary>
 [AllowAnonymous]
 public class RegisterConfirmationModel : PageModel
 {
@@ -17,6 +18,10 @@ public class RegisterConfirmationModel : PageModel
 
     public string? Email { get; set; }
 
+    /// <summary>Handles the GET request to display the registration confirmation page.</summary>
+    /// <param name="email">The email address that was registered.</param>
+    /// <param name="returnUrl">The URL to return to after confirmation.</param>
+    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnGetAsync(string? email, string? returnUrl = null)
     {
         if (IsNullOrWhiteSpace(email))

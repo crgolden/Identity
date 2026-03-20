@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
+/// <summary>Page model for the Disable Two-Factor Authentication page.</summary>
 #pragma warning disable S101
 public class Disable2faModel : PageModel
 #pragma warning restore S101
@@ -22,6 +23,8 @@ public class Disable2faModel : PageModel
     [TempData]
     public string? StatusMessage { get; set; }
 
+    /// <summary>Handles the GET request to display the disable 2FA confirmation page.</summary>
+    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnGet()
     {
         var user = await _userManager.GetUserAsync(User);
@@ -38,6 +41,8 @@ public class Disable2faModel : PageModel
         return Page();
     }
 
+    /// <summary>Handles the POST request to disable two-factor authentication for the current user.</summary>
+    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnPostAsync()
     {
         var user = await _userManager.GetUserAsync(User);

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
+/// <summary>Page model for the Confirm Email page.</summary>
 [AllowAnonymous]
 public class ConfirmEmailModel : PageModel
 {
@@ -18,6 +19,10 @@ public class ConfirmEmailModel : PageModel
     [TempData]
     public string? StatusMessage { get; set; }
 
+    /// <summary>Handles the GET request to confirm the user's email address.</summary>
+    /// <param name="userId">The user's ID.</param>
+    /// <param name="code">The base64url-encoded email confirmation token.</param>
+    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnGetAsync(string? userId, string? code)
     {
         if (IsNullOrWhiteSpace(userId) || IsNullOrWhiteSpace(code))

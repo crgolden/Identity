@@ -8,6 +8,7 @@ using static System.Net.Mime.MediaTypeNames.Application;
 using static System.Text.Json.JsonSerializer;
 using static Microsoft.Net.Http.Headers.HeaderNames;
 
+/// <summary>Page model for the Download Personal Data page.</summary>
 public class DownloadPersonalDataModel : PageModel
 {
     private readonly UserManager<IdentityUser<Guid>> _userManager;
@@ -21,11 +22,15 @@ public class DownloadPersonalDataModel : PageModel
         _logger = logger;
     }
 
+    /// <summary>Handles the GET request, returning a not-found result to prevent direct access.</summary>
+    /// <returns>A not-found result.</returns>
     public IActionResult OnGet()
     {
         return NotFound();
     }
 
+    /// <summary>Handles the POST request to download the user's personal data as a JSON file.</summary>
+    /// <returns>A task that resolves to a file download result or a redirect.</returns>
     public async Task<IActionResult> OnPostAsync()
     {
         var user = await _userManager.GetUserAsync(User);

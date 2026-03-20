@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
+/// <summary>Page model for the Login with Two-Factor Authentication page.</summary>
 [AllowAnonymous]
 #pragma warning disable S101
 public class LoginWith2faModel : PageModel
@@ -32,6 +33,10 @@ public class LoginWith2faModel : PageModel
 
     public string? ReturnUrl { get; set; }
 
+    /// <summary>Handles the GET request to display the two-factor authentication page.</summary>
+    /// <param name="rememberMe">Whether the user chose to be remembered on this browser.</param>
+    /// <param name="returnUrl">The URL to return to after authentication.</param>
+    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnGetAsync(bool rememberMe, string? returnUrl = null)
     {
         // Ensure the user has gone through the username & password screen first
@@ -48,6 +53,10 @@ public class LoginWith2faModel : PageModel
         return Page();
     }
 
+    /// <summary>Handles the POST request to verify the two-factor authentication code.</summary>
+    /// <param name="rememberMe">Whether the user chose to be remembered on this browser.</param>
+    /// <param name="returnUrl">The URL to return to after authentication.</param>
+    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnPostAsync(bool rememberMe, string? returnUrl = null)
     {
         if (!ModelState.IsValid || IsNullOrWhiteSpace(Input?.TwoFactorCode))
@@ -98,6 +107,7 @@ public class LoginWith2faModel : PageModel
         return Page();
     }
 
+    /// <summary>Provides the form input values bound from the request.</summary>
     public class InputModel
     {
         [Required]

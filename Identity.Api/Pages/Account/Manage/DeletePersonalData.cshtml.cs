@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
+/// <summary>Page model for the Delete Personal Data page.</summary>
 public class DeletePersonalDataModel : PageModel
 {
     private readonly UserManager<IdentityUser<Guid>> _userManager;
@@ -26,6 +27,8 @@ public class DeletePersonalDataModel : PageModel
 
     public bool RequirePassword { get; set; }
 
+    /// <summary>Handles the GET request to display the delete personal data confirmation form.</summary>
+    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnGet()
     {
         var user = await _userManager.GetUserAsync(User);
@@ -38,6 +41,8 @@ public class DeletePersonalDataModel : PageModel
         return Page();
     }
 
+    /// <summary>Handles the POST request to permanently delete the user's account and personal data.</summary>
+    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnPostAsync()
     {
         var user = await _userManager.GetUserAsync(User);
@@ -70,6 +75,7 @@ public class DeletePersonalDataModel : PageModel
         return Redirect("~/");
     }
 
+    /// <summary>Provides the form input values bound from the request.</summary>
     public class InputModel
     {
         [Required]

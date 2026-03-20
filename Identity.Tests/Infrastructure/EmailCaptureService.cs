@@ -33,6 +33,7 @@ public sealed class EmailCaptureService : IEmailSender, IEmailSender<IdentityUse
         return System.Net.WebUtility.HtmlDecode(matches[0].Groups[1].Value);
     }
 
+    /// <inheritdoc/>
     public Task SendEmailAsync(string email, string subject, string htmlMessage)
     {
         var queue = _emailsByAddress.GetOrAdd(email, _ => new ConcurrentQueue<CapturedEmail>());
@@ -40,12 +41,15 @@ public sealed class EmailCaptureService : IEmailSender, IEmailSender<IdentityUse
         return Task.CompletedTask;
     }
 
+    /// <inheritdoc/>
     public Task SendConfirmationLinkAsync(IdentityUser<Guid> user, string email, string confirmationLink) =>
         SendEmailAsync(email, "Confirm your email", $"<a href='{confirmationLink}'>Confirm</a>");
 
+    /// <inheritdoc/>
     public Task SendPasswordResetLinkAsync(IdentityUser<Guid> user, string email, string resetLink) =>
         SendEmailAsync(email, "Reset your password", $"<a href='{resetLink}'>Reset</a>");
 
+    /// <inheritdoc/>
     public Task SendPasswordResetCodeAsync(IdentityUser<Guid> user, string email, string resetCode) =>
         SendEmailAsync(email, "Reset your password", $"Your code: {resetCode}");
 
@@ -70,7 +74,9 @@ public sealed class EmailCaptureService : IEmailSender, IEmailSender<IdentityUse
         throw new TimeoutException($"No email received for '{toAddress}' within {timeout ?? TimeSpan.FromSeconds(10)}.");
     }
 
+    /// <summary>Clears all captured emails.</summary>
     public void Clear() => _emailsByAddress.Clear();
 }
 
+/// <summary>Represents an email captured by <see cref="EmailCaptureService"/> during testing.</summary>
 public sealed record CapturedEmail(string To, string Subject, string HtmlBody);

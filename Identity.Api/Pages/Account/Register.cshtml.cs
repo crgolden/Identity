@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
+/// <summary>Page model for the Register page.</summary>
 [AllowAnonymous]
 public class RegisterModel : PageModel
 {
@@ -45,12 +46,17 @@ public class RegisterModel : PageModel
 
     public IList<AuthenticationScheme> ExternalLogins { get; set; } = new List<AuthenticationScheme>();
 
+    /// <summary>Handles the GET request to display the registration page.</summary>
+    /// <param name="returnUrl">The URL to return to after registration.</param>
     public async Task OnGetAsync(string? returnUrl = null)
     {
         ReturnUrl = returnUrl;
         ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
     }
 
+    /// <summary>Handles the POST request to create a new user account.</summary>
+    /// <param name="returnUrl">The URL to return to after registration.</param>
+    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnPostAsync(string? returnUrl = null)
     {
         returnUrl ??= Url.Content("~/");
@@ -112,6 +118,7 @@ public class RegisterModel : PageModel
         return Page();
     }
 
+    /// <summary>Provides the form input values bound from the request.</summary>
     public class InputModel
     {
         [Required]

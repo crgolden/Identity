@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
 using Moq;
 
+/// <summary>Unit tests for <see cref="Identity.Pages.Account.RegisterConfirmationModel"/>.</summary>
 [Trait("Category", "Unit")]
 public class RegisterConfirmationModelTests
 {

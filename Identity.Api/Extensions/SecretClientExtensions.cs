@@ -2,8 +2,13 @@
 
 using Azure.Security.KeyVault.Secrets;
 
+/// <summary>Provides batch Key Vault secret retrieval for <see cref="SecretClient"/>.</summary>
 public static class SecretClientExtensions
 {
+    /// <summary>Concurrently fetches all required application secrets from Azure Key Vault.</summary>
+    /// <param name="secretClient">The Key Vault <see cref="SecretClient"/> to use.</param>
+    /// <param name="cancellationToken">Token to cancel the operation.</param>
+    /// <returns>A task that resolves to an 8-tuple of <see cref="KeyVaultSecret"/> values for GravatarApiSecretKey, ElasticsearchUsername, ElasticsearchPassword, SqlServerUserId, SqlServerPassword, GoogleClientId, GoogleClientSecret, and ResendApiToken respectively.</returns>
     public static async Task<(KeyVaultSecret, KeyVaultSecret, KeyVaultSecret, KeyVaultSecret, KeyVaultSecret, KeyVaultSecret, KeyVaultSecret, KeyVaultSecret)> GetSecrets(this SecretClient secretClient, CancellationToken cancellationToken = default)
     {
         var tasks = new[]

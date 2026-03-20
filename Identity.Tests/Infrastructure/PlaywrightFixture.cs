@@ -25,6 +25,7 @@ public sealed class PlaywrightFixture : IAsyncLifetime
 
     public string BaseAddress { get; private set; }
 
+    /// <inheritdoc/>
     public async ValueTask InitializeAsync()
     {
         Factory.CreateClient(); // Triggers server startup; populates Factory.ServerAddress.
@@ -54,6 +55,8 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         }
     }
 
+    /// <summary>Creates a new Playwright browser context and page configured with <see cref="BaseAddress"/>.</summary>
+    /// <returns>A task that resolves to a tuple of the browser context and page.</returns>
     public async Task<(IBrowserContext Context, IPage Page)> NewPageAsync()
     {
         if (_browser is null)
@@ -70,6 +73,7 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         return (context, page);
     }
 
+    /// <inheritdoc/>
     public async ValueTask DisposeAsync()
     {
         if (_browser is not null)

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using static System.Buffers.Text.Base64Url;
 
+/// <summary>Page model for the Rename Passkey page.</summary>
 public class RenamePasskeyModel : PageModel
 {
     private readonly UserManager<IdentityUser<Guid>> _userManager;
@@ -25,6 +26,9 @@ public class RenamePasskeyModel : PageModel
     [TempData]
     public string? StatusMessage { get; set; }
 
+    /// <summary>Handles the GET request to display the rename passkey form.</summary>
+    /// <param name="id">The base64url-encoded credential ID of the passkey to rename.</param>
+    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnGetAsync(string id)
     {
         var user = await _userManager.GetUserAsync(User);
@@ -58,6 +62,8 @@ public class RenamePasskeyModel : PageModel
         return Page();
     }
 
+    /// <summary>Handles the POST request to rename the specified passkey.</summary>
+    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnPostAsync()
     {
         var user = await _userManager.GetUserAsync(User);
@@ -102,6 +108,7 @@ public class RenamePasskeyModel : PageModel
         return RedirectToPage("./Passkeys");
     }
 
+    /// <summary>Provides the form input values bound from the request.</summary>
     public class InputModel
     {
         public string? CredentialId { get; set; }

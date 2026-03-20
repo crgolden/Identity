@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
+/// <summary>Page model for the Logout page.</summary>
 [AllowAnonymous]
 public class LogoutModel : PageModel
 {
@@ -17,9 +18,15 @@ public class LogoutModel : PageModel
         _logger = logger;
     }
 
+    /// <summary>Handles the GET request to sign out the current user.</summary>
+    /// <param name="returnUrl">The URL to return to after signing out.</param>
+    /// <returns>A task that resolves to a redirect after signing out.</returns>
     public async Task<IActionResult> OnGetAsync(string? returnUrl = null) =>
         await SignOutAndRedirectAsync(returnUrl);
 
+    /// <summary>Handles the POST request to sign out the current user.</summary>
+    /// <param name="returnUrl">The URL to return to after signing out.</param>
+    /// <returns>A task that resolves to a redirect after signing out.</returns>
     public async Task<IActionResult> OnPost(string? returnUrl = null) =>
         await SignOutAndRedirectAsync(returnUrl);
 

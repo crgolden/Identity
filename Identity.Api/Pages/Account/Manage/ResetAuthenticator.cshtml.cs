@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
+/// <summary>Page model for the Reset Authenticator page.</summary>
 public class ResetAuthenticatorModel : PageModel
 {
     private readonly UserManager<IdentityUser<Guid>> _userManager;
@@ -23,6 +24,8 @@ public class ResetAuthenticatorModel : PageModel
     [TempData]
     public string? StatusMessage { get; set; }
 
+    /// <summary>Handles the GET request to display the reset authenticator confirmation page.</summary>
+    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnGet()
     {
         var user = await _userManager.GetUserAsync(User);
@@ -34,6 +37,8 @@ public class ResetAuthenticatorModel : PageModel
         return Page();
     }
 
+    /// <summary>Handles the POST request to reset the user's authenticator app key.</summary>
+    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnPostAsync()
     {
         var user = await _userManager.GetUserAsync(User);

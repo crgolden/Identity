@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
+/// <summary>Page model for the Change Password page.</summary>
 public class ChangePasswordModel : PageModel
 {
     private readonly UserManager<IdentityUser<Guid>> _userManager;
@@ -27,6 +28,8 @@ public class ChangePasswordModel : PageModel
     [TempData]
     public string? StatusMessage { get; set; }
 
+    /// <summary>Handles the GET request to display the change password form.</summary>
+    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnGetAsync()
     {
         var user = await _userManager.GetUserAsync(User);
@@ -44,6 +47,8 @@ public class ChangePasswordModel : PageModel
         return Page();
     }
 
+    /// <summary>Handles the POST request to change the user's password.</summary>
+    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnPostAsync()
     {
         if (!ModelState.IsValid || IsNullOrWhiteSpace(Input.OldPassword) || IsNullOrWhiteSpace(Input.NewPassword))
@@ -75,6 +80,7 @@ public class ChangePasswordModel : PageModel
         return RedirectToPage();
     }
 
+    /// <summary>Provides the form input values bound from the request.</summary>
     public class InputModel
     {
         [Required]

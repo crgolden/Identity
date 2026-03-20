@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
+/// <summary>Page model for the External Login page.</summary>
 [AllowAnonymous]
 public class ExternalLoginModel : PageModel
 {
@@ -46,8 +47,14 @@ public class ExternalLoginModel : PageModel
     [TempData]
     public string? ErrorMessage { get; set; }
 
+    /// <summary>Handles the GET request by redirecting to the login page.</summary>
+    /// <returns>A redirect to the login page.</returns>
     public IActionResult OnGet() => RedirectToPage(LoginPageName);
 
+    /// <summary>Handles the POST request to initiate an external authentication challenge.</summary>
+    /// <param name="provider">The external authentication provider name.</param>
+    /// <param name="returnUrl">The URL to return to after authentication.</param>
+    /// <returns>A challenge result for the specified provider.</returns>
     public IActionResult OnPost(string provider, string? returnUrl = null)
     {
         var redirectUrl = Url.Page("./ExternalLogin", pageHandler: "Callback", values: new { returnUrl });
@@ -55,6 +62,10 @@ public class ExternalLoginModel : PageModel
         return new ChallengeResult(provider, properties);
     }
 
+    /// <summary>Handles the external login callback from the provider.</summary>
+    /// <param name="returnUrl">The URL to return to after login.</param>
+    /// <param name="remoteError">An error message from the external provider, if any.</param>
+    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnGetCallbackAsync(string? returnUrl = null, string? remoteError = null)
     {
         returnUrl ??= Url.Content("~/");
@@ -100,6 +111,9 @@ public class ExternalLoginModel : PageModel
         return Page();
     }
 
+    /// <summary>Handles the POST request to confirm external login registration.</summary>
+    /// <param name="returnUrl">The URL to return to after confirmation.</param>
+    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnPostConfirmationAsync(string? returnUrl = null)
     {
         returnUrl ??= Url.Content("~/");
@@ -180,6 +194,7 @@ public class ExternalLoginModel : PageModel
         return LocalRedirect(returnUrl);
     }
 
+    /// <summary>Provides the form input values bound from the request.</summary>
     public class InputModel
     {
         [Required]

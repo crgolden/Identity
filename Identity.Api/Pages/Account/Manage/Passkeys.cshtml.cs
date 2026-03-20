@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using static System.Buffers.Text.Base64Url;
 
+/// <summary>Page model for the Passkeys management page.</summary>
 public class PasskeysModel : PageModel
 {
     private readonly UserManager<IdentityUser<Guid>> _userManager;
@@ -24,6 +25,8 @@ public class PasskeysModel : PageModel
     [TempData]
     public string? StatusMessage { get; set; }
 
+    /// <summary>Handles the GET request to display the passkeys management page.</summary>
+    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnGetAsync()
     {
         var user = await _userManager.GetUserAsync(User);
@@ -36,6 +39,8 @@ public class PasskeysModel : PageModel
         return Page();
     }
 
+    /// <summary>Handles the POST request to rename or delete a passkey.</summary>
+    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnPostUpdatePasskeyAsync()
     {
         var user = await _userManager.GetUserAsync(User);
@@ -73,6 +78,8 @@ public class PasskeysModel : PageModel
         }
     }
 
+    /// <summary>Handles the POST request to add a new passkey to the user's account.</summary>
+    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnPostAddPasskeyAsync()
     {
         var user = await _userManager.GetUserAsync(User);
@@ -124,6 +131,7 @@ public class PasskeysModel : PageModel
         return RedirectToPage();
     }
 
+    /// <summary>Provides the form input values bound from the request.</summary>
     public class InputModel
     {
         public string? CredentialId { get; set; }

@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
+/// <summary>Page model for the Login page.</summary>
 [AllowAnonymous]
 public class LoginModel : PageModel
 {
@@ -30,6 +31,8 @@ public class LoginModel : PageModel
     [TempData]
     public string? ErrorMessage { get; set; }
 
+    /// <summary>Handles the GET request to display the login page.</summary>
+    /// <param name="returnUrl">The URL to return to after login.</param>
     public async Task OnGetAsync(string? returnUrl = null)
     {
         if (!IsNullOrWhiteSpace(ErrorMessage))
@@ -46,6 +49,9 @@ public class LoginModel : PageModel
         ReturnUrl = returnUrl;
     }
 
+    /// <summary>Handles the POST request to authenticate the user.</summary>
+    /// <param name="returnUrl">The URL to return to after login.</param>
+    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnPostAsync(string? returnUrl = null)
     {
         returnUrl ??= Url.Content("~/");
@@ -89,6 +95,7 @@ public class LoginModel : PageModel
         return Page();
     }
 
+    /// <summary>Provides the form input values bound from the request.</summary>
     public class InputModel
     {
         [Required]

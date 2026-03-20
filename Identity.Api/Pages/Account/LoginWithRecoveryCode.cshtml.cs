@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
+/// <summary>Page model for the Login with Recovery Code page.</summary>
 [AllowAnonymous]
 public class LoginWithRecoveryCodeModel : PageModel
 {
@@ -28,6 +29,9 @@ public class LoginWithRecoveryCodeModel : PageModel
 
     public string? ReturnUrl { get; set; }
 
+    /// <summary>Handles the GET request to display the recovery code login page.</summary>
+    /// <param name="returnUrl">The URL to return to after authentication.</param>
+    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnGetAsync(string? returnUrl = null)
     {
         var user = await _signInManager.GetTwoFactorAuthenticationUserAsync();
@@ -41,6 +45,9 @@ public class LoginWithRecoveryCodeModel : PageModel
         return Page();
     }
 
+    /// <summary>Handles the POST request to authenticate using a recovery code.</summary>
+    /// <param name="returnUrl">The URL to return to after authentication.</param>
+    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnPostAsync(string? returnUrl = null)
     {
         if (!ModelState.IsValid || IsNullOrWhiteSpace(Input?.RecoveryCode))
@@ -89,6 +96,7 @@ public class LoginWithRecoveryCodeModel : PageModel
         return Page();
     }
 
+    /// <summary>Provides the form input values bound from the request.</summary>
     public class InputModel
     {
         [BindProperty]

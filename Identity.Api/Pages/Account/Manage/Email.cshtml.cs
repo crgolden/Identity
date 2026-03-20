@@ -10,6 +10,7 @@ using static String;
 using static System.Text.Encoding;
 using static Microsoft.AspNetCore.WebUtilities.WebEncoders;
 
+/// <summary>Page model for the Email management page.</summary>
 public class EmailModel : PageModel
 {
     private readonly UserManager<IdentityUser<Guid>> _userManager;
@@ -31,6 +32,8 @@ public class EmailModel : PageModel
     [BindProperty]
     public InputModel Input { get; set; } = new InputModel();
 
+    /// <summary>Handles the GET request to display the email management page.</summary>
+    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnGetAsync()
     {
         var user = await _userManager.GetUserAsync(User);
@@ -50,6 +53,8 @@ public class EmailModel : PageModel
         return Page();
     }
 
+    /// <summary>Handles the POST request to initiate an email address change.</summary>
+    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnPostChangeEmailAsync()
     {
         var user = await _userManager.GetUserAsync(User);
@@ -98,6 +103,8 @@ public class EmailModel : PageModel
         return RedirectToPage();
     }
 
+    /// <summary>Handles the POST request to resend the email verification link.</summary>
+    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnPostSendVerificationEmailAsync()
     {
         var user = await _userManager.GetUserAsync(User);
@@ -140,6 +147,7 @@ public class EmailModel : PageModel
         return RedirectToPage();
     }
 
+    /// <summary>Provides the form input values bound from the request.</summary>
     public class InputModel
     {
         [Required]
