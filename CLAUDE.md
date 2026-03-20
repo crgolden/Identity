@@ -57,6 +57,15 @@ Two minimal API endpoints are registered in `EndpointRouteBuilderExtensions.cs` 
 
 Both require antiforgery validation. The Passkey Razor Pages live in `Pages/Account/Manage/`.
 
+### Logout Page
+
+`Pages/Account/Logout.cshtml` implements the [Duende client-redirect logout](https://docs.duendesoftware.com/identityserver/ui/logout/client-redirect/) pattern:
+
+- **GET** — if the user is authenticated, renders a confirmation form (`ShowLogoutPrompt = true`). If already signed out, calls `IIdentityServerInteractionService.GetLogoutContextAsync(logoutId)` and renders the logged-out page immediately.
+- **POST** — signs out via `SignInManager.SignOutAsync()`, then calls `GetLogoutContextAsync(logoutId)` to populate `PostLogoutRedirectUri` and `SignOutIFrameUrl`. Always returns `Page()` — **never redirects directly** to `PostLogoutRedirectUri`. This keeps the page in the browser long enough for front-channel sign-out iframes to fire before the user follows the link back to the client app.
+
+The `logoutId` query/form parameter is set by IdentityServer when it initiates logout via the end-session endpoint (`UserInteraction.LogoutIdParameter = "logoutId"`).
+
 ### Identity User Type
 
 All services use `IdentityUser<Guid>` (not the default `IdentityUser`). This must be kept consistent throughout — `UserManager<IdentityUser<Guid>>`, `SignInManager<IdentityUser<Guid>>`, `AddAspNetIdentity<IdentityUser<Guid>>()`, etc.

@@ -3,7 +3,7 @@
 Maps every application path to the tests that cover it.
 
 **Test types**
-- **Unit** — xUnit page-model / service / API tests (`Category=Unit`) — 418 tests; includes property-based (`PropertyBased/`) and resilience (`Resilience/`) sub-folders
+- **Unit** — xUnit page-model / service / API tests (`Category=Unit`) — 416 tests; includes property-based (`PropertyBased/`) and resilience (`Resilience/`) sub-folders
 - **E2E** — Playwright browser tests (`Category=E2E`); includes OIDC discovery tests (`Oidc/`)
 - **Load** — throughput / failure-rate tests using `Parallel.ForEachAsync` + `HttpClient` (`Category=Load`); run separately (requires live server)
 
@@ -223,7 +223,9 @@ flowchart TD
 
     LogoutPOST["POST /Account/Logout"]:::covered
 
-    SignedOut["Redirect to returnUrl / /"]
+    LogoutPrompt["Show confirmation form"]:::covered
+
+    LoggedOut["Show logged-out page\n(PostLogoutRedirectUri link + iframe if client-initiated)"]:::covered
 
     LoginGET --> LoginPOST
     LoginPOST -->|"password"| PasswordPath
@@ -246,9 +248,10 @@ flowchart TD
     RecoveryPOST -->|"Succeeded"| RecoverySuccess
     RecoveryPOST -->|"Invalid"| RecoveryInvalid
     SignInSuccess --> LogoutGET
-    SignInSuccess --> LogoutPOST
-    LogoutGET --> SignedOut
-    LogoutPOST --> SignedOut
+    LogoutGET -->|"authenticated"| LogoutPrompt
+    LogoutGET -->|"not authenticated"| LoggedOut
+    LogoutPrompt --> LogoutPOST
+    LogoutPOST --> LoggedOut
 ```
 
 ### Login Tests
@@ -273,8 +276,12 @@ flowchart TD
 | POST /Account/LoginWith2fa — no 2FA user | `LoginWith2fa.cshtmlTests.cs` | `OnPostAsync_NoTwoFactorUser_ThrowsInvalidOperationException` |
 | GET /Account/LoginWithRecoveryCode | `LoginWithRecoveryCode.cshtmlTests.cs` | `OnGetAsync_ValidUser_SetsPropertiesAndReturnsPageResult` |
 | POST /Account/LoginWithRecoveryCode — invalid | `LoginWithRecoveryCode.cshtmlTests.cs` | `OnPostAsync_ModelStateInvalid_ReturnsPageResult` |
-| GET /Account/Logout — redirect to returnUrl | `Logout.cshtmlTests.cs` | `OnGetAsync_VariousReturnUrls_RedirectsCorrectly` |
-| POST /Account/Logout — redirect to returnUrl | `Logout.cshtmlTests.cs` | `OnPost_VariousReturnUrls_RedirectsCorrectly` |
+| GET /Account/Logout — authenticated, shows prompt | `Logout.cshtmlTests.cs` | `OnGetAsync_AuthenticatedUser_ShowsPromptWithoutCallingInteractionService` |
+| GET /Account/Logout — unauthenticated, no logoutId | `Logout.cshtmlTests.cs` | `OnGetAsync_UnauthenticatedNoLogoutId_ReturnsPageWithoutCallingInteractionService` |
+| GET /Account/Logout — unauthenticated, with logoutId | `Logout.cshtmlTests.cs` | `OnGetAsync_UnauthenticatedWithLogoutId_SetsContextProperties` |
+| POST /Account/Logout — no logoutId | `Logout.cshtmlTests.cs` | `OnPostAsync_NoLogoutId_SignsOutAndReturnsPageWithoutCallingInteractionService` |
+| POST /Account/Logout — with logoutId, sets redirect URI | `Logout.cshtmlTests.cs` | `OnPostAsync_WithLogoutId_SignsOutAndSetsContextProperties` |
+| POST /Account/Logout — null/whitespace logoutId | `Logout.cshtmlTests.cs` | `OnPostAsync_NullOrWhitespaceLogoutId_DoesNotCallInteractionService` |
 | E2E: logout clears session | `AccountManagementTests.cs` (E2E) | `Logout_Succeeds_ProtectedPageRedirectsToLogin` |
 | E2E: valid credentials | `LoginTests.cs` (E2E) | `Login_ValidCredentials_Succeeds` |
 | E2E: wrong password | `LoginTests.cs` (E2E) | `Login_WrongPassword_ShowsError` |
@@ -1118,7 +1125,7 @@ quadrantChart
 | `/Account/LoginWith2fa` | ✅ | ✅ | ✅ | |
 | `/Account/LoginWithRecoveryCode` | ✅ | ✅ | ✅ | |
 | `/Account/Lockout` | 🔵 | — | ✅ | Constructor only |
-| `/Account/Logout` | ✅ | ✅ | ✅ | GET + POST both sign out and redirect |
+| `/Account/Logout` | ✅ | ✅ | ✅ | GET shows confirmation prompt (authenticated) or logged-out page; POST signs out, shows logged-out page with `PostLogoutRedirectUri` link + front-channel iframe if client-initiated (`logoutId`) |
 | `/Account/ForgotPassword` | 🔵 | ✅ | ✅ | |
 | `/Account/ForgotPasswordConfirmation` | 🔵 | — | ✅ | Constructor only |
 | `/Account/ResetPassword` | ✅ | ✅ | ✅ | |

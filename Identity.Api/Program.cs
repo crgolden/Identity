@@ -102,6 +102,7 @@ try
         .AddEntityFrameworkStores<ApplicationDbContext>().Services
         .AddIdentityServer(identityServerOptions =>
         {
+            identityServerOptions.EmitStaticAudienceClaim = true;
             identityServerOptions.Events.RaiseErrorEvents = true;
             identityServerOptions.Events.RaiseInformationEvents = true;
             identityServerOptions.Events.RaiseFailureEvents = true;
@@ -185,7 +186,7 @@ try
        .RequireAuthorization();
     await app.RunAsync();
 }
-catch (Exception ex)
+catch (Exception ex) when (ex is not HostAbortedException)
 {
     Log.Fatal(ex, "Application terminated unexpectedly");
 }
