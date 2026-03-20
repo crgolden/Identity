@@ -148,7 +148,7 @@ jobs:
         run: >
           dotnet publish Identity.Api/Identity.Api.csproj
           -c Release
-          -r win-x64
+          -r win-x86
           --self-contained false
           -o ${{ github.workspace  }}\publish
 
