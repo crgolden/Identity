@@ -3,7 +3,7 @@
 Maps every application path to the tests that cover it.
 
 **Test types**
-- **Unit** — xUnit page-model / service / API tests (`Category=Unit`) — 393 tests; includes property-based (`PropertyBased/`) and resilience (`Resilience/`) sub-folders
+- **Unit** — xUnit page-model / service / API tests (`Category=Unit`) — 418 tests; includes property-based (`PropertyBased/`) and resilience (`Resilience/`) sub-folders
 - **E2E** — Playwright browser tests (`Category=E2E`); includes OIDC discovery tests (`Oidc/`)
 - **Load** — throughput / failure-rate tests using `Parallel.ForEachAsync` + `HttpClient` (`Category=Load`); run separately (requires live server)
 
@@ -166,6 +166,7 @@ flowchart TD
 | GET /Account/ConfirmEmail — null params redirect | `ConfirmEmail.cshtmlTests.cs` | `OnGetAsync_NullOrWhitespaceUserIdOrCode_RedirectsToIndex` |
 | GET /Account/ConfirmEmail — constructor | `ConfirmEmail.cshtmlTests.cs` | `ConfirmEmailModel_Constructor_UserManagerNull_DoesNotThrowAndStatusMessageIsNull` |
 | Full register → confirm → login | `RegistrationTests.cs` (E2E) | `Register_ConfirmEmail_Login_Succeeds` |
+| E2E: resend confirmation + confirm with new link | `AccountManagementTests.cs` (E2E) | `ResendEmailConfirmation_NewLink_ConfirmsAccount` |
 
 ---
 
@@ -218,9 +219,11 @@ flowchart TD
 
     RecoveryInvalid["Return page with error"]:::unitOnly
 
-    LogoutPOST["POST /Account/Logout"]:::unitOnly
+    LogoutGET["GET /Account/Logout"]:::covered
 
-    SignedOut["Redirect to /Index"]
+    LogoutPOST["POST /Account/Logout"]:::covered
+
+    SignedOut["Redirect to returnUrl / /"]
 
     LoginGET --> LoginPOST
     LoginPOST -->|"password"| PasswordPath
@@ -242,7 +245,9 @@ flowchart TD
     RecoveryGET --> RecoveryPOST
     RecoveryPOST -->|"Succeeded"| RecoverySuccess
     RecoveryPOST -->|"Invalid"| RecoveryInvalid
+    SignInSuccess --> LogoutGET
     SignInSuccess --> LogoutPOST
+    LogoutGET --> SignedOut
     LogoutPOST --> SignedOut
 ```
 
@@ -268,6 +273,9 @@ flowchart TD
 | POST /Account/LoginWith2fa — no 2FA user | `LoginWith2fa.cshtmlTests.cs` | `OnPostAsync_NoTwoFactorUser_ThrowsInvalidOperationException` |
 | GET /Account/LoginWithRecoveryCode | `LoginWithRecoveryCode.cshtmlTests.cs` | `OnGetAsync_ValidUser_SetsPropertiesAndReturnsPageResult` |
 | POST /Account/LoginWithRecoveryCode — invalid | `LoginWithRecoveryCode.cshtmlTests.cs` | `OnPostAsync_ModelStateInvalid_ReturnsPageResult` |
+| GET /Account/Logout — redirect to returnUrl | `Logout.cshtmlTests.cs` | `OnGetAsync_VariousReturnUrls_RedirectsCorrectly` |
+| POST /Account/Logout — redirect to returnUrl | `Logout.cshtmlTests.cs` | `OnPost_VariousReturnUrls_RedirectsCorrectly` |
+| E2E: logout clears session | `AccountManagementTests.cs` (E2E) | `Logout_Succeeds_ProtectedPageRedirectsToLogin` |
 | E2E: valid credentials | `LoginTests.cs` (E2E) | `Login_ValidCredentials_Succeeds` |
 | E2E: wrong password | `LoginTests.cs` (E2E) | `Login_WrongPassword_ShowsError` |
 | E2E: lockout after 5 failures | `LoginTests.cs` (E2E) | `Login_FiveFailedAttempts_LocksAccount` |
@@ -464,6 +472,7 @@ flowchart TD
 | POST /ResetAuthenticator — user not found | `ResetAuthenticator.cshtmlTests.cs` | `OnPostAsync_UserNotFound_ReturnsNotFoundWithExpectedMessage` |
 | E2E: TOTP setup + login | `TwoFactorTests.cs` (E2E) | `TwoFactor_Setup_Login_WithTotpCode_Succeeds` |
 | E2E: recovery code login | `TwoFactorTests.cs` (E2E) | `TwoFactor_Login_WithRecoveryCode_Succeeds` |
+| E2E: disable 2FA, subsequent login skips challenge | `Disable2faTests.cs` (E2E) | `Disable2fa_AfterSetup_SubsequentLogin_DoesNotRequire2fa` |
 
 ---
 
@@ -756,6 +765,9 @@ flowchart TD
 | GET /ConfirmEmailChange — change fails | `ConfirmEmailChange.cshtmlTests.cs` | `OnGetAsync_ChangeEmailFails_ReturnsPageAndSetsStatusMessage` |
 | GET /ConfirmEmailChange — set username fails | `ConfirmEmailChange.cshtmlTests.cs` | `OnGetAsync_SetUserNameFails_ReturnsPageAndSetsStatusMessage` |
 | GET /ConfirmEmailChange — success | `ConfirmEmailChange.cshtmlTests.cs` | `OnGetAsync_AllOperationsSucceed_RefreshesSignInAndSetsSuccessMessage` |
+| E2E: change email, confirm, new email works | `EmailChangeTests.cs` (E2E) | `ChangeEmail_Success_NewEmailConfirmed_OldEmailNoLongerValid` |
+| E2E: change email, confirm via link in new browser context | `EmailChangeTests.cs` (E2E) | `ChangeEmail_SameEmail_DoesNotSendConfirmation` |
+| E2E: change email end-to-end | `AccountManagementTests.cs` (E2E) | `ChangeEmail_Succeeds_NewEmailWorks` |
 
 ---
 
@@ -1101,12 +1113,12 @@ quadrantChart
 | `/Account/RegisterConfirmation` | 🔵 | — | ✅ | Constructor only |
 | `/Account/ConfirmEmail` | ✅ | — | ✅ | |
 | `/Account/ConfirmEmailChange` | ✅ | — | ✅ | Via EmailChangeTests |
-| `/Account/ResendEmailConfirmation` | 🔵 | 🔵 | ❌ | Constructor only |
+| `/Account/ResendEmailConfirmation` | 🔵 | 🔵 | ✅ | Constructor only (unit); E2E via `ResendEmailConfirmation_NewLink_ConfirmsAccount` |
 | `/Account/Login` | ✅ | ✅ | ✅ | |
 | `/Account/LoginWith2fa` | ✅ | ✅ | ✅ | |
 | `/Account/LoginWithRecoveryCode` | ✅ | ✅ | ✅ | |
 | `/Account/Lockout` | 🔵 | — | ✅ | Constructor only |
-| `/Account/Logout` | — | 🔵 | ❌ | Constructor only |
+| `/Account/Logout` | ✅ | ✅ | ✅ | GET + POST both sign out and redirect |
 | `/Account/ForgotPassword` | 🔵 | ✅ | ✅ | |
 | `/Account/ForgotPasswordConfirmation` | 🔵 | — | ✅ | Constructor only |
 | `/Account/ResetPassword` | ✅ | ✅ | ✅ | |
@@ -1148,9 +1160,8 @@ The following paths have no meaningful behavioral test coverage and are candidat
 | `/Account/ExternalLogin` — existing user sign-in success | Medium | Mock `ExternalLoginSignInAsync` success path |
 | `/Account/ExternalLogin` — create user failure | Low | Mock `CreateAsync` failure result |
 | `GET /Health` | Low | Simple `WebApplicationFactory` integration test |
-| `/Account/Logout` — actual sign-out behavior | Low | E2E: verify session cookie cleared |
 | `POST /Account/Manage/DownloadPersonalData` — download content | Low | Verify JSON shape and data presence |
-| `GET /Account/ResendEmailConfirmation` + `POST` | Low | Unit tests for OnGet/OnPost handlers |
+| `GET /Account/ResendEmailConfirmation` + `POST` | Low | Unit tests for OnGet/OnPost page model handlers (E2E already covered) |
 
 ---
 

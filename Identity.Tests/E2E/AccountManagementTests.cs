@@ -101,12 +101,9 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
             await page.ClickAsync("button[type='submit']");
             await page.WaitForURLAsync(url => !url.Contains("/Account/Login"));
 
-            // Navigate to logout page and click the logout button
+            // Navigate to logout page — OnGetAsync signs out and redirects immediately
             await page.GotoAsync("/Account/Logout");
-            await page.ClickAsync("button[type='submit']");
-            await page.WaitForURLAsync("**/Account/Logout**");
-            var bodyText = await page.TextContentAsync("body");
-            Assert.Contains("logged out", bodyText, StringComparison.OrdinalIgnoreCase);
+            await page.WaitForURLAsync(url => !url.Contains("/Account/Logout"));
 
             // A protected page should now redirect to login
             await page.GotoAsync("/Account/Manage/Index");

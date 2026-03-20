@@ -46,10 +46,14 @@ public sealed class OidcDiscoveryTests(PlaywrightFixture fixture)
     [Fact]
     public async Task Discovery_IssuerIsHttps()
     {
-        var client = fixture.Factory.CreateClient(new WebApplicationFactoryClientOptions
+        // The in-process TestServer uses HTTP, so IdentityServer would report an http:// issuer.
+        // Use the real Kestrel HTTPS server (fixture.BaseAddress) to get the correct https:// issuer.
+        var handler = new HttpClientHandler
         {
-            AllowAutoRedirect = false
-        });
+            ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+        };
+        using var client = new HttpClient(handler) { BaseAddress = new Uri(fixture.BaseAddress) };
+
         var response = await client.GetAsync(
             "/.well-known/openid-configuration",
             TestContext.Current.CancellationToken);

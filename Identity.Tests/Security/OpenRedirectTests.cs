@@ -20,7 +20,7 @@ public sealed class OpenRedirectTests(PlaywrightFixture fixture)
             await page.ClickAsync("button[type='submit']");
             await page.WaitForLoadStateAsync(Microsoft.Playwright.LoadState.NetworkIdle);
 
-            Assert.DoesNotContain("evil.com", page.Url, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("evil.com", new Uri(page.Url).Host, StringComparison.OrdinalIgnoreCase);
         }
     }
 
@@ -38,7 +38,7 @@ public sealed class OpenRedirectTests(PlaywrightFixture fixture)
             await page.ClickAsync("button[type='submit']");
             await page.WaitForLoadStateAsync(Microsoft.Playwright.LoadState.NetworkIdle);
 
-            Assert.DoesNotContain("evil.com", page.Url, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("evil.com", new Uri(page.Url).Host, StringComparison.OrdinalIgnoreCase);
         }
     }
 

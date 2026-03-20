@@ -136,7 +136,7 @@ dotnet publish Identity.Api -c Release -o ./publish
 
 ## AI Assistant Integration (Claude Code)
 
-This repo ships a `.mcp.json` that configures five MCP servers for use with Claude Code. `.claude/settings.json` explicitly allows `github` and `playwright`; `azure` and `sonarqube` are denied by default; `ef-dacpac-mcp` prompts on first use.
+This repo ships a `.mcp.json` that configures four MCP servers for use with Claude Code. `.claude/settings.json` explicitly allows `github` and `playwright`; `azure` and `sonarqube` are denied by default.
 
 | Server | Source | Purpose |
 |---|---|---|
@@ -144,7 +144,6 @@ This repo ships a `.mcp.json` that configures five MCP servers for use with Clau
 | `azure` | `@azure/mcp@latest` (Microsoft official) | Query Key Vault, App Service, Blob Storage |
 | `playwright` | `@playwright/mcp@latest` (Microsoft official) | Drive browser sessions for E2E investigation |
 | `sonarqube` | `mcp/sonarqube` Docker image (SonarSource official) | Query issues, quality gates, security hotspots |
-| `ef-dacpac-mcp` | `tools/ef-dacpac-mcp/` (this repo) | EF Core migration management and DACPAC schema-drift analysis |
 
 ### Required environment variables
 
@@ -163,7 +162,7 @@ The GitHub Actions workflow triggers on pushes to `main`, pull requests, and man
 The workflow also runs on a **weekly schedule** (Monday 02:00 UTC).
 
 **Build job** — runs on every trigger:
-1. Builds the full solution (`dotnet build --configuration Release`), which also compiles `Identity.Data.sqlproj` and produces the `.dacpac`
+1. Builds the full solution (`dotnet build --no-incremental --configuration Release`), which also compiles `Identity.Data.sqlproj` and produces the `.dacpac`
 2. Runs unit tests with coverage
 3. Logs in to Azure via OIDC, deploys the E2E test database schema, then runs E2E tests with `ASPNETCORE_ENVIRONMENT=CI` — the `CI` environment loads `appsettings.CI.json` which enables only `AzureCliCredential`, so the in-process test server authenticates against Key Vault using the workflow's OIDC identity
 4. Runs load tests (on `schedule` or `workflow_dispatch` only)

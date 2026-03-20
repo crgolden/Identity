@@ -1,4 +1,4 @@
-﻿namespace Identity.Pages.Account;
+namespace Identity.Pages.Account;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -17,15 +17,16 @@ public class LogoutModel : PageModel
         _logger = logger;
     }
 
-    public async Task<IActionResult> OnPost(string? returnUrl = null)
+    public async Task<IActionResult> OnGetAsync(string? returnUrl = null) =>
+        await SignOutAndRedirectAsync(returnUrl);
+
+    public async Task<IActionResult> OnPost(string? returnUrl = null) =>
+        await SignOutAndRedirectAsync(returnUrl);
+
+    private async Task<IActionResult> SignOutAndRedirectAsync(string? returnUrl)
     {
         await _signInManager.SignOutAsync();
         _logger.LogTrace("User logged out.");
-        if (!IsNullOrWhiteSpace(returnUrl))
-        {
-            return LocalRedirect(returnUrl);
-        }
-
-        return RedirectToPage();
+        return LocalRedirect(IsNullOrWhiteSpace(returnUrl) ? "/" : returnUrl);
     }
 }

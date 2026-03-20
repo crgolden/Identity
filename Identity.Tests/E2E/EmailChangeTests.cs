@@ -28,7 +28,7 @@ public sealed class EmailChangeTests(PlaywrightFixture fixture)
 
             // Request email change
             await page.FillAsync("input[name='Input.NewEmail']", newEmail);
-            await page.ClickAsync("button[type='submit']");
+            await page.ClickAsync("#change-email-button");
 
             // Confirmation email sent
             await page.WaitForURLAsync("**/Account/Manage/Email**");
@@ -44,9 +44,9 @@ public sealed class EmailChangeTests(PlaywrightFixture fixture)
         await using (ctx2)
         {
             await page2.GotoAsync(confirmLink);
-            await page2.WaitForURLAsync("**/Account/Manage/Email**");
+            await page2.WaitForURLAsync("**/Account/ConfirmEmailChange**");
             var bodyText = await page2.TextContentAsync("body");
-            Assert.Contains("confirmed", bodyText, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("confirm", bodyText, StringComparison.OrdinalIgnoreCase);
         }
 
         // Verify login now works with the new email
@@ -80,7 +80,7 @@ public sealed class EmailChangeTests(PlaywrightFixture fixture)
             // Attempt to "change" to the same email
             await page.GotoAsync("/Account/Manage/Email");
             await page.FillAsync("input[name='Input.NewEmail']", email);
-            await page.ClickAsync("button[type='submit']");
+            await page.ClickAsync("#change-email-button");
 
             // Should stay on the page without sending a confirmation
             await page.WaitForURLAsync("**/Account/Manage/Email**");

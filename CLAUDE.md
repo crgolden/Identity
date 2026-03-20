@@ -77,7 +77,7 @@ All sensitive values are retrieved at startup from **Azure Key Vault** using `De
 
 | Environment | Enabled credential | Typical use |
 |---|---|---|
-| `Development` | `VisualStudioCredential`, `SharedTokenCacheCredential` | Local dev via VS / VS Code |
+| `Development` | `AzureCliCredential`, `VisualStudioCredential` | Local dev via `az login` or VS sign-in; configured via User Secrets (see below) |
 | `CI` | `AzureCliCredential` | CI — after `azure/login` OIDC step |
 | `Production` (default) | All credentials (full `DefaultAzureCredential` chain) | Azure App Service managed identity |
 
@@ -110,6 +110,19 @@ Non-secret infrastructure values are set via `appsettings.json` (nulled out) and
 
 User Secrets ID: `aspnet-Identity-149346d0-999f-4a74-8ff7-2a92d39790f2`
 
+> **Important:** `Program.cs` calls `builder.Configuration.AddUserSecrets("aspnet-Identity-149346d0-999f-4a74-8ff7-2a92d39790f2")` explicitly (by string ID, not by assembly attribute) immediately after `WebApplication.CreateBuilder(args)`. This is required because `DefaultAzureCredentialOptions` and the URIs are read **before** `builder.Build()` is called — before any `IHostBuilder.ConfigureAppConfiguration` callbacks (which fire at Build time) can inject secrets. Without this explicit call, the SDK's implicit User Secrets loading targets `Assembly.GetEntryAssembly()`, which in the `WebApplicationFactory` test context returns the test runner assembly, not `Identity.Api`.
+
+> The `DefaultAzureCredentialOptions` for Development (which credentials to enable) must be set in User Secrets, not in `appsettings.Development.json`, because `appsettings.Development.json` is not loaded in the CI environment. Recommended User Secrets for development:
+> ```json
+> {
+>   "DefaultAzureCredentialOptions": {
+>     "ExcludeAzureCliCredential": false,
+>     "ExcludeVisualStudioCredential": false,
+>     "TenantId": "<your-tenant-id>"
+>   }
+> }
+> ```
+
 ## Commands
 
 ### Build
@@ -139,7 +152,7 @@ ASPNETCORE_ENVIRONMENT=Development dotnet test --project Identity.Tests --config
 
 E2E tests use Playwright (Chromium) against a real Kestrel server started in-process. They require the same User Secrets as `dotnet run` (database, Key Vault, etc.).
 
-In CI the workflow sets `ASPNETCORE_ENVIRONMENT=CI`, which loads `appsettings.CI.json` (enables only `AzureCliCredential`) after the `azure/login` OIDC step instead of User Secrets. The `IdentityWebApplicationFactory` replaces the Serilog logger factory (to avoid the Elasticsearch sink) for any non-Production environment; in `CI` the console logger is used instead.
+In CI the workflow sets `ASPNETCORE_ENVIRONMENT=CI`, which loads `appsettings.CI.json` (enables only `AzureCliCredential`) after the `azure/login` OIDC step instead of User Secrets. The `IdentityWebApplicationFactory` replaces the Serilog logger factory (to avoid the Elasticsearch sink) when `IsDevelopment()` is true. In CI, the Serilog logger is not replaced — instead, the Elasticsearch sink uses `BootstrapMethod.Failure`, which prevents a missing Elasticsearch node from failing startup.
 
 `PlaywrightFixture.InitializeAsync` unconditionally calls `Microsoft.Playwright.Program.Main(["install", "chromium"])` to ensure Chromium is present. In CI, the workflow also runs a dedicated `pwsh playwright.ps1 install --with-deps chromium` step beforehand to install system-level browser dependencies.
 
@@ -213,7 +226,7 @@ In production, `IdentityPasskeyOptions.ValidateOrigin` is not overridden (the de
 
 ## MCP Servers
 
-Five MCP servers are configured in `.mcp.json`. `.claude/settings.json` explicitly allows `github` and `playwright`; `azure` and `sonarqube` are denied and require manual approval; `ef-dacpac-mcp` is not listed (defaults to prompt-on-use).
+Four MCP servers are configured in `.mcp.json`. `.claude/settings.json` explicitly allows `github` and `playwright`; `azure` and `sonarqube` are denied and require manual approval.
 
 | Server | Package / Source | Auth |
 |---|---|---|
@@ -221,26 +234,3 @@ Five MCP servers are configured in `.mcp.json`. `.claude/settings.json` explicit
 | `azure` | `@azure/mcp@latest` | `DefaultAzureCredential` (`az login`) |
 | `playwright` | `@playwright/mcp@latest` | None |
 | `sonarqube` | `mcp/sonarqube` Docker image | `SONAR_TOKEN` env var; requires Docker Desktop |
-| `ef-dacpac-mcp` | `tools/ef-dacpac-mcp/ef-dacpac-mcp.csproj` (not currently present in repo) | None |
-
-### ef-dacpac-mcp
-
-A custom MCP server that bridges the EF Core / DACPAC schema strategy. The source project is referenced in `.mcp.json` at `tools/ef-dacpac-mcp/ef-dacpac-mcp.csproj` but the `tools/` directory is not currently present in the repository — the server will fail to start until the source is restored.
-
-**EF Core tools** (`dotnet-ef` global tool required):
-- `ef_list_migrations` — shows applied/pending migrations
-- `ef_migration_script` — generates idempotent SQL for a migration range
-- `ef_dbcontext_info` — provider, connection source, migrations assembly
-- `ef_dbcontext_list` — all DbContext types in the project
-
-**DACPAC tools** (`sqlpackage` global tool required):
-- `dacpac_build` — builds `.dacpac` from `Identity.Data.sqlproj`
-- `dacpac_deploy_report` — raw XML report of changes sqlpackage would apply
-- `dacpac_drift_check` — human-readable drift summary between dacpac and a live database
-- `dacpac_script` — full T-SQL deploy script for pre-deploy review
-
-Install prerequisites:
-```bash
-dotnet tool install -g dotnet-ef
-dotnet tool install -g microsoft.sqlpackage
-```

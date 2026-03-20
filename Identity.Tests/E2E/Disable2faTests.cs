@@ -12,6 +12,9 @@ public sealed class Disable2faTests(PlaywrightFixture fixture)
     {
         var (email, password) = await CreateConfirmedUserAsync();
 
+        // Capture the shared key outside the setup context so it can be reused in the disable step.
+        var capturedSharedKey = string.Empty;
+
         // --- Setup TOTP ---
         var (setupCtx, setupPage) = await fixture.NewPageAsync();
         await using (setupCtx)
@@ -27,12 +30,12 @@ public sealed class Disable2faTests(PlaywrightFixture fixture)
             await setupPage.WaitForURLAsync("**/Account/Manage/EnableAuthenticator**");
 
             var sharedKeyEl = setupPage.Locator("kbd");
-            var sharedKey = (await sharedKeyEl.First.TextContentAsync() ?? string.Empty)
+            capturedSharedKey = (await sharedKeyEl.First.TextContentAsync() ?? string.Empty)
                 .Replace(" ", string.Empty)
                 .Replace("-", string.Empty)
                 .ToUpperInvariant();
 
-            var keyBytes = Base32Encoding.ToBytes(sharedKey);
+            var keyBytes = Base32Encoding.ToBytes(capturedSharedKey);
             var totp = new Totp(keyBytes);
             var code = totp.ComputeTotp();
 
@@ -58,28 +61,24 @@ public sealed class Disable2faTests(PlaywrightFixture fixture)
         var (disableCtx, disablePage) = await fixture.NewPageAsync();
         await using (disableCtx)
         {
-            // Must login with TOTP first to access manage pages
+            // Login with password — 2FA is now required
             await disablePage.GotoAsync("/Account/Login");
             await disablePage.FillAsync("input[name='Input.Email']", email);
             await disablePage.FillAsync("input[name='Input.Password']", password);
             await disablePage.ClickAsync("button[type='submit']");
             await disablePage.WaitForURLAsync("**/Account/LoginWith2fa**");
 
-            // The TOTP window may have advanced; recompute
-            // We stored the sharedKey above but need to reuse it — re-extract from manage page is not
-            // possible post-login without 2FA completion. Use a fresh TOTP from the same key.
-            // Navigate to the 2FA login page and skip — go directly to disable via manage after completing 2FA.
-            // For the test we navigate to Disable2fa page directly (the framework enforces auth anyway).
+            // Complete 2FA using the shared key captured during setup
+            var disableKeyBytes = Base32Encoding.ToBytes(capturedSharedKey);
+            var disableTotp = new Totp(disableKeyBytes);
+            var disableCode = disableTotp.ComputeTotp();
+            await disablePage.FillAsync("input[name='Input.TwoFactorCode']", disableCode);
+            await disablePage.ClickAsync("button[type='submit']");
+            await disablePage.WaitForURLAsync(url => !url.Contains("/Account/LoginWith2fa"));
+
+            // Navigate to Disable2fa and confirm
             await disablePage.GotoAsync("/Account/Manage/Disable2fa");
-            await disablePage.WaitForURLAsync(url => url.Contains("Disable2fa") || url.Contains("LoginWith2fa"));
-
-            // If redirected back to 2FA login, accept that 2FA is active — skip rest of test flow
-            if (disablePage.Url.Contains("LoginWith2fa"))
-            {
-                // Cannot complete disable without 2FA code in this browser context; skip
-                return;
-            }
-
+            await disablePage.WaitForURLAsync("**/Account/Manage/Disable2fa**");
             await disablePage.ClickAsync("button.btn-danger");
             await disablePage.WaitForURLAsync("**/Account/Manage/TwoFactorAuthentication**");
         }

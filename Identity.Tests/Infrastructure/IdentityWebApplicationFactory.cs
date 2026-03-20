@@ -27,9 +27,7 @@ public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Progra
 
     public EmailCaptureService EmailCapture { get; } = new();
 
-    /// <summary>Real HTTP address Playwright should navigate to.</summary>
-    public string ServerAddress =>
-        _serverAddress ?? throw new InvalidOperationException("Server address is not available. Call Factory.CreateClient() first.");
+    public string ServerAddress => _serverAddress ?? throw new InvalidOperationException("Server address is not available. Call Factory.CreateClient() first.");
 
     protected override IHost CreateHost(IHostBuilder builder)
     {
@@ -52,7 +50,7 @@ public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Progra
     {
         builder.ConfigureServices((context, services) =>
         {
-            if (!context.HostingEnvironment.IsProduction())
+            if (context.HostingEnvironment.IsDevelopment())
             {
                 // Replace the Serilog ILoggerFactory (which connects to Elasticsearch on startup)
                 // with the default logging infrastructure to avoid external sink failures in tests.

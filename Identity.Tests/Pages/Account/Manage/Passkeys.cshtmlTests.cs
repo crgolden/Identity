@@ -15,6 +15,7 @@ using Moq;
 /// <summary>
 /// Tests for PasskeysModel constructor behavior.
 /// </summary>
+[Trait("Category", "Unit")]
 public partial class PasskeysModelTests
 {
     public static IEnumerable<object?[]> CredentialIdNullOrEmptyData()

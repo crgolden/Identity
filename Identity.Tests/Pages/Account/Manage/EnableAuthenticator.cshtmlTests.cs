@@ -13,6 +13,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 
+[Trait("Category", "Unit")]
 public partial class EnableAuthenticatorModelTests
 {
     /// <summary>
