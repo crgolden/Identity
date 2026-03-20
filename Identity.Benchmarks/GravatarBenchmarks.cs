@@ -2,6 +2,8 @@ using System.Security.Cryptography;
 using System.Text;
 using BenchmarkDotNet.Attributes;
 
+namespace Identity.Benchmarks;
+
 /// <summary>
 /// Measures the SHA-256 hashing used by GravatarService to derive avatar URLs.
 /// Run with: dotnet run -c Release -- --filter *GravatarBenchmarks*

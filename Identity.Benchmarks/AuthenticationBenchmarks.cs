@@ -1,6 +1,8 @@
 using BenchmarkDotNet.Attributes;
 using Microsoft.AspNetCore.Identity;
 
+namespace Identity.Benchmarks;
+
 /// <summary>
 /// Measures the cost of ASP.NET Core Identity's PBKDF2-based password hashing.
 /// Run with: dotnet run -c Release -- --filter *AuthenticationBenchmarks*

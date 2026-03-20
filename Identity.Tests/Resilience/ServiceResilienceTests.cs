@@ -3,7 +3,6 @@ namespace Identity.Tests.Resilience;
 using System.Net;
 using Azure;
 using Identity.Extensions;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Moq;
 using Resend;
 
@@ -23,7 +22,7 @@ public sealed class ServiceResilienceTests
             .Setup(r => r.EmailSendAsync(It.IsAny<EmailMessage>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new ResendException(HttpStatusCode.TooManyRequests, ErrorType.RateLimitExceeded, "Rate limited", null, null));
 
-        IEmailSender sender = new EmailSender(mockResend.Object);
+        EmailSender sender = new EmailSender(mockResend.Object);
 
         await Assert.ThrowsAsync<ResendException>(
             () => sender.SendEmailAsync("to@example.com", "Subject", "Body"));
@@ -37,7 +36,7 @@ public sealed class ServiceResilienceTests
             .Setup(r => r.EmailSendAsync(It.IsAny<EmailMessage>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new HttpRequestException("Network error"));
 
-        IEmailSender sender = new EmailSender(mockResend.Object);
+        EmailSender sender = new EmailSender(mockResend.Object);
 
         await Assert.ThrowsAsync<HttpRequestException>(
             () => sender.SendEmailAsync("to@example.com", "Subject", "Body"));
@@ -51,7 +50,7 @@ public sealed class ServiceResilienceTests
             .Setup(r => r.EmailSendAsync(It.IsAny<EmailMessage>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new OperationCanceledException());
 
-        IEmailSender sender = new EmailSender(mockResend.Object);
+        EmailSender sender = new EmailSender(mockResend.Object);
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
             () => sender.SendEmailAsync("to@example.com", "Subject", "Body"));
@@ -142,7 +141,7 @@ public sealed class ServiceResilienceTests
         }
     }
 
-    private sealed class FakeHttpResponse : Azure.Response
+    private sealed class FakeHttpResponse : Response
     {
         public override int Status => 200;
 

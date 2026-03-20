@@ -23,7 +23,6 @@ public sealed class PlaywrightFixture : IAsyncLifetime
 
     public EmailCaptureService Email => Factory.EmailCapture;
 
-    /// <summary>Base address of the in-process test server.</summary>
     public string BaseAddress { get; private set; }
 
     public async ValueTask InitializeAsync()
@@ -31,7 +30,7 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         Factory.CreateClient(); // Triggers server startup; populates Factory.ServerAddress.
         BaseAddress = Factory.ServerAddress;
 
-        var exitCode = Microsoft.Playwright.Program.Main(["install", "chromium"]);
+        var exitCode = Program.Main(["install", "chromium"]);
         if (exitCode != 0)
         {
             throw new InvalidOperationException($"Playwright install failed with exit code {exitCode}.");
@@ -55,10 +54,6 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         }
     }
 
-    /// <summary>
-    /// Creates a fresh browser context (isolated cookies/storage) and a new page.
-    /// The caller is responsible for disposing the context.
-    /// </summary>
     public async Task<(IBrowserContext Context, IPage Page)> NewPageAsync()
     {
         if (_browser is null)

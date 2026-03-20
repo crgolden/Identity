@@ -3,7 +3,6 @@ namespace Identity.Tests.Pages.Account;
 
 using Identity.Pages.Account;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;

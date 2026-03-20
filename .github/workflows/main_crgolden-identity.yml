@@ -98,7 +98,7 @@ jobs:
             -f xml -o "coverage.xml" -s "coverage.settings.xml"
 
       - name: Login to Azure (for E2E tests)
-        uses: azure/login@v2
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5  # v2
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_4533A76F9560447CBA73C7D19BFDC764 }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_07B3DB796C7C4D409EFADCB306F23869 }}
@@ -190,7 +190,7 @@ jobs:
           name: sql-dacpac
 
       - name: Login to Azure
-        uses: azure/login@v2
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5  # v2
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_4533A76F9560447CBA73C7D19BFDC764 }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_07B3DB796C7C4D409EFADCB306F23869 }}
@@ -211,7 +211,7 @@ jobs:
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
-        uses: azure/webapps-deploy@v3
+        uses: azure/webapps-deploy@84a80cfe7e9889f35148ed88c307e6e93bf02578  # v3
         with:
           app-name: 'crgolden-identity'
           slot-name: 'Production'
