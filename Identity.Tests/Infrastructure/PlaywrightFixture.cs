@@ -2,6 +2,7 @@ namespace Identity.Tests.Infrastructure;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Playwright;
 
 /// <summary>
@@ -82,7 +83,11 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         }
 
         _playwright?.Dispose();
-        await CleanupDatabaseAsync();
+        if (Factory.Services.GetRequiredService<IHostEnvironment>().IsEnvironment("CI"))
+        {
+            await CleanupDatabaseAsync();
+        }
+
         await Factory.DisposeAsync();
     }
 
