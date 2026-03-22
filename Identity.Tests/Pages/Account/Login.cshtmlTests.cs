@@ -289,6 +289,7 @@ public class LoginModelTests
     /// Input conditions: Input.Passkey is null and ModelState contains an error.
     /// Expected result: returns PageResult and PasswordSignInAsync is not invoked.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnPostAsync_InvalidModelState_ReturnsPageWithoutSignIn()
     {

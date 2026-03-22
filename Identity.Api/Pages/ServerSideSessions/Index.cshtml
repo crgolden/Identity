@@ -1,0 +1,105 @@
+@page
+@model Identity.Pages.ServerSideSessions.IndexModel
+@{
+    ViewData["Title"] = "Active Sessions";
+}
+
+<h1>@ViewData["Title"]</h1>
+<p class="text-muted">View and manage currently active server-side user sessions.</p>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-md-3">
+        <input asp-for="DisplayNameFilter" class="form-control" placeholder="Display name" />
+    </div>
+    <div class="col-md-3">
+        <input asp-for="SessionIdFilter" class="form-control" placeholder="Session ID" />
+    </div>
+    <div class="col-md-3">
+        <input asp-for="SubjectIdFilter" class="form-control" placeholder="Subject ID" />
+    </div>
+    <div class="col-md-3">
+        <button type="submit" class="btn btn-outline-primary w-100">Filter</button>
+    </div>
+</form>
+
+@if (Model.UserSessions == null)
+{
+    <div class="alert alert-warning" role="alert">
+        Server-side session management is not enabled.
+    </div>
+}
+else if (!Model.UserSessions.Results.Any())
+{
+    <div class="alert alert-info" role="alert">
+        No active sessions found.
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Subject</th>
+                    <th>Display Name</th>
+                    <th>Session ID</th>
+                    <th>Created</th>
+                    <th>Renewed</th>
+                    <th>Expires</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var session in Model.UserSessions.Results)
+                {
+                    <tr>
+                        <td><code>@session.SubjectId</code></td>
+                        <td>@session.DisplayName</td>
+                        <td><code>@session.SessionId</code></td>
+                        <td>@session.Created.ToString("yyyy-MM-dd HH:mm")</td>
+                        <td>@session.Renewed.ToString("yyyy-MM-dd HH:mm")</td>
+                        <td>@(session.Expires.HasValue ? session.Expires.Value.ToString("yyyy-MM-dd HH:mm") : "—")</td>
+                        <td>
+                            <form method="post">
+                                <input type="hidden" name="SessionId" value="@session.SessionId" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <nav aria-label="Session page navigation">
+        <ul class="pagination">
+            @if (Model.UserSessions.HasPrevResults)
+            {
+                <li class="page-item">
+                    <a class="page-link"
+                       asp-page="/ServerSideSessions/Index"
+                       asp-route-token="@Model.UserSessions.ResultsToken"
+                       asp-route-prev="true"
+                       asp-route-displayNameFilter="@Model.DisplayNameFilter"
+                       asp-route-sessionIdFilter="@Model.SessionIdFilter"
+                       asp-route-subjectIdFilter="@Model.SubjectIdFilter">
+                        &laquo; Previous
+                    </a>
+                </li>
+            }
+            @if (Model.UserSessions.HasNextResults)
+            {
+                <li class="page-item">
+                    <a class="page-link"
+                       asp-page="/ServerSideSessions/Index"
+                       asp-route-token="@Model.UserSessions.ResultsToken"
+                       asp-route-displayNameFilter="@Model.DisplayNameFilter"
+                       asp-route-sessionIdFilter="@Model.SessionIdFilter"
+                       asp-route-subjectIdFilter="@Model.SubjectIdFilter">
+                        Next &raquo;
+                    </a>
+                </li>
+            }
+        </ul>
+    </nav>
+}

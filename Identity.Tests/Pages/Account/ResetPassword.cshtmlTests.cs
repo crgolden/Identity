@@ -24,6 +24,7 @@ public class ResetPasswordModelTests
     /// Provides valid original strings to be encoded by Base64Url for tests.
     /// Includes empty string and strings with special/unicode characters.
     /// </summary>
+    /// <returns></returns>
     public static TheoryData<string> GetValidEncodedCases() => new()
     {
         "abc",
@@ -151,6 +152,7 @@ public class ResetPasswordModelTests
     /// Expected result:
     ///  - A PageResult is returned and neither FindByEmailAsync nor ResetPasswordAsync are invoked.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnPostAsync_ModelStateInvalid_ReturnsPage()
     {
@@ -193,6 +195,7 @@ public class ResetPasswordModelTests
     /// Expected result:
     ///  - A RedirectToPageResult to "./ResetPasswordConfirmation"
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Theory]
     [InlineData(false, false)] // user not found -> redirect
     [InlineData(true, true)] // user found and reset succeeds -> redirect
@@ -265,6 +268,7 @@ public class ResetPasswordModelTests
     /// Expected result:
     ///  - A PageResult is returned and ModelState contains the error descriptions under the empty key.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnPostAsync_ResetPasswordFails_AddsModelErrorsAndReturnsPage()
     {

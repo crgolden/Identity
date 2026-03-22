@@ -31,6 +31,7 @@ public class EmailModelTests
     /// Condition: UserManager.GetUserAsync returns null.
     /// Expected: NotFoundObjectResult with message referencing provided user id.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnPostSendVerificationEmailAsync_UserNotFound_ReturnsNotFoundWithUserId()
     {
@@ -68,6 +69,7 @@ public class EmailModelTests
     /// Condition: ModelState is invalid and a user exists.
     /// Expected: PageResult is returned and no email is sent.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnPostSendVerificationEmailAsync_InvalidModelState_ReturnsPage()
     {
@@ -113,6 +115,7 @@ public class EmailModelTests
     /// Condition: Valid user, various email values provided by MemberData.
     /// Expected: SendEmailAsync invoked with expected email/subject/body and RedirectToPageResult is returned.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Theory]
     [MemberData(nameof(ValidEmailCases))]
     public async Task OnPostSendVerificationEmailAsync_ValidUser_SendsEmailAndRedirects(string? returnedEmail)
@@ -278,6 +281,7 @@ public class EmailModelTests
     /// Test that when the current user cannot be loaded (UserManager.GetUserAsync returns null),
     /// OnPostChangeEmailAsync returns a NotFoundObjectResult containing the user id returned by UserManager.GetUserId.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnPostChangeEmailAsync_UserNotFound_ReturnsNotFound()
     {

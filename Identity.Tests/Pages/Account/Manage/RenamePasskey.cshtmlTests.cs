@@ -22,6 +22,7 @@ public class RenamePasskeyModelTests
     /// - A real ApplicationDbContext constructed with default DbContextOptions and the same UserManager instance.
     /// This member returns tuples of (ApplicationDbContext, UserManager&lt;IdentityUser&lt;Guid&gt; &gt;).
     /// </summary>
+    /// <returns></returns>
     public static TheoryData<ApplicationDbContext, UserManager<IdentityUser<Guid>>> ValidConstructorArguments()
     {
         // Build a usable UserManager instance using lightweight mocked collaborators.
@@ -54,6 +55,7 @@ public class RenamePasskeyModelTests
     /// Condition: UserManager.GetUserAsync returns null and UserManager.GetUserId returns a known id.
     /// Expected: NotFoundObjectResult whose value contains the expected user id message.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnGetAsync_UserNotFound_ReturnsNotFoundWithMessage()
     {
@@ -91,6 +93,7 @@ public class RenamePasskeyModelTests
     /// Condition: User exists, provided id is invalid Base64Url.
     /// Expected: RedirectToPageResult pointing to ./Passkeys and StatusMessage set to the invalid format message.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnGetAsync_InvalidBase64Id_RedirectsToPasskeysAndSetsStatusMessage()
     {
@@ -129,6 +132,7 @@ public class RenamePasskeyModelTests
     /// Condition: User exists, id decodes successfully but GetPasskeyAsync returns null.
     /// Expected: NotFoundObjectResult containing the expected passkey-not-found message with user id.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnGetAsync_PasskeyNotFound_ReturnsNotFoundWithMessage()
     {
@@ -176,6 +180,7 @@ public class RenamePasskeyModelTests
     /// Input and DbContext are irrelevant for this path.
     /// Expected: NotFoundObjectResult with message containing returned id.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnPostAsync_UserNotFound_ReturnsNotFoundWithMessage()
     {

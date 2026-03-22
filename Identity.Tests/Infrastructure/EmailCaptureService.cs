@@ -22,6 +22,7 @@ public sealed class EmailCaptureService : IEmailSender, IEmailSender<IdentityUse
     /// Extracts the first URL from an HTML body whose value matches <paramref name="urlPattern"/>.
     /// HTML entities in the href are decoded before the URL is returned.
     /// </summary>
+    /// <returns></returns>
     public static string ExtractLink(string htmlBody, string urlPattern)
     {
         var matches = Regex.Matches(htmlBody, $@"href=['""]({urlPattern}[^'""]*)['""]");
@@ -57,6 +58,7 @@ public sealed class EmailCaptureService : IEmailSender, IEmailSender<IdentityUse
     /// Waits until an email is received for <paramref name="toAddress"/>, dequeues and returns it.
     /// Throws <see cref="TimeoutException"/> if no email arrives within the timeout.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous operation.</placeholder></returns>
     public async Task<CapturedEmail> WaitForEmailAsync(string toAddress, TimeSpan? timeout = null)
     {
         var deadline = DateTime.UtcNow + (timeout ?? TimeSpan.FromSeconds(10));

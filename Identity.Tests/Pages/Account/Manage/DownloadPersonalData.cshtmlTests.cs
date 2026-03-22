@@ -62,6 +62,7 @@ public class DownloadPersonalDataModelTests
     /// Input conditions: GetUserAsync returns null and GetUserId returns a sentinel id string.
     /// Expected result: NotFoundObjectResult with message that contains the sentinel id.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnPostAsync_UserNotFound_ReturnsNotFoundObjectResult()
     {

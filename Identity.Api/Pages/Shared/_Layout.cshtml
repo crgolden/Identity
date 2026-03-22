@@ -34,6 +34,11 @@
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-page="/Privacy">Privacy</a>
                         </li>
+                        <environment names="Development">
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-page="/Diagnostics/Index">Diagnostics</a>
+                            </li>
+                        </environment>
                     </ul>
                     <partial name="_LoginPartial" />
                 </div>

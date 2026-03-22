@@ -4,6 +4,7 @@ using Azure.Core;
 using Azure.Identity;
 using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Azure.Security.KeyVault.Secrets;
+using Duende.IdentityServer;
 using Elastic.Ingest.Elasticsearch;
 using Elastic.Ingest.Elasticsearch.DataStreams;
 using Elastic.Serilog.Sinks;
@@ -17,12 +18,15 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Options;
 using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Resend;
 using Serilog;
+using Serilog.Filters;
 #pragma warning restore SA1200
 
 Log.Logger = new LoggerConfiguration().WriteTo.Console().CreateBootstrapLogger();
@@ -43,10 +47,13 @@ try
     var (gravatarApiKeySecret, elasticsearchUsername, elasticsearchPassword, sqlServerUserId, sqlServerPassword, googleClientId, googleClientSecret, resendApiToken) = await secretClient.GetSecrets();
     builder.Services
         .AddOpenTelemetry()
+        .ConfigureResource(x => x.AddService(builder.Environment.ApplicationName))
         .UseAzureMonitor()
         .WithMetrics(meterProviderBuilder =>
         {
             meterProviderBuilder
+                .AddMeter(Duende.IdentityServer.Telemetry.ServiceName)
+                .AddMeter(Identity.Telemetry.ServiceName)
                 .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation()
                 .AddRuntimeInstrumentation();
@@ -55,6 +62,11 @@ try
         {
             tracerProviderBuilder
                 .AddSource(builder.Environment.ApplicationName)
+                .AddSource(IdentityServerConstants.Tracing.Basic)
+                .AddSource(IdentityServerConstants.Tracing.Cache)
+                .AddSource(IdentityServerConstants.Tracing.Services)
+                .AddSource(IdentityServerConstants.Tracing.Stores)
+                .AddSource(IdentityServerConstants.Tracing.Validation)
                 .AddAspNetCoreInstrumentation(aspNetCoreTraceInstrumentationOptions =>
                 {
                     aspNetCoreTraceInstrumentationOptions.Filter = context =>
@@ -62,26 +74,35 @@ try
                         return !context.Request.Path.StartsWithSegments("/Health");
                     };
                 })
+                .AddConsoleExporter()
                 .AddHttpClientInstrumentation();
         }).Services
-        .AddSerilog((sp, loggerConfiguration) => loggerConfiguration
-            .ReadFrom.Configuration(builder.Configuration)
-            .ReadFrom.Services(sp)
-            .Enrich.FromLogContext()
-            .WriteTo.Elasticsearch(
-                [elasticsearchNode],
-                elasticsearchSinkOptions =>
-                {
-                    elasticsearchSinkOptions.DataStream = new DataStreamName("logs", "dotnet", "identity");
-                    elasticsearchSinkOptions.BootstrapMethod = BootstrapMethod.Failure;
-                },
-                transportConfiguration =>
-                {
-                    var header = new BasicAuthentication(elasticsearchUsername.Value, elasticsearchPassword.Value);
-                    transportConfiguration.Authentication(header);
-                }))
+        .AddSerilog((sp, loggerConfiguration) =>
+        {
+            loggerConfiguration
+                .ReadFrom.Configuration(builder.Configuration)
+                .ReadFrom.Services(sp)
+                .Enrich.FromLogContext()
+                .WriteTo.Elasticsearch(
+                    [elasticsearchNode],
+                    elasticsearchSinkOptions =>
+                    {
+                        elasticsearchSinkOptions.DataStream = new DataStreamName("logs", "dotnet", nameof(Identity));
+                        elasticsearchSinkOptions.BootstrapMethod = BootstrapMethod.Failure;
+                    },
+                    transportConfiguration =>
+                    {
+                        var header = new BasicAuthentication(elasticsearchUsername.Value, elasticsearchPassword.Value);
+                        transportConfiguration.Authentication(header);
+                    })
+                .WriteTo.OpenTelemetry();
+            if (!builder.Environment.IsProduction())
+            {
+                loggerConfiguration.Filter.ByExcluding(Matching.FromSource("Duende.IdentityServer.Diagnostics.Summary"));
+            }
+        })
         .Configure<SqlConnectionStringBuilder>(sqlConnectionStringBuilderSection)
-        .AddDbContext<ApplicationDbContext>((sp, dbContextOptionsBuilder) =>
+        .AddDbContextPool<ApplicationDbContext>((sp, dbContextOptionsBuilder) =>
         {
             var sqlConnectionStringBuilder = sp.GetRequiredService<IOptions<SqlConnectionStringBuilder>>().Value;
             if (!sqlConnectionStringBuilder.IntegratedSecurity)
@@ -90,7 +111,16 @@ try
                 sqlConnectionStringBuilder.Password = sqlServerPassword.Value;
             }
 
-            dbContextOptionsBuilder.UseSqlServer(sqlConnectionStringBuilder.ConnectionString);
+            dbContextOptionsBuilder
+                .UseSqlServer(sqlConnectionStringBuilder.ConnectionString, sqlServerDbContextOptionsBuilder =>
+                {
+                    var querySplittingBehavior = builder.Configuration.GetValue<QuerySplittingBehavior?>(nameof(QuerySplittingBehavior));
+                    if (querySplittingBehavior.HasValue)
+                    {
+                        sqlServerDbContextOptionsBuilder.UseQuerySplittingBehavior(querySplittingBehavior.Value);
+                    }
+                })
+                .ConfigureWarnings(w => w.Throw(RelationalEventId.MultipleCollectionIncludeWarning));
         })
         .AddIdentity<IdentityUser<Guid>, IdentityRole<Guid>>(identityOptions =>
         {
@@ -102,11 +132,14 @@ try
         .AddEntityFrameworkStores<ApplicationDbContext>().Services
         .AddIdentityServer(identityServerOptions =>
         {
-            identityServerOptions.EmitStaticAudienceClaim = true;
-            identityServerOptions.Events.RaiseErrorEvents = true;
-            identityServerOptions.Events.RaiseInformationEvents = true;
-            identityServerOptions.Events.RaiseFailureEvents = true;
-            identityServerOptions.Events.RaiseSuccessEvents = true;
+            if (builder.Environment.IsDevelopment())
+            {
+                identityServerOptions.Events.RaiseErrorEvents = true;
+                identityServerOptions.Events.RaiseInformationEvents = true;
+                identityServerOptions.Events.RaiseFailureEvents = true;
+                identityServerOptions.Events.RaiseSuccessEvents = true;
+            }
+
             identityServerOptions.UserInteraction.ErrorUrl = "/Error";
         })
         .AddConfigurationStore<ApplicationDbContext>()
@@ -179,7 +212,7 @@ try
         })
         .UseAuthorization();
     app.MapAdditionalIdentityEndpoints();
-    app.MapHealthChecks("Health");
+    app.MapHealthChecks("Health").DisableHttpMetrics();
     app.MapStaticAssets();
     app.MapRazorPages()
        .WithStaticAssets()

@@ -62,6 +62,7 @@ public partial class EnableAuthenticatorModelTests
     /// Input conditions: UserManager.GetUserAsync returns null and GetUserId returns a known id.
     /// Expected result: NotFoundObjectResult with the same id embedded in the message.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnPostAsync_UserNotFound_ReturnsNotFoundObjectResult()
     {
@@ -94,6 +95,7 @@ public partial class EnableAuthenticatorModelTests
     /// Input conditions: Valid user is returned but ModelState contains an error.
     /// Expected result: PageResult is returned (and no exception is thrown).
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnPostAsync_ModelStateInvalid_ReturnsPageResult()
     {
@@ -140,6 +142,7 @@ public partial class EnableAuthenticatorModelTests
     /// Input conditions: user exists, Input.Code contains spaces and hyphens which should be stripped and VerifyTwoFactorTokenAsync returns false.
     /// Expected result: ModelState contains error for "Input.Code" and PageResult is returned.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnPostAsync_InvalidVerificationCode_AddsModelErrorAndReturnsPage()
     {
@@ -195,6 +198,7 @@ public partial class EnableAuthenticatorModelTests
     /// - When CountRecoveryCodesAsync returns >0: redirect is to TwoFactorAuthentication and RecoveryCodes remains null.
     /// Expected result: Appropriate RedirectToPageResult and StatusMessage set.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Theory]
     [InlineData(0, "./ShowRecoveryCodes")]
     [InlineData(5, "./TwoFactorAuthentication")]
@@ -268,6 +272,7 @@ public partial class EnableAuthenticatorModelTests
     /// Input conditions: GetUserAsync => null, GetUserId => provided id string.
     /// Expected result: NotFoundObjectResult with message "Unable to load user with ID '{id}'."
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnGetAsync_UserNotFound_ReturnsNotFoundWithMessage()
     {

@@ -52,7 +52,7 @@ public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Progra
     {
         builder.ConfigureServices((context, services) =>
         {
-            if (context.HostingEnvironment.IsDevelopment())
+            if (!context.HostingEnvironment.IsProduction())
             {
                 // Replace the Serilog ILoggerFactory (which connects to Elasticsearch on startup)
                 // with the default logging infrastructure to avoid external sink failures in tests.

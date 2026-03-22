@@ -1,6 +1,7 @@
 ﻿namespace Identity.Pages.Account;
 
 using System.ComponentModel.DataAnnotations;
+using System.Security.Claims;
 using Manage;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
@@ -13,11 +14,19 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 public class LoginModel : PageModel
 {
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
+    private readonly UserManager<IdentityUser<Guid>> _userManager;
+    private readonly IAvatarService _avatarService;
     private readonly ILogger<LoginModel> _logger;
 
-    public LoginModel(SignInManager<IdentityUser<Guid>> signInManager, ILogger<LoginModel> logger)
+    public LoginModel(
+        SignInManager<IdentityUser<Guid>> signInManager,
+        UserManager<IdentityUser<Guid>> userManager,
+        IAvatarService avatarService,
+        ILogger<LoginModel> logger)
     {
         _signInManager = signInManager;
+        _userManager = userManager;
+        _avatarService = avatarService;
         _logger = logger;
     }
 
@@ -33,6 +42,7 @@ public class LoginModel : PageModel
 
     /// <summary>Handles the GET request to display the login page.</summary>
     /// <param name="returnUrl">The URL to return to after login.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     public async Task OnGetAsync(string? returnUrl = null)
     {
         if (!IsNullOrWhiteSpace(ErrorMessage))
@@ -40,13 +50,9 @@ public class LoginModel : PageModel
             ModelState.AddModelError(Empty, ErrorMessage);
         }
 
-        returnUrl ??= Url.Content("~/");
-
         await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
-
         ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
-
-        ReturnUrl = returnUrl;
+        ReturnUrl ??= Url.Content("~/");
     }
 
     /// <summary>Handles the POST request to authenticate the user.</summary>
@@ -55,18 +61,16 @@ public class LoginModel : PageModel
     public async Task<IActionResult> OnPostAsync(string? returnUrl = null)
     {
         returnUrl ??= Url.Content("~/");
-
         ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
-
         Microsoft.AspNetCore.Identity.SignInResult result;
-        if (!IsNullOrWhiteSpace(Input?.Passkey?.CredentialJson))
+        if (!IsNullOrWhiteSpace(Input.Passkey?.CredentialJson))
         {
             ModelState.Clear();
             result = await _signInManager.PasskeySignInAsync(Input.Passkey.CredentialJson);
         }
         else
         {
-            if (!ModelState.IsValid || IsNullOrWhiteSpace(Input?.Email) || IsNullOrWhiteSpace(Input.Password))
+            if (!ModelState.IsValid || IsNullOrWhiteSpace(Input.Email) || IsNullOrWhiteSpace(Input.Password))
             {
                 return Page();
             }
@@ -76,6 +80,25 @@ public class LoginModel : PageModel
 
         if (result.Succeeded)
         {
+            if (!IsNullOrWhiteSpace(Input.Email))
+            {
+                var user = await _userManager.FindByNameAsync(Input.Email);
+                if (user is not null)
+                {
+                    var userClaims = await _userManager.GetClaimsAsync(user);
+                    var pictureClaim = userClaims.FirstOrDefault(x => string.Equals("picture", x.Type, StringComparison.Ordinal));
+                    if (pictureClaim is null)
+                    {
+                        var avatarUrl = await _avatarService.GetAvatarUrlAsync(Input.Email, HttpContext.RequestAborted);
+                        if (avatarUrl is not null)
+                        {
+                            var avatarUrlClaim = new Claim("picture", avatarUrl.ToString());
+                            await _userManager.AddClaimAsync(user, avatarUrlClaim);
+                        }
+                    }
+                }
+            }
+
             _logger.LogTrace("User logged in.");
             return LocalRedirect(returnUrl);
         }

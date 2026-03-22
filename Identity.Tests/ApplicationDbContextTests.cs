@@ -12,6 +12,7 @@ public class ApplicationDbContextTests
     /// Provide a representative set of entity CLR types that the Configure* extension methods should add to the model.
     /// These are likely to be registered when OnModelCreating is executed with non-null store options.
     /// </summary>
+    /// <returns></returns>
     public static TheoryData<Type> EntityTypes() => new()
     {
         typeof(Duende.IdentityServer.EntityFramework.Entities.Client),
@@ -32,6 +33,7 @@ public class ApplicationDbContextTests
     /// Currently provides a default-built options instance. This covers the typical construction scenario
     /// where options may not include a provider. Additional provider-backed options can be added if available.
     /// </summary>
+    /// <returns></returns>
     public static TheoryData<DbContextOptions<ApplicationDbContext>> ValidOptions() => new()
     {
         new DbContextOptionsBuilder<ApplicationDbContext>().Options,

@@ -44,6 +44,7 @@ public class LoginWithRecoveryCodeModelTests
     /// Input conditions: SignInManager.GetTwoFactorAuthenticationUserAsync returns a non-null IdentityUser; various returnUrl inputs including null, empty, whitespace, long and special-character strings are tested.
     /// Expected result: Method returns PageResult and model.ReturnUrl equals the provided returnUrl.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Theory]
     [MemberData(nameof(ReturnUrlValues))]
     public async Task OnGetAsync_TwoFactorUserExists_SetsReturnUrlAndReturnsPage(string? returnUrl)
@@ -82,6 +83,7 @@ public class LoginWithRecoveryCodeModelTests
     /// Input conditions: ModelState contains an error.
     /// Expected result: PageResult is returned.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnPostAsync_ModelStateInvalid_ReturnsPageResult()
     {
@@ -120,6 +122,7 @@ public class LoginWithRecoveryCodeModelTests
     /// Input conditions: valid ModelState, no two-factor user available.
     /// Expected result: InvalidOperationException with specific message.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnPostAsync_NoTwoFactorUser_ThrowsInvalidOperationException()
     {

@@ -40,6 +40,7 @@ public class RegisterModelTests
     /// Input conditions: various returnUrl values including null, empty, whitespace-only, long, and special characters.
     /// Expected result: ReturnUrl equals the input returnUrl and no exception is thrown.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Theory]
     [InlineData(null)]
     [InlineData("")]
@@ -95,6 +96,7 @@ public class RegisterModelTests
     /// Input conditions: various collections of AuthenticationScheme (empty, single, multiple).
     /// Expected result: ExternalLogins contains the same schemes (order preserved) and count matches.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
 #pragma warning disable xUnit1045
     [Theory]
     [MemberData(nameof(ExternalSchemesData))]
@@ -151,6 +153,7 @@ public class RegisterModelTests
     /// Input conditions: ModelState contains an error.
     /// Expected result: IActionResult is PageResult and GetExternalAuthenticationSchemesAsync was still invoked.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact(DisplayName = "OnPostAsync_ModelStateInvalid_ReturnsPage")]
     public async Task OnPostAsync_ModelStateInvalid_ReturnsPage()
     {
@@ -212,6 +215,7 @@ public class RegisterModelTests
     /// - When requireConfirmed is true: expect RedirectToPageResult for RegisterConfirmation.
     /// - When requireConfirmed is false: expect LocalRedirectResult to the provided returnUrl and SignInAsync invoked.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Theory(DisplayName = "OnPostAsync_CreateSucceeds_RespectsRequireConfirmedAccount")]
     [InlineData(true, "/confirmed-redirect")]
     [InlineData(false, "/local-redirect")]

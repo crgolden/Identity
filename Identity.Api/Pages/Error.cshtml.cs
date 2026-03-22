@@ -30,6 +30,7 @@ public class ErrorModel : PageModel
 
     /// <summary>Handles the GET request, logging any IdentityServer error context for the given error ID.</summary>
     /// <param name="errorId">The IdentityServer error identifier, if any.</param>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous operation.</placeholder></returns>
     public async Task OnGetAsync(string? errorId = null)
     {
         RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;

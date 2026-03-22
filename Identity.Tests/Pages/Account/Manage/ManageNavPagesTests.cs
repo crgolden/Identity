@@ -87,6 +87,7 @@ public class ManageNavPagesTests
     /// - ViewData['ActivePage'] missing or non-string causing fallback to ActionDescriptor.DisplayName
     /// - Both ViewData['ActivePage'] and DisplayName null
     /// </summary>
+    /// <returns></returns>
     public static TheoryData<object?, string?, string?> EmailNavClassCases() => new()
     {
         // When ViewData contains a matching page name (exact)
@@ -136,6 +137,7 @@ public class ManageNavPagesTests
     /// - Very long and special-character ActivePage values that should not match
     /// - DisplayName values that do and do not produce the expected filename
     /// </summary>
+    /// <returns></returns>
     public static TheoryData<string?, string?, string?> GetPersonalDataNavCases() => new()
     {
         // ActivePage exactly matches -> active

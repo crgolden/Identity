@@ -21,6 +21,7 @@ public class EmailSenderTests
     /// including empty, whitespace and long strings to exercise boundary and special-character cases.
     /// Expected: IResend.EmailSendAsync is invoked and the EmailMessage contains the provided values.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Theory]
     [InlineData("user@example.com", "Hello", "Body text")]
     [InlineData("user+tag@example.com", "", "")] // empty subject and message
@@ -78,6 +79,7 @@ public class EmailSenderTests
     /// Verifies that exceptions thrown by the IResend.EmailSendAsync are propagated by SendEmailAsync.
     /// Input: valid toEmail, subject and message. Expected: the same exception type is thrown to caller.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task SendEmailAsync_ResendThrows_PropagatesException()
     {

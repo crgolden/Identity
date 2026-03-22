@@ -74,6 +74,7 @@ public class RegisterConfirmationModelTests
     /// Input: email == null.
     /// Expected: RedirectToPageResult with PageName '/Index'.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnGetAsync_EmailIsNull_RedirectsToIndex()
     {
@@ -95,6 +96,7 @@ public class RegisterConfirmationModelTests
     /// Inputs tested: empty string, whitespace-only string, arbitrary non-existent email.
     /// Expected: NotFoundObjectResult with the message "Unable to load user with email '{email}'."
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Theory]
     [InlineData("nonexistent@example.com")]
     public async Task OnGetAsync_UserNotFound_ReturnsNotFoundObjectResult_ForVariousEmails(string email)
@@ -125,6 +127,7 @@ public class RegisterConfirmationModelTests
     /// Inputs: returnUrl == null and returnUrl == "/custom".
     /// Expected: PageResult, Email set to provided email.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Theory]
     [InlineData(null)]
     [InlineData("/custom")]

@@ -7,8 +7,13 @@
     "reporters": [
       "html",
       "json",
-      "progress"
+      "progress",
+      "dashboard"
     ],
+    "dashboard": {
+      "project": "github.com/crgolden/Identity",
+      "version": "main"
+    },
     "mutation-level": "Advanced",
     "threshold": {
       "high": 80,

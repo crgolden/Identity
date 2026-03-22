@@ -81,6 +81,7 @@ public class GenerateRecoveryCodesModelTests
     /// Expected result:
     ///  - IActionResult is NotFoundObjectResult and its Value matches the expected message.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnPostAsync_UserNotFound_ReturnsNotFoundWithMessage()
     {
@@ -123,6 +124,7 @@ public class GenerateRecoveryCodesModelTests
     /// Expected result:
     ///  - InvalidOperationException is thrown with the expected message.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnPostAsync_TwoFactorDisabled_ThrowsInvalidOperationException()
     {
@@ -166,6 +168,7 @@ public class GenerateRecoveryCodesModelTests
     ///  - Model.RecoveryCodes contains the generated codes
     ///  - Model.StatusMessage has the success message
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnPostAsync_TwoFactorEnabled_GeneratesCodesAndRedirects()
     {
@@ -217,6 +220,7 @@ public class GenerateRecoveryCodesModelTests
     /// Input conditions: UserManager.GetUserAsync returns null and GetUserId returns a known id string.
     /// Expected result: NotFoundObjectResult with message: "Unable to load user with ID '{id}'."
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnGetAsync_UserNotFound_ReturnsNotFoundWithUserIdMessage()
     {
@@ -269,6 +273,7 @@ public class GenerateRecoveryCodesModelTests
     ///  - If true: method returns a PageResult.
     ///  - If false: method throws InvalidOperationException with the expected message.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Theory]
     [InlineData(true)]
     [InlineData(false)]

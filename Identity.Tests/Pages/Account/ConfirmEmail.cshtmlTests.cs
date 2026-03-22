@@ -19,6 +19,7 @@ public partial class ConfirmEmailModelTests
     /// Test data for null userId or null code inputs which should redirect to the Index page.
     /// Covers: userId null, code null, both null.
     /// </summary>
+    /// <returns></returns>
     public static TheoryData<string?, string?> RedirectNullOrWhitespaceCases() => new()
     {
         { null, "non-null-code" },
@@ -35,6 +36,7 @@ public partial class ConfirmEmailModelTests
     /// Input conditions: combinations where userId or code (or both) are null.
     /// Expected result: RedirectToPageResult with PageName \"/Index\".
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Theory]
     [MemberData(nameof(RedirectNullOrWhitespaceCases))]
     public async Task OnGetAsync_NullOrWhitespaceUserIdOrCode_RedirectsToIndex(string? userId, string? code)
@@ -57,6 +59,7 @@ public partial class ConfirmEmailModelTests
     /// Input conditions: valid (non-null) userId and code, but UserManager.FindByIdAsync returns null.
     /// Expected result: NotFoundObjectResult with message \"Unable to load user with ID '{userId}'.\".
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnGetAsync_UserNotFound_ReturnsNotFoundObjectResult()
     {

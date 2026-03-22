@@ -119,6 +119,7 @@ public class PersonalDataModelTests
     /// a very long string, and special characters.
     /// </summary>
     /// <param name="userId">The value GetUserId will return (may be null).</param>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Theory]
     [MemberData(nameof(UserIdValues))]
     public async Task OnGet_UserNotFound_ReturnsNotFoundWithMessage(string? userId)
@@ -161,6 +162,7 @@ public class PersonalDataModelTests
     /// Verifies that when the user manager returns an existing user,
     /// PersonalDataModel.OnGet returns a PageResult and does not call GetUserId.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnGet_UserFound_ReturnsPageResult()
     {
@@ -203,6 +205,7 @@ public class PersonalDataModelTests
     /// Input condition: GetUserAsync throws InvalidOperationException.
     /// Expected: the same InvalidOperationException is thrown by OnGet.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnGet_GetUserAsyncThrows_PropagatesException()
     {

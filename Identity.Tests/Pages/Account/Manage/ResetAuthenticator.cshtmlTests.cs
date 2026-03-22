@@ -39,6 +39,7 @@ public class ResetAuthenticatorModelTests
     /// - When userExists is true, OnGet returns a PageResult.
     /// - When userExists is false, OnGet returns a NotFoundObjectResult with message containing the expectedUserId.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Theory]
     [MemberData(nameof(OnGetTestCases))]
     public async Task OnGet_UserExistence_ReturnsExpectedResult(bool userExists, string? expectedUserId, Type expectedResultType, string? expectedMessage)
@@ -127,6 +128,7 @@ public class ResetAuthenticatorModelTests
     /// Input: UserManager.GetUserAsync returns null; UserManager.GetUserId returns a specific id string.
     /// Expected: NotFoundObjectResult with the expected message.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnPostAsync_UserNotFound_ReturnsNotFoundWithExpectedMessage()
     {
@@ -197,6 +199,7 @@ public class ResetAuthenticatorModelTests
     /// - StatusMessage set to the expected informative string.
     /// - Calls to SetTwoFactorEnabledAsync, ResetAuthenticatorKeyAsync, GetUserIdAsync, and RefreshSignInAsync occur exactly once.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Theory]
     [InlineData(true)]
     [InlineData(false)]

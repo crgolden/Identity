@@ -4,6 +4,8 @@
 
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=crgolden_Identity&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=crgolden_Identity)
 
+[![Mutation testing badge](https://img.shields.io/endpoint?style=flat&url=https%3A%2F%2Fbadge-api.stryker-mutator.io%2Fgithub.com%2Fcrgolden%2FIdentity%2Fmain)](https://dashboard.stryker-mutator.io/reports/github.com/crgolden/Identity/main)
+
 A standalone **OpenID Connect Identity Provider** built with [Duende IdentityServer](https://duendesoftware.com/products/identityserver) and ASP.NET Core Identity, deployed to Azure App Service.
 
 ## Features
@@ -14,7 +16,14 @@ A standalone **OpenID Connect Identity Provider** built with [Duende IdentitySer
 - **Passkeys / WebAuthn** (ASP.NET Core Identity built-in support)
 - **TOTP two-factor authentication** with recovery codes
 - **Gravatar** profile avatars
-- **Azure Monitor** (OpenTelemetry metrics & traces)
+- **Consent screen** — OAuth2 scope approval UI with allow/deny and remember-consent
+- **Grants management** — view and revoke previously granted client permissions
+- **Device authorization flow** — user code entry and scope consent for constrained devices
+- **CIBA** — client-initiated backchannel authentication request display
+- **Server-side session management** — view and remove active user sessions
+- **Redirect page** — loading page for native client redirects
+- **Diagnostics page** — current user claims and tokens (development only)
+- **Azure Monitor** (OpenTelemetry metrics & traces — including Duende IdentityServer built-in signals)
 - **Serilog** structured logging with Elasticsearch sink
 - **Data Protection** keys persisted to Azure Blob Storage, protected by Azure Key Vault
 
@@ -76,6 +85,9 @@ The schema is managed entirely via the `Identity.Data` SQL Server Database Proje
 **Development** — build and publish the dacpac to your local SQL Server:
 
 ```bash
+# Install sqlpackage once (if not already installed)
+dotnet tool install --global microsoft.sqlpackage
+
 dotnet build Identity.Data/Identity.Data.sqlproj --configuration Release
 sqlpackage /Action:Publish /SourceFile:Identity.Data/bin/Release/Identity.Data.dacpac /TargetConnectionString:"<your-local-connection-string>"
 ```
@@ -102,6 +114,8 @@ Identity.Benchmarks/ # BenchmarkDotNet microbenchmarks for authentication hot pa
 
 ## Commands
 
+> **Shell note:** commands that set environment variables inline (e.g. `ASPNETCORE_ENVIRONMENT=...`) use bash syntax. On Windows, use Git Bash, WSL, or set the variables separately before running the `dotnet` command.
+
 ```bash
 # Build
 dotnet build
@@ -110,13 +124,16 @@ dotnet build
 dotnet test --project Identity.Tests --configuration Release -- --filter-trait "Category=Unit"
 
 # E2E tests (local) — requires Development environment for User Secrets
-ASPNETCORE_ENVIRONMENT=Development dotnet test --project Identity.Tests --configuration Release -- --filter-trait "Category=E2E"
+ASPNETCORE_ENVIRONMENT=Development SqlConnectionStringBuilder__InitialCatalog=IdentityTest dotnet test --project Identity.Tests --configuration Release -- --filter-trait "Category=E2E"
 
 # All tests (unit + E2E, local)
-ASPNETCORE_ENVIRONMENT=Development dotnet test --project Identity.Tests --configuration Release
+ASPNETCORE_ENVIRONMENT=Development SqlConnectionStringBuilder__InitialCatalog=IdentityTest dotnet test --project Identity.Tests --configuration Release
 
 # Load tests (requires E2E infrastructure — database + Key Vault)
-ASPNETCORE_ENVIRONMENT=Development dotnet test --project Identity.Tests --configuration Release -- --filter-trait "Category=Load"
+ASPNETCORE_ENVIRONMENT=Development SqlConnectionStringBuilder__InitialCatalog=IdentityTest dotnet test --project Identity.Tests --configuration Release -- --filter-trait "Category=Load"
+
+# Install sqlpackage once (if not already installed)
+dotnet tool install --global microsoft.sqlpackage
 
 # Build dacpac (schema deployment)
 dotnet build Identity.Data/Identity.Data.sqlproj --configuration Release

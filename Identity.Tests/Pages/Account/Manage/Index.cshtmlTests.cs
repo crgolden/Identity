@@ -63,6 +63,7 @@ public class ManageIndexModelTests
     /// Expected result:
     /// - Method returns NotFoundObjectResult with the exact expected message containing the id.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnGetAsync_UserNotFound_ReturnsNotFoundObjectResult()
     {
@@ -97,6 +98,7 @@ public class ManageIndexModelTests
     /// - IndexModel.Input is not null and Input.PhoneNumber equals returned phoneNumber.
     /// This test is parameterized to exercise various string edge-cases for username and phone number.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Theory]
     [MemberData(nameof(ValidUserData))]
     public async Task OnGetAsync_UserExists_LoadsUsernameAndPhoneAndReturnsPage(string? returnedUserName, string? returnedPhoneNumber)
@@ -136,6 +138,7 @@ public class ManageIndexModelTests
     /// Input conditions: UserManager.GetUserAsync returns null and GetUserId returns a known id.
     /// Expected result: NotFoundObjectResult with message containing the id.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnPostAsync_UserNotFound_ReturnsNotFoundWithUserIdMessage()
     {
@@ -165,6 +168,7 @@ public class ManageIndexModelTests
     /// Input conditions: valid user returned but ModelState contains an error.
     /// Expected result: PageResult returned and no phone update or refresh is attempted.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnPostAsync_ModelStateInvalid_ReturnsPageAndDoesNotChangePhoneOrSignIn()
     {

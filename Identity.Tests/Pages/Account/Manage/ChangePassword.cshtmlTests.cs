@@ -37,6 +37,7 @@ public class ChangePasswordModelTests
     /// Act: Call OnPostAsync.
     /// Assert: A PageResult is returned and no call to GetUserAsync is made.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnPostAsync_ModelStateInvalid_ReturnsPage()
     {
@@ -74,6 +75,7 @@ public class ChangePasswordModelTests
     /// Act: Call OnPostAsync.
     /// Assert: NotFoundObjectResult is returned with the expected message containing the user id.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnPostAsync_UserNotFound_ReturnsNotFoundWithUserId()
     {

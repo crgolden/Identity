@@ -2,6 +2,33 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Reference Source
+
+When working with Duende IdentityServer types, check these GitHub sources directly rather than searching local NuGet caches.
+
+**Duende products monorepo** (`DuendeSoftware/products`, `main` branch):
+
+| What | Raw URL pattern |
+|---|---|
+| EF entity definitions (Client, ApiScope, IdentityResource, etc.) | `https://raw.githubusercontent.com/DuendeSoftware/products/refs/heads/main/identity-server/src/EntityFramework.Storage/Entities/{EntityName}.cs` |
+| IdentityServer models (non-EF) | `https://raw.githubusercontent.com/DuendeSoftware/products/refs/heads/main/identity-server/src/IdentityServer/Models/{ModelName}.cs` |
+| IdentityServer services / interfaces | `https://raw.githubusercontent.com/DuendeSoftware/products/refs/heads/main/identity-server/src/IdentityServer/Services/` |
+
+**Quickstart sample** (Quickstart 5 — ASP.NET Identity integration):
+
+| What | URL |
+|---|---|
+| Sample source root | `https://raw.githubusercontent.com/DuendeSoftware/samples/main/IdentityServer/v7/Quickstarts/5_AspNetIdentity/src/IdentityServerAspNetIdentity/` |
+| Pages folder | append `Pages/{PageFolder}/Index.cshtml` or `Index.cshtml.cs` to the above |
+
+**Key EF entities to reference when seeding test data or writing migrations:**
+- `Client.cs` — navigation collections are `AllowedGrantTypes`, `RedirectUris`, `AllowedScopes`, `ClientSecrets`, `AllowedCorsOrigins`
+- `ClientGrantType.cs` — has `GrantType` string property
+- `ClientRedirectUri.cs` — has `RedirectUri` string property
+- `ClientScope.cs` — has `Scope` string property
+
+---
+
 ## Solution Structure
 
 The solution (`Identity.slnx`) contains four projects:
@@ -57,22 +84,37 @@ Two minimal API endpoints are registered in `EndpointRouteBuilderExtensions.cs` 
 
 Both require antiforgery validation. The Passkey Razor Pages live in `Pages/Account/Manage/`.
 
-### Logout Page
-
-`Pages/Account/Logout.cshtml` implements the [Duende client-redirect logout](https://docs.duendesoftware.com/identityserver/ui/logout/client-redirect/) pattern:
-
-- **GET** — if the user is authenticated, renders a confirmation form (`ShowLogoutPrompt = true`). If already signed out, calls `IIdentityServerInteractionService.GetLogoutContextAsync(logoutId)` and renders the logged-out page immediately.
-- **POST** — signs out via `SignInManager.SignOutAsync()`, then calls `GetLogoutContextAsync(logoutId)` to populate `PostLogoutRedirectUri` and `SignOutIFrameUrl`. Always returns `Page()` — **never redirects directly** to `PostLogoutRedirectUri`. This keeps the page in the browser long enough for front-channel sign-out iframes to fire before the user follows the link back to the client app.
-
-The `logoutId` query/form parameter is set by IdentityServer when it initiates logout via the end-session endpoint (`UserInteraction.LogoutIdParameter = "logoutId"`).
-
 ### Identity User Type
 
 All services use `IdentityUser<Guid>` (not the default `IdentityUser`). This must be kept consistent throughout — `UserManager<IdentityUser<Guid>>`, `SignInManager<IdentityUser<Guid>>`, `AddAspNetIdentity<IdentityUser<Guid>>()`, etc.
 
+### IdentityServer UI Pages
+
+All IdentityServer-specific Razor Pages live under `Identity.Api/Pages/` in `Identity.Pages.*` namespaces. They follow the same conventions as the ASP.NET Identity pages (XML doc comments, `[Authorize]`/`[AllowAnonymous]`, `[SecurityHeaders]` filter, async handlers).
+
+| Path | Namespace | Purpose |
+|---|---|---|
+| `/Consent/Index` | `Identity.Pages.Consent` | OAuth2 scope approval (allow/deny, remember consent) |
+| `/Grants/Index` | `Identity.Pages.Grants` | View and revoke previously granted client permissions |
+| `/Device/Index` | `Identity.Pages.Device` | Device authorization flow — user code entry + scope consent |
+| `/Device/Success` | `Identity.Pages.Device` | Device flow success confirmation (`[AllowAnonymous]`) |
+| `/Ciba/Index` | `Identity.Pages.Ciba` | CIBA backchannel login request display (`[AllowAnonymous]`) |
+| `/ServerSideSessions/Index` | `Identity.Pages.ServerSideSessions` | View and remove active server-side user sessions |
+| `/Redirect/Index` | `Identity.Pages.Redirect` | Loading page for native client redirects (`[AllowAnonymous]`) |
+| `/Diagnostics/Index` | `Identity.Pages.Diagnostics` | Current user claims/tokens — loopback only, dev-only nav link |
+
+**Support infrastructure:**
+- `Identity.Api/Filters/SecurityHeadersAttribute.cs` — `IResultFilter` adding `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, and `Content-Security-Policy` headers to all `PageResult` responses. Namespace: `Identity.Filters`.
+- `Identity.Api/Extensions/PageModelExtensions.cs` — `LoadingPage()` extension on `PageModel` that redirects to `/Redirect/Index`. Namespace: `Identity.Extensions`.
+- `Identity.Api/Pages/Consent/ConsentOptions.cs` — static options (`EnableOfflineAccess`, display names, error messages) shared by Consent and Device pages.
+- `Identity.Api/Telemetry.cs` — `System.Diagnostics.Metrics.Meter`-based counters for `identity.consent.granted`, `identity.consent.denied`, and `identity.grants.revoked`. Namespace: `Identity`.
+
+**Error redirects** use `/Error` (the existing root error page, matching `identityServerOptions.UserInteraction.ErrorUrl = "/Error"` in Program.cs) — not `/Home/Error/Index`.
+
 ### Observability
 
 - **Azure Monitor** — OpenTelemetry metrics and traces via `UseAzureMonitor()`
+- **IdentityServer OTel signals** — `Program.cs` subscribes to both the Duende built-in meter (`Duende.IdentityServer` — token issuance, introspection, secret validation) and the custom `Identity` meter (consent/grants UI events). Tracing also subscribes to all five Duende trace sources: `IdentityServerConstants.Tracing.Basic/.Cache/.Services/.Stores/.Validation`.
 - **Serilog** — structured logging with an Elasticsearch sink (`logs-dotnet-identity` data stream) and console sink bootstrap. `Elastic.Serilog.Sinks` is pinned to exact version `[8.11.1]` to match the self-hosted Elasticsearch 8.x node; ECS 9.x templates use `synthetic_source_keep` which is not supported by Elasticsearch 8.x.
 - Health checks endpoint at `/Health` with `DbContext` check; health check requests are filtered from traces
 
@@ -148,15 +190,18 @@ dotnet run
 ```
 
 ### Test
+
+> **Shell note:** commands that prefix environment variables inline use bash syntax. On Windows, use Git Bash, WSL, or set the variables separately before running `dotnet test`.
+
 ```bash
 # Unit tests only
 dotnet test --project Identity.Tests --configuration Release -- --filter-trait "Category=Unit"
 
 # E2E tests only (local) — Development environment loads User Secrets and uses VS/VS Code credentials
-ASPNETCORE_ENVIRONMENT=Development dotnet test --project Identity.Tests --configuration Release -- --filter-trait "Category=E2E"
+ASPNETCORE_ENVIRONMENT=Development SqlConnectionStringBuilder__InitialCatalog=IdentityTest dotnet test --project Identity.Tests --configuration Release -- --filter-trait "Category=E2E"
 
 # All tests (local)
-ASPNETCORE_ENVIRONMENT=Development dotnet test --project Identity.Tests --configuration Release
+ASPNETCORE_ENVIRONMENT=Development SqlConnectionStringBuilder__InitialCatalog=IdentityTest dotnet test --project Identity.Tests --configuration Release
 ```
 
 E2E tests use Playwright (Chromium) against a real Kestrel server started in-process. They require the same User Secrets as `dotnet run` (database, Key Vault, etc.).
@@ -197,11 +242,14 @@ Stryker targets `EmailSender.cs`, `GravatarService.cs`, `SecretClientExtensions.
 ### Load Tests
 ```bash
 # Run load tests only (requires a running server — uses E2E infrastructure)
-ASPNETCORE_ENVIRONMENT=Development dotnet test --project Identity.Tests --configuration Release -- --filter-trait "Category=Load"
+ASPNETCORE_ENVIRONMENT=Development SqlConnectionStringBuilder__InitialCatalog=IdentityTest dotnet test --project Identity.Tests --configuration Release -- --filter-trait "Category=Load"
 ```
 
 ### SQL Database Project (schema deployment)
 ```bash
+# Install sqlpackage once (if not already installed)
+dotnet tool install --global microsoft.sqlpackage
+
 # Build the dacpac
 dotnet build Identity.Data/Identity.Data.sqlproj --configuration Release
 

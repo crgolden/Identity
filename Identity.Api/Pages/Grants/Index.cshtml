@@ -1,0 +1,74 @@
+@page
+@model Identity.Pages.Grants.IndexModel
+@{
+    ViewData["Title"] = "Application Permissions";
+}
+
+<h1>@ViewData["Title"]</h1>
+<p class="text-muted">Below is the list of applications you have given permission to and the resources they can access.</p>
+
+@if (!Model.View.Grants.Any())
+{
+    <div class="alert alert-info" role="alert">
+        You have not given access to any applications.
+    </div>
+}
+else
+{
+    foreach (var grant in Model.View.Grants)
+    {
+        <div class="card mb-3">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    @if (grant.ClientLogoUrl != null)
+                    {
+                        <img src="@grant.ClientLogoUrl" alt="@grant.ClientName logo" style="max-height:32px" />
+                    }
+                    @if (grant.ClientUrl != null)
+                    {
+                        <strong><a href="@grant.ClientUrl" target="_blank" rel="noopener noreferrer">@grant.ClientName</a></strong>
+                    }
+                    else
+                    {
+                        <strong>@grant.ClientName</strong>
+                    }
+                </div>
+                <form method="post">
+                    <input type="hidden" name="ClientId" value="@grant.ClientId" />
+                    <button type="submit" class="btn btn-sm btn-outline-danger">Revoke Access</button>
+                </form>
+            </div>
+            <ul class="list-group list-group-flush">
+                @if (grant.Description != null)
+                {
+                    <li class="list-group-item">
+                        <span class="text-muted">Description:</span> @grant.Description
+                    </li>
+                }
+                <li class="list-group-item">
+                    <span class="text-muted">Granted:</span> @grant.Created.ToString("yyyy-MM-dd")
+                </li>
+                @if (grant.Expires.HasValue)
+                {
+                    <li class="list-group-item">
+                        <span class="text-muted">Expires:</span> @grant.Expires.Value.ToString("yyyy-MM-dd")
+                    </li>
+                }
+                @if (grant.IdentityGrantNames.Any())
+                {
+                    <li class="list-group-item">
+                        <span class="text-muted">Identity permissions:</span>
+                        @Join(", ", grant.IdentityGrantNames)
+                    </li>
+                }
+                @if (grant.ApiGrantNames.Any())
+                {
+                    <li class="list-group-item">
+                        <span class="text-muted">API permissions:</span>
+                        @Join(", ", grant.ApiGrantNames)
+                    </li>
+                }
+            </ul>
+        </div>
+    }
+}

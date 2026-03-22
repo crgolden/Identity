@@ -48,6 +48,7 @@ public class RegisterModel : PageModel
 
     /// <summary>Handles the GET request to display the registration page.</summary>
     /// <param name="returnUrl">The URL to return to after registration.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     public async Task OnGetAsync(string? returnUrl = null)
     {
         ReturnUrl = returnUrl;
@@ -67,11 +68,9 @@ public class RegisterModel : PageModel
         }
 
         var user = new IdentityUser<Guid>();
-
         await _userStore.SetUserNameAsync(user, Input.Email, HttpContext.RequestAborted);
         await _emailStore.SetEmailAsync(user, Input.Email, HttpContext.RequestAborted);
         var result = await _userManager.CreateAsync(user, Input.Password);
-
         if (result.Succeeded)
         {
             _logger.LogTrace("User created a new account with password.");

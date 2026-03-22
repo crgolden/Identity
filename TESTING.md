@@ -2,9 +2,11 @@
 
 Maps every application path to the tests that cover it.
 
+> **Shell note:** test commands that set environment variables inline use bash syntax. On Windows, use Git Bash, WSL, or set the variables separately before running `dotnet test`.
+
 **Test types**
-- **Unit** — xUnit page-model / service / API tests (`Category=Unit`) — 416 tests; includes property-based (`PropertyBased/`) and resilience (`Resilience/`) sub-folders
-- **E2E** — Playwright browser tests (`Category=E2E`); includes OIDC discovery tests (`Oidc/`)
+- **Unit** — xUnit page-model / service / API tests (`Category=Unit`) — 449 tests; includes property-based (`PropertyBased/`) and resilience (`Resilience/`) sub-folders
+- **E2E** — Playwright browser tests (`Category=E2E`); includes OIDC discovery tests (`Oidc/`) and IdentityServer flow tests (`ConsentTests`, `GrantsTests`, `DiagnosticsTests`, `ServerSideSessionsTests`)
 - **Load** — throughput / failure-rate tests using `Parallel.ForEachAsync` + `HttpClient` (`Category=Load`); run separately (requires live server)
 
 **Coverage legend**
@@ -34,9 +36,10 @@ Maps every application path to the tests that cover it.
 13. [Minimal API — Passkey Endpoints](#13-minimal-api--passkey-endpoints)
 14. [Services](#14-services)
 15. [Root & Utility Pages](#15-root--utility-pages)
-16. [Coverage Summary Matrix](#16-coverage-summary-matrix)
-17. [Load, Property-Based & Resilience Tests](#17-load-property-based--resilience-tests)
-18. [Mutation Testing (Stryker)](#18-mutation-testing-stryker)
+16. [IdentityServer UI Pages](#16-identityserver-ui-pages)
+17. [Coverage Summary Matrix](#17-coverage-summary-matrix)
+18. [Load, Property-Based & Resilience Tests](#18-load-property-based--resilience-tests)
+19. [Mutation Testing (Stryker)](#19-mutation-testing-stryker)
 
 ---
 
@@ -223,9 +226,7 @@ flowchart TD
 
     LogoutPOST["POST /Account/Logout"]:::covered
 
-    LogoutPrompt["Show confirmation form"]:::covered
-
-    LoggedOut["Show logged-out page\n(PostLogoutRedirectUri link + iframe if client-initiated)"]:::covered
+    SignedOut["Redirect to returnUrl / /"]
 
     LoginGET --> LoginPOST
     LoginPOST -->|"password"| PasswordPath
@@ -248,10 +249,9 @@ flowchart TD
     RecoveryPOST -->|"Succeeded"| RecoverySuccess
     RecoveryPOST -->|"Invalid"| RecoveryInvalid
     SignInSuccess --> LogoutGET
-    LogoutGET -->|"authenticated"| LogoutPrompt
-    LogoutGET -->|"not authenticated"| LoggedOut
-    LogoutPrompt --> LogoutPOST
-    LogoutPOST --> LoggedOut
+    SignInSuccess --> LogoutPOST
+    LogoutGET --> SignedOut
+    LogoutPOST --> SignedOut
 ```
 
 ### Login Tests
@@ -276,12 +276,8 @@ flowchart TD
 | POST /Account/LoginWith2fa — no 2FA user | `LoginWith2fa.cshtmlTests.cs` | `OnPostAsync_NoTwoFactorUser_ThrowsInvalidOperationException` |
 | GET /Account/LoginWithRecoveryCode | `LoginWithRecoveryCode.cshtmlTests.cs` | `OnGetAsync_ValidUser_SetsPropertiesAndReturnsPageResult` |
 | POST /Account/LoginWithRecoveryCode — invalid | `LoginWithRecoveryCode.cshtmlTests.cs` | `OnPostAsync_ModelStateInvalid_ReturnsPageResult` |
-| GET /Account/Logout — authenticated, shows prompt | `Logout.cshtmlTests.cs` | `OnGetAsync_AuthenticatedUser_ShowsPromptWithoutCallingInteractionService` |
-| GET /Account/Logout — unauthenticated, no logoutId | `Logout.cshtmlTests.cs` | `OnGetAsync_UnauthenticatedNoLogoutId_ReturnsPageWithoutCallingInteractionService` |
-| GET /Account/Logout — unauthenticated, with logoutId | `Logout.cshtmlTests.cs` | `OnGetAsync_UnauthenticatedWithLogoutId_SetsContextProperties` |
-| POST /Account/Logout — no logoutId | `Logout.cshtmlTests.cs` | `OnPostAsync_NoLogoutId_SignsOutAndReturnsPageWithoutCallingInteractionService` |
-| POST /Account/Logout — with logoutId, sets redirect URI | `Logout.cshtmlTests.cs` | `OnPostAsync_WithLogoutId_SignsOutAndSetsContextProperties` |
-| POST /Account/Logout — null/whitespace logoutId | `Logout.cshtmlTests.cs` | `OnPostAsync_NullOrWhitespaceLogoutId_DoesNotCallInteractionService` |
+| GET /Account/Logout — redirect to returnUrl | `Logout.cshtmlTests.cs` | `OnGetAsync_VariousReturnUrls_RedirectsCorrectly` |
+| POST /Account/Logout — redirect to returnUrl | `Logout.cshtmlTests.cs` | `OnPost_VariousReturnUrls_RedirectsCorrectly` |
 | E2E: logout clears session | `AccountManagementTests.cs` (E2E) | `Logout_Succeeds_ProtectedPageRedirectsToLogin` |
 | E2E: valid credentials | `LoginTests.cs` (E2E) | `Login_ValidCredentials_Succeeds` |
 | E2E: wrong password | `LoginTests.cs` (E2E) | `Login_WrongPassword_ShowsError` |
@@ -1086,7 +1082,29 @@ flowchart TD
 
 ---
 
-## 16. Coverage Summary Matrix
+## 16. IdentityServer UI Pages
+
+These pages implement the IdentityServer interactive UI — consent, grants, device flow, CIBA, server-side sessions, redirect, and diagnostics. All C# page models have unit tests; Consent, Grants, Diagnostics, and ServerSideSessions also have E2E tests.
+
+### IdentityServer Page Tests
+
+| Path | Unit Test File | E2E Test File | Coverage |
+|---|---|---|---|
+| `/Consent/Index` | `Pages/Consent/Index.cshtmlTests.cs` | `E2E/ConsentTests.cs` | ✅ Unit + E2E |
+| `/Grants/Index` | `Pages/Grants/Index.cshtmlTests.cs` | `E2E/GrantsTests.cs` | ✅ Unit + E2E |
+| `/Device/Index` | `Pages/Device/Index.cshtmlTests.cs` | — | 🟡 Unit only |
+| `/Device/Success` | `Pages/Device/Success.cshtmlTests.cs` | — | 🟡 Unit only |
+| `/Ciba/Index` | `Pages/Ciba/Index.cshtmlTests.cs` | — | 🟡 Unit only |
+| `/ServerSideSessions/Index` | `Pages/ServerSideSessions/Index.cshtmlTests.cs` | `E2E/ServerSideSessionsTests.cs` | ✅ Unit + E2E |
+| `/Redirect/Index` | `Pages/Redirect/Index.cshtmlTests.cs` | — | 🟡 Unit only |
+| `/Diagnostics/Index` | `Pages/Diagnostics/Index.cshtmlTests.cs` | `E2E/DiagnosticsTests.cs` | ✅ Unit + E2E |
+
+**E2E test helpers:**
+- `Infrastructure/TestClientHelper.cs` — seeds a minimal OIDC client (`RequireConsent=true`, `authorization_code` grant, `openid` scope) and identity resources into `ApplicationDbContext` for use by `ConsentTests`
+
+---
+
+## 17. Coverage Summary Matrix
 
 ```mermaid
 quadrantChart
@@ -1125,7 +1143,7 @@ quadrantChart
 | `/Account/LoginWith2fa` | ✅ | ✅ | ✅ | |
 | `/Account/LoginWithRecoveryCode` | ✅ | ✅ | ✅ | |
 | `/Account/Lockout` | 🔵 | — | ✅ | Constructor only |
-| `/Account/Logout` | ✅ | ✅ | ✅ | GET shows confirmation prompt (authenticated) or logged-out page; POST signs out, shows logged-out page with `PostLogoutRedirectUri` link + front-channel iframe if client-initiated (`logoutId`) |
+| `/Account/Logout` | ✅ | ✅ | ✅ | GET + POST both sign out and redirect |
 | `/Account/ForgotPassword` | 🔵 | ✅ | ✅ | |
 | `/Account/ForgotPasswordConfirmation` | 🔵 | — | ✅ | Constructor only |
 | `/Account/ResetPassword` | ✅ | ✅ | ✅ | |
@@ -1154,6 +1172,14 @@ quadrantChart
 | `/` | 🔵 | — | ❌ | Constructor only |
 | `/Privacy` | 🔵 | — | ❌ | Constructor only |
 | `/Error` | ✅ | — | ❌ | |
+| `/Consent/Index` | ✅ | ✅ | ✅ | Allow, Deny, no-scopes E2E flows |
+| `/Grants/Index` | ✅ | ✅ | ✅ | Page loads for authenticated user |
+| `/Device/Index` | ✅ | ✅ | ❌ | |
+| `/Device/Success` | ✅ | — | ❌ | Constructor only |
+| `/Ciba/Index` | ✅ | — | ❌ | |
+| `/ServerSideSessions/Index` | ✅ | ✅ | ✅ | Page loads after login |
+| `/Redirect/Index` | ✅ | — | ❌ | |
+| `/Diagnostics/Index` | ✅ | — | ✅ | Claims table visible after login |
 
 ### Coverage Gaps
 
@@ -1172,12 +1198,12 @@ The following paths have no meaningful behavioral test coverage and are candidat
 
 ---
 
-## 17. Load, Property-Based & Resilience Tests
+## 18. Load, Property-Based & Resilience Tests
 
 ### Load Tests (`Identity.Tests/Load/`)
 
 ```bash
-ASPNETCORE_ENVIRONMENT=Development dotnet test --project Identity.Tests --configuration Release -- --filter-trait "Category=Load"
+ASPNETCORE_ENVIRONMENT=Development SqlConnectionStringBuilder__InitialCatalog=IdentityTest dotnet test --project Identity.Tests --configuration Release -- --filter-trait "Category=Load"
 ```
 
 Load tests use `Parallel.ForEachAsync` + `HttpClient` (self-signed cert ignored) against the real Kestrel server started by `PlaywrightFixture`. They are excluded from normal CI runs and only execute on `schedule` or `workflow_dispatch`.
@@ -1208,7 +1234,7 @@ Load tests use `Parallel.ForEachAsync` + `HttpClient` (self-signed cert ignored)
 
 ---
 
-## 18. Mutation Testing (Stryker)
+## 19. Mutation Testing (Stryker)
 
 Stryker.NET is configured in `stryker-config.json` with `mutation-level: Advanced`. It targets five core source files:
 

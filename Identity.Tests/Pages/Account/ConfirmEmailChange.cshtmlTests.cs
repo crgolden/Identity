@@ -115,6 +115,7 @@ public class ConfirmEmailChangeModelTests
     /// Input conditions: one of the parameters is null (tested via InlineData).
     /// Expected result: RedirectToPageResult with PageName '/Index'.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Theory]
     [InlineData(null, "user@example.com", "code")]
     [InlineData("userId", null, "code")]
@@ -141,6 +142,7 @@ public class ConfirmEmailChangeModelTests
     /// Input conditions: valid non-null parameters but FindByIdAsync returns null.
     /// Expected result: NotFoundObjectResult with message containing the supplied userId.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnGetAsync_UserNotFound_ReturnsNotFound()
     {
@@ -169,6 +171,7 @@ public class ConfirmEmailChangeModelTests
     /// Input conditions: user exists; ChangeEmailAsync returns a failed IdentityResult.
     /// Expected result: PageResult and StatusMessage == "Error changing email.".
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnGetAsync_ChangeEmailFails_ReturnsPageAndSetsStatusMessage()
     {
@@ -202,6 +205,7 @@ public class ConfirmEmailChangeModelTests
     /// Input conditions: user exists; ChangeEmailAsync returns Success; SetUserNameAsync returns Failed.
     /// Expected result: PageResult and StatusMessage == "Error changing user name.".
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnGetAsync_SetUserNameFails_ReturnsPageAndSetsStatusMessage()
     {
@@ -236,6 +240,7 @@ public class ConfirmEmailChangeModelTests
     /// Input conditions: user exists; ChangeEmailAsync returns Success; SetUserNameAsync returns Success.
     /// Expected result: PageResult and StatusMessage == "Thank you for confirming your email change.".
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnGetAsync_AllOperationsSucceed_RefreshesSignInAndSetsSuccessMessage()
     {
@@ -271,6 +276,7 @@ public class ConfirmEmailChangeModelTests
     /// against null/whitespace values for userId, email, and code.
     /// Expected result: RedirectToPageResult to "/Index".
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
@@ -298,6 +304,7 @@ public class ConfirmEmailChangeModelTests
     /// Input conditions: user exists; ChangeEmailAsync and SetUserNameAsync return Success.
     /// Expected result: PageResult and StatusMessage success.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnGetAsync_SpecialCharacterEmail_ProceedsAndReturnSuccess()
     {

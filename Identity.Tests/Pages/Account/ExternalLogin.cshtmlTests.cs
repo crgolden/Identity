@@ -29,6 +29,7 @@ public class ExternalLoginModelTests
     /// - storeIsEmailStore: bool indicating whether the provided user store implements IUserEmailStore
     /// - expectedExceptionType: Type? expected exception type (null if construction should succeed)
     /// </summary>
+    /// <returns></returns>
     public static IEnumerable<object?[]> ConstructorTestData()
     {
         yield return [false, true, typeof(NotSupportedException)];
@@ -41,6 +42,7 @@ public class ExternalLoginModelTests
     /// Inputs: returnUrl can be null or a non-empty string. remoteError is non-null.
     /// Expectation: ErrorMessage contains the remoteError and RedirectToPage("./Login") is returned with correct ReturnUrl value.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Theory]
     [InlineData(null)]
     [InlineData("/some/return")]
@@ -75,6 +77,7 @@ public class ExternalLoginModelTests
     /// Input: returnUrl tested for null and non-null.
     /// Expectation: ErrorMessage is set to indicate loading error and RedirectToPage("./Login") is returned.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Theory]
     [InlineData(null)]
     [InlineData("/return/here")]
@@ -153,6 +156,7 @@ public class ExternalLoginModelTests
     /// Input conditions: returnUrl is null (causing Url.Content("~/") to be used) and SignInManager.GetExternalLoginInfoAsync returns null.
     /// Expected result: RedirectToPageResult to "./Login" with route value ReturnUrl equal to Url.Content("~/"), and ErrorMessage set.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnPostConfirmationAsync_InfoNull_ReturnsRedirectToLoginAndSetsErrorMessage()
     {
@@ -225,6 +229,7 @@ public class ExternalLoginModelTests
     /// Input conditions: ModelState invalid, ExternalLoginInfo available with ProviderDisplayName.
     /// Expected result: PageResult returned, ProviderDisplayName and ReturnUrl set from info and parameter.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnPostConfirmationAsync_ModelStateInvalid_ReturnsPageAndSetsProviderDisplayNameAndReturnUrl()
     {
@@ -306,6 +311,7 @@ public class ExternalLoginModelTests
     /// - If false: LocalRedirectResult to the provided returnUrl.
     /// Also verifies that an email is sent and SignInAsync is invoked only when RequireConfirmedAccount is false.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Theory]
     [InlineData(true)]
     [InlineData(false)]

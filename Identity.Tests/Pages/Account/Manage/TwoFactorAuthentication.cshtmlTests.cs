@@ -101,6 +101,7 @@ public class TwoFactorAuthenticationModelTests
     /// Input conditions: UserManager.GetUserAsync returns null and UserManager.GetUserId returns a non-null identifier.
     /// Expected result: NotFoundObjectResult containing the formatted message and SignInManager.ForgetTwoFactorClientAsync is not called.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnPostAsync_UserNotFound_ReturnsNotFoundWithUserIdMessage()
     {
@@ -146,6 +147,7 @@ public class TwoFactorAuthenticationModelTests
     /// Input conditions: UserManager.GetUserAsync returns a valid user; SignInManager.ForgetTwoFactorClientAsync completes successfully.
     /// Expected result: RedirectToPageResult, StatusMessage set to the expected text, and ForgetTwoFactorClientAsync invoked once.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnPostAsync_UserFound_ForgetsClientAndRedirectsAndSetsStatusMessage()
     {
@@ -202,6 +204,7 @@ public class TwoFactorAuthenticationModelTests
     /// Input conditions: UserManager.GetUserAsync returns null; UserManager.GetUserId returns a known id.
     /// Expected result: NotFoundObjectResult with the expected message.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
     public async Task OnGetAsync_UserNotFound_ReturnsNotFoundObjectResult()
     {
@@ -247,6 +250,7 @@ public class TwoFactorAuthenticationModelTests
     /// Expected: Properties HasAuthenticator, Is2faEnabled, IsMachineRemembered, RecoveryCodesLeft match inputs;
     /// result is PageResult.
     /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Theory]
     [MemberData(nameof(GetOnGetAsyncCases))]
     public async Task OnGetAsync_UserFound_SetsPropertiesAndReturnsPageResult(string? authenticatorKey, bool is2faEnabled, bool isMachineRemembered, int recoveryCodes)
