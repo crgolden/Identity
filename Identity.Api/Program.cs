@@ -142,8 +142,14 @@ try
 
             identityServerOptions.UserInteraction.ErrorUrl = "/Error";
         })
-        .AddConfigurationStore<ApplicationDbContext>()
-        .AddOperationalStore<ApplicationDbContext>()
+        .AddConfigurationStore<ApplicationDbContext>(opt =>
+        {
+            opt.EnablePooling = true;
+        })
+        .AddOperationalStore<ApplicationDbContext>(opt =>
+        {
+            opt.EnablePooling = true;
+        })
         .AddAspNetIdentity<IdentityUser<Guid>>()
         .AddLicenseSummary().Services
         .AddAuthentication()
