@@ -94,7 +94,7 @@ jobs:
       - name: Run unit tests with coverage
         run: |
           dotnet-coverage collect `
-            "dotnet test --project Identity.Tests --no-build --configuration Release -- --filter-trait Category=Unit" `
+            "dotnet test --project Identity.Tests --no-build --configuration Release -- --filter-trait Category=Unit --report-trx --report-trx-filename unit-tests.trx" `
             -f xml -o "coverage.xml" -s "coverage.settings.xml"
 
       - name: Login to Azure (for E2E tests)
@@ -136,8 +136,15 @@ jobs:
       - name: Run E2E tests with coverage
         run: |
           dotnet-coverage collect `
-            "dotnet test --project Identity.Tests --no-build --configuration Release -- --filter-trait Category=E2E" `
+            "dotnet test --project Identity.Tests --no-build --configuration Release -- --filter-trait Category=E2E --report-trx --report-trx-filename e2e-tests.trx" `
             -f xml -o "coverage-e2e.xml" -s "coverage.settings.xml"
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: test-results
+          path: TestResults/
 
       - name: Run load tests
         if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'

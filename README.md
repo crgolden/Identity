@@ -123,6 +123,9 @@ dotnet build
 # Unit tests only
 dotnet test --project Identity.Tests --configuration Release -- --filter-trait "Category=Unit"
 
+# Unit tests with TRX report (written to TestResults/unit-tests.trx)
+dotnet test --project Identity.Tests --configuration Release -- --filter-trait "Category=Unit" --report-trx --report-trx-filename unit-tests.trx
+
 # E2E tests (local) — requires Development environment for User Secrets
 ASPNETCORE_ENVIRONMENT=Development SqlConnectionStringBuilder__InitialCatalog=IdentityTest dotnet test --project Identity.Tests --configuration Release -- --filter-trait "Category=E2E"
 
