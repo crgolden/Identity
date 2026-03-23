@@ -226,7 +226,9 @@ flowchart TD
 
     LogoutPOST["POST /Account/Logout"]:::covered
 
-    SignedOut["Redirect to returnUrl / /"]
+    LogoutPrompt["Show logout confirmation prompt\n(ShowLogoutPrompt = true)"]:::covered
+
+    SignedOut["Return page with signed-out view\n(PostLogoutRedirectUri + SignOutIFrameUrl\nfrom IdentityServer logout context, if any)"]:::covered
 
     LoginGET --> LoginPOST
     LoginPOST -->|"password"| PasswordPath
@@ -250,7 +252,8 @@ flowchart TD
     RecoveryPOST -->|"Invalid"| RecoveryInvalid
     SignInSuccess --> LogoutGET
     SignInSuccess --> LogoutPOST
-    LogoutGET --> SignedOut
+    LogoutGET -->|"authenticated"| LogoutPrompt
+    LogoutGET -->|"unauthenticated"| SignedOut
     LogoutPOST --> SignedOut
 ```
 
@@ -276,8 +279,11 @@ flowchart TD
 | POST /Account/LoginWith2fa — no 2FA user | `LoginWith2fa.cshtmlTests.cs` | `OnPostAsync_NoTwoFactorUser_ThrowsInvalidOperationException` |
 | GET /Account/LoginWithRecoveryCode | `LoginWithRecoveryCode.cshtmlTests.cs` | `OnGetAsync_ValidUser_SetsPropertiesAndReturnsPageResult` |
 | POST /Account/LoginWithRecoveryCode — invalid | `LoginWithRecoveryCode.cshtmlTests.cs` | `OnPostAsync_ModelStateInvalid_ReturnsPageResult` |
-| GET /Account/Logout — redirect to returnUrl | `Logout.cshtmlTests.cs` | `OnGetAsync_VariousReturnUrls_RedirectsCorrectly` |
-| POST /Account/Logout — redirect to returnUrl | `Logout.cshtmlTests.cs` | `OnPost_VariousReturnUrls_RedirectsCorrectly` |
+| GET /Account/Logout — authenticated user shows prompt | `Logout.cshtmlTests.cs` | `OnGetAsync_AuthenticatedUser_ShowsPromptWithoutCallingInteractionService` |
+| GET /Account/Logout — unauthenticated, no logoutId | `Logout.cshtmlTests.cs` | `OnGetAsync_UnauthenticatedNoLogoutId_ReturnsPageWithoutCallingInteractionService` |
+| GET /Account/Logout — unauthenticated with logoutId, sets context | `Logout.cshtmlTests.cs` | `OnGetAsync_UnauthenticatedWithLogoutId_SetsContextProperties` |
+| POST /Account/Logout — no logoutId signs out and returns page | `Logout.cshtmlTests.cs` | `OnPostAsync_NoLogoutId_SignsOutAndReturnsPageWithoutCallingInteractionService` |
+| POST /Account/Logout — with logoutId signs out and sets context | `Logout.cshtmlTests.cs` | `OnPostAsync_WithLogoutId_SignsOutAndSetsContextProperties` |
 | E2E: logout clears session | `AccountManagementTests.cs` (E2E) | `Logout_Succeeds_ProtectedPageRedirectsToLogin` |
 | E2E: valid credentials | `LoginTests.cs` (E2E) | `Login_ValidCredentials_Succeeds` |
 | E2E: wrong password | `LoginTests.cs` (E2E) | `Login_WrongPassword_ShowsError` |
@@ -1143,7 +1149,7 @@ quadrantChart
 | `/Account/LoginWith2fa` | ✅ | ✅ | ✅ | |
 | `/Account/LoginWithRecoveryCode` | ✅ | ✅ | ✅ | |
 | `/Account/Lockout` | 🔵 | — | ✅ | Constructor only |
-| `/Account/Logout` | ✅ | ✅ | ✅ | GET + POST both sign out and redirect |
+| `/Account/Logout` | ✅ | ✅ | ✅ | GET shows prompt (authenticated) or signed-out page (unauthenticated); POST signs out and returns signed-out page; `[AllowAnonymous]` |
 | `/Account/ForgotPassword` | 🔵 | ✅ | ✅ | |
 | `/Account/ForgotPasswordConfirmation` | 🔵 | — | ✅ | Constructor only |
 | `/Account/ResetPassword` | ✅ | ✅ | ✅ | |
