@@ -74,29 +74,36 @@ try
                         return !context.Request.Path.StartsWithSegments("/Health");
                     };
                 })
-                .AddConsoleExporter()
                 .AddHttpClientInstrumentation();
+            if (builder.Environment.IsDevelopment())
+            {
+                tracerProviderBuilder.AddConsoleExporter();
+            }
         }).Services
         .AddSerilog((sp, loggerConfiguration) =>
         {
             loggerConfiguration
                 .ReadFrom.Configuration(builder.Configuration)
                 .ReadFrom.Services(sp)
-                .Enrich.FromLogContext()
-                .WriteTo.Elasticsearch(
-                    [elasticsearchNode],
-                    elasticsearchSinkOptions =>
-                    {
-                        elasticsearchSinkOptions.DataStream = new DataStreamName("logs", "dotnet", nameof(Identity));
-                        elasticsearchSinkOptions.BootstrapMethod = BootstrapMethod.Failure;
-                    },
-                    transportConfiguration =>
-                    {
-                        var header = new BasicAuthentication(elasticsearchUsername.Value, elasticsearchPassword.Value);
-                        transportConfiguration.Authentication(header);
-                    })
-                .WriteTo.OpenTelemetry();
-            if (!builder.Environment.IsProduction())
+                .Enrich.FromLogContext();
+            if (builder.Environment.IsProduction())
+            {
+                loggerConfiguration
+                    .WriteTo.OpenTelemetry()
+                    .WriteTo.Elasticsearch(
+                        [elasticsearchNode],
+                        elasticsearchSinkOptions =>
+                        {
+                            elasticsearchSinkOptions.DataStream = new DataStreamName("logs", "dotnet", nameof(Identity));
+                            elasticsearchSinkOptions.BootstrapMethod = BootstrapMethod.Failure;
+                        },
+                        transportConfiguration =>
+                        {
+                            var header = new BasicAuthentication(elasticsearchUsername.Value, elasticsearchPassword.Value);
+                            transportConfiguration.Authentication(header);
+                        });
+            }
+            else
             {
                 loggerConfiguration.Filter.ByExcluding(Matching.FromSource("Duende.IdentityServer.Diagnostics.Summary"));
             }
@@ -141,6 +148,8 @@ try
             }
 
             identityServerOptions.UserInteraction.ErrorUrl = "/Error";
+            identityServerOptions.UserInteraction.LoginUrl = "/Account/Login";
+            identityServerOptions.UserInteraction.LogoutUrl = "/Account/Logout";
         })
         .AddConfigurationStore<ApplicationDbContext>(opt =>
         {

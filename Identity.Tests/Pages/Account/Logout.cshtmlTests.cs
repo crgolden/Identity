@@ -44,7 +44,7 @@ public class LogoutModelTests
         Assert.IsType<PageResult>(result);
         Assert.True(model.ShowLogoutPrompt);
         Assert.Null(model.PostLogoutRedirectUri);
-        Assert.Null(model.SignOutIframeUrl);
+        Assert.Null(model.SignOutIFrameUrl);
         interaction.VerifyNoOtherCalls();
     }
 
@@ -60,7 +60,7 @@ public class LogoutModelTests
         Assert.IsType<PageResult>(result);
         Assert.False(model.ShowLogoutPrompt);
         Assert.Null(model.PostLogoutRedirectUri);
-        Assert.Null(model.SignOutIframeUrl);
+        Assert.Null(model.SignOutIFrameUrl);
         interaction.VerifyNoOtherCalls();
     }
 
@@ -81,7 +81,7 @@ public class LogoutModelTests
         Assert.IsType<PageResult>(result);
         Assert.False(model.ShowLogoutPrompt);
         Assert.Equal("https://client.example.com/signout-callback", model.PostLogoutRedirectUri);
-        Assert.Equal("https://signout.example.com/iframe", model.SignOutIframeUrl);
+        Assert.Equal("https://signout.example.com/iframe", model.SignOutIFrameUrl);
         interaction.Verify(s => s.GetLogoutContextAsync(logoutId), Times.Once);
     }
 
@@ -96,7 +96,7 @@ public class LogoutModelTests
 
         Assert.IsType<PageResult>(result);
         Assert.Null(model.PostLogoutRedirectUri);
-        Assert.Null(model.SignOutIframeUrl);
+        Assert.Null(model.SignOutIFrameUrl);
         interaction.VerifyNoOtherCalls();
     }
 
@@ -116,7 +116,7 @@ public class LogoutModelTests
 
         Assert.IsType<PageResult>(result);
         Assert.Equal("https://client.example.com/signout-callback", model.PostLogoutRedirectUri);
-        Assert.Equal("https://signout.example.com/iframe", model.SignOutIframeUrl);
+        Assert.Equal("https://signout.example.com/iframe", model.SignOutIFrameUrl);
         interaction.Verify(s => s.GetLogoutContextAsync(logoutId), Times.Once);
     }
 

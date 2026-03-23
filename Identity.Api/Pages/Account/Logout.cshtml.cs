@@ -28,7 +28,7 @@ public class LogoutModel : PageModel
     public string? PostLogoutRedirectUri { get; private set; }
 
     /// <summary>Gets the front-channel sign-out iframe URL for notifying other clients, if any.</summary>
-    public string? SignOutIframeUrl { get; private set; }
+    public string? SignOutIFrameUrl { get; private set; }
 
     /// <summary>Gets a value indicating whether the logout confirmation prompt should be shown.</summary>
     public bool ShowLogoutPrompt { get; private set; }
@@ -61,11 +61,13 @@ public class LogoutModel : PageModel
 
     private async Task SetLogoutContextAsync(string? logoutId)
     {
-        if (!IsNullOrWhiteSpace(logoutId))
+        if (IsNullOrWhiteSpace(logoutId))
         {
-            var context = await _interactionService.GetLogoutContextAsync(logoutId);
-            PostLogoutRedirectUri = context?.PostLogoutRedirectUri;
-            SignOutIframeUrl = context?.SignOutIFrameUrl;
+            return;
         }
+
+        var context = await _interactionService.GetLogoutContextAsync(logoutId);
+        PostLogoutRedirectUri = context.PostLogoutRedirectUri;
+        SignOutIFrameUrl = context.SignOutIFrameUrl;
     }
 }

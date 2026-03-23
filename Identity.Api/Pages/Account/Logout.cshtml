@@ -8,7 +8,7 @@
     <h1>@ViewData["Title"]</h1>
     @if (Model.ShowLogoutPrompt)
     {
-        <form asp-page="/Account/Logout" asp-route-logoutId="@Request.Query["logoutId"]" method="post">
+        <form class="form-inline" asp-page="/Account/Logout" asp-route-logoutId="@Request.Query["logoutId"]" method="post">
             <button type="submit" class="nav-link btn btn-link text-dark">Click here to Logout</button>
         </form>
     }
@@ -19,9 +19,9 @@
         {
             <a href="@Model.PostLogoutRedirectUri">Click here to return to the application</a>
         }
-        @if (!IsNullOrWhiteSpace(Model.SignOutIframeUrl))
+        @if (!IsNullOrWhiteSpace(Model.SignOutIFrameUrl))
         {
-            <iframe width="0" height="0" class="signout" src="@Model.SignOutIframeUrl"></iframe>
+            <iframe width="0" height="0" class="signout" src="@Model.SignOutIFrameUrl"></iframe>
         }
     }
 </header>
