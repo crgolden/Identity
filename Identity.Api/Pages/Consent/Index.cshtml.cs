@@ -78,7 +78,7 @@ public class IndexModel : PageModel
         {
             if (Input.ScopesConsented.Any())
             {
-                var scopes = Input.ScopesConsented;
+                IEnumerable<string> scopes = Input.ScopesConsented;
                 if (!ConsentOptions.EnableOfflineAccess)
                 {
                     scopes = scopes.Where(x =>
@@ -278,7 +278,7 @@ public class IndexModel : PageModel
         public string Button { get; set; } = Empty;
 
         /// <summary>Gets or sets the scope values the user selected.</summary>
-        public IEnumerable<string> ScopesConsented { get; set; } = [];
+        public List<string> ScopesConsented { get; set; } = [];
 
         /// <summary>Gets or sets a value indicating whether the user chose to remember their consent decision.</summary>
         public bool RememberConsent { get; set; }

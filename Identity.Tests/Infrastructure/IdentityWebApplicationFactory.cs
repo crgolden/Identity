@@ -1,6 +1,7 @@
 namespace Identity.Tests.Infrastructure;
 
 using System.Net;
+using Identity;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
@@ -67,6 +68,10 @@ public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Progra
             services.AddSingleton<EmailCaptureService>(_ => EmailCapture);
             services.AddSingleton<IEmailSender>(sp => sp.GetRequiredService<EmailCaptureService>());
             services.AddSingleton<IEmailSender<IdentityUser<Guid>>>(sp => sp.GetRequiredService<EmailCaptureService>());
+
+            // Replace IAvatarService with a no-op stub to avoid real Gravatar HTTP calls in tests.
+            services.RemoveAll<IAvatarService>();
+            services.AddSingleton<IAvatarService>(new NullAvatarService());
         });
     }
 
@@ -80,4 +85,11 @@ public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Progra
 
         base.Dispose(disposing);
     }
+}
+
+/// <summary>No-op <see cref="IAvatarService"/> for tests — avoids real Gravatar HTTP calls.</summary>
+internal sealed class NullAvatarService : IAvatarService
+{
+    public Task<Uri?> GetAvatarUrlAsync(string profileIdentifier, CancellationToken cancellationToken = default)
+        => Task.FromResult<Uri?>(null);
 }

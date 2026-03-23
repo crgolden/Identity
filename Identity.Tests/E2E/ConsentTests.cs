@@ -9,58 +9,6 @@ public sealed class ConsentTests(PlaywrightFixture fixture)
 {
     private const string RedirectUri = "https://localhost:9999/callback";
 
-    /// <summary>Verifies that clicking Allow on the consent screen redirects to the client with an authorization code.</summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
-    [Fact]
-    public async Task Consent_Allow_RedirectsWithCode()
-    {
-        var helper = new TestClientHelper(fixture);
-        var clientId = await helper.SeedConsentClientAsync(RedirectUri);
-        var (email, password) = await CreateConfirmedUserAsync();
-
-        var (context, page) = await fixture.NewPageAsync();
-        await using (context)
-        {
-            // Intercept the redirect so Playwright doesn't get a connection error
-            await page.RouteAsync("https://localhost:9999/**", route => route.FulfillAsync(new RouteFulfillOptions
-            {
-                Status = 200,
-                Body = "ok",
-            }));
-
-            await LoginAsync(page, email, password);
-
-            // GotoAsync follows all redirects and returns once the final page loads
-            await page.GotoAsync(BuildAuthorizeUrl(clientId, RedirectUri, "allow-state"));
-            await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
-
-            if (!page.Url.Contains("localhost:9999"))
-            {
-                Assert.True(
-                    page.Url.Contains("/Consent/Index"),
-                    $"Expected /Consent/Index but landed on: {page.Url}");
-
-                var checkboxes = await page.QuerySelectorAllAsync("input[type='checkbox'][name='Input.ScopesConsented']");
-                foreach (var checkbox in checkboxes)
-                {
-                    if (!await checkbox.IsCheckedAsync())
-                    {
-                        await checkbox.CheckAsync();
-                    }
-                }
-
-                await Task.WhenAll(
-                    page.WaitForURLAsync(
-                        url => url.Contains("localhost:9999"),
-                        new PageWaitForURLOptions { WaitUntil = WaitUntilState.Commit }),
-                    page.ClickAsync("button[value='yes']"));
-            }
-
-            Assert.Contains("localhost:9999", page.Url);
-            Assert.Contains("code=", page.Url);
-        }
-    }
-
     /// <summary>Verifies that clicking Deny on the consent screen redirects to the client with access_denied.</summary>
     /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
     [Fact]
@@ -73,29 +21,63 @@ public sealed class ConsentTests(PlaywrightFixture fixture)
         var (context, page) = await fixture.NewPageAsync();
         await using (context)
         {
-            await page.RouteAsync("https://localhost:9999/**", route => route.FulfillAsync(new RouteFulfillOptions
-            {
-                Status = 200,
-                Body = "ok",
-            }));
-
             await LoginAsync(page, email, password);
-
             await page.GotoAsync(BuildAuthorizeUrl(clientId, RedirectUri, "deny-state"));
 
-            if (!page.Url.Contains("localhost:9999"))
+            if (page.Url.Contains("localhost:9999"))
             {
-                Assert.Contains("/Consent/Index", page.Url);
-
-                await Task.WhenAll(
-                    page.WaitForURLAsync(
-                        url => url.Contains("localhost:9999"),
-                        new PageWaitForURLOptions { WaitUntil = WaitUntilState.Commit }),
-                    page.ClickAsync("button[value='no']"));
+                Assert.Contains("error=access_denied", page.Url);
+                return;
             }
 
-            Assert.Contains("localhost:9999", page.Url);
-            Assert.Contains("error=access_denied", page.Url);
+            Assert.Contains("/Consent/Index", page.Url);
+
+            // Capture the redirect URL from the browser request event before ERR_CONNECTION_REFUSED
+            var request = await page.RunAndWaitForRequestAsync(
+                async () => await page.ClickAsync("button[value='no']"),
+                r => r.Url.Contains("localhost:9999"));
+
+            Assert.Contains("error=access_denied", request.Url);
+        }
+    }
+
+    /// <summary>Verifies that clicking Allow on the consent screen redirects to the client with an authorization code.</summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    [Fact]
+    public async Task Consent_Allow_RedirectsWithCode()
+    {
+        var helper = new TestClientHelper(fixture);
+        var clientId = await helper.SeedConsentClientAsync(RedirectUri);
+        var (email, password) = await CreateConfirmedUserAsync();
+
+        var (context, page) = await fixture.NewPageAsync();
+        await using (context)
+        {
+            await LoginAsync(page, email, password);
+            await page.GotoAsync(BuildAuthorizeUrl(clientId, RedirectUri, "allow-state"));
+
+            if (page.Url.Contains("localhost:9999"))
+            {
+                Assert.Contains("code=", page.Url);
+                return;
+            }
+
+            Assert.Contains("/Consent/Index", page.Url);
+
+            // Check all scope checkboxes so the scopes are included in the form submission.
+            var checkboxes = await page.QuerySelectorAllAsync("input[type='checkbox'][name='Input.ScopesConsented']:not([disabled])");
+            foreach (var checkbox in checkboxes)
+            {
+                await checkbox.CheckAsync();
+            }
+
+            // Capture the redirect URL from the browser request event before ERR_CONNECTION_REFUSED.
+            var request = await page.RunAndWaitForRequestAsync(
+                async () => await page.ClickAsync("button[value='yes']"),
+                r => r.Url.Contains("localhost:9999"),
+                new PageRunAndWaitForRequestOptions { Timeout = 15_000 });
+
+            Assert.Contains("code=", request.Url);
         }
     }
 
@@ -112,12 +94,10 @@ public sealed class ConsentTests(PlaywrightFixture fixture)
         await using (context)
         {
             await LoginAsync(page, email, password);
-
             await page.GotoAsync(BuildAuthorizeUrl(clientId, RedirectUri, "noscope-state"));
 
             if (!page.Url.Contains("/Consent/Index"))
             {
-                // Consent was already granted or not required; skip
                 return;
             }
 
@@ -137,7 +117,6 @@ public sealed class ConsentTests(PlaywrightFixture fixture)
                     new PageWaitForURLOptions { WaitUntil = WaitUntilState.Load }),
                 page.ClickAsync("button[value='yes']"));
 
-            // Should stay on consent page and show an error
             Assert.Contains("/Consent/Index", page.Url);
             var content = await page.ContentAsync();
             Assert.Contains("permission", content, StringComparison.OrdinalIgnoreCase);

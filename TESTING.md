@@ -5,7 +5,7 @@ Maps every application path to the tests that cover it.
 > **Shell note:** test commands that set environment variables inline use bash syntax. On Windows, use Git Bash, WSL, or set the variables separately before running `dotnet test`.
 
 **Test types**
-- **Unit** — xUnit page-model / service / API tests (`Category=Unit`) — 449 tests; includes property-based (`PropertyBased/`) and resilience (`Resilience/`) sub-folders
+- **Unit** — xUnit page-model / service / API tests (`Category=Unit`) — 447 tests; includes property-based (`PropertyBased/`) and resilience (`Resilience/`) sub-folders
 - **E2E** — Playwright browser tests (`Category=E2E`); includes OIDC discovery tests (`Oidc/`) and IdentityServer flow tests (`ConsentTests`, `GrantsTests`, `DiagnosticsTests`, `ServerSideSessionsTests`)
 - **Load** — throughput / failure-rate tests using `Parallel.ForEachAsync` + `HttpClient` (`Category=Load`); run separately (requires live server)
 
@@ -1207,6 +1207,8 @@ ASPNETCORE_ENVIRONMENT=Development SqlConnectionStringBuilder__InitialCatalog=Id
 ```
 
 Load tests use `Parallel.ForEachAsync` + `HttpClient` (self-signed cert ignored) against the real Kestrel server started by `PlaywrightFixture`. They are excluded from normal CI runs and only execute on `schedule` or `workflow_dispatch`.
+
+> **Test parallelism note:** `xunit.runner.json` sets `parallelizeTestCollections: false`. This is required because `PlaywrightFixture` initializes `WebApplicationFactory<Program>`, which makes 8 concurrent Azure Key Vault calls at startup. When hundreds of unit tests run in parallel, thread pool saturation causes those async calls to time out and the factory throws "The entry point exited without ever building an IHost." Serializing collections eliminates the contention at the cost of a longer combined run (~5-6 min vs ~2.5 min). If you see this error, do not change the parallelism setting — diagnose the Azure credential or network path instead.
 
 | Test | Endpoint | RPS | Pass Criterion |
 |---|---|---|---|

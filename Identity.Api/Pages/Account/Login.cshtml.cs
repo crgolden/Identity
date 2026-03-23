@@ -52,6 +52,7 @@ public class LoginModel : PageModel
 
         await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
         ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
+        ReturnUrl = returnUrl;
         ReturnUrl ??= Url.Content("~/");
     }
 

@@ -2,6 +2,7 @@
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account;
 
+using Identity;
 using Identity.Pages.Account;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
@@ -44,7 +45,7 @@ public class LoginModelTests
 
         // Act
         LoginModel model = null!;
-        var ex = Record.Exception(() => model = new LoginModel(signInManager, logger));
+        var ex = Record.Exception(() => model = new LoginModel(signInManager, null, null, logger));
 
         // Assert
         Assert.Null(ex);
@@ -78,7 +79,7 @@ public class LoginModelTests
         ILogger<LoginModel>? logger = null;
 
         // Act & Assert
-        var ex = Record.Exception(() => new LoginModel(signInManager, logger));
+        var ex = Record.Exception(() => new LoginModel(signInManager, null, null, logger));
         Assert.Null(ex);
     }
 
@@ -163,7 +164,7 @@ public class LoginModelTests
         var urlHelperMock = new Mock<IUrlHelper>();
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
 
-        var model = new LoginModel(signInManagerMock.Object, Mock.Of<ILogger<LoginModel>>())
+        var model = new LoginModel(signInManagerMock.Object, CreateUserManagerMock().Object, Mock.Of<IAvatarService>(), Mock.Of<ILogger<LoginModel>>())
         {
             Url = urlHelperMock.Object,
             Input = new LoginModel.InputModel { Email = "user@example.com", Password = "pass" }
@@ -189,7 +190,7 @@ public class LoginModelTests
         var urlHelperMock = new Mock<IUrlHelper>();
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
 
-        var model = new LoginModel(signInManagerMock.Object, Mock.Of<ILogger<LoginModel>>())
+        var model = new LoginModel(signInManagerMock.Object, CreateUserManagerMock().Object, Mock.Of<IAvatarService>(), Mock.Of<ILogger<LoginModel>>())
         {
             Url = urlHelperMock.Object,
             Input = new LoginModel.InputModel { Email = "user@example.com", Password = "pass" }
@@ -215,7 +216,7 @@ public class LoginModelTests
         var urlHelperMock = new Mock<IUrlHelper>();
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
 
-        var model = new LoginModel(signInManagerMock.Object, Mock.Of<ILogger<LoginModel>>())
+        var model = new LoginModel(signInManagerMock.Object, CreateUserManagerMock().Object, Mock.Of<IAvatarService>(), Mock.Of<ILogger<LoginModel>>())
         {
             Url = urlHelperMock.Object,
             Input = new LoginModel.InputModel { Email = "user@example.com", Password = "pass" }
@@ -241,7 +242,7 @@ public class LoginModelTests
         var urlHelperMock = new Mock<IUrlHelper>();
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
 
-        var model = new LoginModel(signInManagerMock.Object, Mock.Of<ILogger<LoginModel>>())
+        var model = new LoginModel(signInManagerMock.Object, CreateUserManagerMock().Object, Mock.Of<IAvatarService>(), Mock.Of<ILogger<LoginModel>>())
         {
             Url = urlHelperMock.Object,
             Input = new LoginModel.InputModel { Email = "user@example.com", Password = "pass" }
@@ -267,7 +268,7 @@ public class LoginModelTests
         var urlHelperMock = new Mock<IUrlHelper>();
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
 
-        var model = new LoginModel(signInManagerMock.Object, Mock.Of<ILogger<LoginModel>>())
+        var model = new LoginModel(signInManagerMock.Object, CreateUserManagerMock().Object, Mock.Of<IAvatarService>(), Mock.Of<ILogger<LoginModel>>())
         {
             Url = urlHelperMock.Object,
             Input = new LoginModel.InputModel
@@ -321,7 +322,7 @@ public class LoginModelTests
         var urlHelperMock = new Mock<IUrlHelper>();
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
 
-        var model = new LoginModel(signInManagerMock.Object, loggerMock.Object)
+        var model = new LoginModel(signInManagerMock.Object, userManagerMock.Object, Mock.Of<IAvatarService>(), loggerMock.Object)
         {
             Url = urlHelperMock.Object,
             Input = new LoginModel.InputModel
@@ -371,7 +372,7 @@ public class LoginModelTests
             .BuildServiceProvider();
 
         var httpContext = new DefaultHttpContext { RequestServices = serviceProvider };
-        var model = new LoginModel(signInManagerMock.Object, Mock.Of<ILogger<LoginModel>>());
+        var model = new LoginModel(signInManagerMock.Object, CreateUserManagerMock().Object, Mock.Of<IAvatarService>(), Mock.Of<ILogger<LoginModel>>());
         model.PageContext = new PageContext(new ActionContext(httpContext, new RouteData(), new PageActionDescriptor()));
 
         var urlHelperMock = new Mock<IUrlHelper>();
@@ -379,6 +380,12 @@ public class LoginModelTests
         model.Url = urlHelperMock.Object;
 
         return (model, signInManagerMock);
+    }
+
+    private static Mock<UserManager<IdentityUser<Guid>>> CreateUserManagerMock()
+    {
+        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
+        return new Mock<UserManager<IdentityUser<Guid>>>(storeMock.Object, null, null, null, null, null, null, null, null);
     }
 
     private static Mock<SignInManager<IdentityUser<Guid>>> CreateSignInManagerMock()

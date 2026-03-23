@@ -206,6 +206,10 @@ ASPNETCORE_ENVIRONMENT=Development SqlConnectionStringBuilder__InitialCatalog=Id
 
 E2E tests use Playwright (Chromium) against a real Kestrel server started in-process. They require the same User Secrets as `dotnet run` (database, Key Vault, etc.).
 
+`xunit.runner.json` sets `parallelizeTestCollections: false` so all test collections run one at a time. This is required because the E2E `PlaywrightFixture` initializes `WebApplicationFactory<Program>` — which makes 8 concurrent Azure Key Vault calls at startup — and those async calls time out when the thread pool is saturated by hundreds of parallel unit tests. The trade-off is that the combined run takes ~5-6 minutes instead of ~2.5 minutes with parallelism enabled.
+
+`IdentityWebApplicationFactory.ConfigureWebHost` stubs out `IAvatarService` with a no-op (`NullAvatarService`) to prevent live Gravatar HTTP calls during test runs. This avoids 2-4 second delays per registration-based test caused by Gravatar API timeouts for test email addresses.
+
 In CI the workflow sets `ASPNETCORE_ENVIRONMENT=CI`, which loads `appsettings.CI.json` (enables only `AzureCliCredential`) after the `azure/login` OIDC step instead of User Secrets. The `IdentityWebApplicationFactory` replaces the Serilog logger factory (to avoid the Elasticsearch sink) when `IsDevelopment()` is true. In CI, the Serilog logger is not replaced — instead, the Elasticsearch sink uses `BootstrapMethod.Failure`, which prevents a missing Elasticsearch node from failing startup.
 
 `PlaywrightFixture.InitializeAsync` unconditionally calls `Microsoft.Playwright.Program.Main(["install", "chromium"])` to ensure Chromium is present. In CI, the workflow also runs a dedicated `pwsh playwright.ps1 install --with-deps chromium` step beforehand to install system-level browser dependencies.

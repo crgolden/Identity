@@ -40,7 +40,7 @@ try
     }
 
     var (corsPolicySection, sqlConnectionStringBuilderSection, defaultAzureCredentialOptionsSection) = builder.Configuration.GetSections();
-    var defaultAzureCredentialOptions = defaultAzureCredentialOptionsSection.Get<DefaultAzureCredentialOptions>() ?? throw new InvalidOperationException($"Invalid '{nameof(DefaultAzureCredentialOptions)}'");
+    var defaultAzureCredentialOptions = defaultAzureCredentialOptionsSection.Get<DefaultAzureCredentialOptions>() ?? throw new InvalidOperationException($"Invalid '{nameof(DefaultAzureCredentialOptions)}' section.");
     TokenCredential tokenCredential = new DefaultAzureCredential(defaultAzureCredentialOptions);
     var (elasticsearchNode, keyVaultUrl, blobUrl, dataProtectionKeyIdentifier) = builder.Configuration.GetUris();
     var secretClient = new SecretClient(keyVaultUrl, tokenCredential);
@@ -147,6 +147,7 @@ try
                 identityServerOptions.Events.RaiseSuccessEvents = true;
             }
 
+            identityServerOptions.UserInteraction.ConsentUrl = "/Consent/Index";
             identityServerOptions.UserInteraction.ErrorUrl = "/Error";
             identityServerOptions.UserInteraction.LoginUrl = "/Account/Login";
             identityServerOptions.UserInteraction.LogoutUrl = "/Account/Logout";
@@ -210,7 +211,7 @@ try
     app.UseSerilogRequestLogging();
     if (app.Environment.IsDevelopment())
     {
-        app.UseDeveloperExceptionPage().UseMigrationsEndPoint();
+        app.UseDeveloperExceptionPage();
     }
     else
     {

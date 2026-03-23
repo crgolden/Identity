@@ -126,7 +126,7 @@ dotnet test --project Identity.Tests --configuration Release -- --filter-trait "
 # E2E tests (local) — requires Development environment for User Secrets
 ASPNETCORE_ENVIRONMENT=Development SqlConnectionStringBuilder__InitialCatalog=IdentityTest dotnet test --project Identity.Tests --configuration Release -- --filter-trait "Category=E2E"
 
-# All tests (unit + E2E, local)
+# All tests (unit + E2E, local) — serialized; takes ~5-6 minutes
 ASPNETCORE_ENVIRONMENT=Development SqlConnectionStringBuilder__InitialCatalog=IdentityTest dotnet test --project Identity.Tests --configuration Release
 
 # Load tests (requires E2E infrastructure — database + Key Vault)
