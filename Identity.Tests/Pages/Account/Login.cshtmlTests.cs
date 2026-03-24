@@ -167,6 +167,7 @@ public class LoginModelTests
         var model = new LoginModel(signInManagerMock.Object, CreateUserManagerMock().Object, Mock.Of<IAvatarService>(), Mock.Of<ILogger<LoginModel>>())
         {
             Url = urlHelperMock.Object,
+            PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
             Input = new LoginModel.InputModel { Email = "user@example.com", Password = "pass" }
         };
 
@@ -385,7 +386,10 @@ public class LoginModelTests
     private static Mock<UserManager<IdentityUser<Guid>>> CreateUserManagerMock()
     {
         var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        return new Mock<UserManager<IdentityUser<Guid>>>(storeMock.Object, null, null, null, null, null, null, null, null);
+        var mock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock.Object, null, null, null, null, null, null, null, null);
+        mock.Setup(u => u.FindByNameAsync(It.IsAny<string>()))
+            .ReturnsAsync((IdentityUser<Guid>?)null);
+        return mock;
     }
 
     private static Mock<SignInManager<IdentityUser<Guid>>> CreateSignInManagerMock()
