@@ -61,6 +61,7 @@ public sealed class PasswordResetTests(PlaywrightFixture fixture)
             var resetLink = EmailCaptureService.ExtractLink(resetEmail.HtmlBody, "http");
 
             await page.GotoAsync(resetLink);
+            await page.WaitForURLAsync("**/Account/ResetPassword**");
             await page.FillAsync("input[name='Input.Password']", newPassword);
             await page.FillAsync("input[name='Input.ConfirmPassword']", newPassword);
             await page.ClickAsync("button[type='submit']");

@@ -53,6 +53,13 @@ public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Progra
     {
         builder.ConfigureServices((context, services) =>
         {
+            // Prevent a transient background-service exception (e.g. IdentityServer key refresh,
+            // token cleanup) from stopping the Kestrel host mid-test-run and causing
+            // ERR_CONNECTION_FAILED on subsequent Playwright navigations.
+            // .NET 6+ default is StopHost; override to Ignore so the server stays alive.
+            services.Configure<HostOptions>(opts =>
+                opts.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore);
+
             if (!context.HostingEnvironment.IsProduction())
             {
                 // Replace the Serilog ILoggerFactory (which connects to Elasticsearch on startup)
