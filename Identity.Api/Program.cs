@@ -1,4 +1,4 @@
-#pragma warning disable SA1200
+#pragma warning disable SA1200, S3776 // S3776: startup configuration complexity is inherent
 using System.Net.Http.Headers;
 using Azure.Core;
 using Azure.Identity;
@@ -27,7 +27,7 @@ using OpenTelemetry.Trace;
 using Resend;
 using Serilog;
 using Serilog.Filters;
-#pragma warning restore SA1200
+#pragma warning restore SA1200, S3776
 
 Log.Logger = new LoggerConfiguration().WriteTo.Console().CreateBootstrapLogger();
 

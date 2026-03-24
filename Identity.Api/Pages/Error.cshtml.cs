@@ -9,7 +9,9 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 /// <summary>Page model for the Error page.</summary>
 [AllowAnonymous]
 [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-[IgnoreAntiforgeryToken] // NOSONAR: error pages must accept GET/POST from any origin without a CSRF token
+#pragma warning disable S4502 // Error pages must accept GET/POST without a valid CSRF token
+[IgnoreAntiforgeryToken]
+#pragma warning restore S4502
 public class ErrorModel : PageModel
 {
     private readonly ILogger _logger;

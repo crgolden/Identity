@@ -107,6 +107,12 @@ public class LoginModel : PageModel
 
     private async Task TryAddAvatarClaimAsync(string email, CancellationToken cancellationToken)
     {
+        var avatarUrl = await _avatarService.GetAvatarUrlAsync(email, cancellationToken);
+        if (avatarUrl is null)
+        {
+            return;
+        }
+
         var user = await _userManager.FindByNameAsync(email);
         if (user is null)
         {
@@ -114,13 +120,7 @@ public class LoginModel : PageModel
         }
 
         var userClaims = await _userManager.GetClaimsAsync(user);
-        if (userClaims.Any(x => string.Equals("picture", x.Type, StringComparison.Ordinal)))
-        {
-            return;
-        }
-
-        var avatarUrl = await _avatarService.GetAvatarUrlAsync(email, cancellationToken);
-        if (avatarUrl is not null)
+        if (!userClaims.Any(x => string.Equals("picture", x.Type, StringComparison.Ordinal)))
         {
             await _userManager.AddClaimAsync(user, new Claim("picture", avatarUrl.ToString()));
         }
