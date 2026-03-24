@@ -42,6 +42,13 @@ try
     var (corsPolicySection, sqlConnectionStringBuilderSection, defaultAzureCredentialOptionsSection) = builder.Configuration.GetSections();
     var defaultAzureCredentialOptions = defaultAzureCredentialOptionsSection.Get<DefaultAzureCredentialOptions>() ?? throw new InvalidOperationException($"Invalid '{nameof(DefaultAzureCredentialOptions)}' section.");
     TokenCredential tokenCredential = new DefaultAzureCredential(defaultAzureCredentialOptions);
+    var tokenContext = new TokenRequestContext(["https://vault.azure.net/.default"]);
+    var token = await tokenCredential.GetTokenAsync(tokenContext, CancellationToken.None);
+    if (IsNullOrWhiteSpace(token.Token))
+    {
+        throw new InvalidOperationException("Failed to acquire token for Azure Key Vault access.");
+    }
+
     var (elasticsearchNode, keyVaultUrl, blobUrl, dataProtectionKeyIdentifier) = builder.Configuration.GetUris();
     var secretClient = new SecretClient(keyVaultUrl, tokenCredential);
     var (gravatarApiKeySecret, elasticsearchUsername, elasticsearchPassword, sqlServerUserId, sqlServerPassword, googleClientId, googleClientSecret, resendApiToken) = await secretClient.GetSecrets();
