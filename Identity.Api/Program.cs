@@ -127,7 +127,7 @@ try
                 identityServerOptions.Events.RaiseSuccessEvents = true;
             }
 
-            identityServerOptions.UserInteraction.ConsentUrl = "/Consent/Index";
+            identityServerOptions.UserInteraction.ConsentUrl = "/Account/Manage/Consent";
             identityServerOptions.UserInteraction.ErrorUrl = "/Error";
             identityServerOptions.UserInteraction.LoginUrl = "/Account/Login";
             identityServerOptions.UserInteraction.LogoutUrl = "/Account/Logout";

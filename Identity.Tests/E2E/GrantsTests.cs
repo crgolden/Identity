@@ -22,8 +22,8 @@ public sealed class GrantsTests(PlaywrightFixture fixture)
             await page.ClickAsync("button[type='submit']");
             await page.WaitForURLAsync(url => !url.Contains("/Account/Login"));
 
-            await page.GotoAsync("/Grants/Index");
-            await page.WaitForURLAsync("**/Grants/Index**");
+            await page.GotoAsync("/Account/Manage/Grants");
+            await page.WaitForURLAsync("**/Account/Manage/Grants**");
 
             // Page should load successfully without error
             Assert.DoesNotContain("/Account/Login", page.Url);

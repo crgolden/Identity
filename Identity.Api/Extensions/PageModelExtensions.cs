@@ -13,7 +13,7 @@ public static class PageModelExtensions
     /// </summary>
     /// <param name="page">The current page model.</param>
     /// <param name="redirectUri">The URI to redirect to after the loading page renders.</param>
-    /// <returns>A redirect result targeting <c>/Redirect/Index</c>.</returns>
+    /// <returns>A redirect result targeting <c>/Redirect</c>.</returns>
     public static IActionResult LoadingPage(this PageModel page, string redirectUri) =>
-        page.RedirectToPage("/Redirect/Index", new { redirectUri });
+        page.RedirectToPage("/Redirect", new { redirectUri });
 }

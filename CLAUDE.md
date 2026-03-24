@@ -94,19 +94,19 @@ All IdentityServer-specific Razor Pages live under `Identity.Api/Pages/` in `Ide
 
 | Path | Namespace | Purpose |
 |---|---|---|
-| `/Consent/Index` | `Identity.Pages.Consent` | OAuth2 scope approval (allow/deny, remember consent) |
-| `/Grants/Index` | `Identity.Pages.Grants` | View and revoke previously granted client permissions |
-| `/Device/Index` | `Identity.Pages.Device` | Device authorization flow — user code entry + scope consent |
-| `/Device/Success` | `Identity.Pages.Device` | Device flow success confirmation (`[AllowAnonymous]`) |
-| `/Ciba/Index` | `Identity.Pages.Ciba` | CIBA backchannel login request display (`[AllowAnonymous]`) |
-| `/ServerSideSessions/Index` | `Identity.Pages.ServerSideSessions` | View and remove active server-side user sessions |
-| `/Redirect/Index` | `Identity.Pages.Redirect` | Loading page for native client redirects (`[AllowAnonymous]`) |
-| `/Diagnostics/Index` | `Identity.Pages.Diagnostics` | Current user claims/tokens — loopback only, dev-only nav link |
+| `/Account/Manage/Consent` | `Identity.Pages.Account.Manage` | OAuth2 scope approval (allow/deny, remember consent) |
+| `/Account/Manage/Grants` | `Identity.Pages.Account.Manage` | View and revoke previously granted client permissions |
+| `/Account/Manage/Device` | `Identity.Pages.Account.Manage` | Device authorization flow — user code entry + scope consent |
+| `/Account/Manage/DeviceSuccess` | `Identity.Pages.Account.Manage` | Device flow success confirmation (`[AllowAnonymous]`) |
+| `/Ciba` | `Identity.Pages` | CIBA backchannel login request display (`[AllowAnonymous]`) |
+| `/Account/Manage/ServerSideSessions` | `Identity.Pages.Account.Manage` | View and remove active server-side user sessions |
+| `/Redirect` | `Identity.Pages` | Loading page for native client redirects (`[AllowAnonymous]`) |
+| `/Account/Manage/Diagnostics` | `Identity.Pages.Account.Manage` | Current user claims/tokens — loopback only, dev-only nav link |
 
 **Support infrastructure:**
 - `Identity.Api/Filters/SecurityHeadersAttribute.cs` — `IResultFilter` adding `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, and `Content-Security-Policy` headers to all `PageResult` responses. Namespace: `Identity.Filters`.
-- `Identity.Api/Extensions/PageModelExtensions.cs` — `LoadingPage()` extension on `PageModel` that redirects to `/Redirect/Index`. Namespace: `Identity.Extensions`.
-- `Identity.Api/Pages/Consent/ConsentOptions.cs` — static options (`EnableOfflineAccess`, display names, error messages) shared by Consent and Device pages.
+- `Identity.Api/Extensions/PageModelExtensions.cs` — `LoadingPage()` extension on `PageModel` that redirects to `/Redirect`. Namespace: `Identity.Extensions`.
+- `Identity.Api/Pages/Account/Manage/ConsentOptions.cs` — static options (`EnableOfflineAccess`, display names, error messages) shared by Consent and Device pages.
 - `Identity.Api/Telemetry.cs` — `System.Diagnostics.Metrics.Meter`-based counters for `identity.consent.granted`, `identity.consent.denied`, and `identity.grants.revoked`. Namespace: `Identity`.
 
 **Error redirects** use `/Error` (the existing root error page, matching `identityServerOptions.UserInteraction.ErrorUrl = "/Error"` in Program.cs) — not `/Home/Error/Index`.

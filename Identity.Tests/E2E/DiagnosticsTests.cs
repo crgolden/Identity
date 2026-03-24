@@ -22,8 +22,8 @@ public sealed class DiagnosticsTests(PlaywrightFixture fixture)
             await page.ClickAsync("button[type='submit']");
             await page.WaitForURLAsync(url => !url.Contains("/Account/Login"));
 
-            await page.GotoAsync("/Diagnostics/Index");
-            await page.WaitForURLAsync("**/Diagnostics/Index**");
+            await page.GotoAsync("/Account/Manage/Diagnostics");
+            await page.WaitForURLAsync("**/Account/Manage/Diagnostics**");
 
             var content = await page.ContentAsync();
             Assert.Contains("sub", content, StringComparison.OrdinalIgnoreCase);

@@ -1096,14 +1096,14 @@ These pages implement the IdentityServer interactive UI — consent, grants, dev
 
 | Path | Unit Test File | E2E Test File | Coverage |
 |---|---|---|---|
-| `/Consent/Index` | `Pages/Consent/Index.cshtmlTests.cs` | `E2E/ConsentTests.cs` | ✅ Unit + E2E |
-| `/Grants/Index` | `Pages/Grants/Index.cshtmlTests.cs` | `E2E/GrantsTests.cs` | ✅ Unit + E2E |
-| `/Device/Index` | `Pages/Device/Index.cshtmlTests.cs` | — | 🟡 Unit only |
-| `/Device/Success` | `Pages/Device/Success.cshtmlTests.cs` | — | 🟡 Unit only |
-| `/Ciba/Index` | `Pages/Ciba/Index.cshtmlTests.cs` | — | 🟡 Unit only |
-| `/ServerSideSessions/Index` | `Pages/ServerSideSessions/Index.cshtmlTests.cs` | `E2E/ServerSideSessionsTests.cs` | ✅ Unit + E2E |
-| `/Redirect/Index` | `Pages/Redirect/Index.cshtmlTests.cs` | — | 🟡 Unit only |
-| `/Diagnostics/Index` | `Pages/Diagnostics/Index.cshtmlTests.cs` | `E2E/DiagnosticsTests.cs` | ✅ Unit + E2E |
+| `/Account/Manage/Consent` | `Pages/Account/Manage/Consent.cshtmlTests.cs` | `E2E/ConsentTests.cs` | ✅ Unit + E2E |
+| `/Account/Manage/Grants` | `Pages/Account/Manage/Grants.cshtmlTests.cs` | `E2E/GrantsTests.cs` | ✅ Unit + E2E |
+| `/Account/Manage/Device` | `Pages/Account/Manage/Device.cshtmlTests.cs` | — | 🟡 Unit only |
+| `/Account/Manage/DeviceSuccess` | `Pages/Account/Manage/DeviceSuccess.cshtmlTests.cs` | — | 🟡 Unit only |
+| `/Ciba` | `Pages/Ciba.cshtmlTests.cs` | — | 🟡 Unit only |
+| `/Account/Manage/ServerSideSessions` | `Pages/Account/Manage/ServerSideSessions.cshtmlTests.cs` | `E2E/ServerSideSessionsTests.cs` | ✅ Unit + E2E |
+| `/Redirect` | `Pages/Redirect.cshtmlTests.cs` | — | 🟡 Unit only |
+| `/Account/Manage/Diagnostics` | `Pages/Account/Manage/Diagnostics.cshtmlTests.cs` | `E2E/DiagnosticsTests.cs` | ✅ Unit + E2E |
 
 **E2E test helpers:**
 - `Infrastructure/TestClientHelper.cs` — seeds a minimal OIDC client (`RequireConsent=true`, `authorization_code` grant, `openid` scope) and identity resources into `ApplicationDbContext` for use by `ConsentTests`
@@ -1178,14 +1178,14 @@ quadrantChart
 | `/` | 🔵 | — | ❌ | Constructor only |
 | `/Privacy` | 🔵 | — | ❌ | Constructor only |
 | `/Error` | ✅ | — | ❌ | |
-| `/Consent/Index` | ✅ | ✅ | ✅ | Allow, Deny, no-scopes E2E flows |
-| `/Grants/Index` | ✅ | ✅ | ✅ | Page loads for authenticated user |
-| `/Device/Index` | ✅ | ✅ | ❌ | |
-| `/Device/Success` | ✅ | — | ❌ | Constructor only |
-| `/Ciba/Index` | ✅ | — | ❌ | |
-| `/ServerSideSessions/Index` | ✅ | ✅ | ✅ | Page loads after login |
-| `/Redirect/Index` | ✅ | — | ❌ | |
-| `/Diagnostics/Index` | ✅ | — | ✅ | Claims table visible after login |
+| `/Account/Manage/Consent` | ✅ | ✅ | ✅ | Allow, Deny, no-scopes E2E flows |
+| `/Account/Manage/Grants` | ✅ | ✅ | ✅ | Page loads for authenticated user |
+| `/Account/Manage/Device` | ✅ | ✅ | ❌ | |
+| `/Account/Manage/DeviceSuccess` | ✅ | — | ❌ | Constructor only |
+| `/Ciba` | ✅ | — | ❌ | |
+| `/Account/Manage/ServerSideSessions` | ✅ | ✅ | ✅ | Page loads after login |
+| `/Redirect` | ✅ | — | ❌ | |
+| `/Account/Manage/Diagnostics` | ✅ | — | ✅ | Claims table visible after login |
 
 ### Coverage Gaps
 

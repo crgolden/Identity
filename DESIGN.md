@@ -126,14 +126,14 @@ These pages participate in the OAuth2/OIDC protocol flows. They use `[Authorize]
 
 | URL | Auth | Purpose |
 |---|---|---|
-| `/Consent/Index` | `[Authorize]` | OAuth2 scope approval — allow/deny, optional remember |
-| `/Grants/Index` | `[Authorize]` | View and revoke previously granted client permissions |
-| `/Device/Index` | `[Authorize]` | Device authorization flow — user code entry + scope consent |
-| `/Device/Success` | `[AllowAnonymous]` | Device flow success confirmation |
-| `/Ciba/Index` | `[AllowAnonymous]` | CIBA backchannel login request display |
-| `/ServerSideSessions/Index` | `[Authorize]` | View and revoke active server-side sessions |
-| `/Diagnostics/Index` | `[Authorize]` | Current user claims/tokens (loopback only, development nav link) |
-| `/Redirect/Index` | `[AllowAnonymous]` | Intermediate loading page for native-client protocol redirects |
+| `/Account/Manage/Consent` | `[Authorize]` | OAuth2 scope approval — allow/deny, optional remember |
+| `/Account/Manage/Grants` | `[Authorize]` | View and revoke previously granted client permissions |
+| `/Account/Manage/Device` | `[Authorize]` | Device authorization flow — user code entry + scope consent |
+| `/Account/Manage/DeviceSuccess` | `[AllowAnonymous]` | Device flow success confirmation |
+| `/Ciba` | `[AllowAnonymous]` | CIBA backchannel login request display |
+| `/Account/Manage/ServerSideSessions` | `[Authorize]` | View and revoke active server-side sessions |
+| `/Account/Manage/Diagnostics` | `[Authorize]` | Current user claims/tokens (loopback only, development nav link) |
+| `/Redirect` | `[AllowAnonymous]` | Intermediate loading page for native-client protocol redirects |
 
 ### Infrastructure endpoints
 
@@ -259,9 +259,9 @@ Defined in `Telemetry.cs`, meter name `"Identity"`:
 
 | Counter | Tags | Emitted from |
 |---|---|---|
-| `identity.consent.granted` | `client_id`, `remember` (bool), `scope_count` | `/Consent/Index` on allow |
-| `identity.consent.denied` | `client_id`, `scope_count` | `/Consent/Index` on deny |
-| `identity.grants.revoked` | `client_id` | `/Grants/Index` on revoke |
+| `identity.consent.granted` | `client_id`, `remember` (bool), `scope_count` | `/Account/Manage/Consent` on allow |
+| `identity.consent.denied` | `client_id`, `scope_count` | `/Account/Manage/Consent` on deny |
+| `identity.grants.revoked` | `client_id` | `/Account/Manage/Grants` on revoke |
 
 ---
 

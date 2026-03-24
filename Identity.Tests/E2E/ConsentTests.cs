@@ -30,7 +30,7 @@ public sealed class ConsentTests(PlaywrightFixture fixture)
                 return;
             }
 
-            Assert.Contains("/Consent/Index", page.Url);
+            Assert.Contains("/Account/Manage/Consent", page.Url);
 
             // Capture the redirect URL from the browser request event before ERR_CONNECTION_REFUSED
             var request = await page.RunAndWaitForRequestAsync(
@@ -62,7 +62,7 @@ public sealed class ConsentTests(PlaywrightFixture fixture)
                 return;
             }
 
-            Assert.Contains("/Consent/Index", page.Url);
+            Assert.Contains("/Account/Manage/Consent", page.Url);
 
             // Check all scope checkboxes so the scopes are included in the form submission.
             var checkboxes = await page.QuerySelectorAllAsync("input[type='checkbox'][name='Input.ScopesConsented']:not([disabled])");
@@ -96,7 +96,7 @@ public sealed class ConsentTests(PlaywrightFixture fixture)
             await LoginAsync(page, email, password);
             await page.GotoAsync(BuildAuthorizeUrl(clientId, RedirectUri, "noscope-state"));
 
-            if (!page.Url.Contains("/Consent/Index"))
+            if (!page.Url.Contains("/Account/Manage/Consent"))
             {
                 return;
             }
@@ -113,11 +113,11 @@ public sealed class ConsentTests(PlaywrightFixture fixture)
 
             await Task.WhenAll(
                 page.WaitForURLAsync(
-                    url => url.Contains("/Consent/Index"),
+                    url => url.Contains("/Account/Manage/Consent"),
                     new PageWaitForURLOptions { WaitUntil = WaitUntilState.Load }),
                 page.ClickAsync("button[value='yes']"));
 
-            Assert.Contains("/Consent/Index", page.Url);
+            Assert.Contains("/Account/Manage/Consent", page.Url);
             var content = await page.ContentAsync();
             Assert.Contains("permission", content, StringComparison.OrdinalIgnoreCase);
         }

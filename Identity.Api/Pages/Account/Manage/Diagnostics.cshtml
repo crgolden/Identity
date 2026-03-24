@@ -1,0 +1,60 @@
+@page
+@model Identity.Pages.Account.Manage.DiagnosticsModel
+@{
+    ViewData["Title"] = "Diagnostics";
+}
+
+<h1>@ViewData["Title"]</h1>
+<p class="text-muted">Current authentication state for the signed-in user. Only accessible from localhost.</p>
+
+<h2 class="h5 mt-4">Claims</h2>
+@if (!Model.View.Claims.Any())
+{
+    <p class="text-muted">No claims found.</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-sm table-striped">
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var claim in Model.View.Claims)
+                {
+                    <tr>
+                        <td><code>@claim.Type</code></td>
+                        <td class="text-break">@claim.Value</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@if (Model.View.Tokens.Any())
+{
+    <h2 class="h5 mt-4">Tokens</h2>
+    <div class="table-responsive">
+        <table class="table table-sm table-striped">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var token in Model.View.Tokens)
+                {
+                    <tr>
+                        <td><code>@token.Name</code></td>
+                        <td class="text-break"><code>@token.Value</code></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

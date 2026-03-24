@@ -2,7 +2,6 @@ namespace Identity.Tests.Infrastructure;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Playwright;
 
 /// <summary>
@@ -11,6 +10,8 @@ using Microsoft.Playwright;
 /// </summary>
 public sealed class PlaywrightFixture : IAsyncLifetime
 {
+    private static readonly bool CI = bool.TryParse(Environment.GetEnvironmentVariable("CI"), out var isCi) && isCi;
+    private static readonly bool Headless = !string.Equals(Environment.GetEnvironmentVariable("PLAYWRIGHT_HEADED"), "1", StringComparison.OrdinalIgnoreCase);
     private IPlaywright? _playwright;
     private IBrowser? _browser;
 
@@ -39,13 +40,9 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         }
 
         _playwright = await Playwright.CreateAsync();
-        var headless = !string.Equals(
-            Environment.GetEnvironmentVariable("PLAYWRIGHT_HEADED"),
-            "1",
-            StringComparison.OrdinalIgnoreCase);
         _browser = await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
         {
-            Headless = headless
+            Headless = Headless
         });
 
         // Warm up the server so connection pool / IdentityServer keys are ready
@@ -71,6 +68,14 @@ public sealed class PlaywrightFixture : IAsyncLifetime
             IgnoreHTTPSErrors = true
         });
         var page = await context.NewPageAsync();
+
+        // CI machines are slower; double the default 30s timeout to avoid intermittent failures
+        // on late-running tests when the machine is under load.
+        if (CI)
+        {
+            page.SetDefaultTimeout(60_000);
+        }
+
         return (context, page);
     }
 
@@ -83,7 +88,7 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         }
 
         _playwright?.Dispose();
-        if (Factory.Services.GetRequiredService<IHostEnvironment>().IsEnvironment("CI"))
+        if (CI)
         {
             await CleanupDatabaseAsync();
         }

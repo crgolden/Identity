@@ -110,6 +110,7 @@ jobs:
           echo "KeyVaultUri=${{ vars.KEYVAULT_URI }}" >> $env:GITHUB_ENV
           echo "BlobUri=${{ vars.BLOB_URI }}" >> $env:GITHUB_ENV
           echo "DataProtectionKeyIdentifier=${{ vars.DATA_PROTECTION_KEY_IDENTIFIER }}" >> $env:GITHUB_ENV
+          echo "DefaultAzureCredentialOptions__ExcludeAzureCliCredential=${{ vars.DEFAULTAZURECREDENTIALOPTIONS__EXCLUDEAZURECLICREDENTIAL }}" >> $env:GITHUB_ENV
           echo "ElasticsearchNode=${{ vars.ELASTICSEARCH_NODE }}" >> $env:GITHUB_ENV
           echo "APPLICATIONINSIGHTS_CONNECTION_STRING=${{ vars.APPLICATIONINSIGHTS_CONNECTION_STRING }}" >> $env:GITHUB_ENV
           echo "SqlConnectionStringBuilder__DataSource=${{ vars.DB_SERVER }}" >> $env:GITHUB_ENV
