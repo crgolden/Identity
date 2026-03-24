@@ -70,6 +70,7 @@ public sealed class PlaywrightFixture : IAsyncLifetime
             BaseURL = BaseAddress,
             IgnoreHTTPSErrors = true
         });
+        context.SetDefaultTimeout(60_000);
         var page = await context.NewPageAsync();
         return (context, page);
     }

@@ -144,7 +144,7 @@ jobs:
         if: always()
         with:
           name: test-results
-          path: TestResults/
+          path: Identity.Tests/bin/Release/net10.0/TestResults/
 
       - name: Run load tests
         if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'

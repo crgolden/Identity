@@ -80,34 +80,7 @@ try
                 tracerProviderBuilder.AddConsoleExporter();
             }
         }).Services
-        .AddSerilog((sp, loggerConfiguration) =>
-        {
-            loggerConfiguration
-                .ReadFrom.Configuration(builder.Configuration)
-                .ReadFrom.Services(sp)
-                .Enrich.FromLogContext();
-            if (builder.Environment.IsProduction())
-            {
-                loggerConfiguration
-                    .WriteTo.OpenTelemetry()
-                    .WriteTo.Elasticsearch(
-                        [elasticsearchNode],
-                        elasticsearchSinkOptions =>
-                        {
-                            elasticsearchSinkOptions.DataStream = new DataStreamName("logs", "dotnet", nameof(Identity));
-                            elasticsearchSinkOptions.BootstrapMethod = BootstrapMethod.Failure;
-                        },
-                        transportConfiguration =>
-                        {
-                            var header = new BasicAuthentication(elasticsearchUsername.Value, elasticsearchPassword.Value);
-                            transportConfiguration.Authentication(header);
-                        });
-            }
-            else
-            {
-                loggerConfiguration.Filter.ByExcluding(Matching.FromSource("Duende.IdentityServer.Diagnostics.Summary"));
-            }
-        })
+        .AddSerilog(ConfigureSerilog)
         .Configure<SqlConnectionStringBuilder>(sqlConnectionStringBuilderSection)
         .AddDbContextPool<ApplicationDbContext>((sp, dbContextOptionsBuilder) =>
         {
@@ -205,6 +178,35 @@ try
         {
             identityPasskeyOptions.ValidateOrigin = context => ValueTask.FromResult(context.Origin == "https://localhost:7261");
         });
+    }
+
+    void ConfigureSerilog(IServiceProvider sp, LoggerConfiguration loggerConfiguration)
+    {
+        loggerConfiguration
+            .ReadFrom.Configuration(builder.Configuration)
+            .ReadFrom.Services(sp)
+            .Enrich.FromLogContext();
+        if (builder.Environment.IsProduction())
+        {
+            loggerConfiguration
+                .WriteTo.OpenTelemetry()
+                .WriteTo.Elasticsearch(
+                    [elasticsearchNode],
+                    elasticsearchSinkOptions =>
+                    {
+                        elasticsearchSinkOptions.DataStream = new DataStreamName("logs", "dotnet", nameof(Identity));
+                        elasticsearchSinkOptions.BootstrapMethod = BootstrapMethod.Failure;
+                    },
+                    transportConfiguration =>
+                    {
+                        var header = new BasicAuthentication(elasticsearchUsername.Value, elasticsearchPassword.Value);
+                        transportConfiguration.Authentication(header);
+                    });
+        }
+        else
+        {
+            loggerConfiguration.Filter.ByExcluding(Matching.FromSource("Duende.IdentityServer.Diagnostics.Summary"));
+        }
     }
 
     var app = builder.Build();

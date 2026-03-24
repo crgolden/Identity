@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<CoverageParameters>
-  <Exclude>
-    <Attribute>System.CodeDom.Compiler.GeneratedCodeAttribute</Attribute>
-  </Exclude>
-</CoverageParameters>
+<Configuration>
+  <CodeCoverage>
+    <Attributes>
+      <Exclude>
+        <Attribute>^System\.CodeDom\.Compiler\.GeneratedCodeAttribute$</Attribute>
+      </Exclude>
+    </Attributes>
+  </CodeCoverage>
+</Configuration>

@@ -83,21 +83,7 @@ public class LoginModel : PageModel
         {
             if (!IsNullOrWhiteSpace(Input.Email))
             {
-                var user = await _userManager.FindByNameAsync(Input.Email);
-                if (user is not null)
-                {
-                    var userClaims = await _userManager.GetClaimsAsync(user);
-                    var pictureClaim = userClaims.FirstOrDefault(x => string.Equals("picture", x.Type, StringComparison.Ordinal));
-                    if (pictureClaim is null)
-                    {
-                        var avatarUrl = await _avatarService.GetAvatarUrlAsync(Input.Email, HttpContext.RequestAborted);
-                        if (avatarUrl is not null)
-                        {
-                            var avatarUrlClaim = new Claim("picture", avatarUrl.ToString());
-                            await _userManager.AddClaimAsync(user, avatarUrlClaim);
-                        }
-                    }
-                }
+                await TryAddAvatarClaimAsync(Input.Email, HttpContext.RequestAborted);
             }
 
             _logger.LogTrace("User logged in.");
@@ -117,6 +103,27 @@ public class LoginModel : PageModel
 
         ModelState.AddModelError(Empty, "Invalid login attempt.");
         return Page();
+    }
+
+    private async Task TryAddAvatarClaimAsync(string email, CancellationToken cancellationToken)
+    {
+        var user = await _userManager.FindByNameAsync(email);
+        if (user is null)
+        {
+            return;
+        }
+
+        var userClaims = await _userManager.GetClaimsAsync(user);
+        if (userClaims.Any(x => string.Equals("picture", x.Type, StringComparison.Ordinal)))
+        {
+            return;
+        }
+
+        var avatarUrl = await _avatarService.GetAvatarUrlAsync(email, cancellationToken);
+        if (avatarUrl is not null)
+        {
+            await _userManager.AddClaimAsync(user, new Claim("picture", avatarUrl.ToString()));
+        }
     }
 
     /// <summary>Provides the form input values bound from the request.</summary>
