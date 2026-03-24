@@ -23,7 +23,7 @@ public sealed class ServerSideSessionsTests(PlaywrightFixture fixture)
             await page.WaitForURLAsync(url => !url.Contains("/Account/Login"));
 
             await page.GotoAsync("/ServerSideSessions/Index");
-            await page.WaitForLoadStateAsync();
+            await page.WaitForURLAsync("**/ServerSideSessions/Index**");
 
             // Page should load successfully (not redirect to error or login)
             Assert.DoesNotContain("/Account/Login", page.Url);

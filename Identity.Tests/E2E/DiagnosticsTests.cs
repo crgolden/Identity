@@ -23,7 +23,7 @@ public sealed class DiagnosticsTests(PlaywrightFixture fixture)
             await page.WaitForURLAsync(url => !url.Contains("/Account/Login"));
 
             await page.GotoAsync("/Diagnostics/Index");
-            await page.WaitForLoadStateAsync();
+            await page.WaitForURLAsync("**/Diagnostics/Index**");
 
             var content = await page.ContentAsync();
             Assert.Contains("sub", content, StringComparison.OrdinalIgnoreCase);
