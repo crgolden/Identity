@@ -19,7 +19,7 @@ public sealed class DiagnosticsTests(PlaywrightFixture fixture)
             await page.GotoAsync("/Account/Login");
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
-            await page.ClickAsync("button[type='submit']");
+            await page.ClickAsync("#login-submit");
             await page.WaitForURLAsync(url => !url.Contains("/Account/Login"));
 
             await page.GotoAsync("/Account/Manage/Diagnostics");
@@ -43,7 +43,7 @@ public sealed class DiagnosticsTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
             await page.FillAsync("input[name='Input.ConfirmPassword']", password);
-            await page.ClickAsync("button[type='submit']");
+            await page.ClickAsync("#registerSubmit");
             await page.WaitForURLAsync("**/Account/RegisterConfirmation**");
 
             var captured = await fixture.Email.WaitForEmailAsync(email);

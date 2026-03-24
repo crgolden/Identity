@@ -19,7 +19,7 @@ public sealed class EmailChangeTests(PlaywrightFixture fixture)
             await page.GotoAsync("/Account/Login");
             await page.FillAsync("input[name='Input.Email']", originalEmail);
             await page.FillAsync("input[name='Input.Password']", password);
-            await page.ClickAsync("button[type='submit']");
+            await page.ClickAsync("#login-submit");
             await page.WaitForURLAsync(url => !url.Contains("/Account/Login"));
 
             // Navigate to email management page
@@ -56,7 +56,7 @@ public sealed class EmailChangeTests(PlaywrightFixture fixture)
             await page3.GotoAsync("/Account/Login");
             await page3.FillAsync("input[name='Input.Email']", newEmail);
             await page3.FillAsync("input[name='Input.Password']", password);
-            await page3.ClickAsync("button[type='submit']");
+            await page3.ClickAsync("#login-submit");
             await page3.WaitForURLAsync(url => !url.Contains("/Account/Login"));
             Assert.DoesNotContain("/Account/Login", page3.Url);
         }
@@ -74,7 +74,7 @@ public sealed class EmailChangeTests(PlaywrightFixture fixture)
             await page.GotoAsync("/Account/Login");
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
-            await page.ClickAsync("button[type='submit']");
+            await page.ClickAsync("#login-submit");
             await page.WaitForURLAsync(url => !url.Contains("/Account/Login"));
 
             // Attempt to "change" to the same email
@@ -103,7 +103,7 @@ public sealed class EmailChangeTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
             await page.FillAsync("input[name='Input.ConfirmPassword']", password);
-            await page.ClickAsync("button[type='submit']");
+            await page.ClickAsync("#registerSubmit");
             await page.WaitForURLAsync("**/Account/RegisterConfirmation**");
 
             var confirmEmail = await fixture.Email.WaitForEmailAsync(email);

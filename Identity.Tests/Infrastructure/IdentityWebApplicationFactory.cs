@@ -79,6 +79,10 @@ public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Progra
             // Replace IAvatarService with a no-op stub to avoid real Gravatar HTTP calls in tests.
             services.RemoveAll<IAvatarService>();
             services.AddSingleton<IAvatarService>(new NullAvatarService());
+
+            // Reduce PBKDF2 iterations to 1 for tests — default 600k iterations is CPU-intensive
+            // and causes 60s+ timeouts on loaded CI machines (password sign-in late in the suite).
+            services.Configure<PasswordHasherOptions>(opts => opts.IterationCount = 1);
         });
     }
 

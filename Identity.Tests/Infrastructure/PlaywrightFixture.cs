@@ -1,5 +1,6 @@
 namespace Identity.Tests.Infrastructure;
 
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Playwright;
@@ -19,6 +20,8 @@ public sealed class PlaywrightFixture : IAsyncLifetime
     {
         Factory = new IdentityWebApplicationFactory();
         BaseAddress = string.Empty;
+        SharedEmail = $"e2e-shared-{Guid.NewGuid()}@test.invalid";
+        SharedPassword = $"Test@{Guid.NewGuid():N}!A1";
     }
 
     public IdentityWebApplicationFactory Factory { get; }
@@ -26,6 +29,16 @@ public sealed class PlaywrightFixture : IAsyncLifetime
     public EmailCaptureService Email => Factory.EmailCapture;
 
     public string BaseAddress { get; private set; }
+
+    /// <summary>
+    /// Email of a pre-confirmed user created during fixture initialization.
+    /// Use with <see cref="SharedPassword"/> in tests that only need an authenticated session
+    /// and don't care about the specific user identity.
+    /// </summary>
+    public string SharedEmail { get; }
+
+    /// <summary>Password for the pre-confirmed user at <see cref="SharedEmail"/>.</summary>
+    public string SharedPassword { get; }
 
     /// <inheritdoc/>
     public async ValueTask InitializeAsync()
@@ -50,6 +63,25 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         await using (warmupCtx)
         {
             await warmupPage.GotoAsync("/Account/Login");
+        }
+
+        // Pre-create a confirmed user via the UserManager API so tests that only need
+        // an authenticated session (GrantsTests, ServerSideSessionsTests) can skip the
+        // browser-based registration flow entirely. This avoids those tests accumulating
+        // extra DB state late in the suite and reduces the chance of login timeouts.
+        await using var scope = Factory.Services.CreateAsyncScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser<Guid>>>();
+        var sharedUser = new IdentityUser<Guid>
+        {
+            UserName = SharedEmail,
+            Email = SharedEmail,
+            EmailConfirmed = true
+        };
+        var createResult = await userManager.CreateAsync(sharedUser, SharedPassword);
+        if (!createResult.Succeeded)
+        {
+            throw new InvalidOperationException(
+                $"Failed to create shared test user: {string.Join(", ", createResult.Errors.Select(e => e.Description))}");
         }
     }
 

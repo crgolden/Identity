@@ -20,7 +20,7 @@ public sealed class RegistrationTests(PlaywrightFixture fixture)
             await page1.FillAsync("input[name='Input.Email']", email);
             await page1.FillAsync("input[name='Input.Password']", password);
             await page1.FillAsync("input[name='Input.ConfirmPassword']", password);
-            await page1.ClickAsync("button[type='submit']");
+            await page1.ClickAsync("#registerSubmit");
             await page1.WaitForURLAsync("**/Account/RegisterConfirmation**");
         }
 
@@ -32,7 +32,7 @@ public sealed class RegistrationTests(PlaywrightFixture fixture)
             await page2.FillAsync("input[name='Input.Email']", email);
             await page2.FillAsync("input[name='Input.Password']", password);
             await page2.FillAsync("input[name='Input.ConfirmPassword']", password);
-            await page2.ClickAsync("button[type='submit']");
+            await page2.ClickAsync("#registerSubmit");
 
             await page2.WaitForURLAsync("**/Account/Register**");
             var errorText = await page2.TextContentAsync(".validation-summary-errors, .text-danger");
@@ -54,7 +54,7 @@ public sealed class RegistrationTests(PlaywrightFixture fixture)
             await page1.FillAsync("input[name='Input.Email']", email);
             await page1.FillAsync("input[name='Input.Password']", password);
             await page1.FillAsync("input[name='Input.ConfirmPassword']", password);
-            await page1.ClickAsync("button[type='submit']");
+            await page1.ClickAsync("#registerSubmit");
             await page1.WaitForURLAsync("**/Account/RegisterConfirmation**");
         }
 
@@ -65,7 +65,7 @@ public sealed class RegistrationTests(PlaywrightFixture fixture)
             await page2.GotoAsync("/Account/Login");
             await page2.FillAsync("input[name='Input.Email']", email);
             await page2.FillAsync("input[name='Input.Password']", password);
-            await page2.ClickAsync("button[type='submit']");
+            await page2.ClickAsync("#login-submit");
 
             await page2.WaitForURLAsync("**/Account/Login**");
             var errorText = await page2.TextContentAsync(".validation-summary-errors, .text-danger");
@@ -89,7 +89,7 @@ public sealed class RegistrationTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
             await page.FillAsync("input[name='Input.ConfirmPassword']", password);
-            await page.ClickAsync("button[type='submit']");
+            await page.ClickAsync("#registerSubmit");
 
             // Should land on the "confirm your email" page
             await page.WaitForURLAsync("**/Account/RegisterConfirmation**");
@@ -106,7 +106,7 @@ public sealed class RegistrationTests(PlaywrightFixture fixture)
             await page.GotoAsync("/Account/Login");
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
-            await page.ClickAsync("button[type='submit']");
+            await page.ClickAsync("#login-submit");
 
             // Should redirect away from login (authenticated)
             await page.WaitForURLAsync(url => !url.Contains("/Account/Login"));

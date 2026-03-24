@@ -17,7 +17,7 @@ public sealed class LoginTests(PlaywrightFixture fixture)
             await page.GotoAsync("/Account/Login");
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
-            await page.ClickAsync("button[type='submit']");
+            await page.ClickAsync("#login-submit");
 
             await page.WaitForURLAsync(url => !url.Contains("/Account/Login"));
             Assert.DoesNotContain("/Account/Login", page.Url);
@@ -35,7 +35,7 @@ public sealed class LoginTests(PlaywrightFixture fixture)
             await page.GotoAsync("/Account/Login");
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", "WrongPassword!99");
-            await page.ClickAsync("button[type='submit']");
+            await page.ClickAsync("#login-submit");
 
             // Should stay on login page with a validation error
             await page.WaitForURLAsync("**/Account/Login**");
@@ -57,7 +57,7 @@ public sealed class LoginTests(PlaywrightFixture fixture)
                 await page.GotoAsync("/Account/Login");
                 await page.FillAsync("input[name='Input.Email']", email);
                 await page.FillAsync("input[name='Input.Password']", "BadPassword!99");
-                await page.ClickAsync("button[type='submit']");
+                await page.ClickAsync("#login-submit");
             }
 
             // After 5 failures the account should be locked out
@@ -79,7 +79,7 @@ public sealed class LoginTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
             await page.FillAsync("input[name='Input.ConfirmPassword']", password);
-            await page.ClickAsync("button[type='submit']");
+            await page.ClickAsync("#registerSubmit");
             await page.WaitForURLAsync("**/Account/RegisterConfirmation**");
 
             var captured = await fixture.Email.WaitForEmailAsync(email);

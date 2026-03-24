@@ -18,7 +18,7 @@ public sealed class PasswordResetTests(PlaywrightFixture fixture)
             // Request password reset
             await page.GotoAsync("/Account/ForgotPassword");
             await page.FillAsync("input[name='Input.Email']", email);
-            await page.ClickAsync("button[type='submit']");
+            await page.ClickAsync("#forgot-password-submit");
             await page.WaitForURLAsync("**/Account/ForgotPasswordConfirmation**");
 
             // Extract reset link
@@ -30,14 +30,14 @@ public sealed class PasswordResetTests(PlaywrightFixture fixture)
             await page.WaitForURLAsync("**/Account/ResetPassword**");
             await page.FillAsync("input[name='Input.Password']", newPassword);
             await page.FillAsync("input[name='Input.ConfirmPassword']", newPassword);
-            await page.ClickAsync("button[type='submit']");
+            await page.ClickAsync("#reset-password-submit");
             await page.WaitForURLAsync("**/Account/ResetPasswordConfirmation**");
 
             // Login with new password should succeed
             await page.GotoAsync("/Account/Login");
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", newPassword);
-            await page.ClickAsync("button[type='submit']");
+            await page.ClickAsync("#login-submit");
             await page.WaitForURLAsync(url => !url.Contains("/Account/Login"));
             Assert.DoesNotContain("/Account/Login", page.Url);
         }
@@ -54,7 +54,7 @@ public sealed class PasswordResetTests(PlaywrightFixture fixture)
         {
             await page.GotoAsync("/Account/ForgotPassword");
             await page.FillAsync("input[name='Input.Email']", email);
-            await page.ClickAsync("button[type='submit']");
+            await page.ClickAsync("#forgot-password-submit");
             await page.WaitForURLAsync("**/Account/ForgotPasswordConfirmation**");
 
             var resetEmail = await fixture.Email.WaitForEmailAsync(email);
@@ -64,14 +64,14 @@ public sealed class PasswordResetTests(PlaywrightFixture fixture)
             await page.WaitForURLAsync("**/Account/ResetPassword**");
             await page.FillAsync("input[name='Input.Password']", newPassword);
             await page.FillAsync("input[name='Input.ConfirmPassword']", newPassword);
-            await page.ClickAsync("button[type='submit']");
+            await page.ClickAsync("#reset-password-submit");
             await page.WaitForURLAsync("**/Account/ResetPasswordConfirmation**");
 
             // Old password should now fail
             await page.GotoAsync("/Account/Login");
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", oldPassword);
-            await page.ClickAsync("button[type='submit']");
+            await page.ClickAsync("#login-submit");
             await page.WaitForURLAsync("**/Account/Login**");
             var errorText = await page.TextContentAsync(".validation-summary-errors, .text-danger");
             Assert.NotNull(errorText);
@@ -90,7 +90,7 @@ public sealed class PasswordResetTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
             await page.FillAsync("input[name='Input.ConfirmPassword']", password);
-            await page.ClickAsync("button[type='submit']");
+            await page.ClickAsync("#registerSubmit");
             await page.WaitForURLAsync("**/Account/RegisterConfirmation**");
 
             var confirmEmail = await fixture.Email.WaitForEmailAsync(email);

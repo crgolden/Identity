@@ -19,7 +19,7 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
             await page.GotoAsync("/Account/Login");
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", oldPassword);
-            await page.ClickAsync("button[type='submit']");
+            await page.ClickAsync("#login-submit");
             await page.WaitForURLAsync(url => !url.Contains("/Account/Login"));
 
             // Change password
@@ -42,7 +42,7 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
             await page2.GotoAsync("/Account/Login");
             await page2.FillAsync("input[name='Input.Email']", email);
             await page2.FillAsync("input[name='Input.Password']", oldPassword);
-            await page2.ClickAsync("button[type='submit']");
+            await page2.ClickAsync("#login-submit");
             await page2.WaitForURLAsync("**/Account/Login**");
             var errorText = await page2.TextContentAsync(".validation-summary-errors, .text-danger");
             Assert.NotNull(errorText);
@@ -61,7 +61,7 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
             await page.GotoAsync("/Account/Login");
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
-            await page.ClickAsync("button[type='submit']");
+            await page.ClickAsync("#login-submit");
             await page.WaitForURLAsync(url => !url.Contains("/Account/Login"));
 
             // Delete account
@@ -80,7 +80,7 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
             await page2.GotoAsync("/Account/Login");
             await page2.FillAsync("input[name='Input.Email']", email);
             await page2.FillAsync("input[name='Input.Password']", password);
-            await page2.ClickAsync("button[type='submit']");
+            await page2.ClickAsync("#login-submit");
             await page2.WaitForURLAsync("**/Account/Login**");
             var errorText = await page2.TextContentAsync(".validation-summary-errors, .text-danger");
             Assert.NotNull(errorText);
@@ -98,12 +98,12 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
             await page.GotoAsync("/Account/Login");
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
-            await page.ClickAsync("button[type='submit']");
+            await page.ClickAsync("#login-submit");
             await page.WaitForURLAsync(url => !url.Contains("/Account/Login"));
 
             // Navigate to logout page and submit the confirmation form
             await page.GotoAsync("/Account/Logout");
-            await page.ClickAsync("button[type='submit']");
+            await page.ClickAsync("#logout-submit");
             await page.WaitForLoadStateAsync();
 
             // A protected page should now redirect to login
@@ -125,7 +125,7 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
             await page.GotoAsync("/Account/Login");
             await page.FillAsync("input[name='Input.Email']", oldEmail);
             await page.FillAsync("input[name='Input.Password']", password);
-            await page.ClickAsync("button[type='submit']");
+            await page.ClickAsync("#login-submit");
             await page.WaitForURLAsync(url => !url.Contains("/Account/Login"));
 
             // Request email change
@@ -148,7 +148,7 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
             await page2.GotoAsync("/Account/Login");
             await page2.FillAsync("input[name='Input.Email']", newEmail);
             await page2.FillAsync("input[name='Input.Password']", password);
-            await page2.ClickAsync("button[type='submit']");
+            await page2.ClickAsync("#login-submit");
             await page2.WaitForURLAsync(url => !url.Contains("/Account/Login"));
             Assert.DoesNotContain("/Account/Login", page2.Url);
         }
@@ -168,7 +168,7 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
             await page1.FillAsync("input[name='Input.Email']", email);
             await page1.FillAsync("input[name='Input.Password']", password);
             await page1.FillAsync("input[name='Input.ConfirmPassword']", password);
-            await page1.ClickAsync("button[type='submit']");
+            await page1.ClickAsync("#registerSubmit");
             await page1.WaitForURLAsync("**/Account/RegisterConfirmation**");
             await fixture.Email.WaitForEmailAsync(email); // consume without using
         }
@@ -179,7 +179,7 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
         {
             await page2.GotoAsync("/Account/ResendEmailConfirmation");
             await page2.FillAsync("input[name='Input.Email']", email);
-            await page2.ClickAsync("button[type='submit']");
+            await page2.ClickAsync("#resend-email-submit");
 
             var newConfirmEmail = await fixture.Email.WaitForEmailAsync(email);
             var confirmLink = EmailCaptureService.ExtractLink(newConfirmEmail.HtmlBody, "http");
@@ -194,7 +194,7 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
             await page3.GotoAsync("/Account/Login");
             await page3.FillAsync("input[name='Input.Email']", email);
             await page3.FillAsync("input[name='Input.Password']", password);
-            await page3.ClickAsync("button[type='submit']");
+            await page3.ClickAsync("#login-submit");
             await page3.WaitForURLAsync(url => !url.Contains("/Account/Login"));
             Assert.DoesNotContain("/Account/Login", page3.Url);
         }
@@ -212,7 +212,7 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
             await page.FillAsync("input[name='Input.ConfirmPassword']", password);
-            await page.ClickAsync("button[type='submit']");
+            await page.ClickAsync("#registerSubmit");
             await page.WaitForURLAsync("**/Account/RegisterConfirmation**");
 
             var confirmEmail = await fixture.Email.WaitForEmailAsync(email);

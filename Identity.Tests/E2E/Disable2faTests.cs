@@ -22,7 +22,7 @@ public sealed class Disable2faTests(PlaywrightFixture fixture)
             await setupPage.GotoAsync("/Account/Login");
             await setupPage.FillAsync("input[name='Input.Email']", email);
             await setupPage.FillAsync("input[name='Input.Password']", password);
-            await setupPage.ClickAsync("button[type='submit']");
+            await setupPage.ClickAsync("#login-submit");
             await setupPage.WaitForURLAsync(url => !url.Contains("/Account/Login"));
 
             await setupPage.GotoAsync("/Account/Manage/TwoFactorAuthentication");
@@ -53,7 +53,7 @@ public sealed class Disable2faTests(PlaywrightFixture fixture)
             await loginPage.GotoAsync("/Account/Login");
             await loginPage.FillAsync("input[name='Input.Email']", email);
             await loginPage.FillAsync("input[name='Input.Password']", password);
-            await loginPage.ClickAsync("button[type='submit']");
+            await loginPage.ClickAsync("#login-submit");
             await loginPage.WaitForURLAsync("**/Account/LoginWith2fa**");
         }
 
@@ -65,7 +65,7 @@ public sealed class Disable2faTests(PlaywrightFixture fixture)
             await disablePage.GotoAsync("/Account/Login");
             await disablePage.FillAsync("input[name='Input.Email']", email);
             await disablePage.FillAsync("input[name='Input.Password']", password);
-            await disablePage.ClickAsync("button[type='submit']");
+            await disablePage.ClickAsync("#login-submit");
             await disablePage.WaitForURLAsync("**/Account/LoginWith2fa**");
 
             // Complete 2FA using the shared key captured during setup
@@ -73,7 +73,7 @@ public sealed class Disable2faTests(PlaywrightFixture fixture)
             var disableTotp = new Totp(disableKeyBytes);
             var disableCode = disableTotp.ComputeTotp();
             await disablePage.FillAsync("input[name='Input.TwoFactorCode']", disableCode);
-            await disablePage.ClickAsync("button[type='submit']");
+            await disablePage.ClickAsync("#login-2fa-submit");
             await disablePage.WaitForURLAsync(url => !url.Contains("/Account/LoginWith2fa"));
 
             // Navigate to Disable2fa and confirm
@@ -90,7 +90,7 @@ public sealed class Disable2faTests(PlaywrightFixture fixture)
             await verifyPage.GotoAsync("/Account/Login");
             await verifyPage.FillAsync("input[name='Input.Email']", email);
             await verifyPage.FillAsync("input[name='Input.Password']", password);
-            await verifyPage.ClickAsync("button[type='submit']");
+            await verifyPage.ClickAsync("#login-submit");
 
             // Should land somewhere other than the 2FA challenge page
             await verifyPage.WaitForURLAsync(url => !url.Contains("/Account/Login"));
@@ -110,7 +110,7 @@ public sealed class Disable2faTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
             await page.FillAsync("input[name='Input.ConfirmPassword']", password);
-            await page.ClickAsync("button[type='submit']");
+            await page.ClickAsync("#registerSubmit");
             await page.WaitForURLAsync("**/Account/RegisterConfirmation**");
 
             var confirmEmail = await fixture.Email.WaitForEmailAsync(email);

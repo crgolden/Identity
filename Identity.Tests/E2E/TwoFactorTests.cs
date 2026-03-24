@@ -19,7 +19,7 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
             await page.GotoAsync("/Account/Login");
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
-            await page.ClickAsync("button[type='submit']");
+            await page.ClickAsync("#login-submit");
             await page.WaitForURLAsync(url => !url.Contains("/Account/Login"));
 
             // Navigate to 2FA setup
@@ -64,7 +64,7 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
             await setupPage.GotoAsync("/Account/Login");
             await setupPage.FillAsync("input[name='Input.Email']", email);
             await setupPage.FillAsync("input[name='Input.Password']", password);
-            await setupPage.ClickAsync("button[type='submit']");
+            await setupPage.ClickAsync("#login-submit");
             await setupPage.WaitForURLAsync(url => !url.Contains("/Account/Login"));
 
             await setupPage.GotoAsync("/Account/Manage/TwoFactorAuthentication");
@@ -97,7 +97,7 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
             await loginPage.GotoAsync("/Account/Login");
             await loginPage.FillAsync("input[name='Input.Email']", email);
             await loginPage.FillAsync("input[name='Input.Password']", password);
-            await loginPage.ClickAsync("button[type='submit']");
+            await loginPage.ClickAsync("#login-submit");
 
             // Should be challenged for 2FA
             await loginPage.WaitForURLAsync("**/Account/LoginWith2fa**");
@@ -106,7 +106,7 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
             await loginPage.ClickAsync("a[href*='LoginWithRecoveryCode']");
             await loginPage.WaitForURLAsync("**/Account/LoginWithRecoveryCode**");
             await loginPage.FillAsync("input[name='Input.RecoveryCode']", recoveryCode);
-            await loginPage.ClickAsync("button[type='submit']");
+            await loginPage.ClickAsync("#recovery-code-submit");
 
             await loginPage.WaitForURLAsync(url => !url.Contains("/Account/Login"));
             Assert.DoesNotContain("/Account/Login", loginPage.Url);
@@ -125,7 +125,7 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
             await setupPage.GotoAsync("/Account/Login");
             await setupPage.FillAsync("input[name='Input.Email']", email);
             await setupPage.FillAsync("input[name='Input.Password']", password);
-            await setupPage.ClickAsync("button[type='submit']");
+            await setupPage.ClickAsync("#login-submit");
             await setupPage.WaitForURLAsync(url => !url.Contains("/Account/Login"));
 
             // Enable 2FA
@@ -156,7 +156,7 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
             await loginPage.GotoAsync("/Account/Login");
             await loginPage.FillAsync("input[name='Input.Email']", email);
             await loginPage.FillAsync("input[name='Input.Password']", password);
-            await loginPage.ClickAsync("button[type='submit']");
+            await loginPage.ClickAsync("#login-submit");
             await loginPage.WaitForURLAsync(url => !url.Contains("/Account/Login"));
             Assert.DoesNotContain("LoginWith2fa", loginPage.Url);
         }
@@ -173,7 +173,7 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
             await page.GotoAsync("/Account/Login");
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
-            await page.ClickAsync("button[type='submit']");
+            await page.ClickAsync("#login-submit");
             await page.WaitForURLAsync(url => !url.Contains("/Account/Login"));
 
             // Enable 2FA
@@ -213,7 +213,7 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
             await page.FillAsync("input[name='Input.ConfirmPassword']", password);
-            await page.ClickAsync("button[type='submit']");
+            await page.ClickAsync("#registerSubmit");
             await page.WaitForURLAsync("**/Account/RegisterConfirmation**");
 
             var confirmEmail = await fixture.Email.WaitForEmailAsync(email);

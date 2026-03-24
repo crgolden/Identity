@@ -9,7 +9,7 @@
     @if (Model.ShowLogoutPrompt)
     {
         <form class="form-inline" asp-page="/Account/Logout" asp-route-logoutId="@Request.Query["logoutId"]" method="post">
-            <button type="submit" class="nav-link btn btn-link text-dark">Click here to Logout</button>
+            <button id="logout-submit" type="submit" class="nav-link btn btn-link text-dark">Click here to Logout</button>
         </form>
     }
     else
