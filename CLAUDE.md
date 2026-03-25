@@ -263,8 +263,10 @@ sqlpackage /Action:Publish /SourceFile:Identity.Data/bin/Release/Identity.Data.d
 
 ### Publish
 ```bash
-dotnet publish Identity.Api -c Release -o ./publish
+dotnet publish Identity.Api -c Release -r win-x86 --self-contained false -o ./publish
 ```
+
+> **Note:** `-r win-x86` is required. The app runs on Azure App Service **Free tier**, which only supports 32-bit (x86) worker processes. Upgrading to Basic tier or above would enable x64.
 
 ## Deployment
 

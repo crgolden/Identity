@@ -70,6 +70,13 @@ jobs:
         with:
           dotnet-version: '10.x'
 
+      - name: Cache dotnet global tools
+        uses: actions/cache@v5
+        with:
+          path: ~/.dotnet/tools
+          key: ${{ runner.os }}-dotnet-tools-${{ hashFiles('**/*.csproj') }}
+          restore-keys: ${{ runner.os }}-dotnet-tools-
+
       - name: Install dotnet-coverage
         run: dotnet tool install --global dotnet-coverage
 
@@ -131,7 +138,15 @@ jobs:
           $connStr = "Data Source=$env:DB_SERVER;Initial Catalog=$env:DB_NAME;User ID=$env:DB_USERID;Password='$env:DB_PASSWORD';Connect Timeout=30;Encrypt=True;Trust Server Certificate=False;Application Intent=ReadWrite;Multi Subnet Failover=False;Command Timeout=30"
           sqlpackage /Action:Publish /SourceFile:Identity.Data/bin/Release/Identity.Data.dacpac /TargetConnectionString:"$connStr"
 
+      - name: Cache Playwright browsers
+        id: cache-playwright
+        uses: actions/cache@v5
+        with:
+          path: ~\AppData\Local\ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('Identity.Tests/Identity.Tests.csproj') }}
+
       - name: Install Playwright browsers
+        if: steps.cache-playwright.outputs.cache-hit != 'true'
         run: pwsh "${{ github.workspace }}\Identity.Tests\bin\Release\net10.0\playwright.ps1" install --with-deps chromium
 
       - name: Run E2E tests with coverage
@@ -141,7 +156,7 @@ jobs:
             -f xml -o "coverage-e2e.xml" -s "coverage.settings.xml"
 
       - name: Upload test results
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: test-results
@@ -161,13 +176,13 @@ jobs:
           -o ${{ github.workspace  }}\publish
 
       - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: .net-app
           path: ${{ github.workspace }}\publish
 
       - name: Upload dacpac for deployment job
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: sql-dacpac
           path: Identity.Data/bin/Release/Identity.Data.dacpac
@@ -196,6 +211,13 @@ jobs:
         uses: actions/download-artifact@v7
         with:
           name: sql-dacpac
+
+      - name: Cache dotnet global tools
+        uses: actions/cache@v5
+        with:
+          path: ~/.dotnet/tools
+          key: ${{ runner.os }}-dotnet-tools-deploy
+          restore-keys: ${{ runner.os }}-dotnet-tools-
 
       - name: Login to Azure
         uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5  # v2
@@ -247,6 +269,13 @@ jobs:
         with:
           dotnet-version: '10.x'
 
+      - name: Cache dotnet global tools
+        uses: actions/cache@v5
+        with:
+          path: ~/.dotnet/tools
+          key: ${{ runner.os }}-dotnet-tools-${{ hashFiles('**/*.csproj') }}
+          restore-keys: ${{ runner.os }}-dotnet-tools-
+
       - name: Install dotnet-stryker
         run: dotnet tool install --global dotnet-stryker
 
@@ -259,7 +288,7 @@ jobs:
         run: dotnet stryker --config-file stryker-config.json
 
       - name: Upload Stryker report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: stryker-report
           path: StrykerOutput/**/*
