@@ -163,6 +163,7 @@ public class LoginModelTests
 
         var urlHelperMock = new Mock<IUrlHelper>();
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
+        urlHelperMock.Setup(u => u.IsLocalUrl("/")).Returns(true);
 
         var model = new LoginModel(signInManagerMock.Object, CreateUserManagerMock().Object, Mock.Of<IAvatarService>(), Mock.Of<ILogger<LoginModel>>())
         {

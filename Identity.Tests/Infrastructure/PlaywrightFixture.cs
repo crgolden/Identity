@@ -85,6 +85,35 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         }
     }
 
+    /// <summary>
+    /// Creates a confirmed user directly via <see cref="UserManager{TUser}"/> (no browser flow).
+    /// Use in tests that need a pre-existing authenticated user but do not test the registration UI.
+    /// This is orders of magnitude faster than the browser-based registration flow.
+    /// </summary>
+    /// <returns>A task that resolves to the new user's email and password.</returns>
+    public async Task<(string Email, string Password)> CreateConfirmedUserAsync()
+    {
+        const string password = "Test@123456!";
+        var email = $"e2e-{Guid.NewGuid()}@test.invalid";
+
+        await using var scope = Factory.Services.CreateAsyncScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser<Guid>>>();
+        var user = new IdentityUser<Guid>
+        {
+            UserName = email,
+            Email = email,
+            EmailConfirmed = true
+        };
+        var result = await userManager.CreateAsync(user, password);
+        if (!result.Succeeded)
+        {
+            throw new InvalidOperationException(
+                string.Join(", ", result.Errors.Select(e => e.Description)));
+        }
+
+        return (email, password);
+    }
+
     /// <summary>Creates a new Playwright browser context and page configured with <see cref="BaseAddress"/>.</summary>
     /// <returns>A task that resolves to a tuple of the browser context and page.</returns>
     public async Task<(IBrowserContext Context, IPage Page)> NewPageAsync()

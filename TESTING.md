@@ -37,9 +37,10 @@ Maps every application path to the tests that cover it.
 14. [Services](#14-services)
 15. [Root & Utility Pages](#15-root--utility-pages)
 16. [IdentityServer UI Pages](#16-identityserver-ui-pages)
-17. [Coverage Summary Matrix](#17-coverage-summary-matrix)
-18. [Load, Property-Based & Resilience Tests](#18-load-property-based--resilience-tests)
-19. [Mutation Testing (Stryker)](#19-mutation-testing-stryker)
+17. [Security Tests](#17-security-tests)
+18. [Coverage Summary Matrix](#18-coverage-summary-matrix)
+19. [Load, Property-Based & Resilience Tests](#19-load-property-based--resilience-tests)
+20. [Mutation Testing (Stryker)](#20-mutation-testing-stryker)
 
 ---
 
@@ -1160,10 +1161,36 @@ Custom `Identity` meter counters (`Telemetry.cs`) are verified with `MeterListen
 
 **E2E test helpers:**
 - `Infrastructure/TestClientHelper.cs` — seeds a minimal OIDC client (`RequireConsent=true`, `authorization_code` grant, `openid` scope) and identity resources into `ApplicationDbContext` for use by `ConsentTests`
+- `Infrastructure/PlaywrightFixture.cs` — shared xUnit collection fixture that owns the `IdentityWebApplicationFactory`, the Playwright browser, and provides:
+  - `NewPageAsync()` — creates a new browser context + page configured with `BaseAddress` and a 60s timeout on CI
+  - `CreateConfirmedUserAsync()` — creates a confirmed user **directly via `UserManager` (no browser flow)**. Use this in any test that needs a pre-existing authenticated user but does not test the registration UI. This is orders of magnitude faster than the browser-based registration flow. Always call `fixture.CreateConfirmedUserAsync()` rather than writing a local helper.
+  - `SharedEmail` / `SharedPassword` — a pre-confirmed user created during fixture initialization for tests that only need an authenticated session and don't care about the specific user identity (e.g. `GrantsTests`, `ServerSideSessionsTests`)
 
 ---
 
-## 17. Coverage Summary Matrix
+## 17. Security Tests
+
+`Identity.Tests/Security/OpenRedirectTests.cs` — `[Trait("Category", "E2E")]`
+
+These tests use Playwright to verify that all login paths reject attacker-controlled `returnUrl` values and never issue redirects to external hosts.
+
+**Background:** Protocol-relative URLs such as `//evil.com` can bypass naïve external-URL checks because they start with `/` yet cause browsers to navigate to an external host. All login-path handlers in this app guard against this with an explicit `Url.IsLocalUrl(returnUrl)` check before calling `LocalRedirect` — falling back to `~/` for any URL that fails the check. `LocalRedirect` alone is not sufficient because its built-in `IsLocalUrl` guard may not reliably reject protocol-relative URLs in all .NET versions.
+
+| Scenario | Test Method |
+|---|---|
+| Absolute external URL (`https://evil.com`) is blocked | `Login_WithAbsoluteReturnUrl_DoesNotRedirectExternally` |
+| Protocol-relative URL (`//evil.com`) is blocked | `Login_WithProtocolRelativeReturnUrl_DoesNotRedirectExternally` |
+| Valid local URL navigates to that page | `Login_WithValidLocalReturnUrl_Succeeds` |
+
+**Pages covered by the fix (all use `Url.IsLocalUrl(returnUrl) ? LocalRedirect(returnUrl) : LocalRedirect("~/")`):**
+- `Login.cshtml.cs` — password sign-in
+- `LoginWith2fa.cshtml.cs` — TOTP sign-in
+- `LoginWithRecoveryCode.cshtml.cs` — recovery code sign-in
+- `ExternalLogin.cshtml.cs` — external provider callback + new-user confirmation
+
+---
+
+## 18. Coverage Summary Matrix
 
 ```mermaid
 quadrantChart
@@ -1257,7 +1284,7 @@ The following paths have no meaningful behavioral test coverage and are candidat
 
 ---
 
-## 18. Load, Property-Based & Resilience Tests
+## 19. Load, Property-Based & Resilience Tests
 
 ### Load Tests (`Identity.Tests/Load/`)
 
@@ -1295,7 +1322,7 @@ Load tests use `Parallel.ForEachAsync` + `HttpClient` (self-signed cert ignored)
 
 ---
 
-## 19. Mutation Testing (Stryker)
+## 20. Mutation Testing (Stryker)
 
 Stryker.NET is configured in `stryker-config.json` with `mutation-level: Advanced`. It targets five core source files:
 

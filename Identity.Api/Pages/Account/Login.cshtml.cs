@@ -87,7 +87,7 @@ public class LoginModel : PageModel
             }
 
             _logger.LogTrace("User logged in.");
-            return LocalRedirect(returnUrl);
+            return Url.IsLocalUrl(returnUrl) ? LocalRedirect(returnUrl) : LocalRedirect("~/");
         }
 
         if (result.RequiresTwoFactor)

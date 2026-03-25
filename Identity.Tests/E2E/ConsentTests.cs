@@ -16,7 +16,7 @@ public sealed class ConsentTests(PlaywrightFixture fixture)
     {
         var helper = new TestClientHelper(fixture);
         var clientId = await helper.SeedConsentClientAsync(RedirectUri);
-        var (email, password) = await CreateConfirmedUserAsync();
+        var (email, password) = await fixture.CreateConfirmedUserAsync();
 
         var (context, page) = await fixture.NewPageAsync();
         await using (context)
@@ -48,7 +48,7 @@ public sealed class ConsentTests(PlaywrightFixture fixture)
     {
         var helper = new TestClientHelper(fixture);
         var clientId = await helper.SeedConsentClientAsync(RedirectUri);
-        var (email, password) = await CreateConfirmedUserAsync();
+        var (email, password) = await fixture.CreateConfirmedUserAsync();
 
         var (context, page) = await fixture.NewPageAsync();
         await using (context)
@@ -88,7 +88,7 @@ public sealed class ConsentTests(PlaywrightFixture fixture)
     {
         var helper = new TestClientHelper(fixture);
         var clientId = await helper.SeedConsentClientAsync(RedirectUri);
-        var (email, password) = await CreateConfirmedUserAsync();
+        var (email, password) = await fixture.CreateConfirmedUserAsync();
 
         var (context, page) = await fixture.NewPageAsync();
         await using (context)
@@ -137,30 +137,5 @@ public sealed class ConsentTests(PlaywrightFixture fixture)
         await page.FillAsync("input[name='Input.Password']", password);
         await page.ClickAsync("#login-submit");
         await page.WaitForURLAsync(url => !url.Contains("/Account/Login"));
-    }
-
-    /// <summary>Registers and confirms an account, then returns email+password.</summary>
-    private async Task<(string Email, string Password)> CreateConfirmedUserAsync()
-    {
-        var email = $"e2e-{Guid.NewGuid()}@test.invalid";
-        const string password = "Test@123456!";
-
-        var (context, page) = await fixture.NewPageAsync();
-        await using (context)
-        {
-            await page.GotoAsync("/Account/Register");
-            await page.FillAsync("input[name='Input.Email']", email);
-            await page.FillAsync("input[name='Input.Password']", password);
-            await page.FillAsync("input[name='Input.ConfirmPassword']", password);
-            await page.ClickAsync("#registerSubmit");
-            await page.WaitForURLAsync("**/Account/RegisterConfirmation**");
-
-            var captured = await fixture.Email.WaitForEmailAsync(email);
-            var confirmLink = EmailCaptureService.ExtractLink(captured.HtmlBody, "http");
-            await page.GotoAsync(confirmLink);
-            await page.WaitForURLAsync("**/Account/ConfirmEmail**");
-        }
-
-        return (email, password);
     }
 }

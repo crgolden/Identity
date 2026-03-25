@@ -4,7 +4,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Reference Source
 
-When working with Duende IdentityServer types, check these GitHub sources directly rather than searching local NuGet caches.
+When working with Duende IdentityServer types, **prefer the local clones** listed below. Fall back to GitHub raw URLs only if the local clone is absent or stale.
+
+### Local clones (preferred)
+
+| Repo | Local path |
+|---|---|
+| `DuendeSoftware/products` (IdentityServer source) | `%USERPROFILE%\source\repos\DuendeSoftware\products\identity-server\` |
+| `DuendeSoftware/samples` (sample apps) | `%USERPROFILE%\source\repos\DuendeSoftware\samples\IdentityServer\v7\AspNetIdentityPasskeys\` |
+
+Key subdirectories inside the local `products` clone:
+- `src\IdentityServer\Services\Default\` — interaction services
+- `src\IdentityServer\Models\` — domain models
+- `src\EntityFramework.Storage\Entities\` — EF entity definitions
+
+### GitHub raw URLs (fallback)
 
 **Duende products monorepo** (`DuendeSoftware/products`, `main` branch):
 
@@ -83,6 +97,16 @@ Two minimal API endpoints are registered in `EndpointRouteBuilderExtensions.cs` 
 - `POST /Account/PasskeyRequestOptions` — returns WebAuthn request options JSON
 
 Both require antiforgery validation. The Passkey Razor Pages live in `Pages/Account/Manage/`.
+
+### Open Redirect Protection
+
+All login-path handlers validate `returnUrl` before redirecting. **Never call `LocalRedirect(returnUrl)` directly.** Always use:
+
+```csharp
+return Url.IsLocalUrl(returnUrl) ? LocalRedirect(returnUrl) : LocalRedirect("~/");
+```
+
+This guards against protocol-relative URL open redirects (e.g. `//evil.com`), which browsers interpret as `https://evil.com`. ASP.NET Core's built-in `LocalRedirect` performs its own `IsLocalUrl` check, but this has been observed to be insufficient for protocol-relative URLs in some .NET versions. The explicit guard is applied in `Login.cshtml.cs`, `LoginWith2fa.cshtml.cs`, `LoginWithRecoveryCode.cshtml.cs`, and `ExternalLogin.cshtml.cs`.
 
 ### Identity User Type
 
@@ -205,6 +229,11 @@ ASPNETCORE_ENVIRONMENT=Development SqlConnectionStringBuilder__InitialCatalog=Id
 ```
 
 E2E tests use Playwright (Chromium) against a real Kestrel server started in-process. They require the same User Secrets as `dotnet run` (database, Key Vault, etc.).
+
+> **Azure CLI token warmup:** If E2E tests fail immediately with a `DefaultAzureCredential` / `CredentialUnavailableException` error, the Azure CLI token cache may have expired. Run the following to pre-warm it before retrying:
+> ```bash
+> az account get-access-token --resource https://vault.azure.net
+> ```
 
 `xunit.runner.json` sets `parallelizeTestCollections: false` so all test collections run one at a time. This is required because the E2E `PlaywrightFixture` initializes `WebApplicationFactory<Program>` — which makes 8 concurrent Azure Key Vault calls at startup — and those async calls time out when the thread pool is saturated by hundreds of parallel unit tests. The trade-off is that the combined run takes ~5-6 minutes instead of ~2.5 minutes with parallelism enabled.
 

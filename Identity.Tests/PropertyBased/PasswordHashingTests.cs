@@ -2,6 +2,7 @@ namespace Identity.Tests.PropertyBased;
 
 using CsCheck;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
 
 /// <summary>
 /// Property-based tests for ASP.NET Core Identity's PasswordHasher.
@@ -11,7 +12,11 @@ using Microsoft.AspNetCore.Identity;
 [Trait("Category", "Unit")]
 public sealed class PasswordHashingTests
 {
-    private readonly PasswordHasher<IdentityUser<Guid>> _hasher = new();
+    // Use 1 PBKDF2 iteration — these tests verify API contract (round-trip, uniqueness,
+    // wrong-password rejection), not the security of the iteration count. Default 600k
+    // iterations × ~100 CsCheck samples = minutes of CPU time per test method.
+    private readonly PasswordHasher<IdentityUser<Guid>> _hasher = new(
+        Options.Create(new PasswordHasherOptions { IterationCount = 1 }));
 
     [Fact]
     public void HashPassword_ThenVerify_AlwaysSucceeds()

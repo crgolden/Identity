@@ -85,7 +85,7 @@ public class LoginWith2faModel : PageModel
                 _logger.LogTrace("User with ID '{UserId}' logged in with 2fa.", userId);
             }
 
-            return LocalRedirect(returnUrl);
+            return Url.IsLocalUrl(returnUrl) ? LocalRedirect(returnUrl) : LocalRedirect("~/");
         }
 
         if (result.IsLockedOut)

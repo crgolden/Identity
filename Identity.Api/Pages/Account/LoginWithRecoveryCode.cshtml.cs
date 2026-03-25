@@ -74,7 +74,7 @@ public class LoginWithRecoveryCodeModel : PageModel
                 _logger.LogTrace("User with ID '{UserId}' logged in with a recovery code.", userId);
             }
 
-            return LocalRedirect(returnUrl ?? Url.Content("~/"));
+            return Url.IsLocalUrl(returnUrl) ? LocalRedirect(returnUrl) : LocalRedirect("~/");
         }
 
         if (result.IsLockedOut)

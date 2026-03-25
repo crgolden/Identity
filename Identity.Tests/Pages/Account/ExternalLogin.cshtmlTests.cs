@@ -393,6 +393,7 @@ public class ExternalLoginModelTests
 
         var urlHelperMock = new Mock<IUrlHelper>();
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
+        urlHelperMock.Setup(u => u.IsLocalUrl("/localReturn")).Returns(true);
 
         // ActionContext must be non-null because UrlHelperExtensions.Page always accesses it
         var urlRouteData = new RouteData();

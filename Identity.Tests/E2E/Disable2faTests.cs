@@ -10,7 +10,7 @@ public sealed class Disable2faTests(PlaywrightFixture fixture)
     [Fact]
     public async Task Disable2fa_AfterSetup_SubsequentLogin_DoesNotRequire2fa()
     {
-        var (email, password) = await CreateConfirmedUserAsync();
+        var (email, password) = await fixture.CreateConfirmedUserAsync();
 
         // Capture the shared key outside the setup context so it can be reused in the disable step.
         var capturedSharedKey = string.Empty;
@@ -96,29 +96,5 @@ public sealed class Disable2faTests(PlaywrightFixture fixture)
             await verifyPage.WaitForURLAsync(url => !url.Contains("/Account/Login"));
             Assert.DoesNotContain("LoginWith2fa", verifyPage.Url);
         }
-    }
-
-    private async Task<(string Email, string Password)> CreateConfirmedUserAsync()
-    {
-        var email = $"e2e-{Guid.NewGuid()}@test.invalid";
-        const string password = "Test@123456!";
-
-        var (ctx, page) = await fixture.NewPageAsync();
-        await using (ctx)
-        {
-            await page.GotoAsync("/Account/Register");
-            await page.FillAsync("input[name='Input.Email']", email);
-            await page.FillAsync("input[name='Input.Password']", password);
-            await page.FillAsync("input[name='Input.ConfirmPassword']", password);
-            await page.ClickAsync("#registerSubmit");
-            await page.WaitForURLAsync("**/Account/RegisterConfirmation**");
-
-            var confirmEmail = await fixture.Email.WaitForEmailAsync(email);
-            var confirmLink = EmailCaptureService.ExtractLink(confirmEmail.HtmlBody, "http");
-            await page.GotoAsync(confirmLink);
-            await page.WaitForURLAsync("**/Account/ConfirmEmail**");
-        }
-
-        return (email, password);
     }
 }

@@ -90,7 +90,7 @@ public class ExternalLoginModel : PageModel
                 _logger.LogTrace("{Name} logged in with {LoginProvider} provider.", info.Principal.Identity?.Name, info.LoginProvider);
             }
 
-            return LocalRedirect(returnUrl);
+            return Url.IsLocalUrl(returnUrl) ? LocalRedirect(returnUrl) : LocalRedirect("~/");
         }
 
         if (result.IsLockedOut)
@@ -191,7 +191,7 @@ public class ExternalLoginModel : PageModel
         }
 
         await _signInManager.SignInAsync(user, isPersistent: false, info.LoginProvider);
-        return LocalRedirect(returnUrl);
+        return Url.IsLocalUrl(returnUrl) ? LocalRedirect(returnUrl) : LocalRedirect("~/");
     }
 
     /// <summary>Provides the form input values bound from the request.</summary>

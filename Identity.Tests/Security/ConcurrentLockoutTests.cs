@@ -9,7 +9,7 @@ public sealed class ConcurrentLockoutTests(PlaywrightFixture fixture)
     [Fact]
     public async Task Login_ConcurrentFailedAttempts_AccountEventuallyLocked()
     {
-        var (email, _) = await CreateConfirmedUserAsync();
+        var (email, _) = await fixture.CreateConfirmedUserAsync();
 
         // Send 10 concurrent wrong-password login attempts.
         // Under a race condition the failure counter may not be atomically incremented,
@@ -47,29 +47,5 @@ public sealed class ConcurrentLockoutTests(PlaywrightFixture fixture)
                 verifyPage.Url.Contains("/Account/Lockout") || verifyPage.Url.Contains("/Account/Login"),
                 $"Unexpected URL after concurrent lockout attempts: {verifyPage.Url}");
         }
-    }
-
-    private async Task<(string Email, string Password)> CreateConfirmedUserAsync()
-    {
-        var email = $"e2e-{Guid.NewGuid()}@test.invalid";
-        const string password = "Test@123456!";
-
-        var (ctx, page) = await fixture.NewPageAsync();
-        await using (ctx)
-        {
-            await page.GotoAsync("/Account/Register");
-            await page.FillAsync("input[name='Input.Email']", email);
-            await page.FillAsync("input[name='Input.Password']", password);
-            await page.FillAsync("input[name='Input.ConfirmPassword']", password);
-            await page.ClickAsync("button[type='submit']");
-            await page.WaitForURLAsync("**/Account/RegisterConfirmation**");
-
-            var captured = await fixture.Email.WaitForEmailAsync(email);
-            var confirmLink = EmailCaptureService.ExtractLink(captured.HtmlBody, "http");
-            await page.GotoAsync(confirmLink);
-            await page.WaitForURLAsync("**/Account/ConfirmEmail**");
-        }
-
-        return (email, password);
     }
 }

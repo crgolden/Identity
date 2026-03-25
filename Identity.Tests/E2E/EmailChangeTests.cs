@@ -9,7 +9,7 @@ public sealed class EmailChangeTests(PlaywrightFixture fixture)
     [Fact]
     public async Task ChangeEmail_Success_NewEmailConfirmed_OldEmailNoLongerValid()
     {
-        var (originalEmail, password) = await CreateConfirmedUserAsync();
+        var (originalEmail, password) = await fixture.CreateConfirmedUserAsync();
         var newEmail = $"e2e-new-{Guid.NewGuid()}@test.invalid";
 
         var (context, page) = await fixture.NewPageAsync();
@@ -65,7 +65,7 @@ public sealed class EmailChangeTests(PlaywrightFixture fixture)
     [Fact]
     public async Task ChangeEmail_SameEmail_DoesNotSendConfirmation()
     {
-        var (email, password) = await CreateConfirmedUserAsync();
+        var (email, password) = await fixture.CreateConfirmedUserAsync();
 
         var (context, page) = await fixture.NewPageAsync();
         await using (context)
@@ -89,29 +89,5 @@ public sealed class EmailChangeTests(PlaywrightFixture fixture)
             // The page should indicate no change is needed or simply stay current
             Assert.DoesNotContain("confirmation link has been sent", bodyText, StringComparison.OrdinalIgnoreCase);
         }
-    }
-
-    private async Task<(string Email, string Password)> CreateConfirmedUserAsync()
-    {
-        var email = $"e2e-{Guid.NewGuid()}@test.invalid";
-        const string password = "Test@123456!";
-
-        var (ctx, page) = await fixture.NewPageAsync();
-        await using (ctx)
-        {
-            await page.GotoAsync("/Account/Register");
-            await page.FillAsync("input[name='Input.Email']", email);
-            await page.FillAsync("input[name='Input.Password']", password);
-            await page.FillAsync("input[name='Input.ConfirmPassword']", password);
-            await page.ClickAsync("#registerSubmit");
-            await page.WaitForURLAsync("**/Account/RegisterConfirmation**");
-
-            var confirmEmail = await fixture.Email.WaitForEmailAsync(email);
-            var confirmLink = EmailCaptureService.ExtractLink(confirmEmail.HtmlBody, "http");
-            await page.GotoAsync(confirmLink);
-            await page.WaitForURLAsync("**/Account/ConfirmEmail**");
-        }
-
-        return (email, password);
     }
 }
