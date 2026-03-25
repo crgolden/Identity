@@ -5,7 +5,7 @@ Maps every application path to the tests that cover it.
 > **Shell note:** test commands that set environment variables inline use bash syntax. On Windows, use Git Bash, WSL, or set the variables separately before running `dotnet test`.
 
 **Test types**
-- **Unit** — xUnit page-model / service / API tests (`Category=Unit`) — 447 tests; includes property-based (`PropertyBased/`) and resilience (`Resilience/`) sub-folders
+- **Unit** — xUnit page-model / service / API tests (`Category=Unit`) — 475 tests; includes property-based (`PropertyBased/`) and resilience (`Resilience/`) sub-folders
 - **E2E** — Playwright browser tests (`Category=E2E`); includes OIDC discovery tests (`Oidc/`) and IdentityServer flow tests (`ConsentTests`, `GrantsTests`, `DiagnosticsTests`, `ServerSideSessionsTests`)
 - **Load** — throughput / failure-rate tests using `Parallel.ForEachAsync` + `HttpClient` (`Category=Load`); run separately (requires live server)
 
@@ -1052,6 +1052,25 @@ flowchart TD
 | EmailSender — Resend throws | `EmailSenderTests.cs` | `SendEmailAsync_ResendThrows_PropagatesException` |
 | EmailSender — constructor | `EmailSenderTests.cs` | `Constructor_ValidResend_CreatesInstance` |
 
+### Configuration & Startup Extension Tests
+
+| Scenario | File | Test Method |
+|---|---|---|
+| `ToSecretClient` — valid KeyVaultUri returns SecretClient | `Extensions/ConfigurationExtensionsTests.cs` | `ToSecretClient_ValidKeyVaultUri_ReturnsSecretClient` |
+| `ToSecretClient` — missing KeyVaultUri throws | `Extensions/ConfigurationExtensionsTests.cs` | `ToSecretClient_MissingKeyVaultUri_ThrowsInvalidOperationException` |
+| `ToSecretClient` — empty KeyVaultUri throws | `Extensions/ConfigurationExtensionsTests.cs` | `ToSecretClient_EmptyKeyVaultUri_ThrowsInvalidOperationException` |
+| `ToSecretClient` — invalid URI throws | `Extensions/ConfigurationExtensionsTests.cs` | `ToSecretClient_InvalidUri_ThrowsInvalidOperationException` |
+| `AddCors` — missing CorsPolicy section throws | `Extensions/HostApplicationBuilderExtensionsTests.cs` | `AddCors_MissingCorsPolicySection_ThrowsInvalidOperationException` |
+| `AddCors` — valid section registers ICorsService | `Extensions/HostApplicationBuilderExtensionsTests.cs` | `AddCors_ValidCorsPolicySection_RegistersCorsService` |
+| `AddDataProtection` — missing BlobUri throws | `Extensions/HostApplicationBuilderExtensionsTests.cs` | `AddDataProtection_MissingBlobUri_ThrowsInvalidOperationException` |
+| `AddDataProtection` — missing key identifier throws | `Extensions/HostApplicationBuilderExtensionsTests.cs` | `AddDataProtection_MissingDataProtectionKeyIdentifier_ThrowsInvalidOperationException` |
+| `AddObservabilityAsync` — missing ElasticsearchNode throws | `Extensions/HostApplicationBuilderExtensionsTests.cs` | `AddObservabilityAsync_MissingElasticsearchNode_ThrowsInvalidOperationException` |
+| `AddPersistenceAsync` — missing SqlConnectionStringBuilder throws | `Extensions/HostApplicationBuilderExtensionsTests.cs` | `AddPersistenceAsync_MissingSqlConnectionStringBuilderSection_ThrowsInvalidOperationException` |
+| `AddEmailAsync` — registers IEmailSender | `Extensions/HostApplicationBuilderExtensionsTests.cs` | `AddEmailAsync_RegistersEmailSenderService` |
+| `AddEmailAsync` — sets ApiToken from secret | `Extensions/HostApplicationBuilderExtensionsTests.cs` | `AddEmailAsync_SetsApiTokenFromSecret` |
+| `AddPictureAsync` — registers IAvatarService | `Extensions/HostApplicationBuilderExtensionsTests.cs` | `AddPictureAsync_RegistersAvatarService` |
+| `AddAuthAsync` — registers IAuthenticationService | `Extensions/HostApplicationBuilderExtensionsTests.cs` | `AddAuthAsync_RegistersAuthenticationServices` |
+
 ---
 
 ## 15. Root & Utility Pages
@@ -1104,6 +1123,40 @@ These pages implement the IdentityServer interactive UI — consent, grants, dev
 | `/Account/Manage/ServerSideSessions` | `Pages/Account/Manage/ServerSideSessions.cshtmlTests.cs` | `E2E/ServerSideSessionsTests.cs` | ✅ Unit + E2E |
 | `/Redirect` | `Pages/Redirect.cshtmlTests.cs` | — | 🟡 Unit only |
 | `/Account/Manage/Diagnostics` | `Pages/Account/Manage/Diagnostics.cshtmlTests.cs` | `E2E/DiagnosticsTests.cs` | ✅ Unit + E2E |
+
+### SecurityHeadersAttribute Tests
+
+`[SecurityHeaders]` is applied to all IdentityServer flow pages. Tests verify header injection and idempotency.
+
+| Scenario | File | Test Method |
+|---|---|---|
+| `PageResult` sets `X-Content-Type-Options: nosniff` | `Filters/SecurityHeadersAttributeTests.cs` | `OnResultExecuting_PageResult_SetsXContentTypeOptionsNosniff` |
+| `PageResult` sets `X-Frame-Options: SAMEORIGIN` | `Filters/SecurityHeadersAttributeTests.cs` | `OnResultExecuting_PageResult_SetsXFrameOptionsSameorigin` |
+| `PageResult` sets `Referrer-Policy: no-referrer` | `Filters/SecurityHeadersAttributeTests.cs` | `OnResultExecuting_PageResult_SetsReferrerPolicyNoReferrer` |
+| `PageResult` sets default Content-Security-Policy | `Filters/SecurityHeadersAttributeTests.cs` | `OnResultExecuting_PageResult_SetsDefaultContentSecurityPolicy` |
+| Non-`PageResult` does not set any headers | `Filters/SecurityHeadersAttributeTests.cs` | `OnResultExecuting_NonPageResult_DoesNotSetAnyHeaders` |
+| Pre-existing CSP is not overwritten | `Filters/SecurityHeadersAttributeTests.cs` | `OnResultExecuting_PageResult_ExistingCspNotOverwritten` |
+| Calling filter twice leaves headers unchanged (idempotent) | `Filters/SecurityHeadersAttributeTests.cs` | `OnResultExecuting_PageResult_CalledTwice_HeaderValuesUnchanged` |
+
+### Telemetry Tests
+
+Custom `Identity` meter counters (`Telemetry.cs`) are verified with `MeterListener`.
+
+| Scenario | File | Test Method |
+|---|---|---|
+| `ConsentGranted` emits counter with value 1 | `TelemetryTests.cs` | `ConsentGranted_EmitsCounterWithValueOne` |
+| `ConsentGranted` tags contain `client_id` | `TelemetryTests.cs` | `ConsentGranted_TagsContainClientId` |
+| `ConsentGranted` tags contain `remember` | `TelemetryTests.cs` | `ConsentGranted_TagsContainRemember` |
+| `ConsentGranted` tags contain `scope_count` | `TelemetryTests.cs` | `ConsentGranted_TagsContainScopeCount` |
+| `ConsentGranted` empty scopes → `scope_count` = 0 | `TelemetryTests.cs` | `ConsentGranted_EmptyScopes_ScopeCountTagIsZero` |
+| `ConsentGranted` does not emit denied counter | `TelemetryTests.cs` | `ConsentGranted_DoesNotEmitConsentDeniedCounter` |
+| `ConsentDenied` emits counter with value 1 | `TelemetryTests.cs` | `ConsentDenied_EmitsCounterWithValueOne` |
+| `ConsentDenied` tags contain `client_id` | `TelemetryTests.cs` | `ConsentDenied_TagsContainClientId` |
+| `ConsentDenied` tags contain `scope_count` | `TelemetryTests.cs` | `ConsentDenied_TagsContainScopeCount` |
+| `ConsentDenied` empty scopes → `scope_count` = 0 | `TelemetryTests.cs` | `ConsentDenied_EmptyScopes_ScopeCountTagIsZero` |
+| `GrantsRevoked` emits counter with value 1 | `TelemetryTests.cs` | `GrantsRevoked_EmitsCounterWithValueOne` |
+| `GrantsRevoked` tags contain `client_id` | `TelemetryTests.cs` | `GrantsRevoked_TagsContainClientId` |
+| `GrantsRevoked` null `client_id` still emits | `TelemetryTests.cs` | `GrantsRevoked_NullClientId_EmitsCounterWithNullClientId` |
 
 **E2E test helpers:**
 - `Infrastructure/TestClientHelper.cs` — seeds a minimal OIDC client (`RequireConsent=true`, `authorization_code` grant, `openid` scope) and identity resources into `ApplicationDbContext` for use by `ConsentTests`
@@ -1250,8 +1303,7 @@ Stryker.NET is configured in `stryker-config.json` with `mutation-level: Advance
 |---|---|
 | `Identity.Api/EmailSender.cs` | Only production email path |
 | `Identity.Api/GravatarService.cs` | Hash computation and error handling |
-| `Identity.Api/Extensions/SecretClientExtensions.cs` | Key Vault secret fetch coordination |
-| `Identity.Api/Extensions/ConfigurationExtensions.cs` | Startup config extraction |
+| `Identity.Api/Extensions/ConfigurationExtensions.cs` | Key Vault URI → `SecretClient` factory; startup config extraction |
 | `Identity.Api/Extensions/EndpointRouteBuilderExtensions.cs` | Passkey endpoint registration |
 
 **Thresholds:** high=80, low=60, break=50 (CI fails if mutation score < 50).

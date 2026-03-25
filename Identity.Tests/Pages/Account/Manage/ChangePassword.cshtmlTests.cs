@@ -180,4 +180,193 @@ public class ChangePasswordModelTests
         // Assert
         Assert.Null(exception);
     }
+
+    /// <summary>
+    /// Verifies that OnGetAsync returns NotFoundObjectResult containing the user ID when GetUserAsync returns null.
+    /// Input: GetUserAsync returns null; GetUserId returns "some-user-id".
+    /// Expected: NotFoundObjectResult with value containing the user ID string.
+    /// </summary>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
+    [Fact]
+    public async Task OnGetAsync_UserNotFound_ReturnsNotFound()
+    {
+        // Arrange
+        var (userManagerMock, signInManagerMock, loggerMock) = CreateMocks();
+        userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync((IdentityUser<Guid>?)null);
+        userManagerMock.Setup(um => um.GetUserId(It.IsAny<ClaimsPrincipal>())).Returns("some-user-id");
+
+        var model = CreateModel(userManagerMock.Object, signInManagerMock.Object, loggerMock.Object);
+
+        // Act
+        var result = await model.OnGetAsync();
+
+        // Assert
+        var notFound = Assert.IsType<NotFoundObjectResult>(result);
+        Assert.Contains("some-user-id", notFound.Value?.ToString() ?? string.Empty, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Verifies that OnGetAsync redirects to the SetPassword page when the user has no password set.
+    /// Input: GetUserAsync returns a user; HasPasswordAsync returns false.
+    /// Expected: RedirectToPageResult with page name "./SetPassword".
+    /// </summary>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
+    [Fact]
+    public async Task OnGetAsync_UserHasNoPassword_RedirectsToSetPassword()
+    {
+        // Arrange
+        var (userManagerMock, signInManagerMock, loggerMock) = CreateMocks();
+        var user = new IdentityUser<Guid>();
+        userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
+        userManagerMock.Setup(um => um.HasPasswordAsync(user)).ReturnsAsync(false);
+
+        var model = CreateModel(userManagerMock.Object, signInManagerMock.Object, loggerMock.Object);
+
+        // Act
+        var result = await model.OnGetAsync();
+
+        // Assert
+        var redirect = Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal("./SetPassword", redirect.PageName);
+    }
+
+    /// <summary>
+    /// Verifies that OnGetAsync returns PageResult when the user exists and has a password set.
+    /// Input: GetUserAsync returns a user; HasPasswordAsync returns true.
+    /// Expected: PageResult.
+    /// </summary>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
+    [Fact]
+    public async Task OnGetAsync_UserHasPassword_ReturnsPage()
+    {
+        // Arrange
+        var (userManagerMock, signInManagerMock, loggerMock) = CreateMocks();
+        var user = new IdentityUser<Guid>();
+        userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
+        userManagerMock.Setup(um => um.HasPasswordAsync(user)).ReturnsAsync(true);
+
+        var model = CreateModel(userManagerMock.Object, signInManagerMock.Object, loggerMock.Object);
+
+        // Act
+        var result = await model.OnGetAsync();
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+    }
+
+    /// <summary>
+    /// Verifies that OnPostAsync returns PageResult without calling GetUserAsync when OldPassword is null.
+    /// Input: Input.OldPassword = null, Input.NewPassword = "NewP@ss1!".
+    /// Expected: PageResult returned; GetUserAsync is never called.
+    /// </summary>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
+    [Fact]
+    public async Task OnPostAsync_NullOldPassword_ReturnsPageWithoutCallingGetUser()
+    {
+        // Arrange
+        var (userManagerMock, signInManagerMock, loggerMock) = CreateMocks();
+        var model = CreateModel(userManagerMock.Object, signInManagerMock.Object, loggerMock.Object);
+        model.Input = new ChangePasswordModel.InputModel { OldPassword = null, NewPassword = "NewP@ss1!" };
+
+        // Act
+        var result = await model.OnPostAsync();
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        userManagerMock.Verify(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()), Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies that OnPostAsync returns PageResult and populates ModelState errors when ChangePasswordAsync fails.
+    /// Input: valid user returned, ChangePasswordAsync returns a failed IdentityResult with error descriptions.
+    /// Expected: PageResult; ModelState contains the error descriptions from IdentityResult.Errors.
+    /// </summary>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
+    [Fact]
+    public async Task OnPostAsync_ChangePasswordFails_ReturnsPageWithModelErrors()
+    {
+        // Arrange
+        var (userManagerMock, signInManagerMock, loggerMock) = CreateMocks();
+        var user = new IdentityUser<Guid>();
+        var failedResult = IdentityResult.Failed(new IdentityError { Description = "Password too weak." });
+        userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
+        userManagerMock
+            .Setup(um => um.ChangePasswordAsync(user, "OldP@ss1!", "NewP@ss1!"))
+            .ReturnsAsync(failedResult);
+
+        var model = CreateModel(userManagerMock.Object, signInManagerMock.Object, loggerMock.Object);
+        model.Input = new ChangePasswordModel.InputModel { OldPassword = "OldP@ss1!", NewPassword = "NewP@ss1!" };
+
+        // Act
+        var result = await model.OnPostAsync();
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        Assert.False(model.ModelState.IsValid);
+        Assert.Contains(model.ModelState.Values.SelectMany(v => v.Errors), e => e.ErrorMessage == "Password too weak.");
+    }
+
+    /// <summary>
+    /// Verifies that OnPostAsync refreshes the sign-in, sets StatusMessage, and redirects on successful password change.
+    /// Input: valid user, ChangePasswordAsync returns IdentityResult.Success.
+    /// Expected: RefreshSignInAsync is called once; StatusMessage is set; RedirectToPageResult is returned.
+    /// </summary>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
+    [Fact]
+    public async Task OnPostAsync_ChangePasswordSucceeds_SetsStatusMessageAndRedirects()
+    {
+        // Arrange
+        var (userManagerMock, signInManagerMock, loggerMock) = CreateMocks();
+        var user = new IdentityUser<Guid>();
+        userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
+        userManagerMock
+            .Setup(um => um.ChangePasswordAsync(user, "OldP@ss1!", "NewP@ss1!"))
+            .ReturnsAsync(IdentityResult.Success);
+        signInManagerMock
+            .Setup(sm => sm.RefreshSignInAsync(user))
+            .Returns(Task.CompletedTask);
+
+        var model = CreateModel(userManagerMock.Object, signInManagerMock.Object, loggerMock.Object);
+        model.Input = new ChangePasswordModel.InputModel { OldPassword = "OldP@ss1!", NewPassword = "NewP@ss1!" };
+
+        // Act
+        var result = await model.OnPostAsync();
+
+        // Assert
+        signInManagerMock.Verify(sm => sm.RefreshSignInAsync(user), Times.Once);
+        Assert.Equal("Your password has been changed.", model.StatusMessage);
+        Assert.IsType<RedirectToPageResult>(result);
+    }
+
+    private static (Mock<UserManager<IdentityUser<Guid>>> userManager,
+                    Mock<SignInManager<IdentityUser<Guid>>> signInManager,
+                    Mock<ILogger<ChangePasswordModel>> logger) CreateMocks()
+    {
+        var userStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
+        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
+            userStore, null, null, null, null, null, null, null, null);
+        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
+            userManagerMock.Object,
+            Mock.Of<IHttpContextAccessor>(),
+            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
+            null,
+            null,
+            null,
+            null);
+        var loggerMock = new Mock<ILogger<ChangePasswordModel>>();
+        return (userManagerMock, signInManagerMock, loggerMock);
+    }
+
+    private static ChangePasswordModel CreateModel(
+        UserManager<IdentityUser<Guid>> userManager,
+        SignInManager<IdentityUser<Guid>> signInManager,
+        ILogger<ChangePasswordModel> logger)
+    {
+        var model = new ChangePasswordModel(userManager, signInManager, logger);
+        model.PageContext = new PageContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal() },
+        };
+        return model;
+    }
 }

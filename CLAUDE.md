@@ -237,11 +237,11 @@ dotnet run --project Identity.Benchmarks -c Release
 # Install Stryker globally (once)
 dotnet tool install -g dotnet-stryker
 
-# Run mutation tests against the five core source files
+# Run mutation tests against the four core source files
 dotnet stryker --config-file stryker-config.json
 ```
 
-Stryker targets `EmailSender.cs`, `GravatarService.cs`, `SecretClientExtensions.cs`, `ConfigurationExtensions.cs`, and `EndpointRouteBuilderExtensions.cs`. Thresholds: high=80, low=60, break=50. The CI workflow runs mutation tests weekly (Monday 02:00 UTC) and on manual dispatch; results are uploaded as the `stryker-report` artifact.
+Stryker targets `EmailSender.cs`, `GravatarService.cs`, `ConfigurationExtensions.cs`, and `EndpointRouteBuilderExtensions.cs`. Thresholds: high=80, low=60, break=50. The CI workflow runs mutation tests weekly (Monday 02:00 UTC) and on manual dispatch; results are uploaded as the `stryker-report` artifact.
 
 ### Load Tests
 ```bash

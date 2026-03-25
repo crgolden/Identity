@@ -1,8 +1,9 @@
+namespace Identity.Benchmarks;
+
+using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Text;
 using BenchmarkDotNet.Attributes;
-
-namespace Identity.Benchmarks;
 
 /// <summary>
 /// Measures the SHA-256 hashing used by GravatarService to derive avatar URLs.
@@ -10,6 +11,7 @@ namespace Identity.Benchmarks;
 /// </summary>
 [SimpleJob]
 [MemoryDiagnoser]
+[ExcludeFromCodeCoverage]
 public class GravatarBenchmarks
 {
     [Params("user@example.com", "  USER@Example.COM  ", "a.very.long.email.address+tag@subdomain.example.org")]

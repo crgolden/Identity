@@ -1,69 +1,73 @@
 namespace Identity.Tests.Extensions;
 
-using Azure.Identity;
+using Azure.Core;
+using Azure.Security.KeyVault.Secrets;
 using Identity.Extensions;
-using Microsoft.AspNetCore.Cors.Infrastructure;
-using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
+using Moq;
 
+/// <summary>Unit tests for <see cref="ConfigurationExtensions"/> extension methods.</summary>
 [Trait("Category", "Unit")]
-public class ConfigurationExtensionsTests
+public sealed class ConfigurationExtensionsTests
 {
+    /// <summary>
+    /// Verifies that ToSecretClient returns a non-null SecretClient when a valid KeyVaultUri is present.
+    /// Input: configuration with KeyVaultUri = "https://my-vault.vault.azure.net/" and a mock TokenCredential.
+    /// Expected: a non-null SecretClient instance is returned.
+    /// </summary>
     [Fact]
-    public void GetSections_ReturnsCorrectSectionKeys()
+    public void ToSecretClient_ValidKeyVaultUri_ReturnsSecretClient()
     {
-        var config = BuildConfig();
-        var (corsSection, sqlSection, credSection) = config.GetSections();
-        Assert.Equal(nameof(CorsPolicy), corsSection.Key);
-        Assert.Equal(nameof(SqlConnectionStringBuilder), sqlSection.Key);
-        Assert.Equal(nameof(DefaultAzureCredentialOptions), credSection.Key);
-    }
-
-    [Fact]
-    public void GetSections_EmptyConfiguration_StillReturnsSections()
-    {
-        var config = BuildConfig();
-        var (corsSection, sqlSection, credSection) = config.GetSections();
-        Assert.NotNull(corsSection);
-        Assert.NotNull(sqlSection);
-        Assert.NotNull(credSection);
-    }
-
-    [Fact]
-    public void GetUris_AllValuesPresent_ReturnsUris()
-    {
+        // Arrange
         var config = BuildConfig(new Dictionary<string, string?>
         {
-            ["ElasticsearchNode"] = "https://elasticsearch.example.com/",
-            ["KeyVaultUri"] = "https://keyvault.example.com/",
-            ["BlobUri"] = "https://blob.example.com/",
-            ["DataProtectionKeyIdentifier"] = "https://keys.example.com/"
+            ["KeyVaultUri"] = "https://my-vault.vault.azure.net/",
         });
-        var (elasticsearch, keyVault, blob, dataProtection) = config.GetUris();
-        Assert.Equal(new Uri("https://elasticsearch.example.com/"), elasticsearch);
-        Assert.Equal(new Uri("https://keyvault.example.com/"), keyVault);
-        Assert.Equal(new Uri("https://blob.example.com/"), blob);
-        Assert.Equal(new Uri("https://keys.example.com/"), dataProtection);
+        var credential = new Mock<TokenCredential>().Object;
+
+        // Act
+        var client = config.ToSecretClient(credential);
+
+        // Assert
+        Assert.NotNull(client);
+        Assert.IsType<SecretClient>(client);
     }
 
-    [Theory]
-    [InlineData("ElasticsearchNode", "Invalid 'ElasticsearchNode'.")]
-    [InlineData("KeyVaultUri", "Invalid 'KeyVaultUri'.")]
-    [InlineData("BlobUri", "Invalid 'BlobUri'.")]
-    [InlineData("DataProtectionKeyIdentifier", "Invalid 'DataProtectionKeyIdentifier'.")]
-    public void GetUris_MissingKey_ThrowsInvalidOperationException(string missingKey, string expectedMessage)
+    /// <summary>
+    /// Verifies that ToSecretClient throws InvalidOperationException when KeyVaultUri is missing from configuration.
+    /// Input: empty configuration (no KeyVaultUri key).
+    /// Expected: InvalidOperationException with message "Invalid 'KeyVaultUri'.".
+    /// </summary>
+    [Fact]
+    public void ToSecretClient_MissingKeyVaultUri_ThrowsInvalidOperationException()
     {
-        var values = new Dictionary<string, string?>
+        // Arrange
+        var config = BuildConfig();
+        var credential = new Mock<TokenCredential>().Object;
+
+        // Act & Assert
+        var ex = Assert.Throws<InvalidOperationException>(() => config.ToSecretClient(credential));
+        Assert.Equal("Invalid 'KeyVaultUri'.", ex.Message);
+    }
+
+    /// <summary>
+    /// Verifies that ToSecretClient throws InvalidOperationException when KeyVaultUri is an empty string.
+    /// Input: configuration with KeyVaultUri = "" (empty string cannot be parsed as Uri, binds as null).
+    /// Expected: InvalidOperationException with message "Invalid 'KeyVaultUri'.".
+    /// </summary>
+    [Fact]
+    public void ToSecretClient_EmptyKeyVaultUri_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var config = BuildConfig(new Dictionary<string, string?>
         {
-            ["ElasticsearchNode"] = "https://elasticsearch.example.com/",
-            ["KeyVaultUri"] = "https://keyvault.example.com/",
-            ["BlobUri"] = "https://blob.example.com/",
-            ["DataProtectionKeyIdentifier"] = "https://keys.example.com/"
-        };
-        values.Remove(missingKey);
-        var config = BuildConfig(values);
-        var ex = Assert.Throws<InvalidOperationException>(() => config.GetUris());
-        Assert.Equal(expectedMessage, ex.Message);
+            ["KeyVaultUri"] = string.Empty,
+        });
+        var credential = new Mock<TokenCredential>().Object;
+
+        // Act & Assert
+        var ex = Assert.Throws<InvalidOperationException>(() => config.ToSecretClient(credential));
+        Assert.Equal("Invalid 'KeyVaultUri'.", ex.Message);
     }
 
     private static IConfiguration BuildConfig(IEnumerable<KeyValuePair<string, string?>>? values = null) =>
