@@ -126,7 +126,7 @@ public sealed class TelemetryTests
         using var listener = new MeterListener();
         listener.InstrumentPublished = (instrument, l) =>
         {
-            if (instrument.Meter.Name == Telemetry.ServiceName)
+            if (instrument.Meter.Name == nameof(Identity))
             {
                 l.EnableMeasurementEvents(instrument);
             }
@@ -320,7 +320,7 @@ public sealed class TelemetryTests
         var listener = new MeterListener();
         listener.InstrumentPublished = (instrument, l) =>
         {
-            if (instrument.Meter.Name == Telemetry.ServiceName)
+            if (instrument.Meter.Name == nameof(Identity))
             {
                 l.EnableMeasurementEvents(instrument);
             }

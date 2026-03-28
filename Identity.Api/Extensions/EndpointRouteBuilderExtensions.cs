@@ -43,13 +43,10 @@ public static class EndpointRouteBuilderExtensions
         });
 
         accountGroup.MapPost("/PasskeyRequestOptions", async (
-            HttpContext context,
             [FromServices] UserManager<IdentityUser<Guid>> userManager,
             [FromServices] SignInManager<IdentityUser<Guid>> signInManager,
-            [FromServices] IAntiforgery antiforgery,
             [FromQuery] string? username) =>
         {
-            await antiforgery.ValidateRequestAsync(context);
             var user = IsNullOrWhiteSpace(username) ? null : await userManager.FindByNameAsync(username);
             var optionsJson = await signInManager.MakePasskeyRequestOptionsAsync(user);
             return TypedResults.Content(optionsJson, contentType: Json);

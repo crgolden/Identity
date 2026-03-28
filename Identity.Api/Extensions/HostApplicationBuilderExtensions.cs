@@ -45,13 +45,22 @@ public static class HostApplicationBuilderExtensions
             });
             builder.Services
                 .AddOpenTelemetry()
-                .ConfigureResource(x => x.AddService(builder.Environment.ApplicationName))
+                .ConfigureResource(x =>
+                {
+                    x.AddService(
+                        serviceName: builder.Environment.ApplicationName,
+                        serviceVersion: typeof(Program).Assembly.GetName().Version?.ToString() ?? "0.0.0");
+                    x.AddAttributes(new Dictionary<string, object>
+                    {
+                        ["deployment.environment"] = builder.Environment.EnvironmentName.ToLowerInvariant()
+                    });
+                })
                 .UseAzureMonitor()
                 .WithMetrics(meterProviderBuilder =>
                 {
                     meterProviderBuilder
                         .AddMeter(Telemetry.ServiceName)
-                        .AddMeter(Identity.Telemetry.ServiceName)
+                        .AddMeter(nameof(Identity))
                         .AddAspNetCoreInstrumentation()
                         .AddHttpClientInstrumentation()
                         .AddRuntimeInstrumentation();
@@ -59,7 +68,8 @@ public static class HostApplicationBuilderExtensions
                 .WithTracing(tracerProviderBuilder =>
                 {
                     tracerProviderBuilder
-                        .AddSource(builder.Environment.ApplicationName)
+                        .SetSampler(new AlwaysOnSampler())
+                        .AddSource(nameof(Identity))
                         .AddSource(IdentityServerConstants.Tracing.Basic)
                         .AddSource(IdentityServerConstants.Tracing.Cache)
                         .AddSource(IdentityServerConstants.Tracing.Services)
@@ -87,7 +97,6 @@ public static class HostApplicationBuilderExtensions
                     if (builder.Environment.IsProduction())
                     {
                         loggerConfiguration
-                            .WriteTo.OpenTelemetry()
                             .WriteTo.Elasticsearch(
                                 [elasticsearchNode],
                                 elasticsearchSinkOptions =>

@@ -136,6 +136,7 @@ public class EndpointRouteBuilderExtensionsTests
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             signInManagerMock.Verify(s => s.MakePasskeyRequestOptionsAsync(null), Times.Once);
             userManagerMock.Verify(u => u.FindByNameAsync(It.IsAny<string>()), Times.Never);
+            antiforgeryMock.Verify(a => a.ValidateRequestAsync(It.IsAny<HttpContext>()), Times.Never);
         }
     }
 
@@ -157,6 +158,7 @@ public class EndpointRouteBuilderExtensionsTests
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             signInManagerMock.Verify(s => s.MakePasskeyRequestOptionsAsync(null), Times.Once);
             userManagerMock.Verify(u => u.FindByNameAsync(It.IsAny<string>()), Times.Never);
+            antiforgeryMock.Verify(a => a.ValidateRequestAsync(It.IsAny<HttpContext>()), Times.Never);
         }
     }
 
@@ -181,6 +183,7 @@ public class EndpointRouteBuilderExtensionsTests
             // Assert
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             signInManagerMock.Verify(s => s.MakePasskeyRequestOptionsAsync(user), Times.Once);
+            antiforgeryMock.Verify(a => a.ValidateRequestAsync(It.IsAny<HttpContext>()), Times.Never);
         }
     }
 
@@ -203,6 +206,7 @@ public class EndpointRouteBuilderExtensionsTests
             Assert.Equal("application/json", response.Content.Headers.ContentType?.MediaType);
             var body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
             Assert.Equal("{\"challenge\":\"abc\"}", body);
+            antiforgeryMock.Verify(a => a.ValidateRequestAsync(It.IsAny<HttpContext>()), Times.Never);
         }
     }
 

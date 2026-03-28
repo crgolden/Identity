@@ -12,10 +12,9 @@ using System.Diagnostics.Metrics;
 /// </summary>
 public static class Telemetry
 {
-    /// <summary>The OpenTelemetry meter name used for all Identity UI metrics.</summary>
-    public const string ServiceName = "Identity";
+    public static readonly ActivitySource ActivitySource = new(nameof(Identity), "1.0.0");
 
-    private static readonly Meter Meter = new(ServiceName);
+    private static readonly Meter Meter = new(nameof(Identity), "1.0.0");
 
     /// <summary>OpenTelemetry counter metrics emitted by IdentityServer UI pages.</summary>
     public static class Metrics
