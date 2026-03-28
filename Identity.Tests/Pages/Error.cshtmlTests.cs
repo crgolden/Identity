@@ -79,7 +79,7 @@ public class ErrorModelTests
         { "\r\n", false },
 
         // string with special characters => true
-        { "���!@#$%^&*()", true },
+        { "\u00A9\u00AE\u2122!@#$%^&*()", true },
     };
 
     /// <summary>
