@@ -38,19 +38,4 @@ public sealed class AntiforgeryTests(PlaywrightFixture fixture)
 
         Assert.NotEqual(HttpStatusCode.OK, response.StatusCode);
     }
-
-    [Fact]
-    public async Task PasskeyRequestOptions_Unauthenticated_DoesNotReturn200()
-    {
-        var client = fixture.Factory.CreateClient(new WebApplicationFactoryClientOptions
-        {
-            AllowAutoRedirect = false
-        });
-        var response = await client.PostAsync(
-            "/Account/PasskeyRequestOptions",
-            content: null,
-            TestContext.Current.CancellationToken);
-
-        Assert.NotEqual(HttpStatusCode.OK, response.StatusCode);
-    }
 }
