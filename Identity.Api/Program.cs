@@ -1,6 +1,7 @@
 #pragma warning disable SA1200
 using Identity.Extensions;
 using Microsoft.AspNetCore.Cors.Infrastructure;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Serilog;
@@ -48,9 +49,17 @@ try
     builder.AddCors();
     await builder.AddEmailAsync(secretClient);
     await builder.AddPictureAsync(secretClient);
-    builder.Services.AddRazorPages();
+    builder.Services
+        .Configure<ForwardedHeadersOptions>(forwardedHeadersOptions =>
+        {
+            forwardedHeadersOptions.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+            forwardedHeadersOptions.KnownIPNetworks.Clear();
+            forwardedHeadersOptions.KnownProxies.Clear();
+        })
+        .AddRazorPages();
 
     var app = builder.Build();
+    app.UseForwardedHeaders();
     app.UseSerilogRequestLogging();
     if (app.Environment.IsDevelopment())
     {
