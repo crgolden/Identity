@@ -10,12 +10,12 @@
       "progress",
       "dashboard"
     ],
-    "dashboard": {
-      "project": "github.com/crgolden/Identity",
+    "project-info": {
+      "name": "github.com/crgolden/Identity",
       "version": "main"
     },
     "mutation-level": "Advanced",
-    "threshold": {
+    "thresholds": {
       "high": 80,
       "low": 60,
       "break": 50
