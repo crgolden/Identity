@@ -1,5 +1,6 @@
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account;
+using Identity.Tests.Infrastructure;
 
 using System.Text;
 using Identity.Pages.Account;
@@ -20,6 +21,7 @@ using Moq;
 /// provided as skipped, guided templates to complete in an environment where those dependencies
 /// can be provided or properly mocked.
 /// </summary>
+[Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class ConfirmEmailChangeModelTests
 {

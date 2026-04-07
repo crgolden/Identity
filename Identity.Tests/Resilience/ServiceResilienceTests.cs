@@ -1,4 +1,5 @@
 namespace Identity.Tests.Resilience;
+using Identity.Tests.Infrastructure;
 
 using System.Net;
 using Moq;
@@ -8,6 +9,7 @@ using Resend;
 /// Resilience tests verifying that external service failures propagate correctly
 /// and do not corrupt application state or swallow exceptions unexpectedly.
 /// </summary>
+[Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public sealed class ServiceResilienceTests
 {

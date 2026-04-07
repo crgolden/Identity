@@ -1,4 +1,5 @@
 namespace Identity.Tests.Pages;
+using Identity.Tests.Infrastructure;
 
 using System.Diagnostics;
 using Duende.IdentityServer.Models;
@@ -10,6 +11,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 
 /// <summary>Unit tests for <see cref="Identity.Pages.ErrorModel"/>.</summary>
+[Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class ErrorModelTests
 {

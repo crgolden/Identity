@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS8604 // Possible null reference argument.
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account;
+using Identity.Tests.Infrastructure;
 
 using System.Text;
 using Identity.Pages.Account;
@@ -12,6 +13,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 
+[Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public partial class ConfirmEmailModelTests
 {

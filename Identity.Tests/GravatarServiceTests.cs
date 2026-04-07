@@ -1,10 +1,12 @@
 namespace Identity.Tests;
+using Identity.Tests.Infrastructure;
 
 using System.Security.Cryptography;
 using System.Text;
 using Identity;
 using Moq;
 
+[Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class GravatarServiceTests
 {

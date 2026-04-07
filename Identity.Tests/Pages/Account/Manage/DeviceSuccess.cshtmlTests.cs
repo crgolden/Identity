@@ -1,11 +1,13 @@
 #pragma warning disable CS8604
 #pragma warning disable CS8625
 namespace Identity.Tests.Pages.Account.Manage;
+using Identity.Tests.Infrastructure;
 
 using Identity.Pages.Account.Manage;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 /// <summary>Unit tests for <see cref="Identity.Pages.Account.Manage.DeviceSuccessModel"/>.</summary>
+[Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class DeviceSuccessModelTests
 {

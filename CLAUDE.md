@@ -266,11 +266,29 @@ dotnet run --project Identity.Benchmarks -c Release
 # Install Stryker globally (once)
 dotnet tool install -g dotnet-stryker
 
-# Run mutation tests against the four core source files
-dotnet stryker --config-file stryker-config.json
+# Run mutation tests (requires STRYKER_DASHBOARD_API_KEY env var for dashboard reporter)
+STRYKER_DASHBOARD_API_KEY=<key> dotnet stryker --config-file stryker-config.json
 ```
 
 Stryker targets `EmailSender.cs`, `GravatarService.cs`, `ConfigurationExtensions.cs`, and `EndpointRouteBuilderExtensions.cs`. Thresholds: high=80, low=60, break=50. The CI workflow runs mutation tests weekly (Monday 02:00 UTC) and on manual dispatch; results are uploaded as the `stryker-report` artifact.
+
+**Critical `stryker-config.json` constraints — do not change without understanding why:**
+
+| Setting | Value | Reason |
+|---|---|---|
+| `test-runner` | `mtp` | `Identity.Tests` uses `xunit.v3.mtp-v2` and `<TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>` — vstest will not work |
+| `mutate` paths | Relative to the **project file** (`Identity.Api/Identity.Api.csproj`), not the solution/config root | e.g. `"EmailSender.cs"`, NOT `"Identity.Api/EmailSender.cs"` — wrong prefix silently ignores all mutants |
+| `test-case-filter` | `"Category=Unit"` | The mutation CI workflow has no Azure login. E2E tests require Azure + database. Without this filter, E2E tests contaminate coverage capture and cause "not fully tested" for every mutant → score collapses to 0% |
+| `coverage-analysis` | `"all"` | MTP runner only partially implements coverage analysis — `"perTest"` (per-test breakdown) is not yet implemented and fails with `Value cannot be null (Parameter 'collection')`. `"all"` is the working mode: filters out mutants not covered by any test, then runs all covering tests per mutant. |
+
+**Why `ToTokenCredentialAsync` is excluded from mutation (`// Stryker disable all`):**
+`DefaultAzureCredential` is a sealed class — it cannot be mocked. The method is covered only by E2E tests (which use `WebApplicationFactory<Program>`). Mutation testing of this method requires live Azure credentials and is excluded by design.
+
+**Why all unit test classes have `[Collection(UnitCollection.Name)]`:**
+Stryker's MTP coverage capture throws `Value cannot be null. (Parameter 'collection')` when test classes have no explicit collection name. `UnitCollection` is defined in `Identity.Tests/Infrastructure/TestCollections.cs`. Every `[Trait("Category", "Unit")]` test class must have `[Collection(UnitCollection.Name)]` to prevent this. E2E tests already use `[Collection(E2ECollection.Name)]`.
+
+**Why `test-case-filter` does not restrict E2E tests in MTP mode:**
+The MTP runner ignores `test-case-filter` entirely — it is a VSTest-only config option. The MTP runner uses `testUidFilter` (UID-based selection) internally. To exclude E2E tests from mutation runs, `PlaywrightFixture.InitializeAsync()` checks `STRYKER_MUTANT_FILE` (an env var the MTP runner always sets — value `-1` during coverage capture, mutant ID during mutations). When set, `InitializeAsync` returns immediately without starting `WebApplicationFactory` or Playwright. E2E tests then fail in Stryker's baseline run, and Stryker excludes always-failing tests from mutation coverage — leaving only unit tests to kill mutants. **Never remove this guard.**
 
 ### Load Tests
 ```bash

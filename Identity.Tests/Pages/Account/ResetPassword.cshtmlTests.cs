@@ -1,5 +1,6 @@
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account;
+using Identity.Tests.Infrastructure;
 
 using System.Text;
 using Identity.Pages.Account;
@@ -17,6 +18,7 @@ using Moq;
 /// UserManager instance (or a Moq mock configured with appropriate constructor arguments), remove the Skip on the test
 /// and provide that instance in the Arrange section.
 /// </summary>
+[Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class ResetPasswordModelTests
 {

@@ -13,6 +13,7 @@ public sealed class PlaywrightFixture : IAsyncLifetime
 {
     private static readonly bool CI = bool.TryParse(Environment.GetEnvironmentVariable("CI"), out var isCi) && isCi;
     private static readonly bool Headless = !string.Equals(Environment.GetEnvironmentVariable("PLAYWRIGHT_HEADED"), "1", StringComparison.OrdinalIgnoreCase);
+    private static readonly bool StrykerActive = Environment.GetEnvironmentVariable("STRYKER_MUTANT_FILE") is not null;
     private IPlaywright? _playwright;
     private IBrowser? _browser;
 
@@ -43,6 +44,11 @@ public sealed class PlaywrightFixture : IAsyncLifetime
     /// <inheritdoc/>
     public async ValueTask InitializeAsync()
     {
+        if (StrykerActive)
+        {
+            return;
+        }
+
         Factory.CreateClient(); // Triggers server startup; populates Factory.ServerAddress.
         BaseAddress = Factory.ServerAddress;
 
@@ -149,7 +155,7 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         }
 
         _playwright?.Dispose();
-        if (CI)
+        if (CI && !StrykerActive)
         {
             await CleanupDatabaseAsync();
         }

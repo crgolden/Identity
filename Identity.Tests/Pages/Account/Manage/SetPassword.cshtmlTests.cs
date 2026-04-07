@@ -1,6 +1,7 @@
 #pragma warning disable CS8604 // Possible null reference argument.
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account.Manage;
+using Identity.Tests.Infrastructure;
 
 using System.Security.Claims;
 using Identity.Pages.Account.Manage;
@@ -18,6 +19,7 @@ using Moq;
 /// Note: Constructing real UserManager&lt;TUser&gt; or SignInManager&lt;TUser&gt; requires many framework dependencies.
 /// Where such construction/mocking is required, a skipped test with guidance is provided.
 /// </summary>
+[Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class SetPasswordModelTests
 {

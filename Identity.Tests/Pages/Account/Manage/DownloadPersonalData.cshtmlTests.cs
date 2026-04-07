@@ -1,5 +1,6 @@
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account.Manage;
+using Identity.Tests.Infrastructure;
 
 using Identity.Pages.Account.Manage;
 using Microsoft.AspNetCore.Http;
@@ -9,6 +10,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
 using Moq;
 
+[Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class DownloadPersonalDataModelTests
 {

@@ -1,6 +1,7 @@
 #pragma warning disable CS8604
 #pragma warning disable CS8625
 namespace Identity.Tests.Pages.Account.Manage;
+using Identity.Tests.Infrastructure;
 
 using Duende.IdentityServer.Configuration;
 using Duende.IdentityServer.Models;
@@ -15,6 +16,7 @@ using Microsoft.Extensions.Options;
 using Moq;
 
 /// <summary>Unit tests for <see cref="Identity.Pages.Account.Manage.DeviceModel"/>.</summary>
+[Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class DeviceIndexModelTests
 {

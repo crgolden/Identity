@@ -1,9 +1,11 @@
 namespace Identity.Tests;
+using Identity.Tests.Infrastructure;
 
 using System.Diagnostics.Metrics;
 using Identity;
 
 /// <summary>Unit tests for <see cref="Telemetry.Metrics"/> counter emission.</summary>
+[Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public sealed class TelemetryTests
 {

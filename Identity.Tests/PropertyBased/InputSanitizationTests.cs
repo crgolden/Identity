@@ -1,4 +1,5 @@
 namespace Identity.Tests.PropertyBased;
+using Identity.Tests.Infrastructure;
 
 using System.Security.Cryptography;
 using System.Text;
@@ -8,6 +9,7 @@ using CsCheck;
 /// Property-based tests for input handling: Gravatar hash computation,
 /// URL safety classification, and email normalization.
 /// </summary>
+[Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public sealed class InputSanitizationTests
 {

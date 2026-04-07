@@ -1,6 +1,7 @@
 #pragma warning disable CS8604
 #pragma warning disable CS8625
 namespace Identity.Tests.Pages.Account.Manage;
+using Identity.Tests.Infrastructure;
 
 using System.Net;
 using Identity.Pages.Account.Manage;
@@ -13,6 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Moq;
 
 /// <summary>Unit tests for <see cref="Identity.Pages.Account.Manage.DiagnosticsModel"/>.</summary>
+[Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class DiagnosticsIndexModelTests
 {

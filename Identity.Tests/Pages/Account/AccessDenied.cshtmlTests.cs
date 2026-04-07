@@ -1,4 +1,5 @@
 namespace Identity.Tests.Pages.Account;
+using Identity.Tests.Infrastructure;
 
 using Identity.Pages.Account;
 using Microsoft.AspNetCore.Authorization;
@@ -6,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 /// <summary>
 /// Tests for <see cref="AccessDeniedModel"/>.
 /// </summary>
+[Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class AccessDeniedModelTests
 {

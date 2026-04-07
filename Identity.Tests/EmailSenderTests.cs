@@ -1,4 +1,5 @@
 namespace Identity.Tests;
+using Identity.Tests.Infrastructure;
 
 using Moq;
 using Resend;
@@ -6,6 +7,7 @@ using Resend;
 /// <summary>
 /// Tests for Identity.EmailSender.
 /// </summary>
+[Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class EmailSenderTests
 {

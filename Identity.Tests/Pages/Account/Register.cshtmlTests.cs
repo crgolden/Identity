@@ -1,5 +1,6 @@
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account;
+using Identity.Tests.Infrastructure;
 
 using Identity.Pages.Account;
 using Microsoft.AspNetCore.Authentication;
@@ -17,6 +18,7 @@ using Moq;
 /// Tests for Identity.Pages.Account.RegisterModel.OnGetAsync.
 /// Focus: ensure ReturnUrl assignment and ExternalLogins population behavior.
 /// </summary>
+[Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class RegisterModelTests
 {

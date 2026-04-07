@@ -1,5 +1,6 @@
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account;
+using Identity.Tests.Infrastructure;
 
 using Identity.Pages.Account;
 using Microsoft.AspNetCore.Identity;
@@ -9,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 
 /// <summary>Unit tests for <see cref="Identity.Pages.Account.RegisterConfirmationModel"/>.</summary>
+[Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class RegisterConfirmationModelTests
 {

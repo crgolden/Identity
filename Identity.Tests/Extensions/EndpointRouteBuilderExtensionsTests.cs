@@ -1,5 +1,6 @@
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Extensions;
+using Identity.Tests.Infrastructure;
 
 using System.Net;
 using System.Security.Claims;
@@ -15,6 +16,7 @@ using Moq;
 /// <summary>
 /// Tests for EndpointRouteBuilderExtensions.
 /// </summary>
+[Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class EndpointRouteBuilderExtensionsTests
 {
@@ -115,6 +117,36 @@ public class EndpointRouteBuilderExtensionsTests
             Assert.Equal(userId.ToString(), capturedEntity.Id);
             Assert.Equal("alice", capturedEntity.Name);
             Assert.Equal("alice", capturedEntity.DisplayName);
+        }
+    }
+
+    [Fact]
+    public async Task PasskeyCreationOptions_NullUserName_UsesUserAsFallbackDisplayName()
+    {
+        // Arrange
+        var (userManagerMock, signInManagerMock, antiforgeryMock) = CreateMocks();
+        var userId = Guid.NewGuid();
+        var user = new IdentityUser<Guid> { Id = userId, UserName = null };
+        PasskeyUserEntity? capturedEntity = null;
+
+        userManagerMock.Setup(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
+        userManagerMock.Setup(u => u.GetUserIdAsync(user)).ReturnsAsync(userId.ToString());
+        userManagerMock.Setup(u => u.GetUserNameAsync(user)).ReturnsAsync((string?)null);
+        signInManagerMock
+            .Setup(s => s.MakePasskeyCreationOptionsAsync(It.IsAny<PasskeyUserEntity>()))
+            .Callback<PasskeyUserEntity>(e => capturedEntity = e)
+            .ReturnsAsync("{}");
+
+        var (app, client) = await BuildTestAppAsync(userManagerMock, signInManagerMock, antiforgeryMock);
+        await using (app)
+        {
+            // Act
+            await client.PostAsync("/Account/PasskeyCreationOptions", null, TestContext.Current.CancellationToken);
+
+            // Assert
+            Assert.NotNull(capturedEntity);
+            Assert.Equal("User", capturedEntity.Name);
+            Assert.Equal("User", capturedEntity.DisplayName);
         }
     }
 

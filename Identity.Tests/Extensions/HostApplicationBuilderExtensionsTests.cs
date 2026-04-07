@@ -1,4 +1,5 @@
 namespace Identity.Tests.Extensions;
+using Identity.Tests.Infrastructure;
 
 using Azure;
 using Azure.Core;
@@ -15,6 +16,7 @@ using Moq;
 using Resend;
 
 /// <summary>Unit tests for <see cref="HostApplicationBuilderExtensions"/> extension methods.</summary>
+[Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public sealed class HostApplicationBuilderExtensionsTests
 {

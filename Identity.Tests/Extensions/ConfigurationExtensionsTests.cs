@@ -1,4 +1,5 @@
 namespace Identity.Tests.Extensions;
+using Identity.Tests.Infrastructure;
 
 using Azure.Core;
 using Azure.Security.KeyVault.Secrets;
@@ -7,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Moq;
 
 /// <summary>Unit tests for <see cref="ConfigurationExtensions"/> extension methods.</summary>
+[Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public sealed class ConfigurationExtensionsTests
 {

@@ -1,4 +1,5 @@
 namespace Identity.Tests.Filters;
+using Identity.Tests.Infrastructure;
 
 using Identity.Filters;
 using Microsoft.AspNetCore.Http;
@@ -9,6 +10,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Routing;
 
 /// <summary>Unit tests for <see cref="SecurityHeadersAttribute"/>.</summary>
+[Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public sealed class SecurityHeadersAttributeTests
 {

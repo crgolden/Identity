@@ -1,6 +1,7 @@
 #pragma warning disable CS8604
 #pragma warning disable CS8625
 namespace Identity.Tests.Pages;
+using Identity.Tests.Infrastructure;
 
 using Duende.IdentityServer.Models;
 using Duende.IdentityServer.Services;
@@ -13,6 +14,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 
 /// <summary>Unit tests for <see cref="Identity.Pages.CibaModel"/>.</summary>
+[Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class CibaIndexModelTests
 {

@@ -1,6 +1,7 @@
 #pragma warning disable CS8604
 #pragma warning disable CS8625
 namespace Identity.Tests.Pages.Account.Manage;
+using Identity.Tests.Infrastructure;
 
 using Duende.IdentityServer.Services;
 using Identity.Pages.Account.Manage;
@@ -11,6 +12,7 @@ using Microsoft.AspNetCore.Routing;
 using Moq;
 
 /// <summary>Unit tests for <see cref="Identity.Pages.Account.Manage.ServerSideSessionsModel"/>.</summary>
+[Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class ServerSideSessionsIndexModelTests
 {

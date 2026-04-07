@@ -1,6 +1,7 @@
 #pragma warning disable CS8604
 #pragma warning disable CS8625
 namespace Identity.Tests.Pages;
+using Identity.Tests.Infrastructure;
 
 using Identity.Pages;
 using Microsoft.AspNetCore.Http;
@@ -10,6 +11,7 @@ using Microsoft.AspNetCore.Routing;
 using Moq;
 
 /// <summary>Unit tests for <see cref="Identity.Pages.RedirectModel"/>.</summary>
+[Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class RedirectIndexModelTests
 {

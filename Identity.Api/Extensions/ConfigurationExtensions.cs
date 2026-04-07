@@ -8,6 +8,7 @@ public static class ConfigurationExtensions
 {
     extension(IConfiguration configuration)
     {
+        // Stryker disable all : DefaultAzureCredential is sealed and cannot be mocked; covered at E2E level with live Azure credentials
         public async Task<TokenCredential> ToTokenCredentialAsync(string scope = "https://vault.azure.net/.default", CancellationToken cancellationToken = default)
         {
             var options = configuration.Get<DefaultAzureCredentialOptions>() ?? throw new InvalidOperationException($"Invalid '{nameof(DefaultAzureCredentialOptions)}' configuration.");
@@ -17,6 +18,7 @@ public static class ConfigurationExtensions
             return IsNullOrWhiteSpace(token.Token) ? throw new InvalidOperationException("Failed to acquire token for Azure Key Vault access.") : credential;
         }
 
+        // Stryker restore all
         public SecretClient ToSecretClient(TokenCredential credential)
         {
             var keyVaultUrl = configuration.GetValue<Uri>("KeyVaultUri") ?? throw new InvalidOperationException("Invalid 'KeyVaultUri'.");

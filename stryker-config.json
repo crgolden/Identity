@@ -21,16 +21,17 @@
       "break": 50
     },
     "mutate": [
-      "Identity.Api/EmailSender.cs",
-      "Identity.Api/GravatarService.cs",
-      "Identity.Api/Extensions/ConfigurationExtensions.cs",
-      "Identity.Api/Extensions/EndpointRouteBuilderExtensions.cs"
+      "EmailSender.cs",
+      "GravatarService.cs",
+      "Extensions/ConfigurationExtensions.cs",
+      "Extensions/EndpointRouteBuilderExtensions.cs"
     ],
     "since": {
       "enabled": false
     },
     "additional-timeout": 30,
-    "test-runner": "dotnet-test",
-    "coverage-analysis": "perTest"
+    "test-runner": "mtp",
+    "coverage-analysis": "all",
+    "test-case-filter": "Category=Unit"
   }
 }
