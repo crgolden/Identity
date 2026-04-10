@@ -96,6 +96,18 @@ customElements.define('passkey-submit', class extends HTMLElement {
             let credentialJson = "";
             try {
                 credentialJson = JSON.stringify(credential);
+
+                // Chrome's toJSON() may encode binary fields (rawId, attestationObject, etc.)
+                // as standard base64 (+/) rather than base64url (-_). Normalize here.
+                credentialJson = credentialJson.replace(/\+/g, '-').replace(/\//g, '_');
+
+                // Chrome's toJSON() omits clientExtensionResults when empty, but
+                // ASP.NET Core Identity requires it even as an empty object.
+                const parsed = JSON.parse(credentialJson);
+                if (!parsed.clientExtensionResults) {
+                    parsed.clientExtensionResults = {};
+                    credentialJson = JSON.stringify(parsed);
+                }
             } catch (error) {
                 if (error.name !== 'TypeError') {
                     throw error;
@@ -142,6 +154,40 @@ customElements.define('passkey-submit', class extends HTMLElement {
         }
         this.internals.setFormValue(formData);
         this.internals.form.submit();
+    }
+
+    convertToBase64(o) {
+        if (!o) {
+            return undefined;
+        }
+
+        // Normalize Array to Uint8Array
+        if (Array.isArray(o)) {
+            o = Uint8Array.from(o);
+        }
+
+        // Normalize ArrayBuffer to Uint8Array
+        if (o instanceof ArrayBuffer) {
+            o = new Uint8Array(o);
+        }
+
+        // Convert Uint8Array to base64
+        if (o instanceof Uint8Array) {
+            let str = '';
+            for (let i = 0; i < o.byteLength; i++) {
+                str += String.fromCharCode(o[i]);
+            }
+            o = window.btoa(str);
+        }
+
+        if (typeof o !== 'string') {
+            throw new Error('Could not convert to base64 string');
+        }
+
+        // Convert base64 to base64url
+        o = o.replace(/\+/g, '-').replace(/\//g, '_').replace(/=*$/g, '');
+
+        return o;
     }
 
     async tryAutofillPasskey() {

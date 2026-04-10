@@ -98,6 +98,18 @@ Two minimal API endpoints are registered in `EndpointRouteBuilderExtensions.cs` 
 
 Both require antiforgery validation. The Passkey Razor Pages live in `Pages/Account/Manage/`.
 
+### Passkey client-side implementation (`passkey-submit.js`)
+
+`wwwroot/js/passkey-submit.js` is a form-associated custom element that drives the WebAuthn flow on both the Login page (`operation="Request"`) and the Passkeys management page (`operation="Create"`). It is rendered by `PasskeySubmitTagHelper` — **`Pages/_ViewImports.cshtml` must include `@addTagHelper *, Identity.Api`** or the tag helper is silently ignored and no button is rendered.
+
+**Reference implementation:** `C:\Users\crgol\source\repos\DuendeSoftware\samples\IdentityServer\v7\AspNetIdentityPasskeys\IdentityServerAspNetIdentityPasskeys\wwwroot\js\passkey-submit.js` — keep in sync when updating.
+
+**Known Chrome `credential.toJSON()` bugs worked around in `passkey-submit.js`:**
+
+1. **Standard base64 instead of base64url** — Chrome encodes `rawId`, `attestationObject`, and other binary fields with `+`/`/` (standard base64) rather than `-`/`_` (base64url). ASP.NET Core Identity rejects this. Fixed by post-processing: `.replace(/\+/g, '-').replace(/\//g, '_')`.
+2. **`clientExtensionResults` omitted when empty** — Chrome omits this required property when no extensions are active. Fixed by injecting `clientExtensionResults: {}` if absent after parsing.
+3. **`convertToBase64` fallback** — The manual serialization fallback (triggered by password managers that don't implement `PublicKeyCredential.prototype.toJSON` correctly) requires a `convertToBase64` helper method on the class. It is defined in `passkey-submit.js`.
+
 ### Open Redirect Protection
 
 All login-path handlers validate `returnUrl` before redirecting. **Never call `LocalRedirect(returnUrl)` directly.** Always use:
@@ -139,7 +151,7 @@ All IdentityServer-specific Razor Pages live under `Identity.Api/Pages/` in `Ide
 
 - **Azure Monitor** — OpenTelemetry metrics and traces via `UseAzureMonitor()`
 - **IdentityServer OTel signals** — `Program.cs` subscribes to both the Duende built-in meter (`Duende.IdentityServer` — token issuance, introspection, secret validation) and the custom `Identity` meter (consent/grants UI events). Tracing also subscribes to all five Duende trace sources: `IdentityServerConstants.Tracing.Basic/.Cache/.Services/.Stores/.Validation`.
-- **Serilog** — structured logging with an Elasticsearch sink (`logs-dotnet-identity` data stream) and console sink bootstrap. `Elastic.Serilog.Sinks` is pinned to exact version `[8.11.1]` to match the self-hosted Elasticsearch 8.x node; ECS 9.x templates use `synthetic_source_keep` which is not supported by Elasticsearch 8.x.
+- **Serilog** — structured logging with an Elasticsearch sink (`logs-dotnet-identity` data stream) and console sink bootstrap. `Elastic.Serilog.Sinks` 9.0.0.
 - Health checks endpoint at `/Health` with `DbContext` check; health check requests are filtered from traces
 
 ### Data Protection
@@ -323,7 +335,7 @@ The GitHub Actions workflow (`.github/workflows/main_crgolden-identity.yml`) tri
 1. Builds the full solution via `dotnet build --no-incremental --configuration Release` — this includes `Identity.Data.sqlproj`, which produces the `.dacpac`
 2. Runs unit tests with coverage using `dotnet-coverage collect ... -s "coverage.settings.xml"`, writing `coverage.xml`. `coverage.settings.xml` excludes `[GeneratedCode]`-decorated types (e.g. the NSwag-generated Gravatar client) from coverage metrics.
 3. Logs in to Azure via OIDC, then deploys the E2E test database schema and runs E2E tests with `ASPNETCORE_ENVIRONMENT=CI`, writing `coverage-e2e.xml` with the same settings file
-4. Publishes the web app (`-r win-x64 --self-contained false`) and uploads both the app artifact and the `.dacpac` artifact
+4. Publishes the web app (`-r win-x86 --self-contained false`) and uploads both the app artifact and the `.dacpac` artifact
 5. Runs SonarCloud analysis, reading both `coverage.xml` and `coverage-e2e.xml`
 
 **Deploy job** (runs after build):

@@ -150,8 +150,8 @@ dotnet run --project Identity.Benchmarks -c Release
 # Run mutation tests (Stryker — slow, runs against 5 core source files)
 dotnet stryker --config-file stryker-config.json
 
-# Publish web app (add -r win-x64 --self-contained false when targeting Windows App Service)
-dotnet publish Identity.Api -c Release -o ./publish
+# Publish web app (-r win-x86 required: Azure App Service Free tier supports 32-bit only)
+dotnet publish Identity.Api -c Release -r win-x86 --self-contained false -o ./publish
 ```
 
 ## AI Assistant Integration (Claude Code)
