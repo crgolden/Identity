@@ -99,7 +99,7 @@ customElements.define('passkey-submit', class extends HTMLElement {
 
                 // Chrome's toJSON() may encode binary fields (rawId, attestationObject, etc.)
                 // as standard base64 (+/) rather than base64url (-_). Normalize here.
-                credentialJson = credentialJson.replace(/\+/g, '-').replace(/\//g, '_');
+                credentialJson = credentialJson.replaceAll('+', '-').replaceAll('/', '_');
 
                 // Chrome's toJSON() omits clientExtensionResults when empty, but
                 // ASP.NET Core Identity requires it even as an empty object.
@@ -175,17 +175,17 @@ customElements.define('passkey-submit', class extends HTMLElement {
         if (o instanceof Uint8Array) {
             let str = '';
             for (let i = 0; i < o.byteLength; i++) {
-                str += String.fromCharCode(o[i]);
+                str += String.fromCodePoint(o[i]);
             }
-            o = window.btoa(str);
+            o = globalThis.btoa(str);
         }
 
         if (typeof o !== 'string') {
-            throw new Error('Could not convert to base64 string');
+            throw new TypeError('Could not convert to base64 string');
         }
 
         // Convert base64 to base64url
-        o = o.replace(/\+/g, '-').replace(/\//g, '_').replace(/=*$/g, '');
+        o = o.replaceAll('+', '-').replaceAll('/', '_').replace(/=*$/g, '');
 
         return o;
     }

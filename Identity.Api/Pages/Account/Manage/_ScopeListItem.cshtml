@@ -1,6 +1,6 @@
 @model Identity.Pages.Account.Manage.ConsentModel.ScopeViewModel
 
-<li class="list-group-item">
+<li class="list-group-item"> <!-- NOSONAR: partial view intentionally renders a bare <li>; the parent template wraps it in a <ul> -->
     <div class="form-check @(Model.Emphasize ? "fw-bold" : null)">
         @if (Model.Required)
         {

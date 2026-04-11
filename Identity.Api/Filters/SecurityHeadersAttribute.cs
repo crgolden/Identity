@@ -20,10 +20,10 @@ public sealed class SecurityHeadersAttribute : ActionFilterAttribute
             var headers = context.HttpContext.Response.Headers;
 
             // Prevent MIME-type sniffing
-            headers["X-Content-Type-Options"] = "nosniff";
+            headers.XContentTypeOptions = "nosniff";
 
             // Prevent the page from being embedded in an iframe
-            headers["X-Frame-Options"] = "SAMEORIGIN";
+            headers.XFrameOptions = "SAMEORIGIN";
 
             // Limit referrer information
             headers["Referrer-Policy"] = "no-referrer";
@@ -31,7 +31,7 @@ public sealed class SecurityHeadersAttribute : ActionFilterAttribute
             // Strict CSP: only same-origin resources, no plugins, no external frames
             if (!headers.ContainsKey("Content-Security-Policy"))
             {
-                headers["Content-Security-Policy"] =
+                headers.ContentSecurityPolicy =
                     "default-src 'self'; " +
                     "object-src 'none'; " +
                     "frame-ancestors 'none'; " +

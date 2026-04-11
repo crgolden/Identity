@@ -30,7 +30,7 @@ public sealed class SecurityHeadersAttributeTests
         filter.OnResultExecuting(context);
 
         // Assert
-        Assert.Equal("nosniff", (string?)context.HttpContext.Response.Headers["X-Content-Type-Options"]);
+        Assert.Equal("nosniff", (string?)context.HttpContext.Response.Headers.XContentTypeOptions);
     }
 
     /// <summary>
@@ -49,7 +49,7 @@ public sealed class SecurityHeadersAttributeTests
         filter.OnResultExecuting(context);
 
         // Assert
-        Assert.Equal("SAMEORIGIN", (string?)context.HttpContext.Response.Headers["X-Frame-Options"]);
+        Assert.Equal("SAMEORIGIN", (string?)context.HttpContext.Response.Headers.XFrameOptions);
     }
 
     /// <summary>
@@ -89,7 +89,7 @@ public sealed class SecurityHeadersAttributeTests
         // Assert
         Assert.Equal(
             "default-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self';",
-            (string?)context.HttpContext.Response.Headers["Content-Security-Policy"]);
+            (string?)context.HttpContext.Response.Headers.ContentSecurityPolicy);
     }
 
     /// <summary>
@@ -126,18 +126,18 @@ public sealed class SecurityHeadersAttributeTests
     {
         // Arrange
         var context = MakeContext(new PageResult());
-        context.HttpContext.Response.Headers["Content-Security-Policy"] = "script-src 'none'";
+        context.HttpContext.Response.Headers.ContentSecurityPolicy = "script-src 'none'";
         var filter = new SecurityHeadersAttribute();
 
         // Act
         filter.OnResultExecuting(context);
 
         // Assert — CSP is unchanged
-        Assert.Equal("script-src 'none'", (string?)context.HttpContext.Response.Headers["Content-Security-Policy"]);
+        Assert.Equal("script-src 'none'", (string?)context.HttpContext.Response.Headers.ContentSecurityPolicy);
 
         // Other headers are still applied
-        Assert.Equal("nosniff", (string?)context.HttpContext.Response.Headers["X-Content-Type-Options"]);
-        Assert.Equal("SAMEORIGIN", (string?)context.HttpContext.Response.Headers["X-Frame-Options"]);
+        Assert.Equal("nosniff", (string?)context.HttpContext.Response.Headers.XContentTypeOptions);
+        Assert.Equal("SAMEORIGIN", (string?)context.HttpContext.Response.Headers.XFrameOptions);
         Assert.Equal("no-referrer", (string?)context.HttpContext.Response.Headers["Referrer-Policy"]);
     }
 
@@ -160,12 +160,12 @@ public sealed class SecurityHeadersAttributeTests
         filter.OnResultExecuting(context);
 
         // Assert
-        Assert.Equal("nosniff", (string?)context.HttpContext.Response.Headers["X-Content-Type-Options"]);
-        Assert.Equal("SAMEORIGIN", (string?)context.HttpContext.Response.Headers["X-Frame-Options"]);
+        Assert.Equal("nosniff", (string?)context.HttpContext.Response.Headers.XContentTypeOptions);
+        Assert.Equal("SAMEORIGIN", (string?)context.HttpContext.Response.Headers.XFrameOptions);
         Assert.Equal("no-referrer", (string?)context.HttpContext.Response.Headers["Referrer-Policy"]);
         Assert.Equal(
             "default-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self';",
-            (string?)context.HttpContext.Response.Headers["Content-Security-Policy"]);
+            (string?)context.HttpContext.Response.Headers.ContentSecurityPolicy);
     }
 
     private static ResultExecutingContext MakeContext(IActionResult result)

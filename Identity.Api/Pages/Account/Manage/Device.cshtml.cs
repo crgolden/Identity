@@ -142,6 +142,41 @@ public class DeviceModel : PageModel
         return Page();
     }
 
+    private static ScopeViewModel CreateScopeViewModel(IdentityResource identity, bool check) =>
+        new()
+        {
+            Value = identity.Name,
+            DisplayName = identity.DisplayName ?? identity.Name,
+            Description = identity.Description,
+            Emphasize = identity.Emphasize,
+            Required = identity.Required,
+            Checked = check || identity.Required,
+        };
+
+    private static ScopeViewModel CreateScopeViewModel(
+        ParsedScopeValue parsedScopeValue,
+        ApiScope apiScope,
+        bool check) =>
+        new()
+        {
+            Value = parsedScopeValue.RawValue,
+            DisplayName = apiScope.DisplayName ?? apiScope.Name,
+            Description = apiScope.Description,
+            Emphasize = apiScope.Emphasize,
+            Required = apiScope.Required,
+            Checked = check || apiScope.Required,
+        };
+
+    private static ScopeViewModel CreateOfflineAccessScope(bool check) =>
+        new()
+        {
+            Value = Duende.IdentityServer.IdentityServerConstants.StandardScopes.OfflineAccess,
+            DisplayName = ConsentOptions.OfflineAccessDisplayName,
+            Description = ConsentOptions.OfflineAccessDescription,
+            Emphasize = true,
+            Checked = check,
+        };
+
     private async Task<bool> SetViewModelAsync(string userCode)
     {
         var request = await _interaction.GetAuthorizationContextAsync(userCode);
@@ -193,41 +228,6 @@ public class DeviceModel : PageModel
         vm.ApiScopes = apiScopes;
         return vm;
     }
-
-    private ScopeViewModel CreateScopeViewModel(IdentityResource identity, bool check) =>
-        new()
-        {
-            Value = identity.Name,
-            DisplayName = identity.DisplayName ?? identity.Name,
-            Description = identity.Description,
-            Emphasize = identity.Emphasize,
-            Required = identity.Required,
-            Checked = check || identity.Required,
-        };
-
-    private ScopeViewModel CreateScopeViewModel(
-        ParsedScopeValue parsedScopeValue,
-        ApiScope apiScope,
-        bool check) =>
-        new()
-        {
-            Value = parsedScopeValue.RawValue,
-            DisplayName = apiScope.DisplayName ?? apiScope.Name,
-            Description = apiScope.Description,
-            Emphasize = apiScope.Emphasize,
-            Required = apiScope.Required,
-            Checked = check || apiScope.Required,
-        };
-
-    private ScopeViewModel CreateOfflineAccessScope(bool check) =>
-        new()
-        {
-            Value = Duende.IdentityServer.IdentityServerConstants.StandardScopes.OfflineAccess,
-            DisplayName = ConsentOptions.OfflineAccessDisplayName,
-            Description = ConsentOptions.OfflineAccessDescription,
-            Emphasize = true,
-            Checked = check,
-        };
 
     /// <summary>View model for the device flow consent page.</summary>
     public class ViewModel

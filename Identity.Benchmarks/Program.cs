@@ -1,3 +1,9 @@
+namespace Identity.Benchmarks;
+
 using BenchmarkDotNet.Running;
 
-BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args);
+internal static class Program
+{
+    private static void Main(string[] args) =>
+        BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args);
+}

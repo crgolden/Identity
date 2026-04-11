@@ -10,10 +10,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"]</title>
-    @if (Model.RedirectUri != null)
-    {
-        <meta http-equiv="refresh" content="0;url=@Model.RedirectUri" />
-    }
+
 </head>
 <body>
     <p>Redirecting to <a href="@Model.RedirectUri">@Model.RedirectUri</a>&hellip;</p>
