@@ -185,7 +185,7 @@ customElements.define('passkey-submit', class extends HTMLElement {
         }
 
         // Convert base64 to base64url
-        o = o.replaceAll('+', '-').replaceAll('/', '_').replace(/=*$/g, '');
+        o = o.replaceAll('+', '-').replaceAll('/', '_').replaceAll(/=*$/g, '');
 
         return o;
     }
