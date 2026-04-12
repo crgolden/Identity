@@ -184,8 +184,8 @@ customElements.define('passkey-submit', class extends HTMLElement {
             throw new TypeError('Could not convert to base64 string');
         }
 
-        // Convert base64 to base64url
-        o = o.replaceAll('+', '-').replaceAll('/', '_').replaceAll(/=*$/g, '');
+        // Convert base64 to base64url; split on '=' to strip padding without a regex
+        o = o.replaceAll('+', '-').replaceAll('/', '_').split('=')[0];
 
         return o;
     }
