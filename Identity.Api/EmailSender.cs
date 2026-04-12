@@ -1,5 +1,6 @@
 ﻿namespace Identity;
 
+using System.Diagnostics;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Resend;
 
@@ -14,7 +15,7 @@ public class EmailSender : IEmailSender
     }
 
     /// <inheritdoc/>
-    public Task SendEmailAsync(string email, string subject, string htmlMessage)
+    public async Task SendEmailAsync(string email, string subject, string htmlMessage)
     {
         var msg = new EmailMessage
         {
@@ -24,6 +25,8 @@ public class EmailSender : IEmailSender
             HtmlBody = htmlMessage
         };
         msg.To.Add(email);
-        return _resend.EmailSendAsync(msg);
+        using var activity = Telemetry.ActivitySource.StartActivity("identity.resend.send_email");
+        activity?.SetTag("messaging.system", "resend");
+        await _resend.EmailSendAsync(msg);
     }
 }

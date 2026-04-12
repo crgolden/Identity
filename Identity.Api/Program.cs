@@ -1,4 +1,6 @@
 #pragma warning disable SA1200
+using System.Diagnostics;
+using System.Security.Claims;
 using Identity.Extensions;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -60,7 +62,20 @@ try
 
     var app = builder.Build();
     app.UseForwardedHeaders();
-    app.UseSerilogRequestLogging();
+    app.UseSerilogRequestLogging(options =>
+    {
+        options.EnrichDiagnosticContext = (diagnosticContext, _) =>
+        {
+            var activity = Activity.Current;
+            if (activity is null)
+            {
+                return;
+            }
+
+            diagnosticContext.Set("TraceId", activity.TraceId.ToString());
+            diagnosticContext.Set("SpanId", activity.SpanId.ToString());
+        };
+    });
     if (app.Environment.IsDevelopment())
     {
         app.UseDeveloperExceptionPage();
@@ -79,6 +94,20 @@ try
             corsPolicyBuilder.WithOrigins(corsPolicy.Origins.ToArray());
         })
         .UseAuthorization();
+    app.Use(async (ctx, next) =>
+    {
+        if (ctx.User.Identity?.IsAuthenticated != true)
+        {
+            await next(ctx);
+            return;
+        }
+
+        using (Serilog.Context.LogContext.PushProperty("UserId", ctx.User.FindFirstValue("sub")))
+        using (Serilog.Context.LogContext.PushProperty("UserEmail", ctx.User.FindFirstValue("email")))
+        {
+            await next(ctx);
+        }
+    });
     app.MapAdditionalIdentityEndpoints();
     app.MapHealthChecks("Health").DisableHttpMetrics();
     app.MapStaticAssets();
