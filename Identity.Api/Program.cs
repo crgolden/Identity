@@ -72,8 +72,8 @@ try
                 return;
             }
 
-            diagnosticContext.Set("TraceId", activity.TraceId.ToString());
-            diagnosticContext.Set("SpanId", activity.SpanId.ToString());
+            diagnosticContext.Set(nameof(Activity.TraceId), activity.TraceId.ToString());
+            diagnosticContext.Set(nameof(Activity.SpanId), activity.SpanId.ToString());
         };
     });
     if (app.Environment.IsDevelopment())
@@ -94,22 +94,21 @@ try
             corsPolicyBuilder.WithOrigins(corsPolicy.Origins.ToArray());
         })
         .UseAuthorization();
-    app.Use(async (ctx, next) =>
+    app.Use((ctx, next) =>
     {
         if (ctx.User.Identity?.IsAuthenticated != true)
         {
-            await next(ctx);
-            return;
+            return next(ctx);
         }
 
         using (Serilog.Context.LogContext.PushProperty("UserId", ctx.User.FindFirstValue("sub")))
         using (Serilog.Context.LogContext.PushProperty("UserEmail", ctx.User.FindFirstValue("email")))
         {
-            await next(ctx);
+            return next(ctx);
         }
     });
     app.MapAdditionalIdentityEndpoints();
-    app.MapHealthChecks("Health").DisableHttpMetrics();
+    app.MapHealthChecks("/health").DisableHttpMetrics();
     app.MapStaticAssets();
     app.MapRazorPages()
        .WithStaticAssets()

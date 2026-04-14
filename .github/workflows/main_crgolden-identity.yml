@@ -21,6 +21,8 @@ jobs:
   build:
     name: Build and analyze
     runs-on: windows-latest
+    outputs:
+      playwright-version: ${{ steps.playwright-version.outputs.version }}
     permissions:
       id-token: write #This is required for requesting the JWT (needed for Azure OIDC in E2E tests)
       contents: read #This is required for actions/checkout
@@ -112,6 +114,7 @@ jobs:
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_086A6E19353E42B0AFB0AEE6A7504B9E }}
 
       - name: Set E2E test environment
+        shell: powershell
         run: |
           echo "ASPNETCORE_ENVIRONMENT=CI" >> $env:GITHUB_ENV
           echo "KeyVaultUri=${{ vars.KEYVAULT_URI }}" >> $env:GITHUB_ENV
@@ -138,12 +141,20 @@ jobs:
           $connStr = "Data Source=$env:DB_SERVER;Initial Catalog=$env:DB_NAME;User ID=$env:DB_USERID;Password='$env:DB_PASSWORD';Connect Timeout=30;Encrypt=True;Trust Server Certificate=False;Application Intent=ReadWrite;Multi Subnet Failover=False;Command Timeout=30"
           sqlpackage /Action:Publish /SourceFile:Identity.Data/bin/Release/Identity.Data.dacpac /TargetConnectionString:"$connStr"
 
+      - name: Get Playwright version
+        id: playwright-version
+        shell: pwsh
+        run: |
+          $version = (Select-Xml -Path Experience.Tests/Experience.Tests.csproj `
+            -XPath '//PackageReference[@Include="Microsoft.Playwright"]/@Version').Node.Value
+          echo "version=$version" >> $env:GITHUB_OUTPUT
+
       - name: Cache Playwright browsers
         id: cache-playwright
         uses: actions/cache@v5
         with:
           path: ~\AppData\Local\ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('Identity.Tests/Identity.Tests.csproj') }}
+          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
 
       - name: Install Playwright browsers
         if: steps.cache-playwright.outputs.cache-hit != 'true'
@@ -156,7 +167,7 @@ jobs:
             -f xml -o "coverage-e2e.xml" -s "coverage.settings.xml"
 
       - name: Upload test results
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: always()
         with:
           name: test-results
@@ -176,7 +187,7 @@ jobs:
           -o ${{ github.workspace  }}\publish
 
       - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: .net-app
           path: ${{ github.workspace }}\publish
