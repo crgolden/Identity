@@ -145,7 +145,7 @@ jobs:
         id: playwright-version
         shell: pwsh
         run: |
-          $version = (Select-Xml -Path Experience.Tests/Experience.Tests.csproj `
+          $version = (Select-Xml -Path Identity.Tests/Identity.Tests.csproj `
             -XPath '//PackageReference[@Include="Microsoft.Playwright"]/@Version').Node.Value
           echo "version=$version" >> $env:GITHUB_OUTPUT
 
