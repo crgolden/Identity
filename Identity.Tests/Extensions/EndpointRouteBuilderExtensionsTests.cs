@@ -55,6 +55,7 @@ public class EndpointRouteBuilderExtensionsTests
 
             // Assert
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+            antiforgeryMock.Verify(a => a.ValidateRequestAsync(It.IsAny<HttpContext>()), Times.Once);
         }
     }
 
@@ -87,6 +88,7 @@ public class EndpointRouteBuilderExtensionsTests
             Assert.Equal("application/json", response.Content.Headers.ContentType?.MediaType);
             var body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
             Assert.Equal("{\"type\":\"webauthn.create\"}", body);
+            antiforgeryMock.Verify(a => a.ValidateRequestAsync(It.IsAny<HttpContext>()), Times.Once);
         }
     }
 
@@ -117,6 +119,7 @@ public class EndpointRouteBuilderExtensionsTests
             Assert.Equal(userId.ToString(), capturedEntity.Id);
             Assert.Equal("alice", capturedEntity.Name);
             Assert.Equal("alice", capturedEntity.DisplayName);
+            antiforgeryMock.Verify(a => a.ValidateRequestAsync(It.IsAny<HttpContext>()), Times.Once);
         }
     }
 
@@ -147,6 +150,7 @@ public class EndpointRouteBuilderExtensionsTests
             Assert.NotNull(capturedEntity);
             Assert.Equal("User", capturedEntity.Name);
             Assert.Equal("User", capturedEntity.DisplayName);
+            antiforgeryMock.Verify(a => a.ValidateRequestAsync(It.IsAny<HttpContext>()), Times.Once);
         }
     }
 

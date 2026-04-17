@@ -1,6 +1,7 @@
 namespace Identity.Tests;
 using Identity.Tests.Infrastructure;
 
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 using Identity;
@@ -121,5 +122,38 @@ public class GravatarServiceTests
 
         // Assert
         Assert.Equal(cts.Token, capturedToken);
+    }
+
+    [Fact]
+    public async Task GetAvatarUrlAsync_StartsActivityWithGravatarHashTag()
+    {
+        // Arrange
+        const string profileIdentifier = "user@example.com";
+        var expectedHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(profileIdentifier))).ToLowerInvariant();
+        string? capturedOperationName = null;
+        string? capturedHashTag = null;
+        using var listener = new ActivityListener
+        {
+            ShouldListenTo = source => source.Name == Telemetry.ActivitySource.Name,
+            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData,
+            ActivityStopped = activity =>
+            {
+                capturedOperationName = activity.OperationName;
+                capturedHashTag = activity.GetTagItem("gravatar.hash")?.ToString();
+            },
+        };
+        ActivitySource.AddActivityListener(listener);
+        var gravatarMock = new Mock<IGravatar>();
+        gravatarMock
+            .Setup(g => g.GetProfileByIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Profile?)null);
+        var service = new GravatarService(gravatarMock.Object);
+
+        // Act
+        await service.GetAvatarUrlAsync(profileIdentifier, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal("identity.gravatar.get_profile", capturedOperationName);
+        Assert.Equal(expectedHash, capturedHashTag);
     }
 }
