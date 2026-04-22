@@ -4,6 +4,62 @@ Maps every application path to the tests that cover it.
 
 > **Shell note:** test commands that set environment variables inline use bash syntax. On Windows, use Git Bash, WSL, or set the variables separately before running `dotnet test`.
 
+---
+
+## Running tests locally
+
+> **Build configuration:** `--configuration Debug` is preferred for local runs — there is no Angular build or other Release-only artifact involved in Identity tests. CI uses `--configuration Release`.
+
+### Prerequisites
+
+```bash
+az login   # Azure CLI — required for E2E tests (Key Vault at startup)
+```
+
+User Secrets must be configured with `DefaultAzureCredentialOptions` (see [../CLAUDE.md](../CLAUDE.md)) and the database connection details. User Secrets ID: `aspnet-Identity-149346d0-999f-4a74-8ff7-2a92d39790f2`.
+
+### Unit tests
+
+No Azure credentials required.
+
+```bash
+dotnet test --project Identity.Tests --configuration Debug -- --filter-trait "Category=Unit"
+```
+
+### E2E tests (local)
+
+Require a running SQL Server with a test database (`IdentityTest`) and an active `az login` session for Key Vault.
+
+```bash
+# Bash / WSL
+ASPNETCORE_ENVIRONMENT=Development \
+SqlConnectionStringBuilder__InitialCatalog=IdentityTest \
+dotnet test --project Identity.Tests --configuration Debug -- --filter-trait "Category=E2E"
+
+# PowerShell
+$env:ASPNETCORE_ENVIRONMENT = "Development"
+$env:SqlConnectionStringBuilder__InitialCatalog = "IdentityTest"
+dotnet test --project Identity.Tests --configuration Debug -- --filter-trait "Category=E2E"
+```
+
+### All tests (local)
+
+```bash
+ASPNETCORE_ENVIRONMENT=Development \
+SqlConnectionStringBuilder__InitialCatalog=IdentityTest \
+dotnet test --project Identity.Tests --configuration Debug
+```
+
+### Single test (by method name)
+
+```bash
+ASPNETCORE_ENVIRONMENT=Development \
+SqlConnectionStringBuilder__InitialCatalog=IdentityTest \
+dotnet test --project Identity.Tests --configuration Debug -- --filter-method "*MethodName*"
+```
+
+---
+
 **Test types**
 - **Unit** — xUnit page-model / service / API tests (`Category=Unit`) — 475 tests; includes property-based (`PropertyBased/`) and resilience (`Resilience/`) sub-folders
 - **E2E** — Playwright browser tests (`Category=E2E`); includes OIDC discovery tests (`Oidc/`) and IdentityServer flow tests (`ConsentTests`, `GrantsTests`, `DiagnosticsTests`, `ServerSideSessionsTests`)
@@ -1289,7 +1345,8 @@ The following paths have no meaningful behavioral test coverage and are candidat
 ### Load Tests (`Identity.Tests/Load/`)
 
 ```bash
-ASPNETCORE_ENVIRONMENT=Development SqlConnectionStringBuilder__InitialCatalog=IdentityTest dotnet test --project Identity.Tests --configuration Release -- --filter-trait "Category=Load"
+# Debug is fine for local runs — no Angular build or other Release-only artifact involved.
+ASPNETCORE_ENVIRONMENT=Development SqlConnectionStringBuilder__InitialCatalog=IdentityTest dotnet test --project Identity.Tests --configuration Debug -- --filter-trait "Category=Load"
 ```
 
 Load tests use `Parallel.ForEachAsync` + `HttpClient` (self-signed cert ignored) against the real Kestrel server started by `PlaywrightFixture`. They are excluded from normal CI runs and only execute on `schedule` or `workflow_dispatch`.

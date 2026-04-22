@@ -21,7 +21,19 @@ try
 
     var tokenCredential = await builder.Configuration.ToTokenCredentialAsync();
     var secretClient = builder.Configuration.ToSecretClient(tokenCredential);
-    await builder.AddObservabilityAsync(secretClient);
+
+    // Fetch all Key Vault secrets in one parallel batch to avoid sequential round trips.
+    var secrets = await Task.WhenAll(
+        secretClient.GetSecretAsync("ElasticsearchUsername"),
+        secretClient.GetSecretAsync("ElasticsearchPassword"),
+        secretClient.GetSecretAsync("SqlServerUserId"),
+        secretClient.GetSecretAsync("SqlServerPassword"),
+        secretClient.GetSecretAsync("GoogleClientId"),
+        secretClient.GetSecretAsync("GoogleClientSecret"),
+        secretClient.GetSecretAsync("ResendApiToken"),
+        secretClient.GetSecretAsync("GravatarApiSecretKey"));
+
+    builder.AddObservability(secrets[0].Value.Value, secrets[1].Value.Value);
     builder.AddDataProtection(tokenCredential);
     var healthChecksBuilder = builder.Services.AddHealthChecks();
     var identityBuilder = builder.Services
@@ -46,11 +58,11 @@ try
         })
         .AddAspNetIdentity<IdentityUser<Guid>>()
         .AddLicenseSummary();
-    await builder.AddAuthAsync(secretClient);
-    await builder.AddPersistenceAsync(secretClient, healthChecksBuilder, identityBuilder, identityServerBuilder);
+    builder.AddAuth(secrets[4].Value.Value, secrets[5].Value.Value);
+    builder.AddPersistence(secrets[2].Value.Value, secrets[3].Value.Value, healthChecksBuilder, identityBuilder, identityServerBuilder);
     builder.AddCors();
-    await builder.AddEmailAsync(secretClient);
-    await builder.AddPictureAsync(secretClient);
+    builder.AddEmail(secrets[6].Value.Value);
+    builder.AddPicture(secrets[7].Value.Value);
     builder.Services
         .Configure<ForwardedHeadersOptions>(forwardedHeadersOptions =>
         {

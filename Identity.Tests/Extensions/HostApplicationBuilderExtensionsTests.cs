@@ -1,9 +1,7 @@
 namespace Identity.Tests.Extensions;
 using Identity.Tests.Infrastructure;
 
-using Azure;
 using Azure.Core;
-using Azure.Security.KeyVault.Secrets;
 using Identity.Extensions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Cors.Infrastructure;
@@ -121,12 +119,12 @@ public sealed class HostApplicationBuilderExtensionsTests
     }
 
     /// <summary>
-    /// Verifies that AddObservabilityAsync throws InvalidOperationException when ElasticsearchNode is absent.
-    /// Input: no ElasticsearchNode configuration; mock SecretClient.
+    /// Verifies that AddObservability throws InvalidOperationException when ElasticsearchNode is absent.
+    /// Input: no ElasticsearchNode configuration.
     /// Expected: InvalidOperationException with message "Invalid 'ElasticsearchNode'.".
     /// </summary>
     [Fact]
-    public async Task AddObservabilityAsync_MissingElasticsearchNode_ThrowsInvalidOperationException()
+    public void AddObservability_MissingElasticsearchNode_ThrowsInvalidOperationException()
     {
         // Arrange
         var builder = new Mock<IHostApplicationBuilder>();
@@ -136,22 +134,20 @@ public sealed class HostApplicationBuilderExtensionsTests
         elasticsearchSection.SetupGet(x => x.Value).Returns((string?)null);
         configuration.Setup(x => x.GetSection("ElasticsearchNode")).Returns(elasticsearchSection.Object);
         builder.SetupGet(x => x.Configuration).Returns(configuration.Object);
-        var secretClient = new Mock<SecretClient>();
-        var ct = TestContext.Current.CancellationToken;
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => builder.Object.AddObservabilityAsync(secretClient.Object, ct));
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => builder.Object.AddObservability(Guid.NewGuid().ToString(), Guid.NewGuid().ToString()));
         Assert.Equal("Invalid 'ElasticsearchNode'.", ex.Message);
     }
 
     /// <summary>
-    /// Verifies that AddPersistenceAsync throws InvalidOperationException when SqlConnectionStringBuilder section is absent.
-    /// Input: no SqlConnectionStringBuilder configuration; mock SecretClient; builder args unused before the throw.
+    /// Verifies that AddPersistence throws InvalidOperationException when SqlConnectionStringBuilder section is absent.
+    /// Input: no SqlConnectionStringBuilder configuration.
     /// Expected: InvalidOperationException with message "Invalid 'SqlConnectionStringBuilder' section.".
     /// </summary>
     [Fact]
-    public async Task AddPersistenceAsync_MissingSqlConnectionStringBuilderSection_ThrowsInvalidOperationException()
+    public void AddPersistence_MissingSqlConnectionStringBuilderSection_ThrowsInvalidOperationException()
     {
         // Arrange
         var builder = new Mock<IHostApplicationBuilder>();
@@ -162,64 +158,49 @@ public sealed class HostApplicationBuilderExtensionsTests
         sqlSection.Setup(x => x.GetChildren()).Returns([]);
         configuration.Setup(x => x.GetSection("SqlConnectionStringBuilder")).Returns(sqlSection.Object);
         builder.SetupGet(x => x.Configuration).Returns(configuration.Object);
-        var secretClient = new Mock<SecretClient>();
-        var ct = TestContext.Current.CancellationToken;
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => builder.Object.AddPersistenceAsync(secretClient.Object, null!, null!, null!, ct));
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => builder.Object.AddPersistence(Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), null!, null!, null!));
         Assert.Equal("Invalid 'SqlConnectionStringBuilder' section.", ex.Message);
     }
 
     /// <summary>
-    /// Verifies that AddEmailAsync registers IEmailSender in the service collection.
-    /// Input: mock SecretClient returning a canned ResendApiToken value.
-    /// Expected: IEmailSender descriptor is present in builder.Services; builder is returned; secret fetched once.
+    /// Verifies that AddEmail registers IEmailSender in the service collection.
+    /// Input: a canned resend API token string.
+    /// Expected: IEmailSender descriptor is present in builder.Services and builder is returned.
     /// </summary>
     [Fact]
-    public async Task AddEmailAsync_RegistersEmailSenderService()
+    public void AddEmail_RegistersEmailSenderService()
     {
         // Arrange
         var builder = new Mock<IHostApplicationBuilder>();
         var serviceCollection = new ServiceCollection();
         builder.SetupGet(x => x.Services).Returns(serviceCollection);
-        var secret = new KeyVaultSecret("ResendApiToken", "test-token");
-        var response = Response.FromValue(secret, Mock.Of<Response>());
-        var secretClient = new Mock<SecretClient>();
-        secretClient
-            .Setup(x => x.GetSecretAsync("ResendApiToken", null, null, TestContext.Current.CancellationToken))
-            .ReturnsAsync(response);
 
         // Act
-        var result = await builder.Object.AddEmailAsync(secretClient.Object, TestContext.Current.CancellationToken);
+        var result = builder.Object.AddEmail("test-token");
 
         // Assert
         Assert.Same(builder.Object, result);
         Assert.Contains(serviceCollection, sd => sd.ServiceType == typeof(IEmailSender));
-        secretClient.Verify(x => x.GetSecretAsync("ResendApiToken", null, null, TestContext.Current.CancellationToken), Times.Once);
     }
 
     /// <summary>
-    /// Verifies that AddEmailAsync configures ResendClientOptions.ApiToken with the value retrieved from Key Vault.
-    /// Input: mock SecretClient returning "my-resend-token" for ResendApiToken.
+    /// Verifies that AddEmail configures ResendClientOptions.ApiToken with the value passed in.
+    /// Input: "my-resend-token" string.
     /// Expected: the registered IConfigureOptions action sets ApiToken to "my-resend-token" when invoked.
     /// </summary>
     [Fact]
-    public async Task AddEmailAsync_SetsApiTokenFromSecret()
+    public void AddEmail_SetsApiTokenFromParameter()
     {
         // Arrange
         var builder = new Mock<IHostApplicationBuilder>();
         var serviceCollection = new ServiceCollection();
         builder.SetupGet(x => x.Services).Returns(serviceCollection);
-        var secret = new KeyVaultSecret("ResendApiToken", "my-resend-token");
-        var response = Response.FromValue(secret, Mock.Of<Response>());
-        var secretClient = new Mock<SecretClient>();
-        secretClient
-            .Setup(x => x.GetSecretAsync("ResendApiToken", null, null, TestContext.Current.CancellationToken))
-            .ReturnsAsync(response);
 
         // Act
-        await builder.Object.AddEmailAsync(secretClient.Object, TestContext.Current.CancellationToken);
+        builder.Object.AddEmail("my-resend-token");
 
         // Assert
         var descriptor = serviceCollection.First(sd => sd.ServiceType == typeof(IConfigureOptions<ResendClientOptions>));
@@ -230,40 +211,33 @@ public sealed class HostApplicationBuilderExtensionsTests
     }
 
     /// <summary>
-    /// Verifies that AddPictureAsync registers IAvatarService in the service collection.
-    /// Input: mock SecretClient returning a canned GravatarApiSecretKey value.
-    /// Expected: IAvatarService descriptor is present in builder.Services; builder is returned; secret fetched once.
+    /// Verifies that AddPicture registers IAvatarService in the service collection.
+    /// Input: a canned Gravatar API key string.
+    /// Expected: IAvatarService descriptor is present in builder.Services and builder is returned.
     /// </summary>
     [Fact]
-    public async Task AddPictureAsync_RegistersAvatarService()
+    public void AddPicture_RegistersAvatarService()
     {
         // Arrange
         var builder = new Mock<IHostApplicationBuilder>();
         var serviceCollection = new ServiceCollection();
         builder.SetupGet(x => x.Services).Returns(serviceCollection);
-        var secret = new KeyVaultSecret("GravatarApiSecretKey", "gravatar-key");
-        var response = Response.FromValue(secret, Mock.Of<Response>());
-        var secretClient = new Mock<SecretClient>();
-        secretClient
-            .Setup(x => x.GetSecretAsync("GravatarApiSecretKey", null, null, TestContext.Current.CancellationToken))
-            .ReturnsAsync(response);
 
         // Act
-        var result = await builder.Object.AddPictureAsync(secretClient.Object, TestContext.Current.CancellationToken);
+        var result = builder.Object.AddPicture("gravatar-key");
 
         // Assert
         Assert.Same(builder.Object, result);
         Assert.Contains(serviceCollection, sd => sd.ServiceType == typeof(IAvatarService));
-        secretClient.Verify(x => x.GetSecretAsync("GravatarApiSecretKey", null, null, TestContext.Current.CancellationToken), Times.Once);
     }
 
     /// <summary>
-    /// Verifies that AddAuthAsync registers IAuthenticationService in the service collection.
-    /// Input: mock SecretClient returning canned Google OAuth credentials.
-    /// Expected: IAuthenticationService descriptor is present in builder.Services; builder is returned; both secrets fetched once.
+    /// Verifies that AddAuth registers IAuthenticationService in the service collection.
+    /// Input: canned Google OAuth credential strings.
+    /// Expected: IAuthenticationService descriptor is present in builder.Services and builder is returned.
     /// </summary>
     [Fact]
-    public async Task AddAuthAsync_RegistersAuthenticationServices()
+    public void AddAuth_RegistersAuthenticationServices()
     {
         // Arrange
         var builder = new Mock<IHostApplicationBuilder>();
@@ -272,25 +246,12 @@ public sealed class HostApplicationBuilderExtensionsTests
         environment.SetupGet(x => x.EnvironmentName).Returns("Production");
         builder.SetupGet(x => x.Services).Returns(serviceCollection);
         builder.SetupGet(x => x.Environment).Returns(environment.Object);
-        var secret1 = new KeyVaultSecret("GoogleClientId", "google-id");
-        var secret2 = new KeyVaultSecret("GoogleClientSecret", "google-secret");
-        var response1 = Response.FromValue(secret1, Mock.Of<Response>());
-        var response2 = Response.FromValue(secret2, Mock.Of<Response>());
-        var secretClient = new Mock<SecretClient>();
-        secretClient
-            .Setup(x => x.GetSecretAsync("GoogleClientId", null, null, TestContext.Current.CancellationToken))
-            .ReturnsAsync(response1);
-        secretClient
-            .Setup(x => x.GetSecretAsync("GoogleClientSecret", null, null, TestContext.Current.CancellationToken))
-            .ReturnsAsync(response2);
 
         // Act
-        var result = await builder.Object.AddAuthAsync(secretClient.Object, TestContext.Current.CancellationToken);
+        var result = builder.Object.AddAuth("google-id", "google-secret");
 
         // Assert
         Assert.Same(builder.Object, result);
         Assert.Contains(serviceCollection, sd => sd.ServiceType == typeof(IAuthenticationService));
-        secretClient.Verify(x => x.GetSecretAsync("GoogleClientId", null, null, TestContext.Current.CancellationToken), Times.Once);
-        secretClient.Verify(x => x.GetSecretAsync("GoogleClientSecret", null, null, TestContext.Current.CancellationToken), Times.Once);
     }
 }

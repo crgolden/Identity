@@ -3,7 +3,6 @@
 using System.Net.Http.Headers;
 using Azure.Core;
 using Azure.Monitor.OpenTelemetry.AspNetCore;
-using Azure.Security.KeyVault.Secrets;
 using Duende.IdentityServer;
 using Elastic.Ingest.Elasticsearch;
 using Elastic.Ingest.Elasticsearch.DataStreams;
@@ -29,16 +28,10 @@ public static class HostApplicationBuilderExtensions
 {
     extension(IHostApplicationBuilder builder)
     {
-        public async Task<IHostApplicationBuilder> AddObservabilityAsync(SecretClient secretClient, CancellationToken cancellationToken = default)
+        public IHostApplicationBuilder AddObservability(string elasticsearchUsername, string elasticsearchPassword)
         {
             var applicationName = builder.Configuration["WEBSITE_SITE_NAME"];
             var elasticsearchNode = builder.Configuration.GetValue<Uri?>("ElasticsearchNode") ?? throw new InvalidOperationException("Invalid 'ElasticsearchNode'.");
-            var tasks = new[]
-            {
-                secretClient.GetSecretAsync("ElasticsearchUsername", cancellationToken: cancellationToken),
-                secretClient.GetSecretAsync("ElasticsearchPassword", cancellationToken: cancellationToken),
-            };
-            var result = await Task.WhenAll(tasks);
             builder.Logging.AddOpenTelemetry(openTelemetryLoggerOptions =>
             {
                 openTelemetryLoggerOptions.IncludeFormattedMessage = true;
@@ -121,7 +114,7 @@ public static class HostApplicationBuilderExtensions
                             },
                             transportConfiguration =>
                             {
-                                var header = new BasicAuthentication(result[0].Value.Value, result[1].Value.Value);
+                                var header = new BasicAuthentication(elasticsearchUsername, elasticsearchPassword);
                                 transportConfiguration.Authentication(header);
                             });
                 }
@@ -146,29 +139,23 @@ public static class HostApplicationBuilderExtensions
             return builder;
         }
 
-        public async Task<IHostApplicationBuilder> AddPersistenceAsync(
-            SecretClient secretClient,
+        public IHostApplicationBuilder AddPersistence(
+            string sqlUserId,
+            string sqlPassword,
             IHealthChecksBuilder healthChecksBuilder,
             IdentityBuilder identityBuilder,
-            IIdentityServerBuilder identityServerBuilder,
-            CancellationToken cancellationToken = default)
+            IIdentityServerBuilder identityServerBuilder)
         {
             var sqlConnectionStringBuilder = builder.Configuration
                 .GetSection(nameof(SqlConnectionStringBuilder))
                 .Get<SqlConnectionStringBuilder>() ?? throw new InvalidOperationException($"Invalid '{nameof(SqlConnectionStringBuilder)}' section.");
-            var tasks = new[]
-            {
-                secretClient.GetSecretAsync("SqlServerUserId", cancellationToken: cancellationToken),
-                secretClient.GetSecretAsync("SqlServerPassword", cancellationToken: cancellationToken)
-            };
-            var result = await Task.WhenAll(tasks);
             builder.Services
                     .AddDbContextPool<ApplicationDbContext>((sp, dbContextOptionsBuilder) =>
                     {
                         if (!sqlConnectionStringBuilder.IntegratedSecurity)
                         {
-                            sqlConnectionStringBuilder.UserID = result[0].Value.Value;
-                            sqlConnectionStringBuilder.Password = result[1].Value.Value;
+                            sqlConnectionStringBuilder.UserID = sqlUserId;
+                            sqlConnectionStringBuilder.Password = sqlPassword;
                         }
 
                         dbContextOptionsBuilder
@@ -201,14 +188,8 @@ public static class HostApplicationBuilderExtensions
             return builder;
         }
 
-        public async Task<IHostApplicationBuilder> AddAuthAsync(SecretClient secretClient, CancellationToken cancellationToken = default)
+        public IHostApplicationBuilder AddAuth(string googleClientId, string googleClientSecret)
         {
-            var tasks = new[]
-            {
-                secretClient.GetSecretAsync("GoogleClientId", cancellationToken: cancellationToken),
-                secretClient.GetSecretAsync("GoogleClientSecret", cancellationToken: cancellationToken)
-            };
-            var result = await Task.WhenAll(tasks);
             builder.Services
                 .AddAuthentication()
                 .AddGoogleOpenIdConnect(
@@ -217,8 +198,8 @@ public static class HostApplicationBuilderExtensions
                     configureOptions: openIdConnectOptions =>
                     {
                         openIdConnectOptions.SignInScheme = IdentityConstants.ExternalScheme;
-                        openIdConnectOptions.ClientId = result[0].Value.Value;
-                        openIdConnectOptions.ClientSecret = result[1].Value.Value;
+                        openIdConnectOptions.ClientId = googleClientId;
+                        openIdConnectOptions.ClientSecret = googleClientSecret;
                     });
             if (builder.Environment.IsDevelopment())
             {
@@ -243,13 +224,12 @@ public static class HostApplicationBuilderExtensions
             return builder;
         }
 
-        public async Task<IHostApplicationBuilder> AddEmailAsync(SecretClient secretClient, CancellationToken cancellationToken = default)
+        public IHostApplicationBuilder AddEmail(string resendApiToken)
         {
-            var result = await secretClient.GetSecretAsync("ResendApiToken", cancellationToken: cancellationToken);
             builder.Services
                 .Configure<ResendClientOptions>(configureOptions =>
                 {
-                    configureOptions.ApiToken = result.Value.Value;
+                    configureOptions.ApiToken = resendApiToken;
                 })
                 .AddHttpClient<ResendClient>().Services
                 .AddTransient<IResend, ResendClient>()
@@ -257,13 +237,12 @@ public static class HostApplicationBuilderExtensions
             return builder;
         }
 
-        public async Task<IHostApplicationBuilder> AddPictureAsync(SecretClient secretClient, CancellationToken cancellationToken = default)
+        public IHostApplicationBuilder AddPicture(string gravatarApiSecretKey)
         {
-            var result = await secretClient.GetSecretAsync("GravatarApiSecretKey", cancellationToken: cancellationToken);
             builder.Services
                 .AddHttpClient<IGravatar, Gravatar>((sp, httpClient) =>
                 {
-                    httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(IdentityConstants.BearerScheme, result.Value.Value);
+                    httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(IdentityConstants.BearerScheme, gravatarApiSecretKey);
                 }).Services
                 .AddScoped<IAvatarService, GravatarService>();
             return builder;

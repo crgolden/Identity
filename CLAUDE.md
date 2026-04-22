@@ -197,18 +197,7 @@ Non-secret infrastructure values are set via `appsettings.json` (nulled out) and
 
 User Secrets ID: `aspnet-Identity-149346d0-999f-4a74-8ff7-2a92d39790f2`
 
-> **Important:** `Program.cs` calls `builder.Configuration.AddUserSecrets("aspnet-Identity-149346d0-999f-4a74-8ff7-2a92d39790f2")` explicitly (by string ID, not by assembly attribute) immediately after `WebApplication.CreateBuilder(args)`. This is required because `DefaultAzureCredentialOptions` and the URIs are read **before** `builder.Build()` is called — before any `IHostBuilder.ConfigureAppConfiguration` callbacks (which fire at Build time) can inject secrets. Without this explicit call, the SDK's implicit User Secrets loading targets `Assembly.GetEntryAssembly()`, which in the `WebApplicationFactory` test context returns the test runner assembly, not `Identity.Api`.
-
-> The `DefaultAzureCredentialOptions` for Development (which credentials to enable) must be set in User Secrets, not in `appsettings.Development.json`, because `appsettings.Development.json` is not loaded in the CI environment. Recommended User Secrets for development:
-> ```json
-> {
->   "DefaultAzureCredentialOptions": {
->     "ExcludeAzureCliCredential": false,
->     "ExcludeVisualStudioCredential": false,
->     "TenantId": "<your-tenant-id>"
->   }
-> }
-> ```
+> **Important:** `Program.cs` calls `builder.Configuration.AddUserSecrets("aspnet-Identity-149346d0-999f-4a74-8ff7-2a92d39790f2")` explicitly (by string ID). See [../CLAUDE.md](../CLAUDE.md) for why this is required (`Assembly.GetEntryAssembly()` returns the test runner assembly inside `WebApplicationFactory`, so implicit loading targets the wrong secrets file). `DefaultAzureCredentialOptions` must also be configured in User Secrets — see the parent CLAUDE.md for the recommended Development values.
 
 ## Commands
 
@@ -227,27 +216,20 @@ dotnet run
 
 ### Test
 
-> **Shell note:** commands that prefix environment variables inline use bash syntax. On Windows, use Git Bash, WSL, or set the variables separately before running `dotnet test`.
-
 ```bash
-# Unit tests only
-dotnet test --project Identity.Tests --configuration Release -- --filter-trait "Category=Unit"
+# Unit tests only — Debug is fine locally (no Angular build or Release-only artifact)
+dotnet test --project Identity.Tests --configuration Debug -- --filter-trait "Category=Unit"
 
-# E2E tests only (local) — Development environment loads User Secrets and uses VS/VS Code credentials
-ASPNETCORE_ENVIRONMENT=Development SqlConnectionStringBuilder__InitialCatalog=IdentityTest dotnet test --project Identity.Tests --configuration Release -- --filter-trait "Category=E2E"
+# E2E tests only (local)
+ASPNETCORE_ENVIRONMENT=Development SqlConnectionStringBuilder__InitialCatalog=IdentityTest dotnet test --project Identity.Tests --configuration Debug -- --filter-trait "Category=E2E"
 
 # All tests (local)
-ASPNETCORE_ENVIRONMENT=Development SqlConnectionStringBuilder__InitialCatalog=IdentityTest dotnet test --project Identity.Tests --configuration Release
+ASPNETCORE_ENVIRONMENT=Development SqlConnectionStringBuilder__InitialCatalog=IdentityTest dotnet test --project Identity.Tests --configuration Debug
 ```
 
-E2E tests use Playwright (Chromium) against a real Kestrel server started in-process. They require the same User Secrets as `dotnet run` (database, Key Vault, etc.).
+E2E tests use Playwright (Chromium) against a real Kestrel server started in-process. They require the same User Secrets as `dotnet run` (database, Key Vault, etc.). See [../CLAUDE.md](../CLAUDE.md) for cross-cutting E2E operations: `ASPNETCORE_ENVIRONMENT` requirement, Azure CLI token warmup, and credential setup.
 
-> **Azure CLI token warmup:** If E2E tests fail immediately with a `DefaultAzureCredential` / `CredentialUnavailableException` error, the Azure CLI token cache may have expired. Run the following to pre-warm it before retrying:
-> ```bash
-> az account get-access-token --resource https://vault.azure.net
-> ```
-
-`xunit.runner.json` sets `parallelizeTestCollections: false` so all test collections run one at a time. This is required because the E2E `PlaywrightFixture` initializes `WebApplicationFactory<Program>` — which makes 8 concurrent Azure Key Vault calls at startup — and those async calls time out when the thread pool is saturated by hundreds of parallel unit tests. The trade-off is that the combined run takes ~5-6 minutes instead of ~2.5 minutes with parallelism enabled.
+`xunit.runner.json` sets `parallelizeTestCollections: false` so all test collections run one at a time (8 concurrent AKV calls at startup time out under parallel load). The trade-off is that the combined run takes ~5-6 minutes instead of ~2.5 minutes with parallelism enabled.
 
 `IdentityWebApplicationFactory.ConfigureWebHost` stubs out `IAvatarService` with a no-op (`NullAvatarService`) to prevent live Gravatar HTTP calls during test runs. This avoids 2-4 second delays per registration-based test caused by Gravatar API timeouts for test email addresses.
 
@@ -305,7 +287,7 @@ The MTP runner ignores `test-case-filter` entirely — it is a VSTest-only confi
 ### Load Tests
 ```bash
 # Run load tests only (requires a running server — uses E2E infrastructure)
-ASPNETCORE_ENVIRONMENT=Development SqlConnectionStringBuilder__InitialCatalog=IdentityTest dotnet test --project Identity.Tests --configuration Release -- --filter-trait "Category=Load"
+ASPNETCORE_ENVIRONMENT=Development SqlConnectionStringBuilder__InitialCatalog=IdentityTest dotnet test --project Identity.Tests --configuration Debug -- --filter-trait "Category=Load"
 ```
 
 ### SQL Database Project (schema deployment)
