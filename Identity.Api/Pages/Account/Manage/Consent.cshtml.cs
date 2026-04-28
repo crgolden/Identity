@@ -5,16 +5,14 @@ using Duende.IdentityServer.Events;
 using Duende.IdentityServer.Extensions;
 using Duende.IdentityServer.Models;
 using Duende.IdentityServer.Services;
-using Duende.IdentityServer.Validation;
 using Filters;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 
 /// <summary>Page model for the OAuth2 consent screen shown when a client requests authorization.</summary>
 [Authorize]
 [SecurityHeaders]
-public class ConsentModel : PageModel
+public class ConsentModel : ConsentPageModelBase
 {
     private readonly IIdentityServerInteractionService _interaction;
     private readonly IEventService _events;
@@ -29,9 +27,6 @@ public class ConsentModel : PageModel
         _events = events;
         _logger = logger;
     }
-
-    /// <summary>Gets or sets the view model populated on GET.</summary>
-    public ViewModel View { get; set; } = new ViewModel();
 
     /// <summary>Gets or sets the bound input model from the consent form POST.</summary>
     [BindProperty]
@@ -132,51 +127,6 @@ public class ConsentModel : PageModel
         return Page();
     }
 
-    private static ScopeViewModel CreateScopeViewModel(IdentityResource identity, bool check) =>
-        new()
-        {
-            Name = identity.Name,
-            Value = identity.Name,
-            DisplayName = identity.DisplayName ?? identity.Name,
-            Description = identity.Description,
-            Emphasize = identity.Emphasize,
-            Required = identity.Required,
-            Checked = check || identity.Required,
-        };
-
-    private static ScopeViewModel CreateScopeViewModel(
-        ParsedScopeValue parsedScopeValue,
-        ApiScope apiScope,
-        bool check)
-    {
-        var displayName = apiScope.DisplayName ?? apiScope.Name;
-        if (!IsNullOrWhiteSpace(parsedScopeValue.ParsedParameter))
-        {
-            displayName += ":" + parsedScopeValue.ParsedParameter;
-        }
-
-        return new ScopeViewModel
-        {
-            Name = parsedScopeValue.ParsedName,
-            Value = parsedScopeValue.RawValue,
-            DisplayName = displayName,
-            Description = apiScope.Description,
-            Emphasize = apiScope.Emphasize,
-            Required = apiScope.Required,
-            Checked = check || apiScope.Required,
-        };
-    }
-
-    private static ScopeViewModel CreateOfflineAccessScope(bool check) =>
-        new()
-        {
-            Value = Duende.IdentityServer.IdentityServerConstants.StandardScopes.OfflineAccess,
-            DisplayName = ConsentOptions.OfflineAccessDisplayName,
-            Description = ConsentOptions.OfflineAccessDescription,
-            Emphasize = true,
-            Checked = check,
-        };
-
     private async Task<bool> SetViewModelAsync(string? returnUrl)
     {
         if (IsNullOrWhiteSpace(returnUrl))
@@ -249,28 +199,6 @@ public class ConsentModel : PageModel
         return vm;
     }
 
-    /// <summary>View model for the consent page.</summary>
-    public class ViewModel
-    {
-        /// <summary>Gets or sets the display name of the requesting client.</summary>
-        public string ClientName { get; set; } = Empty;
-
-        /// <summary>Gets or sets the URI of the requesting client's website.</summary>
-        public string? ClientUrl { get; set; }
-
-        /// <summary>Gets or sets the URI of the requesting client's logo.</summary>
-        public string? ClientLogoUrl { get; set; }
-
-        /// <summary>Gets or sets a value indicating whether the client allows the user to remember their consent decision.</summary>
-        public bool AllowRememberConsent { get; set; }
-
-        /// <summary>Gets or sets the identity scopes to display.</summary>
-        public IEnumerable<ScopeViewModel> IdentityScopes { get; set; } = [];
-
-        /// <summary>Gets or sets the API scopes to display.</summary>
-        public IEnumerable<ScopeViewModel> ApiScopes { get; set; } = [];
-    }
-
     /// <summary>Input model bound from the consent form POST.</summary>
     public class InputModel
     {
@@ -290,41 +218,4 @@ public class ConsentModel : PageModel
         public string? Description { get; set; }
     }
 
-    /// <summary>View model for a single scope item on the consent page.</summary>
-    public class ScopeViewModel
-    {
-        /// <summary>Gets or sets the scope name (used for lookups).</summary>
-        public string Name { get; set; } = Empty;
-
-        /// <summary>Gets or sets the raw scope value sent in the consent response.</summary>
-        public string Value { get; set; } = Empty;
-
-        /// <summary>Gets or sets the human-readable display name.</summary>
-        public string DisplayName { get; set; } = Empty;
-
-        /// <summary>Gets or sets the optional description.</summary>
-        public string? Description { get; set; }
-
-        /// <summary>Gets or sets a value indicating whether this scope should be visually emphasized.</summary>
-        public bool Emphasize { get; set; }
-
-        /// <summary>Gets or sets a value indicating whether this scope is required and cannot be unchecked.</summary>
-        public bool Required { get; set; }
-
-        /// <summary>Gets or sets a value indicating whether the scope checkbox is checked.</summary>
-        public bool Checked { get; set; }
-
-        /// <summary>Gets or sets the API resources associated with this scope.</summary>
-        public IEnumerable<ResourceViewModel> Resources { get; set; } = [];
-    }
-
-    /// <summary>View model for an API resource associated with a scope.</summary>
-    public class ResourceViewModel
-    {
-        /// <summary>Gets or sets the resource name.</summary>
-        public string Name { get; set; } = Empty;
-
-        /// <summary>Gets or sets the human-readable display name.</summary>
-        public string DisplayName { get; set; } = Empty;
-    }
 }

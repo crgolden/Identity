@@ -5,17 +5,15 @@ using Duende.IdentityServer.Events;
 using Duende.IdentityServer.Extensions;
 using Duende.IdentityServer.Models;
 using Duende.IdentityServer.Services;
-using Duende.IdentityServer.Validation;
 using Filters;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Options;
 
 /// <summary>Page model for the device authorization flow consent screen.</summary>
 [Authorize]
 [SecurityHeaders]
-public class DeviceModel : PageModel
+public class DeviceModel : ConsentPageModelBase
 {
     private readonly IDeviceFlowInteractionService _interaction;
     private readonly IEventService _events;
@@ -31,9 +29,6 @@ public class DeviceModel : PageModel
         _events = events;
         _logger = logger;
     }
-
-    /// <summary>Gets or sets the view model for the consent portion of the device flow.</summary>
-    public ViewModel View { get; set; } = new ViewModel();
 
     /// <summary>Gets or sets the bound input model from the device flow consent form.</summary>
     [BindProperty]
@@ -142,41 +137,6 @@ public class DeviceModel : PageModel
         return Page();
     }
 
-    private static ScopeViewModel CreateScopeViewModel(IdentityResource identity, bool check) =>
-        new()
-        {
-            Value = identity.Name,
-            DisplayName = identity.DisplayName ?? identity.Name,
-            Description = identity.Description,
-            Emphasize = identity.Emphasize,
-            Required = identity.Required,
-            Checked = check || identity.Required,
-        };
-
-    private static ScopeViewModel CreateScopeViewModel(
-        ParsedScopeValue parsedScopeValue,
-        ApiScope apiScope,
-        bool check) =>
-        new()
-        {
-            Value = parsedScopeValue.RawValue,
-            DisplayName = apiScope.DisplayName ?? apiScope.Name,
-            Description = apiScope.Description,
-            Emphasize = apiScope.Emphasize,
-            Required = apiScope.Required,
-            Checked = check || apiScope.Required,
-        };
-
-    private static ScopeViewModel CreateOfflineAccessScope(bool check) =>
-        new()
-        {
-            Value = Duende.IdentityServer.IdentityServerConstants.StandardScopes.OfflineAccess,
-            DisplayName = ConsentOptions.OfflineAccessDisplayName,
-            Description = ConsentOptions.OfflineAccessDescription,
-            Emphasize = true,
-            Checked = check,
-        };
-
     private async Task<bool> SetViewModelAsync(string userCode)
     {
         var request = await _interaction.GetAuthorizationContextAsync(userCode);
@@ -229,28 +189,6 @@ public class DeviceModel : PageModel
         return vm;
     }
 
-    /// <summary>View model for the device flow consent page.</summary>
-    public class ViewModel
-    {
-        /// <summary>Gets or sets the display name of the requesting client.</summary>
-        public string ClientName { get; set; } = Empty;
-
-        /// <summary>Gets or sets the URI of the requesting client's website.</summary>
-        public string? ClientUrl { get; set; }
-
-        /// <summary>Gets or sets the URI of the requesting client's logo.</summary>
-        public string? ClientLogoUrl { get; set; }
-
-        /// <summary>Gets or sets a value indicating whether the client allows the user to remember their consent decision.</summary>
-        public bool AllowRememberConsent { get; set; }
-
-        /// <summary>Gets or sets the identity scopes to display.</summary>
-        public IEnumerable<ScopeViewModel> IdentityScopes { get; set; } = [];
-
-        /// <summary>Gets or sets the API scopes to display.</summary>
-        public IEnumerable<ScopeViewModel> ApiScopes { get; set; } = [];
-    }
-
     /// <summary>Input model bound from the device flow consent form POST.</summary>
     public class InputModel
     {
@@ -270,25 +208,4 @@ public class DeviceModel : PageModel
         public string? Description { get; set; }
     }
 
-    /// <summary>View model for a single scope item on the device flow consent page.</summary>
-    public class ScopeViewModel
-    {
-        /// <summary>Gets or sets the raw scope value sent in the consent response.</summary>
-        public string Value { get; set; } = Empty;
-
-        /// <summary>Gets or sets the human-readable display name.</summary>
-        public string DisplayName { get; set; } = Empty;
-
-        /// <summary>Gets or sets the optional description.</summary>
-        public string? Description { get; set; }
-
-        /// <summary>Gets or sets a value indicating whether this scope should be visually emphasized.</summary>
-        public bool Emphasize { get; set; }
-
-        /// <summary>Gets or sets a value indicating whether this scope is required and cannot be unchecked.</summary>
-        public bool Required { get; set; }
-
-        /// <summary>Gets or sets a value indicating whether the scope checkbox is checked.</summary>
-        public bool Checked { get; set; }
-    }
 }

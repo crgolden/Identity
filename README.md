@@ -8,6 +8,17 @@
 
 A standalone **OpenID Connect Identity Provider** built with [Duende IdentityServer](https://duendesoftware.com/products/identityserver) and ASP.NET Core Identity, deployed to Azure App Service.
 
+## Sibling Applications
+
+Identity is the **authorization server** for a five-app system. It issues all access tokens; the other four apps validate them.
+
+| Repo | Role | How Identity interacts |
+|---|---|---|
+| [Experience](https://github.com/crgolden/Experience) | Angular SPA + ASP.NET Core BFF | OIDC client; the BFF holds the session and obtains scoped access tokens for `manuals` and `products` |
+| [Manuals](https://github.com/crgolden/Manuals) | Azure OpenAI chat API | Resource server — validates JWTs issued by Identity (scope `manuals`) |
+| [Products](https://github.com/crgolden/Products) | OData v4 product catalog API | Resource server — validates JWTs issued by Identity (scope `products`) |
+| [Infrastructure](https://github.com/crgolden/Infrastructure) | Health monitoring dashboard | Polls Identity's `/health` endpoint |
+
 ## Features
 
 - **OIDC/OAuth2** authorization server via Duende IdentityServer 7
@@ -156,7 +167,7 @@ dotnet publish Identity.Api -c Release -r win-x86 --self-contained false -o ./pu
 
 ## AI Assistant Integration (Claude Code)
 
-This repo ships a `.mcp.json` that configures four MCP servers for use with Claude Code. `.claude/settings.json` explicitly allows `github` and `playwright`; `azure` and `sonarqube` are denied by default.
+Five MCP servers are configured via `~/.claude.json`. `crgolden/.claude/settings.json` explicitly allows `github`, `playwright`, `azure`, and `sonarqube`. `chrome-devtools` connects but its tool calls require manual approval.
 
 | Server | Source | Purpose |
 |---|---|---|
@@ -164,6 +175,7 @@ This repo ships a `.mcp.json` that configures four MCP servers for use with Clau
 | `azure` | `@azure/mcp@latest` (Microsoft official) | Query Key Vault, App Service, Blob Storage |
 | `playwright` | `@playwright/mcp@latest` (Microsoft official) | Drive browser sessions for E2E investigation |
 | `sonarqube` | `mcp/sonarqube` Docker image (SonarSource official) | Query issues, quality gates, security hotspots |
+| `chrome-devtools` | `chrome-devtools-mcp@latest` | Drive Chrome DevTools sessions |
 
 ### Required environment variables
 
@@ -189,7 +201,7 @@ The workflow also runs on a **weekly schedule** (Monday 02:00 UTC).
 5. Runs SonarCloud analysis, publishes the web app, and uploads both artifacts
 
 **Mutation job** — runs on `schedule` or `workflow_dispatch`:
-- Runs Stryker mutation testing against five core source files; uploads the HTML/JSON report as `stryker-report`
+- Runs Stryker mutation testing against four core source files; uploads the HTML/JSON report as `stryker-report`
 
 **Deploy job** — runs after a successful build:
 1. Deploys the `.dacpac` to the production SQL Server via `SqlPackage`

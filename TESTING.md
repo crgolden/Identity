@@ -1277,7 +1277,7 @@ quadrantChart
 | Route | GET Unit | POST Unit | E2E | Notes |
 |---|---|---|---|---|
 | `/Account/Register` | ✅ | ✅ | ✅ | |
-| `/Account/RegisterConfirmation` | 🔵 | — | ✅ | Constructor only |
+| `/Account/RegisterConfirmation` | ✅ | — | ✅ | |
 | `/Account/ConfirmEmail` | ✅ | — | ✅ | |
 | `/Account/ConfirmEmailChange` | ✅ | — | ✅ | Via EmailChangeTests |
 | `/Account/ResendEmailConfirmation` | 🔵 | 🔵 | ✅ | Constructor only (unit); E2E via `ResendEmailConfirmation_NewLink_ConfirmsAccount` |
@@ -1381,7 +1381,7 @@ Load tests use `Parallel.ForEachAsync` + `HttpClient` (self-signed cert ignored)
 
 ## 20. Mutation Testing (Stryker)
 
-Stryker.NET is configured in `stryker-config.json` with `mutation-level: Advanced`. It targets five core source files:
+Stryker.NET is configured in `stryker-config.json` with `mutation-level: Advanced`. It targets four core source files:
 
 | File | Why it's targeted |
 |---|---|

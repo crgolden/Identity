@@ -59,34 +59,7 @@ else
                         <ul class="list-group list-group-flush">
                             @foreach (var scope in Model.View.IdentityScopes)
                             {
-                                <li class="list-group-item">
-                                    <div class="form-check @(scope.Emphasize ? "fw-bold" : null)">
-                                        @if (scope.Required)
-                                        {
-                                            <input type="hidden" name="Input.ScopesConsented" value="@scope.Value" />
-                                            <input class="form-check-input" type="checkbox" checked disabled />
-                                        }
-                                        else
-                                        {
-                                            <input class="form-check-input" type="checkbox"
-                                                   name="Input.ScopesConsented"
-                                                   id="dscope_@scope.Value"
-                                                   value="@scope.Value"
-                                                   checked="@scope.Checked" />
-                                        }
-                                        <label class="form-check-label" for="dscope_@scope.Value">
-                                            @scope.DisplayName
-                                            @if (scope.Required)
-                                            {
-                                                <span class="badge text-bg-secondary ms-1">Required</span>
-                                            }
-                                        </label>
-                                    </div>
-                                    @if (!IsNullOrWhiteSpace(scope.Description))
-                                    {
-                                        <div class="text-muted small ms-4">@scope.Description</div>
-                                    }
-                                </li>
+                                <partial name="_ScopeListItem" model="scope" />
                             }
                         </ul>
                     </div>
@@ -99,34 +72,7 @@ else
                         <ul class="list-group list-group-flush">
                             @foreach (var scope in Model.View.ApiScopes)
                             {
-                                <li class="list-group-item">
-                                    <div class="form-check @(scope.Emphasize ? "fw-bold" : null)">
-                                        @if (scope.Required)
-                                        {
-                                            <input type="hidden" name="Input.ScopesConsented" value="@scope.Value" />
-                                            <input class="form-check-input" type="checkbox" checked disabled />
-                                        }
-                                        else
-                                        {
-                                            <input class="form-check-input" type="checkbox"
-                                                   name="Input.ScopesConsented"
-                                                   id="dscope_@scope.Value"
-                                                   value="@scope.Value"
-                                                   checked="@scope.Checked" />
-                                        }
-                                        <label class="form-check-label" for="dscope_@scope.Value">
-                                            @scope.DisplayName
-                                            @if (scope.Required)
-                                            {
-                                                <span class="badge text-bg-secondary ms-1">Required</span>
-                                            }
-                                        </label>
-                                    </div>
-                                    @if (!IsNullOrWhiteSpace(scope.Description))
-                                    {
-                                        <div class="text-muted small ms-4">@scope.Description</div>
-                                    }
-                                </li>
+                                <partial name="_ScopeListItem" model="scope" />
                             }
                         </ul>
                     </div>

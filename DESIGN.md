@@ -139,7 +139,7 @@ These pages participate in the OAuth2/OIDC protocol flows. They use `[Authorize]
 
 | URL | Mechanism | Purpose |
 |---|---|---|
-| `/Health` | `MapHealthChecks` | `ApplicationDbContext` connectivity check; HTTP metrics disabled |
+| `/health` | `MapHealthChecks` | `ApplicationDbContext` connectivity check; HTTP metrics disabled |
 | Static files | `MapStaticAssets` | CSS, JS, images |
 
 ---
@@ -249,7 +249,7 @@ Options are sourced from `DefaultAzureCredentialOptions` in User Secrets (develo
 
 **Trace sources:**
 - `IdentityServerConstants.Tracing.Basic/.Cache/.Services/.Stores/.Validation`
-- ASP.NET Core instrumentation (health-check requests filtered out via `/Health` path check)
+- ASP.NET Core instrumentation (health-check requests filtered out via `/health` path check)
 - HTTP client instrumentation
 - Console exporter in Development
 
@@ -321,7 +321,7 @@ UseSerilogRequestLogging
 → UseCors
 → UseAuthorization
 → MapAdditionalIdentityEndpoints   (passkey minimal API)
-→ MapHealthChecks("/Health")
+→ MapHealthChecks("/health")
 → MapStaticAssets
 → MapRazorPages.RequireAuthorization
 ```
@@ -364,7 +364,7 @@ Test collections run serially (`parallelizeTestCollections: false` in `xunit.run
 
 ### Mutation testing
 
-Stryker targets five core files: `EmailSender.cs`, `GravatarService.cs`, `SecretClientExtensions.cs`, `ConfigurationExtensions.cs`, `EndpointRouteBuilderExtensions.cs`. Thresholds: high ≥ 80, low ≥ 60, break < 50.
+Stryker targets four core files: `EmailSender.cs`, `GravatarService.cs`, `ConfigurationExtensions.cs`, `EndpointRouteBuilderExtensions.cs`. Thresholds: high ≥ 80, low ≥ 60, break < 50.
 
 ---
 

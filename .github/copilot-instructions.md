@@ -47,7 +47,7 @@ Key conventions and patterns (repo-specific)
 Important doc files and AI assistant configs to consult
 - CLAUDE.md — extended guidance and local clone references for Duende source, passkey notes, and many repo-specific rules. (Consult first when generating code-aware responses.)
 - README.md, TESTING.md, DESIGN.md — architecture, commands, and testing details.
-- .mcp.json and .claude/settings.json exist and configure MCP servers used by Claude Code (github, azure, playwright, sonarqube). Check these when enabling assistant integrations.
+- MCP servers (github, azure, playwright, sonarqube, chrome-devtools) are configured in `~/.claude.json`. `crgolden/.claude/settings.json` lists the allowed servers. Check these when enabling assistant integrations.
 
 Notes for Copilot sessions
 - Prefer reading CLAUDE.md and DESIGN.md for architecture/context before making changes.
