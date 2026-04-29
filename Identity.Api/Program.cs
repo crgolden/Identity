@@ -1,10 +1,12 @@
 #pragma warning disable SA1200
 using System.Diagnostics;
 using System.Security.Claims;
+using System.Threading.RateLimiting;
 using Identity.Extensions;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
 using Serilog;
 #pragma warning restore SA1200
@@ -71,6 +73,23 @@ try
             forwardedHeadersOptions.KnownProxies.Clear();
         })
         .AddRazorPages();
+    builder.Services.AddRateLimiter(options =>
+    {
+        options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                partitionKey: httpContext.User.Identity?.Name ?? httpContext.Request.Headers.Host.ToString(),
+                factory: partition => new FixedWindowRateLimiterOptions
+                {
+                    AutoReplenishment = true, PermitLimit = 10, QueueLimit = 0, Window = TimeSpan.FromMinutes(1)
+                }));
+        options.AddFixedWindowLimiter("fixed", opt =>
+        {
+            opt.PermitLimit = 4;
+            opt.Window = TimeSpan.FromSeconds(12);
+            opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+            opt.QueueLimit = 2;
+        });
+    });
 
     var app = builder.Build();
     app.UseForwardedHeaders();
@@ -99,6 +118,7 @@ try
 
     app.UseHttpsRedirection()
         .UseRouting()
+        .UseRateLimiter()
         .UseIdentityServer()
         .UseCors(corsPolicyBuilder =>
         {

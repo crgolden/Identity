@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -318,5 +319,82 @@ public class SetPasswordModelTests
         {
             Assert.IsType<PageResult>(result);
         }
+    }
+
+    /// <summary>
+    /// Verifies that when AddPasswordAsync fails, errors are added to ModelState and Page is returned.
+    /// Input conditions: valid user, AddPasswordAsync returns IdentityResult.Failed with errors.
+    /// Expected result: PageResult with invalid ModelState containing the error description.
+    /// </summary>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
+    [Fact]
+    public async Task OnPostAsync_AddPasswordFails_AddsModelErrorsAndReturnsPage()
+    {
+        // Arrange
+        var user = new IdentityUser<Guid>();
+        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
+        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock.Object, null, null, null, null, null, null, null, null);
+        userManagerMock.Setup(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
+        userManagerMock
+            .Setup(u => u.AddPasswordAsync(user, It.IsAny<string>()))
+            .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "Password too weak." }));
+
+        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
+            userManagerMock.Object,
+            Mock.Of<IHttpContextAccessor>(),
+            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
+            Mock.Of<IOptions<IdentityOptions>>(),
+            Mock.Of<ILogger<SignInManager<IdentityUser<Guid>>>>(),
+            Mock.Of<IAuthenticationSchemeProvider>(),
+            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
+
+        var model = new SetPasswordModel(userManagerMock.Object, signInManagerMock.Object);
+        model.Input = new SetPasswordModel.InputModel { NewPassword = "weak" };
+
+        // Act
+        var result = await model.OnPostAsync();
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        Assert.False(model.ModelState.IsValid);
+        Assert.Contains(model.ModelState.Values, v => v.Errors.Any(e => e.ErrorMessage == "Password too weak."));
+    }
+
+    /// <summary>
+    /// Verifies that when AddPasswordAsync succeeds, the sign-in is refreshed and the page redirects.
+    /// Input conditions: valid user, AddPasswordAsync returns IdentityResult.Success.
+    /// Expected result: RedirectToPageResult and StatusMessage is set.
+    /// </summary>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
+    [Fact]
+    public async Task OnPostAsync_AddPasswordSucceeds_RefreshesSignInAndRedirects()
+    {
+        // Arrange
+        var user = new IdentityUser<Guid>();
+        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
+        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock.Object, null, null, null, null, null, null, null, null);
+        userManagerMock.Setup(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
+        userManagerMock.Setup(u => u.AddPasswordAsync(user, It.IsAny<string>())).ReturnsAsync(IdentityResult.Success);
+
+        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
+            userManagerMock.Object,
+            Mock.Of<IHttpContextAccessor>(),
+            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
+            Mock.Of<IOptions<IdentityOptions>>(),
+            Mock.Of<ILogger<SignInManager<IdentityUser<Guid>>>>(),
+            Mock.Of<IAuthenticationSchemeProvider>(),
+            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
+        signInManagerMock.Setup(s => s.RefreshSignInAsync(user)).Returns(Task.CompletedTask);
+
+        var model = new SetPasswordModel(userManagerMock.Object, signInManagerMock.Object);
+        model.Input = new SetPasswordModel.InputModel { NewPassword = "ValidP@ss1!" };
+        model.TempData = new Mock<ITempDataDictionary>().Object;
+
+        // Act
+        var result = await model.OnPostAsync();
+
+        // Assert
+        Assert.IsType<RedirectToPageResult>(result);
+        signInManagerMock.Verify(s => s.RefreshSignInAsync(user), Times.Once);
     }
 }

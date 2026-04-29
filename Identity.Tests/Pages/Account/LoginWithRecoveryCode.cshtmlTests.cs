@@ -7,7 +7,9 @@ using Identity.Pages.Account;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -216,5 +218,141 @@ public class LoginWithRecoveryCodeModelTests
         Assert.NotNull(model);
         Assert.NotNull(model.Input);
         Assert.Null(model.ReturnUrl);
+    }
+
+    /// <summary>
+    /// Verifies that OnGetAsync throws when GetTwoFactorAuthenticationUserAsync returns null.
+    /// Input conditions: GetTwoFactorAuthenticationUserAsync returns null.
+    /// Expected result: InvalidOperationException with expected message.
+    /// </summary>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
+    [Fact]
+    public async Task OnGetAsync_NoTwoFactorUser_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var userStoreMock = Mock.Of<IUserStore<IdentityUser<Guid>>>();
+        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(userStoreMock, null, null, null, null, null, null, null, null);
+        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
+            userManagerMock.Object,
+            Mock.Of<IHttpContextAccessor>(),
+            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
+            Mock.Of<IOptions<IdentityOptions>>(),
+            Mock.Of<ILogger<SignInManager<IdentityUser<Guid>>>>(),
+            Mock.Of<IAuthenticationSchemeProvider>(),
+            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
+        signInManagerMock.Setup(s => s.GetTwoFactorAuthenticationUserAsync()).ReturnsAsync((IdentityUser<Guid>?)null);
+        var model = new LoginWithRecoveryCodeModel(signInManagerMock.Object, userManagerMock.Object, Mock.Of<ILogger<LoginWithRecoveryCodeModel>>());
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => model.OnGetAsync(null));
+        Assert.Equal("Unable to load two-factor authentication user.", ex.Message);
+    }
+
+    /// <summary>
+    /// Verifies that OnPostAsync redirects to root when the recovery code succeeds and returnUrl is null.
+    /// Input conditions: valid code, result.Succeeded = true, returnUrl = null.
+    /// Expected result: LocalRedirectResult to "~/".
+    /// </summary>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
+    [Fact]
+    public async Task OnPostAsync_Succeeded_RedirectsToRoot()
+    {
+        // Arrange
+        var user = new IdentityUser<Guid>();
+        var userStoreMock = Mock.Of<IUserStore<IdentityUser<Guid>>>();
+        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(userStoreMock, null, null, null, null, null, null, null, null);
+        userManagerMock.Setup(u => u.GetUserIdAsync(user)).ReturnsAsync("user-id");
+        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
+            userManagerMock.Object,
+            Mock.Of<IHttpContextAccessor>(),
+            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
+            Mock.Of<IOptions<IdentityOptions>>(),
+            Mock.Of<ILogger<SignInManager<IdentityUser<Guid>>>>(),
+            Mock.Of<IAuthenticationSchemeProvider>(),
+            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
+        signInManagerMock.Setup(s => s.GetTwoFactorAuthenticationUserAsync()).ReturnsAsync(user);
+        signInManagerMock.Setup(s => s.TwoFactorRecoveryCodeSignInAsync("ABCD1234")).ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Success);
+        var model = new LoginWithRecoveryCodeModel(signInManagerMock.Object, userManagerMock.Object, Mock.Of<ILogger<LoginWithRecoveryCodeModel>>());
+        model.Input = new LoginWithRecoveryCodeModel.InputModel { RecoveryCode = "ABCD 1234" };
+        var mockUrl = new Mock<IUrlHelper>();
+        mockUrl.Setup(u => u.IsLocalUrl(It.IsAny<string?>())).Returns(false);
+        model.Url = mockUrl.Object;
+
+        // Act
+        var result = await model.OnPostAsync(null);
+
+        // Assert
+        var redirect = Assert.IsType<LocalRedirectResult>(result);
+        Assert.Equal("~/", redirect.Url);
+    }
+
+    /// <summary>
+    /// Verifies that OnPostAsync redirects to the Lockout page when the account is locked out.
+    /// Input conditions: valid code, result.IsLockedOut = true.
+    /// Expected result: RedirectToPageResult to "./Lockout".
+    /// </summary>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
+    [Fact]
+    public async Task OnPostAsync_LockedOut_RedirectsToLockoutPage()
+    {
+        // Arrange
+        var user = new IdentityUser<Guid>();
+        var userStoreMock = Mock.Of<IUserStore<IdentityUser<Guid>>>();
+        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(userStoreMock, null, null, null, null, null, null, null, null);
+        userManagerMock.Setup(u => u.GetUserIdAsync(user)).ReturnsAsync("user-id");
+        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
+            userManagerMock.Object,
+            Mock.Of<IHttpContextAccessor>(),
+            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
+            Mock.Of<IOptions<IdentityOptions>>(),
+            Mock.Of<ILogger<SignInManager<IdentityUser<Guid>>>>(),
+            Mock.Of<IAuthenticationSchemeProvider>(),
+            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
+        signInManagerMock.Setup(s => s.GetTwoFactorAuthenticationUserAsync()).ReturnsAsync(user);
+        signInManagerMock.Setup(s => s.TwoFactorRecoveryCodeSignInAsync("code")).ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.LockedOut);
+        var model = new LoginWithRecoveryCodeModel(signInManagerMock.Object, userManagerMock.Object, Mock.Of<ILogger<LoginWithRecoveryCodeModel>>());
+        model.Input = new LoginWithRecoveryCodeModel.InputModel { RecoveryCode = "code" };
+
+        // Act
+        var result = await model.OnPostAsync(null);
+
+        // Assert
+        var redirect = Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal("./Lockout", redirect.PageName);
+    }
+
+    /// <summary>
+    /// Verifies that OnPostAsync adds a model error and returns Page when the recovery code is invalid.
+    /// Input conditions: valid code, result is not Succeeded and not LockedOut.
+    /// Expected result: PageResult with invalid ModelState.
+    /// </summary>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
+    [Fact]
+    public async Task OnPostAsync_InvalidCode_AddsModelErrorAndReturnsPage()
+    {
+        // Arrange
+        var user = new IdentityUser<Guid>();
+        var userStoreMock = Mock.Of<IUserStore<IdentityUser<Guid>>>();
+        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(userStoreMock, null, null, null, null, null, null, null, null);
+        userManagerMock.Setup(u => u.GetUserIdAsync(user)).ReturnsAsync("user-id");
+        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
+            userManagerMock.Object,
+            Mock.Of<IHttpContextAccessor>(),
+            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
+            Mock.Of<IOptions<IdentityOptions>>(),
+            Mock.Of<ILogger<SignInManager<IdentityUser<Guid>>>>(),
+            Mock.Of<IAuthenticationSchemeProvider>(),
+            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
+        signInManagerMock.Setup(s => s.GetTwoFactorAuthenticationUserAsync()).ReturnsAsync(user);
+        signInManagerMock.Setup(s => s.TwoFactorRecoveryCodeSignInAsync("badcode")).ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Failed);
+        var model = new LoginWithRecoveryCodeModel(signInManagerMock.Object, userManagerMock.Object, Mock.Of<ILogger<LoginWithRecoveryCodeModel>>());
+        model.Input = new LoginWithRecoveryCodeModel.InputModel { RecoveryCode = "badcode" };
+
+        // Act
+        var result = await model.OnPostAsync(null);
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        Assert.False(model.ModelState.IsValid);
     }
 }

@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -38,23 +39,25 @@ public class ManageIndexModelTests
     public static TheoryData<string?, string?, bool, bool, bool, string> PhoneUpdateCases() => new()
     {
         // existingPhone, inputPhone, setSucceeds, expectSetCall, expectRefreshCall, expectedStatusMessage
-        // 1) Both null -> no change, refresh occurs, success message
+        // SetPhoneNumberAsync is only called when both phones are non-null/non-whitespace AND different.
+
+        // 1) Both null -> condition short-circuits, no set, refresh occurs, success message
         { null, null, false, false, true, "Your profile has been updated" },
 
-        // 2) Same non-null phone -> no change, refresh occurs, success message
+        // 2) Same non-null phone -> third condition false, no set, refresh occurs, success message
         { "123", "123", false, false, true, "Your profile has been updated" },
 
         // 3) Changed phone -> set succeeds -> refresh occurs, success message
         { "123", "456", true, true, true, "Your profile has been updated" },
 
-        // 4) Changed phone -> set fails -> no refresh, unexpected error message
+        // 4) Changed phone -> set fails -> no refresh, unexpected error message, still redirects
         { "123", "456", false, true, false, "Unexpected error when trying to set phone number." },
 
-        // 5) existing not null, input null (attempt to remove phone) -> set succeeds -> refresh occurs
-        { "123", null, true, true, true, "Your profile has been updated" },
+        // 5) existing not null, input null -> input is whitespace, condition short-circuits, no set, refresh
+        { "123", null, false, false, true, "Your profile has been updated" },
 
-        // 6) existing null, input empty string (attempt to set empty) -> set succeeds -> refresh occurs
-        { null, string.Empty, true, true, true, "Your profile has been updated" },
+        // 6) existing null, input empty -> existing is whitespace, condition short-circuits, no set, refresh
+        { null, string.Empty, false, false, true, "Your profile has been updated" },
     };
 
     /// <summary>
@@ -202,6 +205,60 @@ public class ManageIndexModelTests
         userManagerMock.Verify(u => u.GetPhoneNumberAsync(It.IsAny<IdentityUser<Guid>>()), Times.Once);
         userManagerMock.Verify(u => u.SetPhoneNumberAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>()), Times.Never);
         signInManagerMock.Verify(s => s.RefreshSignInAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
+    }
+
+    /// <summary>
+    /// Verifies phone update behavior in OnPostAsync based on existing vs input phone number.
+    /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    [Theory]
+    [MemberData(nameof(PhoneUpdateCases))]
+    public async Task OnPostAsync_PhoneUpdateScenarios(string? existingPhone, string? inputPhone, bool setSucceeds, bool expectSetCall, bool expectRefreshCall, string expectedStatusMessage)
+    {
+        // Arrange
+        var userStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
+        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(userStore, null, null, null, null, null, null, null, null);
+        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(userManagerMock.Object, Mock.Of<IHttpContextAccessor>(), Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(), null, null, null, null);
+        var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
+        userManagerMock.Setup(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
+        userManagerMock.Setup(u => u.GetPhoneNumberAsync(user)).ReturnsAsync(existingPhone);
+
+        if (expectSetCall)
+        {
+            var identityResult = setSucceeds ? IdentityResult.Success : IdentityResult.Failed(new IdentityError { Description = "Error" });
+            userManagerMock.Setup(u => u.SetPhoneNumberAsync(user, inputPhone)).ReturnsAsync(identityResult);
+        }
+
+        signInManagerMock.Setup(s => s.RefreshSignInAsync(user)).Returns(Task.CompletedTask);
+
+        var page = new IndexModel(userManagerMock.Object, signInManagerMock.Object);
+        page.TempData = new TempDataDictionary(new DefaultHttpContext(), Mock.Of<ITempDataProvider>());
+        page.Input = new IndexModel.InputModel { PhoneNumber = inputPhone };
+
+        // Act
+        var result = await page.OnPostAsync();
+
+        // Assert
+        Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal(expectedStatusMessage, page.StatusMessage);
+
+        if (expectSetCall)
+        {
+            userManagerMock.Verify(u => u.SetPhoneNumberAsync(user, inputPhone), Times.Once);
+        }
+        else
+        {
+            userManagerMock.Verify(u => u.SetPhoneNumberAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>()), Times.Never);
+        }
+
+        if (expectRefreshCall)
+        {
+            signInManagerMock.Verify(s => s.RefreshSignInAsync(user), Times.Once);
+        }
+        else
+        {
+            signInManagerMock.Verify(s => s.RefreshSignInAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
+        }
     }
 
     /// <summary>

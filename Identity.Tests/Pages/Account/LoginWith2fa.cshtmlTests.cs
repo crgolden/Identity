@@ -238,6 +238,76 @@ public class LoginWith2faModelTests
         }
     }
 
+    /// <summary>
+    /// Verifies that OnPostAsync redirects to the Lockout page when the account is locked out.
+    /// Input conditions: valid code, TwoFactorAuthenticatorSignInAsync returns IsLockedOut = true.
+    /// Expected result: RedirectToPageResult to "./Lockout".
+    /// </summary>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
+    [Fact]
+    public async Task OnPostAsync_LockedOut_RedirectsToLockoutPage()
+    {
+        // Arrange
+        var (signInManagerMock, userManagerMock) = CreateSignInAndUserManagerMocks();
+        var user = new IdentityUser<Guid>();
+        signInManagerMock.Setup(s => s.GetTwoFactorAuthenticationUserAsync()).ReturnsAsync(user);
+        signInManagerMock
+            .Setup(s => s.TwoFactorAuthenticatorSignInAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>()))
+            .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.LockedOut);
+        userManagerMock.Setup(u => u.GetUserIdAsync(user)).ReturnsAsync("user-id");
+
+        var loggerMock = new Mock<ILogger<LoginWith2faModel>>(MockBehavior.Loose);
+        var model = new LoginWith2faModel(signInManagerMock.Object, userManagerMock.Object, loggerMock.Object)
+        {
+            Input = new LoginWith2faModel.InputModel { TwoFactorCode = "123456", RememberMachine = false }
+        };
+        var urlHelperMock = new Mock<IUrlHelper>();
+        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
+        model.Url = urlHelperMock.Object;
+
+        // Act
+        var result = await model.OnPostAsync(false, null);
+
+        // Assert
+        var redirect = Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal("./Lockout", redirect.PageName);
+    }
+
+    /// <summary>
+    /// Verifies that OnPostAsync adds a model error and returns Page when the 2FA code is invalid.
+    /// Input conditions: valid code, TwoFactorAuthenticatorSignInAsync returns not Succeeded and not LockedOut.
+    /// Expected result: PageResult with invalid ModelState.
+    /// </summary>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
+    [Fact]
+    public async Task OnPostAsync_InvalidCode_AddsModelErrorAndReturnsPage()
+    {
+        // Arrange
+        var (signInManagerMock, userManagerMock) = CreateSignInAndUserManagerMocks();
+        var user = new IdentityUser<Guid>();
+        signInManagerMock.Setup(s => s.GetTwoFactorAuthenticationUserAsync()).ReturnsAsync(user);
+        signInManagerMock
+            .Setup(s => s.TwoFactorAuthenticatorSignInAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>()))
+            .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Failed);
+        userManagerMock.Setup(u => u.GetUserIdAsync(user)).ReturnsAsync("user-id");
+
+        var loggerMock = new Mock<ILogger<LoginWith2faModel>>(MockBehavior.Loose);
+        var model = new LoginWith2faModel(signInManagerMock.Object, userManagerMock.Object, loggerMock.Object)
+        {
+            Input = new LoginWith2faModel.InputModel { TwoFactorCode = "000000", RememberMachine = false }
+        };
+        var urlHelperMock = new Mock<IUrlHelper>();
+        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
+        model.Url = urlHelperMock.Object;
+
+        // Act
+        var result = await model.OnPostAsync(false, null);
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        Assert.False(model.ModelState.IsValid);
+    }
+
     // Helper factory methods are placed inside the test class per requirements.
 
     // Helper to create the complex mocks required by SignInManager and UserManager.

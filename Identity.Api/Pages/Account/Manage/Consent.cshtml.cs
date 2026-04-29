@@ -217,5 +217,4 @@ public class ConsentModel : ConsentPageModelBase
         /// <summary>Gets or sets an optional description or device name provided by the user.</summary>
         public string? Description { get; set; }
     }
-
 }
