@@ -28,7 +28,7 @@ public static class ConfigurationExtensions
         // Stryker restore all
         public SecretClient ToSecretClient(TokenCredential credential)
         {
-            var keyVaultUrl = configuration.GetValue<Uri>("KeyVaultUri") ?? throw new InvalidOperationException("Invalid 'KeyVaultUri'.");
+            var keyVaultUrl = configuration.GetValue<Uri?>("KeyVaultUri") ?? throw new InvalidOperationException("Invalid 'KeyVaultUri'.");
             var secretClient = new SecretClient(keyVaultUrl, credential);
             return secretClient;
         }
