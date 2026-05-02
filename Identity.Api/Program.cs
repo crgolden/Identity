@@ -4,6 +4,7 @@ using System.Net.Http.Headers;
 using System.Security.Claims;
 using Azure.Identity;
 using Azure.Monitor.OpenTelemetry.AspNetCore;
+using Azure.Security.KeyVault.Secrets;
 using Duende.IdentityServer;
 using Elastic.Ingest.Elasticsearch;
 using Elastic.Ingest.Elasticsearch.DataStreams;
@@ -21,7 +22,6 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Azure;
-using Microsoft.Extensions.Options;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -35,82 +35,40 @@ Serilog.Log.Logger = new LoggerConfiguration().WriteTo.Console().CreateBootstrap
 try
 {
     var builder = WebApplication.CreateBuilder(args);
-    var dataProtectionBuilder = builder.Services.AddDataProtection();
-    var sqlConnectionStringBuilderSection = builder.Configuration.GetSection(nameof(SqlConnectionStringBuilder));
-    if (!sqlConnectionStringBuilderSection.Exists())
-    {
-        throw new InvalidOperationException($"Missing '{nameof(SqlConnectionStringBuilder)}' section.");
-    }
-
-    var sqlConnectionStringBuilder = sqlConnectionStringBuilderSection.Get<SqlConnectionStringBuilder>() ?? throw new InvalidOperationException($"Invalid '{nameof(SqlConnectionStringBuilder)}' section.");
-    var corsPolicySection = builder.Configuration.GetSection(nameof(CorsPolicy));
-    if (!corsPolicySection.Exists())
-    {
-        throw new InvalidOperationException($"Missing '{nameof(CorsPolicy)}' section.");
-    }
-
-    builder.Services.AddSerilog((sp, loggerConfiguration) => loggerConfiguration
-        .ReadFrom.Configuration(builder.Configuration)
-        .ReadFrom.Services(sp)
-        .Enrich.FromLogContext()
-        .Enrich.WithMachineName()
-        .Enrich.WithEnvironmentName());
     string googleClientId, googleClientSecret, resendApiToken, gravatarApiSecretKey;
-    if (builder.Environment.IsDevelopment())
+    var sqlConnectionStringBuilderSection = builder.Configuration.GetRequiredSection(nameof(SqlConnectionStringBuilder));
+    var sqlConnectionStringBuilder = sqlConnectionStringBuilderSection.Get<SqlConnectionStringBuilder>() ?? throw new InvalidOperationException($"Invalid '{nameof(SqlConnectionStringBuilder)}' section.");
+    var corsPolicySection = builder.Configuration.GetRequiredSection(nameof(CorsPolicy));
+    var corsPolicy = corsPolicySection.Get<CorsPolicy>() ?? throw new InvalidOperationException($"Invalid '{nameof(CorsPolicy)}' section.");
+    if (builder.Environment.IsProduction())
     {
-        builder.Configuration.AddUserSecrets("aspnet-Identity-149346d0-999f-4a74-8ff7-2a92d39790f2");
-        googleClientId = builder.Configuration.GetValue<string?>("GoogleClientId") ?? throw new InvalidOperationException("Invalid 'GoogleClientId'.");
-        googleClientSecret = builder.Configuration.GetValue<string?>("GoogleClientSecret") ?? throw new InvalidOperationException("Invalid 'GoogleClientSecret'.");
-        resendApiToken = builder.Configuration.GetValue<string?>("ResendApiToken") ?? throw new InvalidOperationException("Invalid 'ResendApiToken'.");
-        gravatarApiSecretKey = builder.Configuration.GetValue<string?>("GravatarApiSecretKey") ?? throw new InvalidOperationException("Invalid 'GravatarApiSecretKey'.");
-        builder.Services
-            .Configure<IdentityPasskeyOptions>(identityPasskeyOptions =>
-            {
-                identityPasskeyOptions.ValidateOrigin = context => ValueTask.FromResult(context.Origin == "https://localhost:7261");
-            })
-            .AddDatabaseDeveloperPageExceptionFilter()
-            .AddSerilog(loggerConfiguration =>
-            {
-                loggerConfiguration.Filter.ByExcluding(Matching.FromSource("Duende.IdentityServer.Diagnostics.Summary"));
-            });
-        dataProtectionBuilder.UseEphemeralDataProtectionProvider();
-    }
-    else
-    {
-        var keyVaultUrl = builder.Configuration.GetValue<Uri?>("KeyVaultUri") ??
-                          throw new InvalidOperationException("Invalid 'KeyVaultUri'.");
-        var defaultAzureCredentialOptionsSection = builder.Configuration.GetSection(nameof(DefaultAzureCredentialOptions));
-        if (!defaultAzureCredentialOptionsSection.Exists())
-        {
-            throw new InvalidOperationException($"Missing '{nameof(DefaultAzureCredentialOptions)}' section.");
-        }
-
-        var defaultAzureCredentialOptions = defaultAzureCredentialOptionsSection.Get<DefaultAzureCredentialOptions?>() ?? throw new InvalidOperationException($"Invalid '{nameof(DefaultAzureCredentialOptions)}'.");
+        var defaultAzureCredentialOptionsSection = builder.Configuration.GetRequiredSection(nameof(DefaultAzureCredentialOptions));
+        var defaultAzureCredentialOptions = defaultAzureCredentialOptionsSection.Get<DefaultAzureCredentialOptions>() ?? throw new InvalidOperationException($"Invalid '{nameof(DefaultAzureCredentialOptions)}' section.");
         var tokenCredential = new DefaultAzureCredential(defaultAzureCredentialOptions);
-        var secrets = builder.GetSecrets(keyVaultUrl, tokenCredential);
+        Uri blobUri = builder.Configuration.GetRequired<Uri>("BlobUri"),
+            dataProtectionKeyIdentifier = builder.Configuration.GetRequired<Uri>("DataProtectionKeyIdentifier"),
+            elasticsearchNode = builder.Configuration.GetRequired<Uri>("ElasticsearchNode"),
+            keyVaultUrl = builder.Configuration.GetRequired<Uri>("KeyVaultUri");
+        var applicationName = builder.Configuration.GetRequired<string>("WEBSITE_SITE_NAME");
+        var secretClient = new SecretClient(keyVaultUrl, tokenCredential);
+        var secrets = secretClient.GetIdentitySecrets();
         googleClientId = secrets.GoogleClientId.Value;
         googleClientSecret = secrets.GoogleClientSecret.Value;
         resendApiToken = secrets.ResendApiToken.Value;
         gravatarApiSecretKey = secrets.GravatarApiSecretKey.Value;
         sqlConnectionStringBuilder.UserID = secrets.SqlServerUserId.Value;
         sqlConnectionStringBuilder.Password = secrets.SqlServerPassword.Value;
-        if (builder.Environment.IsProduction())
+        builder.Logging.AddOpenTelemetry(openTelemetryLoggerOptions =>
         {
-            var applicationName = builder.Configuration.GetValue<string?>("WEBSITE_SITE_NAME") ?? throw new InvalidOperationException("Invalid 'WEBSITE_SITE_NAME'.");
-            Uri blobUrl = builder.Configuration.GetValue<Uri?>("BlobUri") ?? throw new InvalidOperationException("Invalid 'BlobUri'."),
-                dataProtectionKeyIdentifier = builder.Configuration.GetValue<Uri?>("DataProtectionKeyIdentifier") ?? throw new InvalidOperationException("Invalid 'DataProtectionKeyIdentifier'."),
-                elasticsearchNode = builder.Configuration.GetValue<Uri?>("ElasticsearchNode") ?? throw new InvalidOperationException("Invalid 'ElasticsearchNode'.");
-            dataProtectionBuilder.SetApplicationName(applicationName)
-                .PersistKeysToAzureBlobStorage(blobUrl, tokenCredential)
-                .ProtectKeysWithAzureKeyVault(dataProtectionKeyIdentifier, tokenCredential).Services
-                .AddAzureClientsCore(true);
-            builder.Logging.AddOpenTelemetry(openTelemetryLoggerOptions =>
-            {
-                openTelemetryLoggerOptions.IncludeFormattedMessage = true;
-                openTelemetryLoggerOptions.IncludeScopes = true;
-            });
-            builder.Services
-                .AddSerilog(loggerConfiguration => loggerConfiguration.WriteTo.Elasticsearch(
+            openTelemetryLoggerOptions.IncludeFormattedMessage = true;
+            openTelemetryLoggerOptions.IncludeScopes = true;
+        });
+        builder.Services
+            .AddSerilog((serviceProvider, loggerConfiguration) => loggerConfiguration
+                .ReadFrom.Configuration(builder.Configuration)
+                .ReadFrom.Services(serviceProvider)
+                .Enrich.WithProperty(nameof(IHostEnvironment.ApplicationName), applicationName)
+                .WriteTo.Elasticsearch(
                     [elasticsearchNode],
                     elasticsearchSinkOptions =>
                     {
@@ -119,56 +77,80 @@ try
                     },
                     transportConfiguration =>
                     {
-                        var elasticsearchUsername = secrets.ElasticsearchUsername.Value;
-                        var elasticsearchPassword = secrets.ElasticsearchPassword.Value;
-                        var header = new BasicAuthentication(elasticsearchUsername, elasticsearchPassword);
+                        var header = new BasicAuthentication(secrets.ElasticsearchUsername.Value, secrets.ElasticsearchPassword.Value);
                         transportConfiguration.Authentication(header);
-                    })
-                    .Enrich.WithProperty(nameof(IHostEnvironment.ApplicationName), applicationName))
-                .AddOpenTelemetry()
-                .ConfigureResource(resourceBuilder => resourceBuilder
-                    .AddService(applicationName, null, typeof(Program).Assembly.GetName().Version?.ToString() ?? "0.0.0")
-                    .AddAttributes(new Dictionary<string, object>(1)
-                    {
-                        ["deployment.environment"] = builder.Environment.EnvironmentName.ToLowerInvariant()
                     }))
-                .WithMetrics(meterProviderBuilder => meterProviderBuilder
-                    .AddMeter(Duende.IdentityServer.Telemetry.ServiceName)
-                    .AddMeter(nameof(Identity))
-                    .AddAspNetCoreInstrumentation()
-                    .AddHttpClientInstrumentation()
-                    .AddRuntimeInstrumentation())
-                .WithTracing(tracerProviderBuilder => tracerProviderBuilder
-                    .SetSampler(new AlwaysOnSampler())
-                    .AddSource(nameof(Identity))
-                    .AddSource(IdentityServerConstants.Tracing.Basic)
-                    .AddSource(IdentityServerConstants.Tracing.Cache)
-                    .AddSource(IdentityServerConstants.Tracing.Services)
-                    .AddSource(IdentityServerConstants.Tracing.Stores)
-                    .AddSource(IdentityServerConstants.Tracing.Validation)
-                    .AddAspNetCoreInstrumentation(aspNetCoreTraceInstrumentationOptions =>
-                    {
-                        aspNetCoreTraceInstrumentationOptions.Filter = context =>
-                        {
-                            return !context.Request.Path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase);
-                        };
-                    })
-                    .AddHttpClientInstrumentation()
-                    .AddConsoleExporter())
-                .UseAzureMonitor();
-        }
-        else
+            .AddOpenTelemetry()
+            .ConfigureResource(resourceBuilder => resourceBuilder
+                .AddService(applicationName, null, typeof(Program).Assembly.GetName().Version?.ToString() ?? "0.0.0")
+                .AddAttributes(new Dictionary<string, object>(1)
+                {
+                    ["deployment.environment"] = builder.Environment.EnvironmentName.ToLowerInvariant()
+                }))
+            .WithMetrics(meterProviderBuilder => meterProviderBuilder
+                .AddMeter(Duende.IdentityServer.Telemetry.ServiceName)
+                .AddMeter(applicationName)
+                .AddAspNetCoreInstrumentation()
+                .AddHttpClientInstrumentation()
+                .AddRuntimeInstrumentation())
+            .WithTracing(tracerProviderBuilder => tracerProviderBuilder
+                .SetSampler(new AlwaysOnSampler())
+                .AddSource(applicationName)
+                .AddSource(IdentityServerConstants.Tracing.Basic)
+                .AddSource(IdentityServerConstants.Tracing.Cache)
+                .AddSource(IdentityServerConstants.Tracing.Services)
+                .AddSource(IdentityServerConstants.Tracing.Stores)
+                .AddSource(IdentityServerConstants.Tracing.Validation)
+                .AddAspNetCoreInstrumentation(aspNetCoreTraceInstrumentationOptions =>
+                {
+                    aspNetCoreTraceInstrumentationOptions.Filter = context => !context.Request.Path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase);
+                })
+                .AddHttpClientInstrumentation()
+                .AddConsoleExporter())
+            .UseAzureMonitor().Services
+            .AddDataProtection()
+            .SetApplicationName(applicationName)
+            .PersistKeysToAzureBlobStorage(blobUri, tokenCredential)
+            .ProtectKeysWithAzureKeyVault(dataProtectionKeyIdentifier, tokenCredential).Services
+            .AddAzureClientsCore(true);
+    }
+    else
+    {
+        if (builder.Environment.IsDevelopment())
         {
-            dataProtectionBuilder.UseEphemeralDataProtectionProvider();
-            builder.Services.AddSerilog(loggerConfiguration =>
-            {
-                loggerConfiguration.Filter.ByExcluding(Matching.FromSource("Duende.IdentityServer.Diagnostics.Summary"));
-            });
+            builder.Configuration.AddUserSecrets("aspnet-Identity-149346d0-999f-4a74-8ff7-2a92d39790f2");
+            builder.Services
+                .Configure<IdentityPasskeyOptions>(identityPasskeyOptions =>
+                {
+                    identityPasskeyOptions.ValidateOrigin = context => ValueTask.FromResult(context.Origin == "https://localhost:7261");
+                })
+                .AddDatabaseDeveloperPageExceptionFilter();
         }
+
+        var secrets = builder.Configuration.GetIdentitySecrets();
+        googleClientId = secrets.GoogleClientId;
+        googleClientSecret = secrets.GoogleClientSecret;
+        resendApiToken = secrets.ResendApiToken;
+        gravatarApiSecretKey = secrets.GravatarApiSecretKey;
+        builder.Services
+            .AddSerilog((serviceProvider, loggerConfiguration) => loggerConfiguration
+                .ReadFrom.Configuration(builder.Configuration)
+                .ReadFrom.Services(serviceProvider)
+                .Filter.ByExcluding(Matching.FromSource("Duende.IdentityServer.Diagnostics.Summary")))
+            .AddDataProtection().UseEphemeralDataProtectionProvider();
     }
 
-    builder.Services.AddHealthChecks().AddDbContextCheck<ApplicationDbContext>();
     builder.Services
+        .AddDbContextPool<ApplicationDbContext>(dbContextOptionsBuilder => dbContextOptionsBuilder
+            .UseSqlServer(sqlConnectionStringBuilder.ConnectionString, sqlServerDbContextOptionsBuilder =>
+            {
+                var querySplittingBehavior = builder.Configuration.GetValue<QuerySplittingBehavior?>(nameof(QuerySplittingBehavior));
+                if (querySplittingBehavior.HasValue)
+                {
+                    sqlServerDbContextOptionsBuilder.UseQuerySplittingBehavior(querySplittingBehavior.Value);
+                }
+            })
+            .ConfigureWarnings(warningsConfigurationBuilder => warningsConfigurationBuilder.Throw(RelationalEventId.MultipleCollectionIncludeWarning)))
         .AddIdentity<IdentityUser<Guid>, IdentityRole<Guid>>(identityOptions =>
         {
             identityOptions.Stores.SchemaVersion = IdentitySchemaVersions.Version3;
@@ -176,8 +158,7 @@ try
         })
         .AddDefaultUI()
         .AddDefaultTokenProviders()
-        .AddEntityFrameworkStores<ApplicationDbContext>();
-    builder.Services
+        .AddEntityFrameworkStores<ApplicationDbContext>().Services
         .AddIdentityServer(identityServerOptions =>
         {
             identityServerOptions.Events.RaiseErrorEvents = true;
@@ -198,8 +179,7 @@ try
         .AddOperationalStore<ApplicationDbContext>(operationalStoreOptions =>
         {
             operationalStoreOptions.EnablePooling = true;
-        });
-    builder.Services
+        }).Services
         .AddAuthentication()
         .AddGoogleOpenIdConnect(
             GoogleOpenIdConnectDefaults.AuthenticationScheme,
@@ -209,96 +189,83 @@ try
                 openIdConnectOptions.SignInScheme = IdentityConstants.ExternalScheme;
                 openIdConnectOptions.ClientId = googleClientId;
                 openIdConnectOptions.ClientSecret = googleClientSecret;
-            });
-    builder.Services
-        .AddDbContextPool<ApplicationDbContext>(dbContextOptionsBuilder => dbContextOptionsBuilder
-            .UseSqlServer(sqlConnectionStringBuilder.ConnectionString, sqlServerDbContextOptionsBuilder =>
-            {
-                var querySplittingBehavior = builder.Configuration.GetValue<QuerySplittingBehavior?>(nameof(QuerySplittingBehavior));
-                if (querySplittingBehavior.HasValue)
-                {
-                    sqlServerDbContextOptionsBuilder.UseQuerySplittingBehavior(querySplittingBehavior.Value);
-                }
-            })
-            .ConfigureWarnings(warningsConfigurationBuilder => warningsConfigurationBuilder.Throw(RelationalEventId.MultipleCollectionIncludeWarning)));
-    builder.Services.Configure<CorsPolicy>(corsPolicySection).AddCors();
-    builder.Services
+            }).Services
         .Configure<ResendClientOptions>(configureOptions =>
         {
             configureOptions.ApiToken = resendApiToken;
         })
         .AddHttpClient<ResendClient>().Services
         .AddTransient<IResend, ResendClient>()
-        .AddTransient<IEmailSender, EmailSender>();
-    builder.Services
+        .AddTransient<IEmailSender, EmailSender>()
         .AddHttpClient<IGravatar, Gravatar>(httpClient =>
         {
             httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(IdentityConstants.BearerScheme, gravatarApiSecretKey);
         }).Services
-        .AddScoped<IAvatarService, GravatarService>();
-    builder.Services
+        .AddScoped<IAvatarService, GravatarService>()
+        .AddCors()
         .Configure<ForwardedHeadersOptions>(forwardedHeadersOptions =>
         {
             forwardedHeadersOptions.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
             forwardedHeadersOptions.KnownIPNetworks.Clear();
             forwardedHeadersOptions.KnownProxies.Clear();
         })
-        .AddRazorPages();
+        .AddRazorPages().Services
+        .AddHealthChecks()
+        .AddDbContextCheck<ApplicationDbContext>();
 
-    var app = builder.Build();
-    app.UseForwardedHeaders();
-    app.UseSerilogRequestLogging(options =>
-    {
-        options.EnrichDiagnosticContext = (diagnosticContext, _) =>
+    var webApplication = builder.Build();
+    webApplication
+        .UseForwardedHeaders()
+        .UseSerilogRequestLogging(requestLoggingOptions =>
         {
-            var activity = Activity.Current;
-            if (activity is null)
+            requestLoggingOptions.EnrichDiagnosticContext = (diagnosticContext, _) =>
             {
-                return;
-            }
+                if (Activity.Current is null)
+                {
+                    return;
+                }
 
-            diagnosticContext.Set(nameof(Activity.TraceId), activity.TraceId.ToString());
-            diagnosticContext.Set(nameof(Activity.SpanId), activity.SpanId.ToString());
-        };
-    });
-    if (app.Environment.IsDevelopment())
+                diagnosticContext.Set(nameof(Activity.TraceId), Activity.Current.TraceId.ToString());
+                diagnosticContext.Set(nameof(Activity.SpanId), Activity.Current.SpanId.ToString());
+            };
+        });
+
+    if (webApplication.Environment.IsDevelopment())
     {
-        app.UseDeveloperExceptionPage();
+        webApplication.UseDeveloperExceptionPage();
     }
     else
     {
-        app.UseExceptionHandler("/Error").UseHsts();
+        webApplication.UseExceptionHandler("/Error").UseHsts();
     }
 
-    app.UseHttpsRedirection()
+    webApplication
+        .UseHttpsRedirection()
         .UseRouting()
         .UseIdentityServer()
         .UseCors(corsPolicyBuilder =>
         {
-            var corsPolicy = app.Services.GetRequiredService<IOptions<CorsPolicy>>().Value;
             corsPolicyBuilder.WithOrigins(corsPolicy.Origins.ToArray());
         })
-        .UseAuthorization();
-    app.Use((ctx, next) =>
-    {
-        if (ctx.User.Identity?.IsAuthenticated != true)
+        .UseAuthorization()
+        .Use((ctx, next) =>
         {
-            return next(ctx);
-        }
+            if (ctx.User.Identity?.IsAuthenticated != true)
+            {
+                return next(ctx);
+            }
 
-        using (Serilog.Context.LogContext.PushProperty("UserId", ctx.User.FindFirstValue("sub")))
-        using (Serilog.Context.LogContext.PushProperty("UserEmail", ctx.User.FindFirstValue("email")))
-        {
-            return next(ctx);
-        }
-    });
-    app.MapAdditionalIdentityEndpoints();
-    app.MapHealthChecks("/health").DisableHttpMetrics();
-    app.MapStaticAssets();
-    app.MapRazorPages()
-       .WithStaticAssets()
-       .RequireAuthorization();
-    await app.RunAsync();
+            using (Serilog.Context.LogContext.PushProperty("UserId", ctx.User.FindFirstValue("sub")))
+            using (Serilog.Context.LogContext.PushProperty("UserEmail", ctx.User.FindFirstValue("email")))
+            {
+                return next(ctx);
+            }
+        });
+    webApplication.MapAdditionalIdentityEndpoints();
+    webApplication.MapHealthChecks("/health").DisableHttpMetrics();
+    webApplication.MapStaticAssets();
+    webApplication.MapRazorPages().WithStaticAssets().RequireAuthorization();
+    await webApplication.RunAsync();
 }
 catch (Exception ex) when (ex is not HostAbortedException)
 {

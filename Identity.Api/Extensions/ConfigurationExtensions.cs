@@ -1,36 +1,34 @@
 ﻿namespace Identity.Extensions;
 
-using Azure.Core;
-using Azure.Identity;
-using Azure.Security.KeyVault.Secrets;
-
 public static class ConfigurationExtensions
 {
     extension(IConfiguration configuration)
     {
-        // Stryker disable all : DefaultAzureCredential is sealed and cannot be mocked; covered at E2E level with live Azure credentials
-        public async Task<TokenCredential> ToTokenCredentialAsync(string scope = "https://vault.azure.net/.default", CancellationToken cancellationToken = default)
+        public T GetRequired<T>(string key)
+            where T : notnull
         {
-            var options = configuration.GetSection(nameof(DefaultAzureCredentialOptions)).Get<DefaultAzureCredentialOptions>() ?? throw new InvalidOperationException($"Invalid '{nameof(DefaultAzureCredentialOptions)}' configuration.");
-            var credential = new DefaultAzureCredential(options);
-            var context = new TokenRequestContext([scope]);
-            var token = await credential.GetTokenAsync(context, cancellationToken);
-            if (IsNullOrWhiteSpace(token.Token))
-            {
-                throw new InvalidOperationException("Failed to acquire token for Azure Key Vault access.");
-            }
-
-            // Wrap in a caching credential so BearerTokenAuthenticationPolicy reuses this token
-            // instead of spawning a second az process on the first GetSecretAsync call.
-            return new CachingTokenCredential(credential, context, token);
+            return configuration.GetValue<T?>(key) ?? throw new InvalidOperationException($"Invalid '{key}'.");
         }
 
-        // Stryker restore all
-        public SecretClient ToSecretClient(TokenCredential credential)
+#pragma warning disable SA1009
+        internal (
+            string GoogleClientId,
+            string GoogleClientSecret,
+            string ResendApiToken,
+            string GravatarApiSecretKey
+        ) GetIdentitySecrets()
         {
-            var keyVaultUrl = configuration.GetValue<Uri?>("KeyVaultUri") ?? throw new InvalidOperationException("Invalid 'KeyVaultUri'.");
-            var secretClient = new SecretClient(keyVaultUrl, credential);
-            return secretClient;
+            var googleClientId = configuration.GetRequired<string>("GoogleClientId");
+            var googleClientSecret = configuration.GetRequired<string>("GoogleClientSecret");
+            var resendApiToken = configuration.GetRequired<string>("ResendApiToken");
+            var gravatarApiSecretKey = configuration.GetRequired<string>("GravatarApiSecretKey");
+            return (
+                googleClientId,
+                googleClientSecret,
+                resendApiToken,
+                gravatarApiSecretKey
+            );
         }
+#pragma warning restore SA1009
     }
 }
