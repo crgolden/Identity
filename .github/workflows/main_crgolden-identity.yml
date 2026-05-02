@@ -113,20 +113,6 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_07B3DB796C7C4D409EFADCB306F23869 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_086A6E19353E42B0AFB0AEE6A7504B9E }}
 
-      - name: Set E2E test environment
-        shell: powershell
-        run: |
-          echo "ASPNETCORE_ENVIRONMENT=CI" >> $env:GITHUB_ENV
-          echo "GoogleClientId=${{ secrets.GOOGLE_CLIENT_ID }}" >> $env:GITHUB_ENV
-          echo "GoogleClientSecret=${{ secrets.GOOGLE_CLIENT_SECRET }}" >> $env:GITHUB_ENV
-          echo "ResendApiToken=${{ secrets.RESEND_API_TOKEN }}" >> $env:GITHUB_ENV
-          echo "GravatarApiSecretKey=${{ secrets.GRAVATAR_API_SECRET_KEY }}" >> $env:GITHUB_ENV
-          echo "SqlConnectionStringBuilder__DataSource=${{ vars.DB_SERVER }}" >> $env:GITHUB_ENV
-          echo "SqlConnectionStringBuilder__InitialCatalog=${{ vars.DB_NAME_E2E }}" >> $env:GITHUB_ENV
-          echo "SqlConnectionStringBuilder__IntegratedSecurity=false" >> $env:GITHUB_ENV
-          echo "SqlConnectionStringBuilder__UserID=${{ secrets.DB_USERID }}" >> $env:GITHUB_ENV
-          echo "SqlConnectionStringBuilder__Password=${{ secrets.DB_PASSWORD }}" >> $env:GITHUB_ENV
-
       - name: Install SqlPackage
         run: dotnet tool install --global microsoft.sqlpackage
 
@@ -161,6 +147,17 @@ jobs:
         run: pwsh "${{ github.workspace }}\Identity.Tests\bin\Release\net10.0\playwright.ps1" install --with-deps chromium
 
       - name: Run E2E tests with coverage
+        env:
+          ASPNETCORE_ENVIRONMENT: CI
+          GoogleClientId: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GoogleClientSecret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          ResendApiToken: ${{ secrets.RESEND_API_TOKEN }}
+          GravatarApiSecretKey: ${{ secrets.GRAVATAR_API_SECRET_KEY }}
+          SqlConnectionStringBuilder__DataSource: ${{ vars.DB_SERVER }}
+          SqlConnectionStringBuilder__InitialCatalog: ${{ vars.DB_NAME_E2E }}
+          SqlConnectionStringBuilder__IntegratedSecurity: false
+          SqlConnectionStringBuilder__UserID: ${{ secrets.DB_USERID }}
+          SqlConnectionStringBuilder__Password: ${{ secrets.DB_PASSWORD }}
         run: |
           dotnet-coverage collect `
             "dotnet test --project Identity.Tests --no-build --configuration Release -- --filter-trait Category=E2E --report-xunit-trx --report-xunit-trx-filename e2e-tests.trx" `
