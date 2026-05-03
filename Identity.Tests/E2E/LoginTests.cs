@@ -64,9 +64,11 @@ public sealed class LoginTests(PlaywrightFixture fixture)
                     res => res.Request.Method == "POST" && res.Url.Contains("/Account/Login"));
                 await page.ClickAsync("#login-submit");
                 await postResponse;
+
+                // WaitForResponseAsync resolves on HTTP response receipt, not page load — wait for full load before next GotoAsync.
+                await page.WaitForLoadStateAsync();
             }
 
-            await page.WaitForURLAsync("**/Account/Lockout**");
             Assert.Contains("/Account/Lockout", page.Url);
         }
     }
