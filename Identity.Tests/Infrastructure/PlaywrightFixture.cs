@@ -141,6 +141,9 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         // making an outbound call to Google that would block or fail in CI.
         await context.AddInitScriptAsync("window.grecaptcha = { ready: cb => cb(), execute: () => Promise.resolve('e2e-test-token') };");
 
+        // Block the real reCAPTCHA script — it has no defer/async and overwrites the stub above when it loads.
+        await context.RouteAsync("https://www.google.com/recaptcha/**", route => route.AbortAsync());
+
         var page = await context.NewPageAsync();
 
         // CI machines are slower; double the default 30s timeout to avoid intermittent failures
