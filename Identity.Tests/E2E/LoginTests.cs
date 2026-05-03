@@ -52,21 +52,28 @@ public sealed class LoginTests(PlaywrightFixture fixture)
         var (context, page) = await fixture.NewPageAsync();
         await using (context)
         {
+            await page.GotoAsync("/Account/Login");
+
             for (var i = 0; i < 5; i++)
             {
-                await page.GotoAsync("/Account/Login");
                 await page.FillAsync("input[name='Input.Email']", email);
                 await page.FillAsync("input[name='Input.Password']", "BadPassword!99");
 
-                // grecaptcha submit handler is async (Promise → form.submit()); set up the response
-                // listener before clicking so the POST is captured even if it fires before the next await.
+                // Set up listener before click so the async form.submit() POST is captured race-free.
                 var postResponse = page.WaitForResponseAsync(
                     res => res.Request.Method == "POST" && res.Url.Contains("/Account/Login"));
                 await page.ClickAsync("#login-submit");
                 await postResponse;
 
-                // WaitForResponseAsync resolves on HTTP response receipt, not page load — wait for full load before next GotoAsync.
-                await page.WaitForLoadStateAsync();
+                // Locator polling avoids both WaitForLoadStateAsync premature-return and GotoAsync navigation conflicts.
+                if (i < 4)
+                {
+                    await page.Locator("input[name='Input.Email']").WaitForAsync();
+                }
+                else
+                {
+                    await page.Locator("h1:has-text('Locked out')").WaitForAsync();
+                }
             }
 
             Assert.Contains("/Account/Lockout", page.Url);
