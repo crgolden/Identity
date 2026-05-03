@@ -111,7 +111,7 @@ public class SetPasswordModelTests
     /// Condition: ModelState contains an error.
     /// Expected: PageResult is returned.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_ModelStateInvalid_ReturnsPage()
     {
@@ -149,7 +149,7 @@ public class SetPasswordModelTests
     /// Condition: UserManager.GetUserAsync returns null and GetUserId returns a known id.
     /// Expected: NotFoundObjectResult with the expected message.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_UserNotFound_ReturnsNotFoundWithMessage()
     {
@@ -195,7 +195,7 @@ public class SetPasswordModelTests
     /// Input: UserManager.GetUserAsync returns null and GetUserId returns a specific id string.
     /// Expected: NotFoundObjectResult whose Value string contains the configured id.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGetAsync_UserNotFound_ReturnsNotFoundWithUserIdInMessage()
     {
@@ -259,7 +259,7 @@ public class SetPasswordModelTests
     ///  - when true: RedirectToPageResult to "./ChangePassword".
     ///  - when false: PageResult returned to allow setting a password.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [InlineData(true)]
     [InlineData(false)]

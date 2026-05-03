@@ -1,8 +1,8 @@
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account;
-using Identity.Tests.Infrastructure;
 
 using Identity.Pages.Account;
+using Infrastructure;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 
 /// <summary>
@@ -42,7 +43,7 @@ public class RegisterModelTests
     /// Input conditions: various returnUrl values including null, empty, whitespace-only, long, and special characters.
     /// Expected result: ReturnUrl equals the input returnUrl and no exception is thrown.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [InlineData(null)]
     [InlineData("")]
@@ -81,7 +82,9 @@ public class RegisterModelTests
             signInManagerMock.Object,
             Mock.Of<IAvatarService>(),
             logger,
-            emailSender);
+            emailSender,
+            CreateRecaptchaServiceMock().Object,
+            CreateRecaptchaOptionsMock());
 
         // Act & Assert: ensure no exception and ReturnUrl set as expected
         var ex = await Record.ExceptionAsync(() => model.OnGetAsync(returnUrl));
@@ -98,7 +101,7 @@ public class RegisterModelTests
     /// Input conditions: various collections of AuthenticationScheme (empty, single, multiple).
     /// Expected result: ExternalLogins contains the same schemes (order preserved) and count matches.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
 #pragma warning disable xUnit1045
     [Theory]
     [MemberData(nameof(ExternalSchemesData))]
@@ -132,7 +135,9 @@ public class RegisterModelTests
             signInManagerMock.Object,
             Mock.Of<IAvatarService>(),
             logger,
-            emailSender);
+            emailSender,
+            CreateRecaptchaServiceMock().Object,
+            CreateRecaptchaOptionsMock());
 
         // Act
         await model.OnGetAsync("someReturn");
@@ -155,7 +160,7 @@ public class RegisterModelTests
     /// Input conditions: ModelState contains an error.
     /// Expected result: IActionResult is PageResult and GetExternalAuthenticationSchemesAsync was still invoked.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact(DisplayName = "OnPostAsync_ModelStateInvalid_ReturnsPage")]
     public async Task OnPostAsync_ModelStateInvalid_ReturnsPage()
     {
@@ -186,7 +191,9 @@ public class RegisterModelTests
             signInManagerMock.Object,
             Mock.Of<IAvatarService>(),
             loggerMock.Object,
-            emailSenderMock.Object);
+            emailSenderMock.Object,
+            CreateRecaptchaServiceMock().Object,
+            CreateRecaptchaOptionsMock());
 
         // Configure PageContext/Url/Request
         var ctx = new DefaultHttpContext();
@@ -217,7 +224,7 @@ public class RegisterModelTests
     /// - When requireConfirmed is true: expect RedirectToPageResult for RegisterConfirmation.
     /// - When requireConfirmed is false: expect LocalRedirectResult to the provided returnUrl and SignInAsync invoked.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory(DisplayName = "OnPostAsync_CreateSucceeds_RespectsRequireConfirmedAccount")]
     [InlineData(true, "/confirmed-redirect")]
     [InlineData(false, "/local-redirect")]
@@ -279,7 +286,9 @@ public class RegisterModelTests
             signInManagerMock.Object,
             Mock.Of<IAvatarService>(),
             loggerMock.Object,
-            emailSenderMock.Object);
+            emailSenderMock.Object,
+            CreateRecaptchaServiceMock().Object,
+            CreateRecaptchaOptionsMock());
 
         // Configure PageContext/Url/Request
         var ctx = new DefaultHttpContext();
@@ -335,6 +344,67 @@ public class RegisterModelTests
             Assert.Equal(returnUrl, local.Url);
             signInManagerMock.Verify(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), false, null), Times.Once);
         }
+    }
+
+    [Fact]
+    public async Task OnPostAsync_RecaptchaScoreBelowThreshold_ReturnsPageWithModelError()
+    {
+        var userStoreMock = new Mock<IUserEmailStore<IdentityUser<Guid>>>();
+        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
+            Mock.Of<IUserStore<IdentityUser<Guid>>>(), null, null, null, null, null, null, null, null);
+        userManagerMock.SetupGet(u => u.SupportsUserEmail).Returns(true);
+        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
+            userManagerMock.Object,
+            Mock.Of<IHttpContextAccessor>(),
+            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
+            null,
+            Mock.Of<ILogger<SignInManager<IdentityUser<Guid>>>>(),
+            Mock.Of<IAuthenticationSchemeProvider>(),
+            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
+        signInManagerMock.Setup(s => s.GetExternalAuthenticationSchemesAsync()).ReturnsAsync([]);
+
+        var recaptchaServiceMock = CreateRecaptchaServiceMock(score: 0.0m);
+
+        var model = new RegisterModel(
+            userManagerMock.Object,
+            userStoreMock.Object,
+            signInManagerMock.Object,
+            Mock.Of<IAvatarService>(),
+            Mock.Of<ILogger<RegisterModel>>(),
+            Mock.Of<IEmailSender>(),
+            recaptchaServiceMock.Object,
+            CreateRecaptchaOptionsMock());
+
+        var ctx = new DefaultHttpContext();
+        ctx.Request.Scheme = "https";
+        model.PageContext = new PageContext { HttpContext = ctx };
+
+        var urlHelperMock = new Mock<IUrlHelper>();
+        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
+        model.Url = urlHelperMock.Object;
+        model.Input = new RegisterModel.InputModel { Email = "user@example.com", Password = "P@ssw0rd!" };
+
+        var result = await model.OnPostAsync("/return");
+
+        Assert.IsType<PageResult>(result);
+        Assert.False(model.ModelState.IsValid);
+        Assert.True(model.ModelState.ContainsKey(string.Empty));
+        userManagerMock.Verify(u => u.CreateAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>()), Times.Never);
+    }
+
+    private static Mock<ICAPTCHAService> CreateRecaptchaServiceMock(decimal score = 1.0m)
+    {
+        var mock = new Mock<ICAPTCHAService>();
+        mock.Setup(s => s.VerifyAsync(It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(score);
+        return mock;
+    }
+
+    private static IOptions<ReCAPTCHAOptions> CreateRecaptchaOptionsMock(decimal threshold = 0.5m)
+    {
+        var mock = new Mock<IOptions<ReCAPTCHAOptions>>();
+        mock.Setup(o => o.Value).Returns(new ReCAPTCHAOptions { ScoreThreshold = threshold });
+        return mock.Object;
     }
 
     // Minimal IAuthenticationHandler implementation for use in AuthenticationScheme construction

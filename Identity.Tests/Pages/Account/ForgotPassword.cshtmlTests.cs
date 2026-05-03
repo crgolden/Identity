@@ -34,7 +34,7 @@ public class ForgotPasswordModelTests
     /// Expected Result:
     /// - Method returns PageResult and no calls are made to FindByEmailAsync or SendEmailAsync.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_ModelStateInvalid_ReturnsPage()
     {
@@ -76,7 +76,7 @@ public class ForgotPasswordModelTests
     /// - Method returns RedirectToPageResult to "./ForgotPasswordConfirmation".
     /// - No email is sent.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [InlineData(false, false)]
     [InlineData(true, false)]

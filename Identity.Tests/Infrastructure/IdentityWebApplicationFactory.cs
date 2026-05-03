@@ -80,6 +80,10 @@ public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Progra
             services.RemoveAll<IAvatarService>();
             services.AddSingleton<IAvatarService>(new NullAvatarService());
 
+            // Replace IRecaptchaService with an always-pass stub to prevent outbound calls to Google.
+            services.RemoveAll<ICAPTCHAService>();
+            services.AddSingleton<ICAPTCHAService>(new AlwaysPassCAPTCHAService());
+
             // Reduce PBKDF2 iterations to 1 for tests — default 600k iterations is CPU-intensive
             // and causes 60s+ timeouts on loaded CI machines (password sign-in late in the suite).
             services.Configure<PasswordHasherOptions>(opts => opts.IterationCount = 1);
@@ -98,9 +102,14 @@ public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Progra
     }
 }
 
-/// <summary>No-op <see cref="IAvatarService"/> for tests — avoids real Gravatar HTTP calls.</summary>
 internal sealed class NullAvatarService : IAvatarService
 {
     public Task<Uri?> GetAvatarUrlAsync(string profileIdentifier, CancellationToken cancellationToken = default)
         => Task.FromResult<Uri?>(null);
+}
+
+internal sealed class AlwaysPassCAPTCHAService : ICAPTCHAService
+{
+    public Task<decimal> VerifyAsync(string? token, CancellationToken cancellationToken = default)
+        => Task.FromResult(1.0m);
 }

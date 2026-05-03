@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Options;
 
 /// <summary>Page model for the Register page.</summary>
 [AllowAnonymous]
@@ -21,6 +22,8 @@ public class RegisterModel : PageModel
     private readonly IUserEmailStore<IdentityUser<Guid>> _emailStore;
     private readonly ILogger<RegisterModel> _logger;
     private readonly IEmailSender _emailSender;
+    private readonly ICAPTCHAService _captchaService;
+    private readonly IOptions<ReCAPTCHAOptions> _recaptchaOptions;
 
     public RegisterModel(
         UserManager<IdentityUser<Guid>> userManager,
@@ -28,7 +31,9 @@ public class RegisterModel : PageModel
         SignInManager<IdentityUser<Guid>> signInManager,
         IAvatarService avatarService,
         ILogger<RegisterModel> logger,
-        IEmailSender emailSender)
+        IEmailSender emailSender,
+        ICAPTCHAService captchaService,
+        IOptions<ReCAPTCHAOptions> recaptchaOptions)
     {
         _userManager = userManager;
         _userStore = userStore;
@@ -37,12 +42,16 @@ public class RegisterModel : PageModel
         _avatarService = avatarService;
         _logger = logger;
         _emailSender = emailSender;
+        _captchaService = captchaService;
+        _recaptchaOptions = recaptchaOptions;
     }
 
     [BindProperty]
     public InputModel Input { get; set; } = new InputModel();
 
     public string? ReturnUrl { get; set; }
+
+    public string? RecaptchaSiteKey { get; private set; }
 
     public IList<AuthenticationScheme> ExternalLogins { get; set; } = new List<AuthenticationScheme>();
 
@@ -53,6 +62,7 @@ public class RegisterModel : PageModel
     {
         ReturnUrl = returnUrl;
         ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
+        RecaptchaSiteKey = _recaptchaOptions.Value.SiteKey;
     }
 
     /// <summary>Handles the POST request to create a new user account.</summary>
@@ -64,6 +74,13 @@ public class RegisterModel : PageModel
         ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
         if (!ModelState.IsValid || IsNullOrWhiteSpace(Input.Email) || IsNullOrWhiteSpace(Input.Password))
         {
+            return Page();
+        }
+
+        var score = await _captchaService.VerifyAsync(Input.RecaptchaToken, HttpContext.RequestAborted);
+        if (score < _recaptchaOptions.Value.ScoreThreshold)
+        {
+            ModelState.AddModelError(Empty, "Request could not be verified.");
             return Page();
         }
 
@@ -135,5 +152,7 @@ public class RegisterModel : PageModel
         [Display(Name = "Confirm password")]
         [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
         public string? ConfirmPassword { get; set; }
+
+        public string? RecaptchaToken { get; set; }
     }
 }

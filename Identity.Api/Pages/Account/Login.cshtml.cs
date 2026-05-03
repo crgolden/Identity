@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Options;
 
 /// <summary>Page model for the Login page.</summary>
 [AllowAnonymous]
@@ -17,17 +18,23 @@ public class LoginModel : PageModel
     private readonly UserManager<IdentityUser<Guid>> _userManager;
     private readonly IAvatarService _avatarService;
     private readonly ILogger<LoginModel> _logger;
+    private readonly ICAPTCHAService _captchaService;
+    private readonly IOptions<ReCAPTCHAOptions> _recaptchaOptions;
 
     public LoginModel(
         SignInManager<IdentityUser<Guid>> signInManager,
         UserManager<IdentityUser<Guid>> userManager,
         IAvatarService avatarService,
-        ILogger<LoginModel> logger)
+        ILogger<LoginModel> logger,
+        ICAPTCHAService captchaService,
+        IOptions<ReCAPTCHAOptions> recaptchaOptions)
     {
         _signInManager = signInManager;
         _userManager = userManager;
         _avatarService = avatarService;
         _logger = logger;
+        _captchaService = captchaService;
+        _recaptchaOptions = recaptchaOptions;
     }
 
     [BindProperty]
@@ -36,6 +43,8 @@ public class LoginModel : PageModel
     public IList<AuthenticationScheme> ExternalLogins { get; set; } = new List<AuthenticationScheme>();
 
     public string? ReturnUrl { get; set; }
+
+    public string? RecaptchaSiteKey { get; private set; }
 
     [TempData]
     public string? ErrorMessage { get; set; }
@@ -54,6 +63,7 @@ public class LoginModel : PageModel
         ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
         ReturnUrl = returnUrl;
         ReturnUrl ??= Url.Content("~/");
+        RecaptchaSiteKey = _recaptchaOptions.Value.SiteKey;
     }
 
     /// <summary>Handles the POST request to authenticate the user.</summary>
@@ -73,6 +83,13 @@ public class LoginModel : PageModel
         {
             if (!ModelState.IsValid || IsNullOrWhiteSpace(Input.Email) || IsNullOrWhiteSpace(Input.Password))
             {
+                return Page();
+            }
+
+            var score = await _captchaService.VerifyAsync(Input.RecaptchaToken, HttpContext.RequestAborted);
+            if (score < _recaptchaOptions.Value.ScoreThreshold)
+            {
+                ModelState.AddModelError(Empty, "Request could not be verified.");
                 return Page();
             }
 
@@ -141,5 +158,7 @@ public class LoginModel : PageModel
         public bool RememberMe { get; set; }
 
         public PasskeyInputModel? Passkey { get; set; }
+
+        public string? RecaptchaToken { get; set; }
     }
 }

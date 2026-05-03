@@ -153,6 +153,8 @@ jobs:
           GoogleClientSecret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           ResendApiToken: ${{ secrets.RESEND_API_TOKEN }}
           GravatarApiSecretKey: ${{ secrets.GRAVATAR_API_SECRET_KEY }}
+          ReCAPTCHASiteKey: ${{ secrets.RECAPTCHA_SITE_KEY }}
+          ReCAPTCHASecretKey: ${{ secrets.RECAPTCHA_SECRET_KEY }}
           SqlConnectionStringBuilder__DataSource: ${{ vars.DB_SERVER }}
           SqlConnectionStringBuilder__InitialCatalog: ${{ vars.DB_NAME_E2E }}
           SqlConnectionStringBuilder__IntegratedSecurity: false

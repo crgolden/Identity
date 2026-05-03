@@ -7,7 +7,7 @@ using Infrastructure;
 public sealed class DiagnosticsTests(PlaywrightFixture fixture)
 {
     /// <summary>Verifies that an authenticated user can access the diagnostics page and sees claims.</summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task Diagnostics_AuthenticatedUser_ShowsClaims()
     {

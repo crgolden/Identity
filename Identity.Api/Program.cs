@@ -35,11 +35,12 @@ Serilog.Log.Logger = new LoggerConfiguration().WriteTo.Console().CreateBootstrap
 try
 {
     var builder = WebApplication.CreateBuilder(args);
-    string googleClientId, googleClientSecret, resendApiToken, gravatarApiSecretKey;
+    string googleClientId, googleClientSecret, resendApiToken, gravatarApiSecretKey, reCAPTCHASiteKey, reCAPTCHASecretKey;
     var sqlConnectionStringBuilderSection = builder.Configuration.GetRequiredSection(nameof(SqlConnectionStringBuilder));
     var sqlConnectionStringBuilder = sqlConnectionStringBuilderSection.Get<SqlConnectionStringBuilder>() ?? throw new InvalidOperationException($"Invalid '{nameof(SqlConnectionStringBuilder)}' section.");
     var corsPolicySection = builder.Configuration.GetRequiredSection(nameof(CorsPolicy));
     var corsPolicy = corsPolicySection.Get<CorsPolicy>() ?? throw new InvalidOperationException($"Invalid '{nameof(CorsPolicy)}' section.");
+    var recaptchaVerifyEndpoint = builder.Configuration.GetRequired<Uri>("RecaptchaVerifyEndpoint");
     if (builder.Environment.IsProduction())
     {
         var defaultAzureCredentialOptionsSection = builder.Configuration.GetRequiredSection(nameof(DefaultAzureCredentialOptions));
@@ -56,6 +57,8 @@ try
         googleClientSecret = secrets.GoogleClientSecret.Value;
         resendApiToken = secrets.ResendApiToken.Value;
         gravatarApiSecretKey = secrets.GravatarApiSecretKey.Value;
+        reCAPTCHASiteKey = secrets.ReCAPTCHASiteKey.Value;
+        reCAPTCHASecretKey = secrets.ReCAPTCHASecretKey.Value;
         sqlConnectionStringBuilder.UserID = secrets.SqlServerUserId.Value;
         sqlConnectionStringBuilder.Password = secrets.SqlServerPassword.Value;
         builder.Logging.AddOpenTelemetry(openTelemetryLoggerOptions =>
@@ -132,6 +135,8 @@ try
         googleClientSecret = secrets.GoogleClientSecret;
         resendApiToken = secrets.ResendApiToken;
         gravatarApiSecretKey = secrets.GravatarApiSecretKey;
+        reCAPTCHASiteKey = secrets.ReCAPTCHASiteKey;
+        reCAPTCHASecretKey = secrets.ReCAPTCHASecretKey;
         builder.Services
             .AddSerilog((serviceProvider, loggerConfiguration) => loggerConfiguration
                 .ReadFrom.Configuration(builder.Configuration)
@@ -202,6 +207,13 @@ try
             httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(IdentityConstants.BearerScheme, gravatarApiSecretKey);
         }).Services
         .AddScoped<IAvatarService, GravatarService>()
+        .Configure<ReCAPTCHAOptions>(recaptchaOptions =>
+        {
+            recaptchaOptions.SiteKey = reCAPTCHASiteKey;
+            recaptchaOptions.SecretKey = reCAPTCHASecretKey;
+            recaptchaOptions.VerifyEndpoint = recaptchaVerifyEndpoint;
+        })
+        .AddHttpClient<ICAPTCHAService, ReCAPTCHAService>().Services
         .AddCors()
         .Configure<ForwardedHeadersOptions>(forwardedHeadersOptions =>
         {

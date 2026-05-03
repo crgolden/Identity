@@ -120,7 +120,7 @@ public class ErrorModelTests
     /// Inputs tested: null, empty string, whitespace-only string; with Activity.Current present and absent.
     /// Expected: no call to GetErrorContextAsync and RequestId equals the activity id (if set) or trace identifier.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [MemberData(nameof(NoErrorIdCases))]
     public async Task OnGetAsync_NullOrWhitespaceErrorId_SkipsInteractionService(string? errorId, bool setActivity)
@@ -186,7 +186,7 @@ public class ErrorModelTests
     /// Expected: GetErrorContextAsync invoked once with the exact id, no exception thrown even if service returns null,
     /// and RequestId set appropriately. Also ShowRequestId is true when RequestId is not null/empty.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [MemberData(nameof(NonEmptyErrorIdCases))]
     public async Task OnGetAsync_ValidErrorId_CallsInteractionService(string errorId, bool setActivity)
@@ -275,7 +275,7 @@ public class ErrorModelTests
     /// Input: a valid errorId and a non-null ErrorMessage returned by the service.
     /// Expected: ILogger.Log called exactly once at LogLevel.Error.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGetAsync_ValidErrorId_WithErrorMessage_LogsError()
     {

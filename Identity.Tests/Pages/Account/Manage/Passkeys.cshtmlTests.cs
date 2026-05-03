@@ -104,7 +104,7 @@ public partial class PasskeysModelTests
     /// Input conditions: UserManager.GetUserAsync returns null and GetUserId returns a known id.
     /// Expected: NotFoundObjectResult containing the message with the provided id.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAddPasskeyAsync_UserNotFound_ReturnsNotFound()
     {
@@ -145,7 +145,7 @@ public partial class PasskeysModelTests
     /// - Setup SignInManager.PerformPasskeyAttestationAsync to return that result.
     /// - Assert RedirectToPageResult and proper StatusMessage ("Could not add the passkey: {message}.").
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
 #pragma warning disable S2699
     [Fact]
     public async Task OnPostAddPasskeyAsync_AttestationFails_RedirectsWithFailureMessage_Partial()
@@ -165,7 +165,7 @@ public partial class PasskeysModelTests
     /// - Setup UserManager.AddOrUpdatePasskeyAsync to return IdentityResult.Failed(...) and assert
     ///   RedirectToPageResult and StatusMessage equals "The passkey could not be added to your account.".
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAddPasskeyAsync_AddOrUpdateFails_RedirectsWithFailureMessage_Partial()
     {
@@ -184,7 +184,7 @@ public partial class PasskeysModelTests
     /// - Setup UserManager.AddOrUpdatePasskeyAsync to return IdentityResult.Success.
     /// - Call the handler and assert RedirectToPageResult.PageName == "./RenamePasskey" and RouteValues["id"] equals Base64Url.EncodeToString(CredentialId).
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
 #pragma warning disable S2699
     [Fact]
     public async Task OnPostAddPasskeyAsync_Success_RedirectsToRenamePasskey_Partial()
@@ -199,7 +199,7 @@ public partial class PasskeysModelTests
     /// Input conditions: UserManager.GetUserAsync returns null and GetUserId returns a known id.
     /// Expected: NotFoundObjectResult with a message containing the id.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostUpdatePasskeyAsync_UserNotFound_ReturnsNotFoundObjectResult()
     {
@@ -241,7 +241,7 @@ public partial class PasskeysModelTests
     /// Input conditions: mocked GetUserAsync -> null; mocked GetUserId -> specific string.
     /// Expected: NotFoundObjectResult with the exact message "Unable to load user with ID '{id}'."
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGetAsync_UserNotFound_ReturnsNotFoundWithUserIdMessage()
     {

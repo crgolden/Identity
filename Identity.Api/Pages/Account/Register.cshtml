@@ -27,6 +27,7 @@
                 <label asp-for="Input.ConfirmPassword">Confirm Password</label>
                 <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
             </div>
+            <input type="hidden" id="recaptcha-token" asp-for="Input.RecaptchaToken" />
             <button id="registerSubmit" type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
         </form>
     </div>
@@ -37,4 +38,16 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script src="https://www.google.com/recaptcha/api.js?render=@Model.RecaptchaSiteKey"></script>
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            grecaptcha.ready(function () {
+                grecaptcha.execute('@Model.RecaptchaSiteKey', { action: 'register' }).then(function (token) {
+                    document.getElementById('recaptcha-token').value = token;
+                    document.getElementById('registerForm').submit();
+                });
+            });
+        });
+    </script>
 }

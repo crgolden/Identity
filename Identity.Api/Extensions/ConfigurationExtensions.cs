@@ -15,18 +15,24 @@ public static class ConfigurationExtensions
             string GoogleClientId,
             string GoogleClientSecret,
             string ResendApiToken,
-            string GravatarApiSecretKey
+            string GravatarApiSecretKey,
+            string ReCAPTCHASiteKey,
+            string ReCAPTCHASecretKey
         ) GetIdentitySecrets()
         {
             var googleClientId = configuration.GetRequired<string>("GoogleClientId");
             var googleClientSecret = configuration.GetRequired<string>("GoogleClientSecret");
             var resendApiToken = configuration.GetRequired<string>("ResendApiToken");
             var gravatarApiSecretKey = configuration.GetRequired<string>("GravatarApiSecretKey");
+            var recaptchaSiteKey = configuration.GetRequired<string>("ReCAPTCHASiteKey");
+            var recaptchaSecretKey = configuration.GetRequired<string>("ReCAPTCHASecretKey");
             return (
                 googleClientId,
                 googleClientSecret,
                 resendApiToken,
-                gravatarApiSecretKey
+                gravatarApiSecretKey,
+                recaptchaSiteKey,
+                recaptchaSecretKey
             );
         }
 #pragma warning restore SA1009

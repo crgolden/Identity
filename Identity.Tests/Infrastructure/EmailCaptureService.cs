@@ -58,7 +58,7 @@ public sealed class EmailCaptureService : IEmailSender, IEmailSender<IdentityUse
     /// Waits until an email is received for <paramref name="toAddress"/>, dequeues and returns it.
     /// Throws <see cref="TimeoutException"/> if no email arrives within the timeout.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous operation.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     public async Task<CapturedEmail> WaitForEmailAsync(string toAddress, TimeSpan? timeout = null)
     {
         var deadline = DateTime.UtcNow + (timeout ?? TimeSpan.FromSeconds(10));

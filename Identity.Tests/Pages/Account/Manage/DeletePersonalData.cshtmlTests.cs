@@ -96,7 +96,7 @@ public class DeletePersonalDataModelTests
     /// Expected result:
     /// - The action result is NotFoundObjectResult and the value matches the expected message.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGet_UserNotFound_ReturnsNotFoundObjectResultWithMessage()
     {

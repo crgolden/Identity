@@ -21,7 +21,7 @@ public class Disable2faModelTests
     /// Input: User principal present, GetUserAsync -> null, GetUserId -> predefined id.
     /// Expected: NotFoundObjectResult with the expected formatted message.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGet_UserIsNull_ReturnsNotFoundWithUserIdInMessage()
     {
@@ -68,7 +68,7 @@ public class Disable2faModelTests
     ///  - twoFactorEnabled = false -> expect InvalidOperationException.
     /// This parameterized test covers both the happy path and the invalid state.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
@@ -121,7 +121,7 @@ public class Disable2faModelTests
     /// Input: GetUserAsync returns null, GetUserId returns a non-null id string.
     /// Expected: NotFoundObjectResult with message containing the id.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_UserNotFound_ReturnsNotFoundObjectResult()
     {
@@ -160,7 +160,7 @@ public class Disable2faModelTests
     /// Input: GetUserAsync returns a valid user, SetTwoFactorEnabledAsync returns a failed IdentityResult.
     /// Expected: InvalidOperationException with the defined message.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_DisableFails_ThrowsInvalidOperationException()
     {
@@ -196,7 +196,7 @@ public class Disable2faModelTests
     /// Input: GetUserAsync returns a valid user, SetTwoFactorEnabledAsync returns IdentityResult.Success, GetUserId returns a user id string.
     /// Expected: RedirectToPageResult to ./TwoFactorAuthentication, StatusMessage set to expected string, logger invoked with information level.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_Succeeds_RedirectsAndSetsStatusMessageAndLogs()
     {

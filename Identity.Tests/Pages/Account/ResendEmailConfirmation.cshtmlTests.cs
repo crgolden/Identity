@@ -41,7 +41,7 @@ public class ResendEmailConfirmationModelTests
     /// Input condition: ModelState contains an error.
     /// Expected result: PageResult and no calls to FindByEmailAsync or SendEmailAsync.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_ModelStateInvalid_ReturnsPageWithoutCallingDependencies()
     {
@@ -75,7 +75,7 @@ public class ResendEmailConfirmationModelTests
     /// Input conditions: various email inputs (including empty and whitespace), ModelState valid.
     /// Expected result: PageResult, a model error with the verification message, and no email sent.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [InlineData("user@example.com")]
     public async Task OnPostAsync_UserNotFound_AddsModelErrorAndReturnsPage(string email)

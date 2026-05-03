@@ -30,11 +30,12 @@
                         @Html.DisplayNameFor(m => m.Input.RememberMe)
                     </label>
                 </div>
+                <input type="hidden" id="recaptcha-token" asp-for="Input.RecaptchaToken" />
                 <div>
                     <button id="login-submit" type="submit" class="w-100 btn btn-lg btn-primary">Log in</button>
                 </div>
                 <hr />
-                <passkey-submit operation="@PasskeyOperation.Request" name="Input.Passkey" email-name="Input.Username" class="btn btn-outline-primary position-relative" formnovalidate>
+                <passkey-submit operation="@PasskeyOperation.Request" name="Input.Passkey" email-name="Input.Email" class="btn btn-outline-primary position-relative" formnovalidate>
                     Log in with a passkey
                 </passkey-submit>
                 <hr />
@@ -60,4 +61,17 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script src="~/js/passkey-submit.js" asp-append-version="true"></script>
+    <script src="https://www.google.com/recaptcha/api.js?render=@Model.RecaptchaSiteKey"></script>
+    <script>
+        document.getElementById('account').addEventListener('submit', function (e) {
+            if (e.submitter?.hasAttribute('formnovalidate')) { return; }
+            e.preventDefault();
+            grecaptcha.ready(function () {
+                grecaptcha.execute('@Model.RecaptchaSiteKey', { action: 'login' }).then(function (token) {
+                    document.getElementById('recaptcha-token').value = token;
+                    document.getElementById('account').submit();
+                });
+            });
+        });
+    </script>
 }

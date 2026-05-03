@@ -101,7 +101,7 @@ public class PasskeySubmitTagHelperTests
     /// for the button are written and 'operation','name','email-name' are not included
     /// as button attributes.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task ProcessAsync_NullAntiforgeryTokens_EmitsEmptyTokenAttributes()
     {

@@ -15,7 +15,9 @@ public static class SecretClientExtensions
             KeyVaultSecret SqlServerUserId,
             KeyVaultSecret SqlServerPassword,
             KeyVaultSecret ElasticsearchUsername,
-            KeyVaultSecret ElasticsearchPassword
+            KeyVaultSecret ElasticsearchPassword,
+            KeyVaultSecret ReCAPTCHASiteKey,
+            KeyVaultSecret ReCAPTCHASecretKey
         ) GetIdentitySecrets()
         {
             var googleClientId = secretClient.GetSecret("GoogleClientId");
@@ -26,6 +28,8 @@ public static class SecretClientExtensions
             var sqlServerPassword = secretClient.GetSecret("SqlServerPassword");
             var elasticsearchUsername = secretClient.GetSecret("ElasticsearchUsername");
             var elasticsearchPassword = secretClient.GetSecret("ElasticsearchPassword");
+            var recaptchaSiteKey = secretClient.GetSecret("ReCAPTCHASiteKey");
+            var recaptchaSecretKey = secretClient.GetSecret("ReCAPTCHASecretKey");
             return (
                 googleClientId.Value,
                 googleClientSecret.Value,
@@ -34,7 +38,9 @@ public static class SecretClientExtensions
                 sqlServerUserId.Value,
                 sqlServerPassword.Value,
                 elasticsearchUsername.Value,
-                elasticsearchPassword.Value
+                elasticsearchPassword.Value,
+                recaptchaSiteKey.Value,
+                recaptchaSecretKey.Value
             );
         }
 #pragma warning restore SA1009

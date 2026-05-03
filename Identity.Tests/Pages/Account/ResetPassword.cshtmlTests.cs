@@ -154,7 +154,7 @@ public class ResetPasswordModelTests
     /// Expected result:
     ///  - A PageResult is returned and neither FindByEmailAsync nor ResetPasswordAsync are invoked.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_ModelStateInvalid_ReturnsPage()
     {
@@ -197,7 +197,7 @@ public class ResetPasswordModelTests
     /// Expected result:
     ///  - A RedirectToPageResult to "./ResetPasswordConfirmation"
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [InlineData(false, false)] // user not found -> redirect
     [InlineData(true, true)] // user found and reset succeeds -> redirect
@@ -270,7 +270,7 @@ public class ResetPasswordModelTests
     /// Expected result:
     ///  - A PageResult is returned and ModelState contains the error descriptions under the empty key.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_ResetPasswordFails_AddsModelErrorsAndReturnsPage()
     {

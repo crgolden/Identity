@@ -97,7 +97,7 @@ public class ExternalLoginsModelTests
     /// The test verifies that when the current user cannot be loaded, the handler returns NotFoundObjectResult
     /// containing the user id retrieved from UserManager.GetUserId(ClaimsPrincipal).
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGetLinkLoginCallbackAsync_UserNotFound_ReturnsNotFoundObjectResult()
     {
@@ -143,7 +143,7 @@ public class ExternalLoginsModelTests
     /// Expected:
     /// - InvalidOperationException is thrown.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGetLinkLoginCallbackAsync_NoExternalLoginInfo_ThrowsInvalidOperationException()
     {
@@ -191,7 +191,7 @@ public class ExternalLoginsModelTests
     /// - For success: StatusMessage set to success text and RedirectToPageResult returned.
     /// - For failure: StatusMessage set to failure text and RedirectToPageResult returned.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
@@ -270,7 +270,7 @@ public class ExternalLoginsModelTests
     /// Input conditions: UserManager.GetUserAsync returns null and UserManager.GetUserId returns a known id.
     /// Expected: NotFoundObjectResult with message including the id, and no call to RemoveLoginAsync or RefreshSignInAsync.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostRemoveLoginAsync_UserNotFound_ReturnsNotFound()
     {
@@ -327,7 +327,7 @@ public class ExternalLoginsModelTests
     /// Expected: StatusMessage == "The external login was not removed.", RedirectToPageResult returned, and RefreshSignInAsync not called.
     /// This test is parameterized to cover several string edge cases for loginProvider and providerKey (empty, whitespace, long).
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [InlineData("", "key")]
     [InlineData("   ", " ")]
@@ -397,7 +397,7 @@ public class ExternalLoginsModelTests
     /// Expected: RefreshSignInAsync called once with the user; StatusMessage == "The external login was removed."; RedirectToPageResult returned.
     /// This test is parameterized to exercise different provider/providerKey inputs.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [InlineData("Google", "google-key")]
     [InlineData("LocalProvider", "local-key")]
@@ -460,7 +460,7 @@ public class ExternalLoginsModelTests
     /// Expected result: SignOutAsync called once with IdentityConstants.ExternalScheme; ConfigureExternalAuthenticationProperties invoked;
     /// returned IActionResult is ChallengeResult with expected provider and properties.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [MemberData(nameof(Providers))]
     public async Task OnPostLinkLoginAsync_Provider_ReturnsChallengeAndSignsOut(string? provider)

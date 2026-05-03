@@ -39,7 +39,7 @@ public class LoginWith2faModelTests
     /// Input conditions: ModelState contains an error, any rememberMe and returnUrl values.
     /// Expected result: PageResult is returned.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_ModelStateInvalid_ReturnsPage()
     {
@@ -83,7 +83,7 @@ public class LoginWith2faModelTests
     /// Input conditions: GetTwoFactorAuthenticationUserAsync returns null.
     /// Expected result: InvalidOperationException with a specific message is thrown.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_NoTwoFactorUser_ThrowsInvalidOperationException()
     {
@@ -123,7 +123,7 @@ public class LoginWith2faModelTests
     /// Input: SignInManager.GetTwoFactorAuthenticationUserAsync returns null.
     /// Expected: InvalidOperationException with specific message.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGetAsync_UserIsNull_ThrowsInvalidOperationException()
     {
@@ -148,7 +148,7 @@ public class LoginWith2faModelTests
     /// Input conditions: Various combinations of rememberMe and returnUrl (including null, empty, whitespace, and long strings).
     /// Expected: Model properties set accordingly and PageResult returned.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous unit test.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [MemberData(nameof(ValidUserCases))]
     public async Task OnGetAsync_ValidUser_SetsPropertiesAndReturnsPageResult(bool rememberMe, string? returnUrl)
