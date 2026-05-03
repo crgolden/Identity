@@ -134,6 +134,13 @@ public sealed class PlaywrightFixture : IAsyncLifetime
             BaseURL = BaseAddress,
             IgnoreHTTPSErrors = true
         });
+
+        // Stub grecaptcha so form submissions are synchronous in tests. The server-side
+        // ICAPTCHAService is already replaced with AlwaysPassCAPTCHAService, so the token
+        // value is irrelevant — this just ensures execute() resolves immediately instead of
+        // making an outbound call to Google that would block or fail in CI.
+        await context.AddInitScriptAsync("window.grecaptcha = { ready: cb => cb(), execute: () => Promise.resolve('e2e-test-token') };");
+
         var page = await context.NewPageAsync();
 
         // CI machines are slower; double the default 30s timeout to avoid intermittent failures

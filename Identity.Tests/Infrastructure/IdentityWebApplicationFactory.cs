@@ -108,6 +108,7 @@ internal sealed class NullAvatarService : IAvatarService
         => Task.FromResult<Uri?>(null);
 }
 
+#pragma warning disable S101
 internal sealed class AlwaysPassCAPTCHAService : ICAPTCHAService
 {
     public Task<decimal> VerifyAsync(string? token, CancellationToken cancellationToken = default)
