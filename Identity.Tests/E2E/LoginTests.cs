@@ -57,10 +57,15 @@ public sealed class LoginTests(PlaywrightFixture fixture)
                 await page.GotoAsync("/Account/Login");
                 await page.FillAsync("input[name='Input.Email']", email);
                 await page.FillAsync("input[name='Input.Password']", "BadPassword!99");
+
+                // grecaptcha submit handler is async (Promise → form.submit()); set up the response
+                // listener before clicking so the POST is captured even if it fires before the next await.
+                var postResponse = page.WaitForResponseAsync(
+                    res => res.Request.Method == "POST" && res.Url.Contains("/Account/Login"));
                 await page.ClickAsync("#login-submit");
+                await postResponse;
             }
 
-            // After 5 failures the account should be locked out
             await page.WaitForURLAsync("**/Account/Lockout**");
             Assert.Contains("/Account/Lockout", page.Url);
         }
