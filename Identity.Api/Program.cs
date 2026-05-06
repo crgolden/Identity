@@ -92,13 +92,13 @@ try
                 }))
             .WithMetrics(meterProviderBuilder => meterProviderBuilder
                 .AddMeter(Duende.IdentityServer.Telemetry.ServiceName)
-                .AddMeter(applicationName)
+                .AddMeter(nameof(Identity))
                 .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation()
                 .AddRuntimeInstrumentation())
             .WithTracing(tracerProviderBuilder => tracerProviderBuilder
                 .SetSampler(new AlwaysOnSampler())
-                .AddSource(applicationName)
+                .AddSource(nameof(Identity))
                 .AddSource(IdentityServerConstants.Tracing.Basic)
                 .AddSource(IdentityServerConstants.Tracing.Cache)
                 .AddSource(IdentityServerConstants.Tracing.Services)
@@ -108,8 +108,7 @@ try
                 {
                     aspNetCoreTraceInstrumentationOptions.Filter = context => !context.Request.Path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase);
                 })
-                .AddHttpClientInstrumentation()
-                .AddConsoleExporter())
+                .AddHttpClientInstrumentation())
             .UseAzureMonitor().Services
             .AddDataProtection()
             .SetApplicationName(applicationName)
@@ -142,7 +141,8 @@ try
                 .ReadFrom.Configuration(builder.Configuration)
                 .ReadFrom.Services(serviceProvider)
                 .Filter.ByExcluding(Matching.FromSource("Duende.IdentityServer.Diagnostics.Summary")))
-            .AddDataProtection().UseEphemeralDataProtectionProvider();
+            .AddDataProtection()
+            .UseEphemeralDataProtectionProvider();
     }
 
     builder.Services
