@@ -2,60 +2,41 @@
 
 Maps every application path to the tests that cover it.
 
-> **Shell note:** test commands that set environment variables inline use bash syntax. On Windows, use Git Bash, WSL, or set the variables separately before running `dotnet test`.
+For the `.NET 10 SDK xUnit caveat` (why `dotnet test` doesn't work), `ASPNETCORE_ENVIRONMENT` discipline, `DefaultAzureCredentialOptions` placement, and `az login` warmup, see the workspace-level [TESTING.md](../TESTING.md).
 
 ---
 
-## Running tests locally
+## Running Tests Locally
 
-> **Build configuration:** `--configuration Debug` is preferred for local runs — there is no Angular build or other Release-only artifact involved in Identity tests. CI uses `--configuration Release`.
+User Secrets ID: `aspnet-Identity-149346d0-999f-4a74-8ff7-2a92d39790f2`
 
-### Prerequisites
+### Unit Tests
 
-```bash
-az login   # Azure CLI — required for E2E tests (Key Vault at startup)
+No Azure credentials required. All unit test classes must carry `[Collection(UnitCollection.Name)]` (required by Stryker MTP coverage capture).
+
+```powershell
+dotnet build Identity.Tests --configuration Debug
+.\Identity.Tests\bin\Debug\net10.0\Identity.Tests.exe --filter-trait "Category=Unit" --show-live-output on
 ```
 
-User Secrets must be configured with `DefaultAzureCredentialOptions` (see [../CLAUDE.md](../CLAUDE.md)) and the database connection details. User Secrets ID: `aspnet-Identity-149346d0-999f-4a74-8ff7-2a92d39790f2`.
+### E2E Tests (local)
 
-### Unit tests
+Require a running SQL Server with test database `IdentityTest`, configured User Secrets, and an active `az login` session (for Key Vault).
 
-No Azure credentials required.
-
-```bash
-dotnet test --project Identity.Tests --configuration Debug -- --filter-trait "Category=Unit"
-```
-
-### E2E tests (local)
-
-Require a running SQL Server with a test database (`IdentityTest`) and an active `az login` session for Key Vault.
-
-```bash
-# Bash / WSL
-ASPNETCORE_ENVIRONMENT=Development \
-SqlConnectionStringBuilder__InitialCatalog=IdentityTest \
-dotnet test --project Identity.Tests --configuration Debug -- --filter-trait "Category=E2E"
-
-# PowerShell
+```powershell
 $env:ASPNETCORE_ENVIRONMENT = "Development"
 $env:SqlConnectionStringBuilder__InitialCatalog = "IdentityTest"
-dotnet test --project Identity.Tests --configuration Debug -- --filter-trait "Category=E2E"
+dotnet build Identity.Tests --configuration Debug
+.\Identity.Tests\bin\Debug\net10.0\Identity.Tests.exe --filter-trait "Category=E2E" --show-live-output on
+
+# Redirect output for in-flight inspection
+cmd /c "Identity.Tests\bin\Debug\net10.0\Identity.Tests.exe --filter-trait ""Category=E2E"" --show-live-output on > C:\temp\identity-e2e.txt 2>&1"
 ```
 
-### All tests (local)
+### Single Test (by method name)
 
-```bash
-ASPNETCORE_ENVIRONMENT=Development \
-SqlConnectionStringBuilder__InitialCatalog=IdentityTest \
-dotnet test --project Identity.Tests --configuration Debug
-```
-
-### Single test (by method name)
-
-```bash
-ASPNETCORE_ENVIRONMENT=Development \
-SqlConnectionStringBuilder__InitialCatalog=IdentityTest \
-dotnet test --project Identity.Tests --configuration Debug -- --filter-method "*MethodName*"
+```powershell
+.\Identity.Tests\bin\Debug\net10.0\Identity.Tests.exe --filter-method "*MethodName*" --show-live-output on
 ```
 
 ---

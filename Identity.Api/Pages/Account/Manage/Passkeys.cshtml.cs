@@ -100,9 +100,11 @@ public class PasskeysModel : PageModel
             return RedirectToPage();
         }
 
+        using var activity = Telemetry.ActivitySource.StartActivity("identity.passkey.register");
         var attestationResult = await _signInManager.PerformPasskeyAttestationAsync(Input.Passkey.CredentialJson);
         if (!attestationResult.Succeeded)
         {
+            activity?.SetTag("succeeded", false);
             StatusMessage = $"Could not add the passkey: {attestationResult.Failure.Message}.";
             return RedirectToPage();
         }
@@ -110,16 +112,19 @@ public class PasskeysModel : PageModel
         var setPasskeyResult = await _userManager.AddOrUpdatePasskeyAsync(user, attestationResult.Passkey);
         if (!setPasskeyResult.Succeeded)
         {
+            activity?.SetTag("succeeded", false);
             StatusMessage = "The passkey could not be added to your account.";
             return RedirectToPage();
         }
 
+        activity?.SetTag("succeeded", true);
         StatusMessage = "The passkey was added to your account. You can now use it to sign in. Give it an easy to remember name.";
         return RedirectToPage("./RenamePasskey", new { id = EncodeToString(attestationResult.Passkey.CredentialId) });
     }
 
     private async Task<IActionResult> DeletePasskey(IdentityUser<Guid> user, byte[] credentialId)
     {
+        using var activity = Telemetry.ActivitySource.StartActivity("identity.passkey.delete");
         var result = await _userManager.RemovePasskeyAsync(user, credentialId);
         if (!result.Succeeded)
         {

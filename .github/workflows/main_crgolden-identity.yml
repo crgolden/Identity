@@ -106,13 +106,6 @@ jobs:
             "dotnet test --project Identity.Tests --no-build --configuration Release -- --filter-trait Category=Unit --report-xunit-trx --report-xunit-trx-filename unit-tests.trx" `
             -f xml -o "coverage.xml" -s "coverage.settings.xml"
 
-      - name: Login to Azure (for E2E tests)
-        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5  # v2
-        with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_4533A76F9560447CBA73C7D19BFDC764 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_07B3DB796C7C4D409EFADCB306F23869 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_086A6E19353E42B0AFB0AEE6A7504B9E }}
-
       - name: Install SqlPackage
         run: dotnet tool install --global microsoft.sqlpackage
 

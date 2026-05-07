@@ -68,6 +68,8 @@ public class ConsentModel : ConsentPageModelBase
             Telemetry.Metrics.ConsentDenied(
                 request.Client.ClientId,
                 request.ValidatedResources.ParsedScopes.Select(s => s.ParsedName));
+            using var denyActivity = Telemetry.ActivitySource.StartActivity("identity.consent.deny");
+            denyActivity?.SetTag("client_id", request.Client.ClientId);
         }
         else if (Input.Button == "yes")
         {
@@ -101,6 +103,10 @@ public class ConsentModel : ConsentPageModelBase
                     .Select(s => s.ParsedName)
                     .Except(grantedConsent.ScopesValuesConsented);
                 Telemetry.Metrics.ConsentDenied(request.Client.ClientId, denied);
+                using var grantActivity = Telemetry.ActivitySource.StartActivity("identity.consent.grant");
+                grantActivity?.SetTag("client_id", request.Client.ClientId);
+                grantActivity?.SetTag("scope_count", grantedConsent.ScopesValuesConsented.Count());
+                grantActivity?.SetTag("remember", grantedConsent.RememberConsent);
             }
             else
             {

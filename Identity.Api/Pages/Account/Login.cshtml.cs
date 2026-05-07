@@ -77,7 +77,9 @@ public class LoginModel : PageModel
         if (!IsNullOrWhiteSpace(Input.Passkey?.CredentialJson))
         {
             ModelState.Clear();
+            using var passkeyActivity = Telemetry.ActivitySource.StartActivity("identity.login.passkey");
             result = await _signInManager.PasskeySignInAsync(Input.Passkey.CredentialJson);
+            passkeyActivity?.SetTag("succeeded", result.Succeeded);
         }
         else
         {
@@ -93,7 +95,10 @@ public class LoginModel : PageModel
                 return Page();
             }
 
+            using var passwordActivity = Telemetry.ActivitySource.StartActivity("identity.login.password");
             result = await _signInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: true);
+            passwordActivity?.SetTag("locked_out", result.IsLockedOut);
+            passwordActivity?.SetTag("requires_2fa", result.RequiresTwoFactor);
         }
 
         if (result.Succeeded)

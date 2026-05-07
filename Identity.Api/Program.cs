@@ -22,6 +22,8 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Azure;
+using OpenTelemetry.Instrumentation.AspNetCore;
+using OpenTelemetry.Instrumentation.EntityFrameworkCore;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -61,6 +63,8 @@ try
         reCAPTCHASecretKey = secrets.ReCAPTCHASecretKey.Value;
         sqlConnectionStringBuilder.UserID = secrets.SqlServerUserId.Value;
         sqlConnectionStringBuilder.Password = secrets.SqlServerPassword.Value;
+        builder.Services.Configure<AspNetCoreTraceInstrumentationOptions>(options =>
+            options.Filter = context => !context.Request.Path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase));
         builder.Logging.AddOpenTelemetry(openTelemetryLoggerOptions =>
         {
             openTelemetryLoggerOptions.IncludeFormattedMessage = true;
@@ -93,8 +97,6 @@ try
             .WithMetrics(meterProviderBuilder => meterProviderBuilder
                 .AddMeter(Duende.IdentityServer.Telemetry.ServiceName)
                 .AddMeter(nameof(Identity))
-                .AddAspNetCoreInstrumentation()
-                .AddHttpClientInstrumentation()
                 .AddRuntimeInstrumentation())
             .WithTracing(tracerProviderBuilder => tracerProviderBuilder
                 .SetSampler(new AlwaysOnSampler())
@@ -104,11 +106,7 @@ try
                 .AddSource(IdentityServerConstants.Tracing.Services)
                 .AddSource(IdentityServerConstants.Tracing.Stores)
                 .AddSource(IdentityServerConstants.Tracing.Validation)
-                .AddAspNetCoreInstrumentation(aspNetCoreTraceInstrumentationOptions =>
-                {
-                    aspNetCoreTraceInstrumentationOptions.Filter = context => !context.Request.Path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase);
-                })
-                .AddHttpClientInstrumentation())
+                .AddEntityFrameworkCoreInstrumentation())
             .UseAzureMonitor().Services
             .AddDataProtection()
             .SetApplicationName(applicationName)

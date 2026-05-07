@@ -85,6 +85,8 @@ public class GrantsModel : PageModel
         await _interaction.RevokeUserConsentAsync(ClientId);
         await _events.RaiseAsync(new GrantsRevokedEvent(User.GetSubjectId(), ClientId));
         Telemetry.Metrics.GrantsRevoked(ClientId);
+        using var activity = Telemetry.ActivitySource.StartActivity("identity.grants.revoke");
+        activity?.SetTag("client_id", ClientId);
         return RedirectToPage("/Account/Manage/Grants");
     }
 
