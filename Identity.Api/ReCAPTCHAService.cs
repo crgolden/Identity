@@ -20,6 +20,10 @@ public sealed class ReCAPTCHAService : ICAPTCHAService
         _logger = logger;
     }
 
+    public string? SiteKey => _options.SiteKey;
+
+    public decimal ScoreThreshold => _options.ScoreThreshold;
+
     public async Task<decimal> VerifyAsync(string? token, CancellationToken cancellationToken = default)
     {
         if (IsNullOrWhiteSpace(token) || IsNullOrWhiteSpace(_options.SecretKey))

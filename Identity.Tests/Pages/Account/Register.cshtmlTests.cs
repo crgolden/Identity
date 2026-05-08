@@ -12,7 +12,6 @@ using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Moq;
 
 /// <summary>
@@ -83,8 +82,7 @@ public class RegisterModelTests
             Mock.Of<IAvatarService>(),
             logger,
             emailSender,
-            CreateRecaptchaServiceMock().Object,
-            CreateRecaptchaOptionsMock());
+            CreateRecaptchaServiceMock().Object);
 
         // Act & Assert: ensure no exception and ReturnUrl set as expected
         var ex = await Record.ExceptionAsync(() => model.OnGetAsync(returnUrl));
@@ -136,8 +134,7 @@ public class RegisterModelTests
             Mock.Of<IAvatarService>(),
             logger,
             emailSender,
-            CreateRecaptchaServiceMock().Object,
-            CreateRecaptchaOptionsMock());
+            CreateRecaptchaServiceMock().Object);
 
         // Act
         await model.OnGetAsync("someReturn");
@@ -192,8 +189,7 @@ public class RegisterModelTests
             Mock.Of<IAvatarService>(),
             loggerMock.Object,
             emailSenderMock.Object,
-            CreateRecaptchaServiceMock().Object,
-            CreateRecaptchaOptionsMock());
+            CreateRecaptchaServiceMock().Object);
 
         // Configure PageContext/Url/Request
         var ctx = new DefaultHttpContext();
@@ -287,8 +283,7 @@ public class RegisterModelTests
             Mock.Of<IAvatarService>(),
             loggerMock.Object,
             emailSenderMock.Object,
-            CreateRecaptchaServiceMock().Object,
-            CreateRecaptchaOptionsMock());
+            CreateRecaptchaServiceMock().Object);
 
         // Configure PageContext/Url/Request
         var ctx = new DefaultHttpContext();
@@ -372,8 +367,7 @@ public class RegisterModelTests
             Mock.Of<IAvatarService>(),
             Mock.Of<ILogger<RegisterModel>>(),
             Mock.Of<IEmailSender>(),
-            recaptchaServiceMock.Object,
-            CreateRecaptchaOptionsMock());
+            recaptchaServiceMock.Object);
 
         var ctx = new DefaultHttpContext();
         ctx.Request.Scheme = "https";
@@ -392,19 +386,14 @@ public class RegisterModelTests
         userManagerMock.Verify(u => u.CreateAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>()), Times.Never);
     }
 
-    private static Mock<ICAPTCHAService> CreateRecaptchaServiceMock(decimal score = 1.0m)
+    private static Mock<ICAPTCHAService> CreateRecaptchaServiceMock(decimal score = 1.0m, decimal threshold = 0.5m)
     {
         var mock = new Mock<ICAPTCHAService>();
+        mock.Setup(s => s.SiteKey).Returns((string?)null);
+        mock.Setup(s => s.ScoreThreshold).Returns(threshold);
         mock.Setup(s => s.VerifyAsync(It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(score);
         return mock;
-    }
-
-    private static IOptions<ReCAPTCHAOptions> CreateRecaptchaOptionsMock(decimal threshold = 0.5m)
-    {
-        var mock = new Mock<IOptions<ReCAPTCHAOptions>>();
-        mock.Setup(o => o.Value).Returns(new ReCAPTCHAOptions { ScoreThreshold = threshold });
-        return mock.Object;
     }
 
     // Minimal IAuthenticationHandler implementation for use in AuthenticationScheme construction

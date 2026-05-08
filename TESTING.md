@@ -16,7 +16,7 @@ No Azure credentials required. All unit test classes must carry `[Collection(Uni
 
 ```powershell
 dotnet build Identity.Tests --configuration Debug
-.\Identity.Tests\bin\Debug\net10.0\Identity.Tests.exe --filter-trait "Category=Unit" --show-live-output on
+.\Identity.Tests\bin\Debug\net10.0\Identity.Tests.exe -trait "Category=Unit" -showLiveOutput
 ```
 
 ### E2E Tests (local)
@@ -27,16 +27,16 @@ Require a running SQL Server with test database `IdentityTest` and configured Us
 $env:ASPNETCORE_ENVIRONMENT = "Development"
 $env:SqlConnectionStringBuilder__InitialCatalog = "IdentityTest"
 dotnet build Identity.Tests --configuration Debug
-.\Identity.Tests\bin\Debug\net10.0\Identity.Tests.exe --filter-trait "Category=E2E" --show-live-output on
+.\Identity.Tests\bin\Debug\net10.0\Identity.Tests.exe -trait "Category=E2E" -showLiveOutput
 
 # Redirect output for in-flight inspection
-cmd /c "Identity.Tests\bin\Debug\net10.0\Identity.Tests.exe --filter-trait ""Category=E2E"" --show-live-output on > C:\temp\identity-e2e.txt 2>&1"
+cmd /c "Identity.Tests\bin\Debug\net10.0\Identity.Tests.exe -trait ""Category=E2E"" -showLiveOutput > C:\temp\identity-e2e.txt 2>&1"
 ```
 
 ### Single Test (by method name)
 
 ```powershell
-.\Identity.Tests\bin\Debug\net10.0\Identity.Tests.exe --filter-method "*MethodName*" --show-live-output on
+.\Identity.Tests\bin\Debug\net10.0\Identity.Tests.exe -method "*MethodName*" -showLiveOutput
 ```
 
 ---

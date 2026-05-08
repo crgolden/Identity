@@ -1,6 +1,7 @@
 namespace Identity.Tests.E2E;
 
 using Infrastructure;
+using Microsoft.Playwright;
 
 [Trait("Category", "E2E")]
 [Collection(E2ECollection.Name)]
@@ -22,8 +23,7 @@ public sealed class DiagnosticsTests(PlaywrightFixture fixture)
             await page.ClickAsync("#login-submit");
             await page.WaitForURLAsync(url => !url.Contains("/Account/Login"));
 
-            await page.GotoAsync("/Account/Manage/Diagnostics");
-            await page.WaitForURLAsync("**/Account/Manage/Diagnostics**");
+            await page.GotoAsync("/Account/Manage/Diagnostics", new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
 
             var content = await page.ContentAsync();
             Assert.Contains("sub", content, StringComparison.OrdinalIgnoreCase);

@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.Extensions.Options;
 
 /// <summary>Page model for the Register page.</summary>
 [AllowAnonymous]
@@ -23,7 +22,6 @@ public class RegisterModel : PageModel
     private readonly ILogger<RegisterModel> _logger;
     private readonly IEmailSender _emailSender;
     private readonly ICAPTCHAService _captchaService;
-    private readonly IOptions<ReCAPTCHAOptions> _recaptchaOptions;
 
     public RegisterModel(
         UserManager<IdentityUser<Guid>> userManager,
@@ -32,8 +30,7 @@ public class RegisterModel : PageModel
         IAvatarService avatarService,
         ILogger<RegisterModel> logger,
         IEmailSender emailSender,
-        ICAPTCHAService captchaService,
-        IOptions<ReCAPTCHAOptions> recaptchaOptions)
+        ICAPTCHAService captchaService)
     {
         _userManager = userManager;
         _userStore = userStore;
@@ -43,7 +40,6 @@ public class RegisterModel : PageModel
         _logger = logger;
         _emailSender = emailSender;
         _captchaService = captchaService;
-        _recaptchaOptions = recaptchaOptions;
     }
 
     [BindProperty]
@@ -62,7 +58,7 @@ public class RegisterModel : PageModel
     {
         ReturnUrl = returnUrl;
         ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
-        RecaptchaSiteKey = _recaptchaOptions.Value.SiteKey;
+        RecaptchaSiteKey = _captchaService.SiteKey;
     }
 
     /// <summary>Handles the POST request to create a new user account.</summary>
@@ -78,7 +74,7 @@ public class RegisterModel : PageModel
         }
 
         var score = await _captchaService.VerifyAsync(Input.RecaptchaToken, HttpContext.RequestAborted);
-        if (score < _recaptchaOptions.Value.ScoreThreshold)
+        if (score < _captchaService.ScoreThreshold)
         {
             ModelState.AddModelError(Empty, "Request could not be verified.");
             return Page();

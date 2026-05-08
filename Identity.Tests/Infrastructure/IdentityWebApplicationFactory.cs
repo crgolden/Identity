@@ -111,6 +111,10 @@ internal sealed class NullAvatarService : IAvatarService
 #pragma warning disable S101
 internal sealed class AlwaysPassCAPTCHAService : ICAPTCHAService
 {
+    public string? SiteKey => null;
+
+    public decimal ScoreThreshold => 0.5m;
+
     public Task<decimal> VerifyAsync(string? token, CancellationToken cancellationToken = default)
         => Task.FromResult(1.0m);
 }
