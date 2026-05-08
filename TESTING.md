@@ -2,7 +2,7 @@
 
 Maps every application path to the tests that cover it.
 
-For the `.NET 10 SDK xUnit caveat` (why `dotnet test` doesn't work), `ASPNETCORE_ENVIRONMENT` discipline, `DefaultAzureCredentialOptions` placement, and `az login` warmup, see the workspace-level [TESTING.md](../TESTING.md).
+For the `.NET 10 SDK xUnit caveat` (why `dotnet test` doesn't work) and `ASPNETCORE_ENVIRONMENT` discipline, see the workspace-level [TESTING.md](../TESTING.md).
 
 ---
 
@@ -21,7 +21,7 @@ dotnet build Identity.Tests --configuration Debug
 
 ### E2E Tests (local)
 
-Require a running SQL Server with test database `IdentityTest`, configured User Secrets, and an active `az login` session (for Key Vault).
+Require a running SQL Server with test database `IdentityTest` and configured User Secrets. No `az login` needed — Azure credentials are only constructed inside `IsProduction()` in `Program.cs`, which is never reached in Development.
 
 ```powershell
 $env:ASPNETCORE_ENVIRONMENT = "Development"
