@@ -122,14 +122,14 @@ public sealed class PlaywrightFixture : IAsyncLifetime
 
     /// <summary>Creates a new Playwright browser context and page configured with <see cref="BaseAddress"/>.</summary>
     /// <returns>A task that resolves to a tuple of the browser context and page.</returns>
-    public async Task<(IBrowserContext Context, IPage Page)> NewPageAsync()
+    public async Task<(IAsyncDisposable Context, IPage Page)> NewPageAsync()
     {
         if (_browser is null)
         {
             throw new InvalidOperationException("Browser is not initialized. Ensure InitializeAsync has been awaited.");
         }
 
-        var context = await _browser.NewContextAsync(new BrowserNewContextOptions
+        var (session, page) = await PlaywrightArtifactRecorder.CreateSessionAsync(_browser, "Identity", "E2E", new BrowserNewContextOptions
         {
             BaseURL = BaseAddress,
             IgnoreHTTPSErrors = true
@@ -139,12 +139,10 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         // ICAPTCHAService is already replaced with AlwaysPassCAPTCHAService, so the token
         // value is irrelevant — this just ensures execute() resolves immediately instead of
         // making an outbound call to Google that would block or fail in CI.
-        await context.AddInitScriptAsync("window.grecaptcha = { ready: cb => cb(), execute: () => Promise.resolve('e2e-test-token') };");
+        await page.Context.AddInitScriptAsync("window.grecaptcha = { ready: cb => cb(), execute: () => Promise.resolve('e2e-test-token') };");
 
         // Block the real reCAPTCHA script — it has no defer/async and overwrites the stub above when it loads.
-        await context.RouteAsync("https://www.google.com/recaptcha/**", route => route.AbortAsync());
-
-        var page = await context.NewPageAsync();
+        await page.Context.RouteAsync("https://www.google.com/recaptcha/**", route => route.AbortAsync());
 
         // CI machines are slower; double the default 30s timeout to avoid intermittent failures
         // on late-running tests when the machine is under load.
@@ -153,7 +151,7 @@ public sealed class PlaywrightFixture : IAsyncLifetime
             page.SetDefaultTimeout(60_000);
         }
 
-        return (context, page);
+        return (session, page);
     }
 
     /// <inheritdoc/>

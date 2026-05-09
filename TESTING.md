@@ -1382,3 +1382,66 @@ dotnet stryker --config-file stryker-config.json
 ```
 
 The CI `mutation` job runs on schedule (Monday 02:00 UTC) and on manual dispatch. Reports are uploaded as the `stryker-report` artifact (HTML + JSON).
+
+---
+
+## 21. Playwright Reporting
+
+`Identity.Tests` records Playwright diagnostics for every E2E browser context, then keeps them only when the xUnit test fails. Retained failure folders are written under:
+
+```text
+Identity.Tests/bin/<Configuration>/net10.0/TestResults/PlaywrightArtifacts/E2E/<test-name>/<context-id>/
+```
+
+Each retained folder contains:
+- `screenshot.png`
+- `trace.zip`
+- Playwright `.webm` video files
+- `browser-log.txt`
+- `metadata.json`
+- `failure.json`
+
+CI uploads the retained failure artifacts as `identity-playwright-artifacts`, separately from the existing `test-results` TRX artifact.
+
+CI also publishes the same TRX outcomes to Azure DevOps and Azure Monitor:
+
+| Target | Configuration |
+|---|---|
+| Azure DevOps | `https://dev.azure.com/crgolden/`, project `crgolden`, via `scripts/Publish-PlaywrightResultsToAzureDevOps.ps1` |
+| Azure Monitor | Shared Application Insights `crgolden-playwright-ai`, via `scripts/Send-PlaywrightTelemetry.ps1` |
+
+Required GitHub secrets are `AZURE_DEVOPS_EXT_PAT` and `PLAYWRIGHT_APPINSIGHTS_CONNECTION_STRING`. If either secret is absent, the corresponding script logs a warning and skips publishing.
+
+Provision or repair the shared Azure Monitor resources with:
+
+```powershell
+.\scripts\Ensure-PlaywrightMonitor.ps1
+```
+
+For local script validation against an existing TRX:
+
+```powershell
+.\scripts\Publish-PlaywrightResultsToAzureDevOps.ps1 -AppName Identity -SuiteName E2E -TestResultsDirectory .\Identity.Tests\bin\Debug\net10.0\TestResults -DryRun
+.\scripts\Send-PlaywrightTelemetry.ps1 -AppName Identity -SuiteName E2E -TestResultsDirectory .\Identity.Tests\bin\Debug\net10.0\TestResults -ConnectionString "InstrumentationKey=00000000-0000-0000-0000-000000000000" -DryRun
+```
+
+Do not run Git commands when implementing or verifying Playwright reporting changes.
+
+---
+
+## Local SonarCloud analysis
+
+Generate coverage files first (unit + E2E), then run from `Identity/`:
+
+```powershell
+$env:SONAR_TOKEN = "<token>"
+& "$env:SystemDrive\sonar-scanner-8.0.1.6346-windows-x64\bin\sonar-scanner.bat" `
+  "-Dsonar.projectKey=crgolden_Identity" `
+  "-Dsonar.organization=crgolden" `
+  "-Dsonar.sources=Identity.Api,Identity.Benchmarks" `
+  "-Dsonar.tests=Identity.Tests" `
+  "-Dsonar.exclusions=**/bin/**,**/obj/**" `
+  "-Dsonar.cs.vscoveragexml.reportsPaths=coverage.xml,coverage-e2e.xml"
+```
+
+Required coverage files: `coverage.xml`, `coverage-e2e.xml`.
