@@ -23,7 +23,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Azure;
 using OpenTelemetry.Instrumentation.AspNetCore;
-using OpenTelemetry.Instrumentation.EntityFrameworkCore;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -63,8 +62,7 @@ try
         reCAPTCHASecretKey = secrets.ReCAPTCHASecretKey.Value;
         sqlConnectionStringBuilder.UserID = secrets.SqlServerUserId.Value;
         sqlConnectionStringBuilder.Password = secrets.SqlServerPassword.Value;
-        builder.Services.Configure<AspNetCoreTraceInstrumentationOptions>(options =>
-            options.Filter = context => !context.Request.Path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase));
+        builder.Services.Configure<AspNetCoreTraceInstrumentationOptions>(options => options.Filter = context => !context.Request.Path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase));
         builder.Logging.AddOpenTelemetry(openTelemetryLoggerOptions =>
         {
             openTelemetryLoggerOptions.IncludeFormattedMessage = true;
@@ -113,6 +111,10 @@ try
             .PersistKeysToAzureBlobStorage(blobUri, tokenCredential)
             .ProtectKeysWithAzureKeyVault(dataProtectionKeyIdentifier, tokenCredential).Services
             .AddAzureClientsCore(true);
+        builder.Services.Configure<ReCAPTCHAOptions>(recaptchaOptions =>
+        {
+            recaptchaOptions.SmokeTestEmail = secrets.MonitoringRecipientEmail.Value;
+        });
     }
     else
     {

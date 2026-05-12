@@ -88,11 +88,18 @@ public class LoginModel : PageModel
                 return Page();
             }
 
-            var score = await _captchaService.VerifyAsync(Input.RecaptchaToken, HttpContext.RequestAborted);
-            if (score < _recaptchaOptions.Value.ScoreThreshold)
+            if (string.Equals(Input.Email, _recaptchaOptions.Value.SmokeTestEmail, StringComparison.Ordinal))
             {
-                ModelState.AddModelError(Empty, "Request could not be verified.");
-                return Page();
+                _logger.LogTrace("Skipping reCAPTCHA verification for smoke test account.");
+            }
+            else
+            {
+                var score = await _captchaService.VerifyAsync(Input.RecaptchaToken, HttpContext.RequestAborted);
+                if (score < _recaptchaOptions.Value.ScoreThreshold)
+                {
+                    ModelState.AddModelError(Empty, "Request could not be verified.");
+                    return Page();
+                }
             }
 
             using var passwordActivity = Telemetry.ActivitySource.StartActivity("identity.login.password");

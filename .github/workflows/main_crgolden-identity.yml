@@ -205,7 +205,7 @@ jobs:
           function Invoke-Ado {
               param([string]$Method, [string]$Url, [object]$Body)
               Invoke-RestMethod -Method $Method -Uri $Url -Headers $adoHeaders `
-                  -ContentType 'application/json' -Body ($Body | ConvertTo-Json -Depth 20 -Compress)
+                  -ContentType 'application/json' -Body (ConvertTo-Json -InputObject $Body -Depth 20 -Compress)
           }
 
           $adoResults = foreach ($r in $allResults) {
@@ -221,7 +221,7 @@ jobs:
               name = "$appName $suiteName Playwright - $env:GITHUB_RUN_NUMBER"; automated = $true
               state = 'InProgress'; startedDate = [DateTimeOffset]::Parse($xml.TestRun.Times.start).UtcDateTime.ToString('O')
               comment = "GitHub Actions run $env:GITHUB_RUN_ID" }
-          Invoke-Ado POST "$adoBase/runs/$($run.id)/results?$adoVer" $adoResults | Out-Null
+          Invoke-Ado POST "$adoBase/runs/$($run.id)/results?$adoVer" @($adoResults) | Out-Null
           Invoke-Ado POST "$adoBase/runs/$($run.id)/attachments?$adoVer" @{
               stream = [Convert]::ToBase64String([IO.File]::ReadAllBytes($trx.FullName))
               fileName = $trx.Name; comment = 'TRX'; attachmentType = 'GeneralAttachment' } | Out-Null

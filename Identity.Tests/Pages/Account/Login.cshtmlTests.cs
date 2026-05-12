@@ -405,6 +405,79 @@ public class LoginModelTests
         recaptchaServiceMock.Verify(s => s.VerifyAsync(It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
+    [Fact]
+    public async Task OnPostAsync_SmokeTestEmail_SkipsRecaptchaAndSucceeds()
+    {
+        var signInManagerMock = CreateSignInManagerMock();
+        signInManagerMock
+            .Setup(s => s.PasswordSignInAsync("smoke@example.com", "pass", false, true))
+            .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Success);
+
+        var recaptchaServiceMock = CreateRecaptchaServiceMock(score: 0.0m);
+
+        var urlHelperMock = new Mock<IUrlHelper>();
+        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
+        urlHelperMock.Setup(u => u.IsLocalUrl("/")).Returns(true);
+
+        var model = new LoginModel(signInManagerMock.Object, CreateUserManagerMock().Object, Mock.Of<IAvatarService>(), Mock.Of<ILogger<LoginModel>>(), recaptchaServiceMock.Object, CreateRecaptchaOptionsMock(smokeTestEmail: "smoke@example.com"))
+        {
+            Url = urlHelperMock.Object,
+            PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
+            Input = new LoginModel.InputModel { Email = "smoke@example.com", Password = "pass" }
+        };
+
+        var result = await model.OnPostAsync();
+
+        Assert.IsType<LocalRedirectResult>(result);
+        recaptchaServiceMock.Verify(s => s.VerifyAsync(It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_EmailDoesNotMatchSmokeTestEmail_RunsRecaptchaAndRejects()
+    {
+        var signInManagerMock = CreateSignInManagerMock();
+        var recaptchaServiceMock = CreateRecaptchaServiceMock(score: 0.0m);
+
+        var urlHelperMock = new Mock<IUrlHelper>();
+        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
+
+        var model = new LoginModel(signInManagerMock.Object, CreateUserManagerMock().Object, Mock.Of<IAvatarService>(), Mock.Of<ILogger<LoginModel>>(), recaptchaServiceMock.Object, CreateRecaptchaOptionsMock(smokeTestEmail: "smoke@example.com"))
+        {
+            Url = urlHelperMock.Object,
+            PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
+            Input = new LoginModel.InputModel { Email = "other@example.com", Password = "pass" }
+        };
+
+        var result = await model.OnPostAsync();
+
+        Assert.IsType<PageResult>(result);
+        Assert.False(model.ModelState.IsValid);
+        recaptchaServiceMock.Verify(s => s.VerifyAsync(It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_SmokeTestEmailNull_RunsRecaptchaAndRejects()
+    {
+        var signInManagerMock = CreateSignInManagerMock();
+        var recaptchaServiceMock = CreateRecaptchaServiceMock(score: 0.0m);
+
+        var urlHelperMock = new Mock<IUrlHelper>();
+        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
+
+        var model = new LoginModel(signInManagerMock.Object, CreateUserManagerMock().Object, Mock.Of<IAvatarService>(), Mock.Of<ILogger<LoginModel>>(), recaptchaServiceMock.Object, CreateRecaptchaOptionsMock(smokeTestEmail: null))
+        {
+            Url = urlHelperMock.Object,
+            PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
+            Input = new LoginModel.InputModel { Email = "user@example.com", Password = "pass" }
+        };
+
+        var result = await model.OnPostAsync();
+
+        Assert.IsType<PageResult>(result);
+        Assert.False(model.ModelState.IsValid);
+        recaptchaServiceMock.Verify(s => s.VerifyAsync(It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
     private static (LoginModel model, Mock<SignInManager<IdentityUser<Guid>>> signInManagerMock) CreateModelWithContext(
         IList<AuthenticationScheme>? schemes = null)
     {
@@ -477,10 +550,10 @@ public class LoginModelTests
         return mock;
     }
 
-    private static IOptions<ReCAPTCHAOptions> CreateRecaptchaOptionsMock(decimal threshold = 0.5m)
+    private static IOptions<ReCAPTCHAOptions> CreateRecaptchaOptionsMock(decimal threshold = 0.5m, string? smokeTestEmail = null)
     {
         var mock = new Mock<IOptions<ReCAPTCHAOptions>>();
-        mock.Setup(o => o.Value).Returns(new ReCAPTCHAOptions { ScoreThreshold = threshold });
+        mock.Setup(o => o.Value).Returns(new ReCAPTCHAOptions { ScoreThreshold = threshold, SmokeTestEmail = smokeTestEmail });
         return mock.Object;
     }
 }
