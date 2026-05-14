@@ -111,11 +111,9 @@ public sealed class ConsentTests(PlaywrightFixture fixture)
                 }
             }
 
-            await Task.WhenAll(
-                page.WaitForURLAsync(
-                    url => url.Contains("/Account/Manage/Consent"),
-                    new PageWaitForURLOptions { WaitUntil = WaitUntilState.Load }),
-                page.ClickAsync("button[value='yes']"));
+            await page.RunAndWaitForResponseAsync(
+                () => page.ClickAsync("button[value='yes']"),
+                r => r.Url.Contains("/Account/Manage/Consent") && r.Request.Method == "POST");
 
             Assert.Contains("/Account/Manage/Consent", page.Url);
             var content = await page.ContentAsync();

@@ -2,6 +2,7 @@
 
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
+using System.Threading.Channels;
 using Manage;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
@@ -15,23 +16,20 @@ using Microsoft.Extensions.Options;
 public class LoginModel : PageModel
 {
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
-    private readonly UserManager<IdentityUser<Guid>> _userManager;
-    private readonly IAvatarService _avatarService;
+    private readonly ChannelWriter<Func<IServiceProvider, CancellationToken, Task>> _backgroundWriter;
     private readonly ILogger<LoginModel> _logger;
     private readonly ICAPTCHAService _captchaService;
     private readonly IOptions<ReCAPTCHAOptions> _recaptchaOptions;
 
     public LoginModel(
         SignInManager<IdentityUser<Guid>> signInManager,
-        UserManager<IdentityUser<Guid>> userManager,
-        IAvatarService avatarService,
+        ChannelWriter<Func<IServiceProvider, CancellationToken, Task>> backgroundWriter,
         ILogger<LoginModel> logger,
         ICAPTCHAService captchaService,
         IOptions<ReCAPTCHAOptions> recaptchaOptions)
     {
         _signInManager = signInManager;
-        _userManager = userManager;
-        _avatarService = avatarService;
+        _backgroundWriter = backgroundWriter;
         _logger = logger;
         _captchaService = captchaService;
         _recaptchaOptions = recaptchaOptions;
@@ -112,7 +110,7 @@ public class LoginModel : PageModel
         {
             if (!IsNullOrWhiteSpace(Input.Email))
             {
-                await TryAddAvatarClaimAsync(Input.Email, HttpContext.RequestAborted);
+                TryAddAvatarClaim(Input.Email);
             }
 
             _logger.LogTrace("User logged in.");
@@ -134,25 +132,30 @@ public class LoginModel : PageModel
         return Page();
     }
 
-    private async Task TryAddAvatarClaimAsync(string email, CancellationToken cancellationToken)
+    private void TryAddAvatarClaim(string email)
     {
-        var avatarUrl = await _avatarService.GetAvatarUrlAsync(email, cancellationToken);
-        if (avatarUrl is null)
+        _backgroundWriter.TryWrite(async (sp, ct) =>
         {
-            return;
-        }
+            var avatarService = sp.GetRequiredService<IAvatarService>();
+            var userManager = sp.GetRequiredService<UserManager<IdentityUser<Guid>>>();
+            var avatarUrl = await avatarService.GetAvatarUrlAsync(email, ct);
+            if (avatarUrl is null)
+            {
+                return;
+            }
 
-        var user = await _userManager.FindByNameAsync(email);
-        if (user is null)
-        {
-            return;
-        }
+            var existingUser = await userManager.FindByNameAsync(email);
+            if (existingUser is null)
+            {
+                return;
+            }
 
-        var userClaims = await _userManager.GetClaimsAsync(user);
-        if (!userClaims.Any(x => string.Equals("picture", x.Type, StringComparison.Ordinal)))
-        {
-            await _userManager.AddClaimAsync(user, new Claim("picture", avatarUrl.ToString()));
-        }
+            var claims = await userManager.GetClaimsAsync(existingUser);
+            if (!claims.Any(x => string.Equals("picture", x.Type, StringComparison.Ordinal)))
+            {
+                await userManager.AddClaimAsync(existingUser, new Claim("picture", avatarUrl.ToString()));
+            }
+        });
     }
 
     /// <summary>Provides the form input values bound from the request.</summary>

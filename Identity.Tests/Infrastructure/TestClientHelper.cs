@@ -26,14 +26,20 @@ public sealed class TestClientHelper(PlaywrightFixture fixture)
         await using var scope = fixture.Factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-        if (!await db.IdentityResources.AnyAsync(r => r.Name == "openid"))
+        var openidResource = await db.IdentityResources.FirstOrDefaultAsync(r => r.Name == "openid");
+        if (openidResource == null)
         {
             db.IdentityResources.Add(new IdentityResource
             {
                 Name = "openid",
                 DisplayName = "Your user identifier",
+                Required = false,
                 UserClaims = [new() { Type = "sub" }],
             });
+        }
+        else if (openidResource.Required)
+        {
+            openidResource.Required = false;
         }
 
         if (!await db.IdentityResources.AnyAsync(r => r.Name == "profile"))

@@ -12,7 +12,9 @@ using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
+using System.Threading.Channels;
 
 /// <summary>
 /// Tests for Identity.Pages.Account.RegisterModel.OnGetAsync.
@@ -79,10 +81,11 @@ public class RegisterModelTests
             userManagerMock.Object,
             userEmailStoreMock.Object,
             signInManagerMock.Object,
-            Mock.Of<IAvatarService>(),
+            Channel.CreateUnbounded<Func<IServiceProvider, CancellationToken, Task>>().Writer,
             logger,
             emailSender,
-            CreateRecaptchaServiceMock().Object);
+            CreateRecaptchaServiceMock().Object,
+            CreateRecaptchaOptionsMock());
 
         // Act & Assert: ensure no exception and ReturnUrl set as expected
         var ex = await Record.ExceptionAsync(() => model.OnGetAsync(returnUrl));
@@ -131,10 +134,11 @@ public class RegisterModelTests
             userManagerMock.Object,
             userEmailStoreMock.Object,
             signInManagerMock.Object,
-            Mock.Of<IAvatarService>(),
+            Channel.CreateUnbounded<Func<IServiceProvider, CancellationToken, Task>>().Writer,
             logger,
             emailSender,
-            CreateRecaptchaServiceMock().Object);
+            CreateRecaptchaServiceMock().Object,
+            CreateRecaptchaOptionsMock());
 
         // Act
         await model.OnGetAsync("someReturn");
@@ -186,10 +190,11 @@ public class RegisterModelTests
             userManagerMock.Object,
             userStoreMock.Object,
             signInManagerMock.Object,
-            Mock.Of<IAvatarService>(),
+            Channel.CreateUnbounded<Func<IServiceProvider, CancellationToken, Task>>().Writer,
             loggerMock.Object,
             emailSenderMock.Object,
-            CreateRecaptchaServiceMock().Object);
+            CreateRecaptchaServiceMock().Object,
+            CreateRecaptchaOptionsMock());
 
         // Configure PageContext/Url/Request
         var ctx = new DefaultHttpContext();
@@ -280,10 +285,11 @@ public class RegisterModelTests
             userManagerMock.Object,
             userEmailStoreMock.Object,
             signInManagerMock.Object,
-            Mock.Of<IAvatarService>(),
+            Channel.CreateUnbounded<Func<IServiceProvider, CancellationToken, Task>>().Writer,
             loggerMock.Object,
             emailSenderMock.Object,
-            CreateRecaptchaServiceMock().Object);
+            CreateRecaptchaServiceMock().Object,
+            CreateRecaptchaOptionsMock());
 
         // Configure PageContext/Url/Request
         var ctx = new DefaultHttpContext();
@@ -364,10 +370,11 @@ public class RegisterModelTests
             userManagerMock.Object,
             userStoreMock.Object,
             signInManagerMock.Object,
-            Mock.Of<IAvatarService>(),
+            Channel.CreateUnbounded<Func<IServiceProvider, CancellationToken, Task>>().Writer,
             Mock.Of<ILogger<RegisterModel>>(),
             Mock.Of<IEmailSender>(),
-            recaptchaServiceMock.Object);
+            recaptchaServiceMock.Object,
+            CreateRecaptchaOptionsMock());
 
         var ctx = new DefaultHttpContext();
         ctx.Request.Scheme = "https";
@@ -384,6 +391,13 @@ public class RegisterModelTests
         Assert.False(model.ModelState.IsValid);
         Assert.True(model.ModelState.ContainsKey(string.Empty));
         userManagerMock.Verify(u => u.CreateAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>()), Times.Never);
+    }
+
+    private static IOptions<ReCAPTCHAOptions> CreateRecaptchaOptionsMock()
+    {
+        var mock = new Mock<IOptions<ReCAPTCHAOptions>>();
+        mock.Setup(o => o.Value).Returns(new ReCAPTCHAOptions());
+        return mock.Object;
     }
 
     private static Mock<ICAPTCHAService> CreateRecaptchaServiceMock(decimal score = 1.0m, decimal threshold = 0.5m)

@@ -14,20 +14,30 @@ public sealed class PlaywrightFixture : IAsyncLifetime
     private static readonly bool CI = bool.TryParse(Environment.GetEnvironmentVariable("CI"), out var isCi) && isCi;
     private static readonly bool Headless = !string.Equals(Environment.GetEnvironmentVariable("PLAYWRIGHT_HEADED"), "1", StringComparison.OrdinalIgnoreCase);
     private static readonly bool StrykerActive = Environment.GetEnvironmentVariable("STRYKER_MUTANT_FILE") is not null;
+    private static readonly string? SmokeBaseUrl = Environment.GetEnvironmentVariable("SMOKE_BASE_URL");
+    private readonly IdentityWebApplicationFactory? _factory;
     private IPlaywright? _playwright;
     private IBrowser? _browser;
 
     public PlaywrightFixture()
     {
-        Factory = new IdentityWebApplicationFactory();
+        if (!IsSmoke)
+        {
+            _factory = new IdentityWebApplicationFactory();
+        }
+
         BaseAddress = string.Empty;
         SharedEmail = $"e2e-shared-{Guid.NewGuid()}@test.invalid";
         SharedPassword = $"Test@{Guid.NewGuid():N}!A1";
     }
 
-    public IdentityWebApplicationFactory Factory { get; }
+    public static bool IsSmoke => SmokeBaseUrl is not null;
 
-    public EmailCaptureService Email => Factory.EmailCapture;
+    public IdentityWebApplicationFactory Factory =>
+        _factory ?? throw new InvalidOperationException("Factory is not available in smoke mode.");
+
+    public EmailCaptureService Email =>
+        _factory?.EmailCapture ?? throw new InvalidOperationException("Email capture is not available in smoke mode.");
 
     public string BaseAddress { get; private set; }
 
@@ -49,8 +59,15 @@ public sealed class PlaywrightFixture : IAsyncLifetime
             return;
         }
 
-        Factory.CreateClient(); // Triggers server startup; populates Factory.ServerAddress.
-        BaseAddress = Factory.ServerAddress;
+        if (IsSmoke)
+        {
+            BaseAddress = SmokeBaseUrl!;
+        }
+        else
+        {
+            _factory!.CreateClient(); // Triggers server startup; populates Factory.ServerAddress.
+            BaseAddress = _factory.ServerAddress;
+        }
 
         var exitCode = Program.Main(["install", "chromium"]);
         if (exitCode != 0)
@@ -64,6 +81,11 @@ public sealed class PlaywrightFixture : IAsyncLifetime
             Headless = Headless
         });
 
+        if (IsSmoke)
+        {
+            return;
+        }
+
         // Warm up the server so connection pool / IdentityServer keys are ready
         var (warmupCtx, warmupPage) = await NewPageAsync();
         await using (warmupCtx)
@@ -75,7 +97,7 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         // an authenticated session (GrantsTests, ServerSideSessionsTests) can skip the
         // browser-based registration flow entirely. This avoids those tests accumulating
         // extra DB state late in the suite and reduces the chance of login timeouts.
-        await using var scope = Factory.Services.CreateAsyncScope();
+        await using var scope = _factory!.Services.CreateAsyncScope();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser<Guid>>>();
         var sharedUser = new IdentityUser<Guid>
         {
@@ -102,7 +124,7 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         const string password = "Test@123456!";
         var email = $"e2e-{Guid.NewGuid()}@test.invalid";
 
-        await using var scope = Factory.Services.CreateAsyncScope();
+        await using var scope = _factory!.Services.CreateAsyncScope();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser<Guid>>>();
         var user = new IdentityUser<Guid>
         {
@@ -121,15 +143,16 @@ public sealed class PlaywrightFixture : IAsyncLifetime
     }
 
     /// <summary>Creates a new Playwright browser context and page configured with <see cref="BaseAddress"/>.</summary>
+    /// <param name="suiteName">Artifact sub-directory name; defaults to <c>"E2E"</c>, pass <c>"Smoke"</c> for smoke tests.</param>
     /// <returns>A task that resolves to a tuple of the browser context and page.</returns>
-    public async Task<(IAsyncDisposable Context, IPage Page)> NewPageAsync()
+    public async Task<(IAsyncDisposable Context, IPage Page)> NewPageAsync(string suiteName = "E2E")
     {
         if (_browser is null)
         {
             throw new InvalidOperationException("Browser is not initialized. Ensure InitializeAsync has been awaited.");
         }
 
-        var (session, page) = await PlaywrightArtifactRecorder.CreateSessionAsync(_browser, "Identity", "E2E", new BrowserNewContextOptions
+        var (session, page) = await PlaywrightArtifactRecorder.CreateSessionAsync(_browser, "Identity", suiteName, new BrowserNewContextOptions
         {
             BaseURL = BaseAddress,
             IgnoreHTTPSErrors = true
@@ -163,17 +186,23 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         }
 
         _playwright?.Dispose();
+
+        if (IsSmoke)
+        {
+            return;
+        }
+
         if (CI && !StrykerActive)
         {
             await CleanupDatabaseAsync();
         }
 
-        await Factory.DisposeAsync();
+        await _factory!.DisposeAsync();
     }
 
     private async Task CleanupDatabaseAsync()
     {
-        await using var scope = Factory.Services.CreateAsyncScope();
+        await using var scope = _factory!.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
         // Identity — cascade deletes UserClaims, UserLogins, UserTokens, UserPasskeys, UserRoles

@@ -283,6 +283,13 @@ jobs:
           name: sql-dacpac
           path: Identity.Data/bin/Release/Identity.Data.dacpac
 
+      - name: Upload test binaries
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: test-binaries
+          path: Identity.Tests/bin/Release/net10.0/
+          include-hidden-files: true
+
       - name: End Sonar analysis
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -293,6 +300,8 @@ jobs:
   deploy:
     runs-on: windows-latest
     needs: build
+    outputs:
+      webapp-url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
       id-token: write #This is required for requesting the JWT
       contents: read #This is required for actions/checkout
@@ -342,6 +351,141 @@ jobs:
           app-name: 'crgolden-identity'
           slot-name: 'Production'
           package: .
+
+  smoke:
+    name: Post-deploy smoke
+    runs-on: windows-latest
+    needs: [build, deploy]
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+
+    steps:
+      - name: Download test binaries
+        uses: actions/download-artifact@v7
+        with:
+          name: test-binaries
+          path: Identity.Tests/bin/Release/net10.0/
+
+      - name: Cache Playwright browsers
+        id: cache-playwright
+        uses: actions/cache@v5
+        with:
+          path: ~\AppData\Local\ms-playwright
+          key: ${{ runner.os }}-playwright-${{ needs.build.outputs.playwright-version }}
+
+      - name: Install Playwright browsers
+        if: steps.cache-playwright.outputs.cache-hit != 'true'
+        run: pwsh "${{ github.workspace }}\Identity.Tests\bin\Release\net10.0\playwright.ps1" install --with-deps chromium
+
+      - name: Clear downloaded test results
+        run: Remove-Item Identity.Tests/bin/Release/net10.0/TestResults -Recurse -Force -ErrorAction SilentlyContinue
+
+      - name: Run smoke tests
+        env:
+          CI: true
+          SMOKE_BASE_URL: ${{ needs.deploy.outputs.webapp-url }}
+          TEST_USERNAME: ${{ secrets.TEST_USERNAME }}
+          TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
+        run: |
+          $resultsDir = "${{ github.workspace }}\Identity.Tests\bin\Release\net10.0\TestResults"
+          New-Item -ItemType Directory -Force -Path $resultsDir | Out-Null
+          & "${{ github.workspace }}\Identity.Tests\bin\Release\net10.0\Identity.Tests.exe" `
+            -trait "Category=Smoke" `
+            -trx "$resultsDir\smoke-tests.trx"
+
+      - name: Upload smoke results
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        if: always()
+        with:
+          name: smoke-test-results
+          path: Identity.Tests/bin/Release/net10.0/TestResults/
+
+      - name: Upload smoke Playwright failure artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        if: always()
+        with:
+          name: identity-smoke-playwright-artifacts
+          path: Identity.Tests/bin/Release/net10.0/TestResults/PlaywrightArtifacts/
+          if-no-files-found: ignore
+
+      - name: Report smoke results
+        if: always()
+        shell: pwsh
+        env:
+          AZURE_DEVOPS_EXT_PAT: ${{ secrets.AZURE_DEVOPS_EXT_PAT }}
+          PLAYWRIGHT_APPINSIGHTS_CONNECTION_STRING: ${{ vars.PLAYWRIGHT_APPINSIGHTS_CONNECTION_STRING }}
+        run: |
+          $appName     = 'Identity'
+          $suiteName   = 'Smoke'
+          $resultsDir  = 'Identity.Tests/bin/Release/net10.0/TestResults'
+          $artifactDir = 'Identity.Tests/bin/Release/net10.0/TestResults/PlaywrightArtifacts'
+
+          $trx = Get-ChildItem $resultsDir -Filter *.trx | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
+          if (-not $trx) {
+              Write-Warning "No TRX file found in $resultsDir - smoke test produced no results. Skipping ADO publish."
+              exit 0
+          }
+          [xml] $xml   = Get-Content $trx.FullName
+          $allResults  = @($xml.TestRun.Results.UnitTestResult)
+          $failed      = @($allResults | Where-Object { $_.outcome -ne 'Passed' })
+
+          $testsById  = @{}
+          foreach ($t in @($xml.TestRun.TestDefinitions.UnitTest)) { $testsById[$t.id] = $t }
+          $adoHeaders = @{ Authorization = "Basic $([Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$env:AZURE_DEVOPS_EXT_PAT")))" }
+          $adoBase    = 'https://dev.azure.com/crgolden/crgolden/_apis/test'
+          $adoVer     = 'api-version=7.1'
+
+          function Invoke-Ado {
+              param([string]$Method, [string]$Url, [object]$Body)
+              Invoke-RestMethod -Method $Method -Uri $Url -Headers $adoHeaders `
+                  -ContentType 'application/json' -Body (ConvertTo-Json -InputObject $Body -Depth 20 -Compress)
+          }
+
+          $adoResults = foreach ($r in $allResults) {
+              $m = $testsById[$r.testId].TestMethod
+              @{ testCaseTitle = $r.testName; automatedTestName = "$($m.className).$($m.name)"
+                 automatedTestStorage = $appName; automatedTestType = 'Playwright'; outcome = $r.outcome
+                 durationInMs = [int][TimeSpan]::Parse($r.duration).TotalMilliseconds
+                 errorMessage = $r.Output.ErrorInfo.Message; stackTrace = $r.Output.ErrorInfo.StackTrace
+                 state = 'Completed'; comment = "$env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID" }
+          }
+
+          $run = Invoke-Ado POST "$adoBase/runs?$adoVer" @{
+              name = "$appName $suiteName Playwright - $env:GITHUB_RUN_NUMBER"; automated = $true
+              state = 'InProgress'; startedDate = [DateTimeOffset]::Parse($xml.TestRun.Times.start).UtcDateTime.ToString('O')
+              comment = "GitHub Actions run $env:GITHUB_RUN_ID" }
+          Invoke-Ado POST "$adoBase/runs/$($run.id)/results?$adoVer" @($adoResults) | Out-Null
+          Invoke-Ado POST "$adoBase/runs/$($run.id)/attachments?$adoVer" @{
+              stream = [Convert]::ToBase64String([IO.File]::ReadAllBytes($trx.FullName))
+              fileName = $trx.Name; comment = 'TRX'; attachmentType = 'GeneralAttachment' } | Out-Null
+          Invoke-Ado PATCH "$adoBase/runs/$($run.id)?$adoVer" @{
+              state = 'Completed'; completedDate = [DateTimeOffset]::UtcNow.ToString('O') } | Out-Null
+          Write-Host "Published $($adoResults.Count) results to Azure DevOps run $($run.id)."
+
+          $cs       = $env:PLAYWRIGHT_APPINSIGHTS_CONNECTION_STRING
+          $iKey     = ($cs -split ';' | Where-Object { $_ -like 'InstrumentationKey=*' })  -replace 'InstrumentationKey=', ''
+          $endpoint = ($cs -split ';' | Where-Object { $_ -like 'IngestionEndpoint=*' })   -replace 'IngestionEndpoint=', ''
+          $common   = @{ app = $appName; suite = $suiteName; repository = $env:GITHUB_REPOSITORY
+              branch = $env:GITHUB_REF; sha = $env:GITHUB_SHA; githubRunId = $env:GITHUB_RUN_ID
+              githubRunUrl = "$env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID"
+              artifactAvailable = (Test-Path $artifactDir).ToString() }
+
+          function New-Event {
+              param([string]$Name, [hashtable]$Props, [hashtable]$Measurements)
+              @{ name = 'Microsoft.ApplicationInsights.Event'; time = [DateTimeOffset]::UtcNow.ToString('O'); iKey = $iKey
+                 data = @{ baseType = 'EventData'; baseData = @{ ver = 2; name = $Name; properties = $Props; measurements = $Measurements } } }
+          }
+
+          $durationMs = ($allResults | ForEach-Object { [TimeSpan]::Parse($_.duration).TotalMilliseconds } | Measure-Object -Sum).Sum
+          $runProps = $common.Clone(); $runProps['trxFile'] = $trx.Name; $runProps['outcome'] = if ($failed.Count) { 'Failed' } else { 'Passed' }
+          $events = @(New-Event 'PlaywrightTestRun' $runProps @{ total = $allResults.Count; failed = $failed.Count; passed = $allResults.Count - $failed.Count; durationMs = [double]$durationMs })
+          $events += $allResults | ForEach-Object {
+              $p = $common.Clone(); $p['testName'] = $_.testName; $p['outcome'] = $_.outcome; $p['failed'] = ($_.outcome -ne 'Passed').ToString()
+              New-Event 'PlaywrightTestCase' $p @{ durationMs = [double][TimeSpan]::Parse($_.duration).TotalMilliseconds }
+          }
+          Invoke-RestMethod -Method Post -Uri ($endpoint.TrimEnd('/') + '/v2/track') -ContentType 'application/json' -Body ($events | ConvertTo-Json -Depth 20) | Out-Null
+          Write-Host "Sent $($events.Count) telemetry events to Azure Monitor."
 
   mutation:
     name: Mutation testing

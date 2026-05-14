@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Security.Claims;
+using System.Threading.Channels;
 using Azure.Identity;
 using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Azure.Security.KeyVault.Secrets;
@@ -145,6 +146,8 @@ try
             .UseEphemeralDataProtectionProvider();
     }
 
+    var backgroundChannel = Channel.CreateUnbounded<Func<IServiceProvider, CancellationToken, Task>>(
+        new UnboundedChannelOptions { SingleReader = true });
     builder.Services
         .AddDbContextPool<ApplicationDbContext>(dbContextOptionsBuilder => dbContextOptionsBuilder
             .UseSqlServer(sqlConnectionStringBuilder.ConnectionString, sqlServerDbContextOptionsBuilder =>
@@ -214,6 +217,9 @@ try
             recaptchaOptions.VerifyEndpoint = recaptchaVerifyEndpoint;
         })
         .AddHttpClient<ICAPTCHAService, ReCAPTCHAService>().Services
+        .AddSingleton(backgroundChannel.Writer)
+        .AddSingleton(backgroundChannel.Reader)
+        .AddHostedService<BackgroundTaskWorker>()
         .AddCors()
         .Configure<ForwardedHeadersOptions>(forwardedHeadersOptions =>
         {
