@@ -119,13 +119,6 @@ public class RegisterModel : PageModel
                 }
             });
 
-            if (string.Equals(Input.Email, _recaptchaOptions.Value.SmokeTestEmail, StringComparison.Ordinal))
-            {
-                await _userManager.ConfirmEmailAsync(user, code);
-                activity?.SetTag("smoke_auto_confirmed", true);
-                return RedirectToPage("/Account/Login");
-            }
-
             var input = UTF8.GetBytes(code);
             code = Base64UrlEncode(input);
             var callbackUrl = Url.Page(

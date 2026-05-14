@@ -17,6 +17,10 @@ $secrets     = Get-Content $secretsPath -Raw | ConvertFrom-Json
 $env:SMOKE_BASE_URL = $BaseUrl
 $env:TEST_USERNAME  = $secrets.TEST_USERNAME
 $env:TEST_PASSWORD  = $secrets.TEST_PASSWORD
+$env:SMOKE_DB_DATA_SOURCE                        = $secrets.SqlConnectionStringBuilder.DataSource
+$env:SqlConnectionStringBuilder__InitialCatalog = $secrets.SqlConnectionStringBuilder.InitialCatalog
+$env:SqlConnectionStringBuilder__UserID         = $secrets.SqlConnectionStringBuilder.UserID
+$env:SqlConnectionStringBuilder__Password       = $secrets.SqlConnectionStringBuilder.Password
 
 try
 {
@@ -24,5 +28,9 @@ try
 }
 finally
 {
-    Remove-Item Env:SMOKE_BASE_URL, Env:TEST_USERNAME, Env:TEST_PASSWORD -ErrorAction SilentlyContinue
+    Remove-Item Env:SMOKE_BASE_URL, Env:TEST_USERNAME, Env:TEST_PASSWORD `
+        -ErrorAction SilentlyContinue
+    Remove-Item Env:SMOKE_DB_DATA_SOURCE, Env:SqlConnectionStringBuilder__InitialCatalog, `
+        Env:SqlConnectionStringBuilder__UserID, Env:SqlConnectionStringBuilder__Password `
+        -ErrorAction SilentlyContinue
 }

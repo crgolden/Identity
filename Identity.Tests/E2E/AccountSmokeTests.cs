@@ -15,13 +15,16 @@ public sealed class AccountSmokeTests(PlaywrightFixture fixture)
         var (ctx, page) = await fixture.NewPageAsync("Smoke");
         await using (ctx)
         {
-            // REGISTER — server auto-confirms email for smoke account; redirects directly to /Account/Login
+            // REGISTER — reCAPTCHA bypassed for smoke account; email confirmation sent but not yet confirmed
             await page.GotoAsync("/Account/Register");
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
             await page.FillAsync("input[name='Input.ConfirmPassword']", password);
             await page.ClickAsync("#registerSubmit");
-            await page.WaitForURLAsync("**/Account/Login**");
+            await page.WaitForURLAsync("**/Account/RegisterConfirmation**");
+
+            // Confirm email directly in the database (no inbox required)
+            await fixture.ConfirmUserEmailAsync(email);
 
             // LOGIN — reCAPTCHA bypassed for smoke account
             await page.FillAsync("input[name='Input.Email']", email);

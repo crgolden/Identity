@@ -1,9 +1,11 @@
 namespace Identity.Tests.Infrastructure;
 
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Playwright;
+using static String;
 
 /// <summary>
 /// xUnit collection fixture that owns the <see cref="IdentityWebApplicationFactory"/>,
@@ -15,6 +17,10 @@ public sealed class PlaywrightFixture : IAsyncLifetime
     private static readonly bool Headless = !string.Equals(Environment.GetEnvironmentVariable("PLAYWRIGHT_HEADED"), "1", StringComparison.OrdinalIgnoreCase);
     private static readonly bool StrykerActive = Environment.GetEnvironmentVariable("STRYKER_MUTANT_FILE") is not null;
     private static readonly string? SmokeBaseUrl = Environment.GetEnvironmentVariable("SMOKE_BASE_URL");
+    private static readonly string? DataSource = Environment.GetEnvironmentVariable("SMOKE_DB_DATA_SOURCE");
+    private static readonly string? InitialCatalog = Environment.GetEnvironmentVariable("SqlConnectionStringBuilder__InitialCatalog");
+    private static readonly string? UserID = Environment.GetEnvironmentVariable("SqlConnectionStringBuilder__UserID");
+    private static readonly string? Password = Environment.GetEnvironmentVariable("SqlConnectionStringBuilder__Password");
     private readonly IdentityWebApplicationFactory? _factory;
     private IPlaywright? _playwright;
     private IBrowser? _browser;
@@ -41,14 +47,8 @@ public sealed class PlaywrightFixture : IAsyncLifetime
 
     public string BaseAddress { get; private set; }
 
-    /// <summary>
-    /// Email of a pre-confirmed user created during fixture initialization.
-    /// Use with <see cref="SharedPassword"/> in tests that only need an authenticated session
-    /// and don't care about the specific user identity.
-    /// </summary>
     public string SharedEmail { get; }
 
-    /// <summary>Password for the pre-confirmed user at <see cref="SharedEmail"/>.</summary>
     public string SharedPassword { get; }
 
     /// <inheritdoc/>
@@ -105,6 +105,7 @@ public sealed class PlaywrightFixture : IAsyncLifetime
             Email = SharedEmail,
             EmailConfirmed = true
         };
+
         var createResult = await userManager.CreateAsync(sharedUser, SharedPassword);
         if (!createResult.Succeeded)
         {
@@ -140,6 +141,56 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         }
 
         return (email, password);
+    }
+
+    /// <summary>
+    /// Confirms <paramref name="email"/>'s email address directly in the database.
+    /// In smoke mode, constructs <see cref="ApplicationDbContext"/> from the same
+    /// <c>SqlConnectionStringBuilder__*</c> env vars used by the app, but targets the
+    /// production catalog (<c>SqlConnectionStringBuilder__InitialCatalog</c>).
+    /// In non-smoke mode, delegates to <see cref="UserManager{TUser}"/> via the factory DI container.
+    /// </summary>
+    /// <param name="email">The email address to confirm.</param>
+    /// <returns>A task that completes when the email is confirmed.</returns>
+    public async Task ConfirmUserEmailAsync(string email)
+    {
+        if (IsSmoke && !IsNullOrWhiteSpace(DataSource) && !IsNullOrWhiteSpace(InitialCatalog) && !IsNullOrWhiteSpace(UserID) && !IsNullOrWhiteSpace(Password))
+        {
+            var builder = new SqlConnectionStringBuilder
+            {
+                DataSource = DataSource,
+                InitialCatalog = InitialCatalog,
+                UserID = UserID,
+                Password = Password,
+                IntegratedSecurity = false,
+                Encrypt = true,
+                TrustServerCertificate = false
+            };
+
+            var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+                .UseSqlServer(builder.ConnectionString)
+                .Options;
+
+            await using var db = new ApplicationDbContext(options);
+            var normalizedEmail = email.ToUpperInvariant();
+            await db.Users
+                .Where(u => u.NormalizedEmail == normalizedEmail)
+                .ExecuteUpdateAsync(s => s.SetProperty(u => u.EmailConfirmed, true));
+
+            return;
+        }
+
+        await using var scope = _factory!.Services.CreateAsyncScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser<Guid>>>();
+        var user = await userManager.FindByEmailAsync(email)
+            ?? throw new InvalidOperationException($"User '{email}' not found.");
+        var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
+        var result = await userManager.ConfirmEmailAsync(user, token);
+        if (!result.Succeeded)
+        {
+            throw new InvalidOperationException(
+                string.Join(", ", result.Errors.Select(e => e.Description)));
+        }
     }
 
     /// <summary>Creates a new Playwright browser context and page configured with <see cref="BaseAddress"/>.</summary>
