@@ -1,6 +1,7 @@
 namespace Identity.Tests.E2E;
 
 using Infrastructure;
+using Microsoft.Playwright;
 using OtpNet;
 
 [Trait("Category", "E2E")]
@@ -25,7 +26,9 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
             // Navigate to 2FA setup
             await page.GotoAsync("/Account/Manage/TwoFactorAuthentication");
             await page.ClickAsync("#enable-authenticator");
-            await page.WaitForURLAsync("**/Account/Manage/EnableAuthenticator**");
+
+            // WaitForURLAsync misses navigations that complete before the listener registers; poll DOM instead.
+            await Assertions.Expect(page.Locator("#shared-key")).ToBeVisibleAsync(new LocatorAssertionsToBeVisibleOptions { Timeout = 60_000 });
 
             // Extract shared key from page
             var sharedKeyEl = page.Locator("#shared-key");
@@ -69,7 +72,7 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
 
             await setupPage.GotoAsync("/Account/Manage/TwoFactorAuthentication");
             await setupPage.ClickAsync("#enable-authenticator");
-            await setupPage.WaitForURLAsync("**/Account/Manage/EnableAuthenticator**");
+            await Assertions.Expect(setupPage.Locator("#shared-key")).ToBeVisibleAsync(new LocatorAssertionsToBeVisibleOptions { Timeout = 60_000 });
 
             var sharedKeyEl = setupPage.Locator("#shared-key");
             var sharedKey = (await sharedKeyEl.First.TextContentAsync() ?? string.Empty)
@@ -130,7 +133,7 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
             // Enable 2FA
             await page.GotoAsync("/Account/Manage/TwoFactorAuthentication");
             await page.ClickAsync("#enable-authenticator");
-            await page.WaitForURLAsync("**/Account/Manage/EnableAuthenticator**");
+            await Assertions.Expect(page.Locator("#shared-key")).ToBeVisibleAsync(new LocatorAssertionsToBeVisibleOptions { Timeout = 60_000 });
 
             var sharedKey = (await page.Locator("#shared-key").TextContentAsync() ?? string.Empty)
                 .Replace(" ", string.Empty).Replace("-", string.Empty).ToUpperInvariant();
@@ -147,7 +150,7 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
             await page.ClickAsync("#reset-authenticator-button");
 
             // Should redirect to EnableAuthenticator to set up a new key
-            await page.WaitForURLAsync("**/Account/Manage/EnableAuthenticator**");
+            await Assertions.Expect(page.Locator("#shared-key")).ToBeVisibleAsync(new LocatorAssertionsToBeVisibleOptions { Timeout = 60_000 });
             Assert.Contains("EnableAuthenticator", page.Url);
         }
     }

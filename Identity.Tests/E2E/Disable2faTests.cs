@@ -1,6 +1,7 @@
 namespace Identity.Tests.E2E;
 
 using Infrastructure;
+using Microsoft.Playwright;
 using OtpNet;
 
 [Trait("Category", "E2E")]
@@ -27,7 +28,7 @@ public sealed class Disable2faTests(PlaywrightFixture fixture)
 
             await setupPage.GotoAsync("/Account/Manage/TwoFactorAuthentication");
             await setupPage.ClickAsync("#enable-authenticator");
-            await setupPage.WaitForURLAsync("**/Account/Manage/EnableAuthenticator**");
+            await Assertions.Expect(setupPage.Locator("#shared-key")).ToBeVisibleAsync(new LocatorAssertionsToBeVisibleOptions { Timeout = 60_000 });
 
             var sharedKeyEl = setupPage.Locator("#shared-key");
             capturedSharedKey = (await sharedKeyEl.TextContentAsync() ?? string.Empty)
