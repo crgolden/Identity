@@ -18,7 +18,8 @@ public static class SecretClientExtensions
             KeyVaultSecret ElasticsearchPassword,
             KeyVaultSecret ReCAPTCHASiteKey,
             KeyVaultSecret ReCAPTCHASecretKey,
-            KeyVaultSecret MonitoringRecipientEmail
+            KeyVaultSecret MonitoringRecipientEmail,
+            KeyVaultSecret SmokeTestEmail
         ) GetIdentitySecrets()
         {
             var googleClientId = secretClient.GetSecret("GoogleClientId");
@@ -32,6 +33,7 @@ public static class SecretClientExtensions
             var recaptchaSiteKey = secretClient.GetSecret("ReCAPTCHASiteKey");
             var recaptchaSecretKey = secretClient.GetSecret("ReCAPTCHASecretKey");
             var monitoringRecipientEmail = secretClient.GetSecret("MonitoringRecipientEmail");
+            var smokeTestEmail = secretClient.GetSecret("SmokeTestEmail");
             return (
                 googleClientId.Value,
                 googleClientSecret.Value,
@@ -43,7 +45,8 @@ public static class SecretClientExtensions
                 elasticsearchPassword.Value,
                 recaptchaSiteKey.Value,
                 recaptchaSecretKey.Value,
-                monitoringRecipientEmail.Value
+                monitoringRecipientEmail.Value,
+                smokeTestEmail.Value
             );
         }
 #pragma warning restore SA1009
