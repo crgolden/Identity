@@ -10,7 +10,7 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
     [Fact]
     public async Task TwoFactor_Setup_Login_WithTotpCode_Succeeds()
     {
-        var (email, password) = await CreateAndLoginAsync();
+        var (email, password) = await fixture.CreateConfirmedUserAsync();
 
         var (context, page) = await fixture.NewPageAsync();
         await using (context)
@@ -54,7 +54,7 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
     [Fact]
     public async Task TwoFactor_Login_WithRecoveryCode_Succeeds()
     {
-        var (email, password) = await CreateAndLoginAsync();
+        var (email, password) = await fixture.CreateConfirmedUserAsync();
         string recoveryCode;
 
         // Setup TOTP and capture a recovery code
@@ -116,7 +116,7 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
     [Fact]
     public async Task TwoFactor_Disable_NoLongerRequired()
     {
-        var (email, password) = await CreateAndLoginAsync();
+        var (email, password) = await fixture.CreateConfirmedUserAsync();
 
         // Enable 2FA then immediately disable it in the same session
         var (setupCtx, setupPage) = await fixture.NewPageAsync();
@@ -165,7 +165,7 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
     [Fact]
     public async Task TwoFactor_ResetAuthenticator_DisablesAndRedirectsToSetup()
     {
-        var (email, password) = await CreateAndLoginAsync();
+        var (email, password) = await fixture.CreateConfirmedUserAsync();
 
         var (context, page) = await fixture.NewPageAsync();
         await using (context)
@@ -199,29 +199,5 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
             await page.WaitForURLAsync("**/Account/Manage/EnableAuthenticator**");
             Assert.Contains("EnableAuthenticator", page.Url);
         }
-    }
-
-    private async Task<(string Email, string Password)> CreateAndLoginAsync()
-    {
-        var email = $"e2e-{Guid.NewGuid()}@test.invalid";
-        const string password = "Test@123456!";
-
-        var (ctx, page) = await fixture.NewPageAsync();
-        await using (ctx)
-        {
-            await page.GotoAsync("/Account/Register");
-            await page.FillAsync("input[name='Input.Email']", email);
-            await page.FillAsync("input[name='Input.Password']", password);
-            await page.FillAsync("input[name='Input.ConfirmPassword']", password);
-            await page.ClickAsync("#registerSubmit");
-            await page.WaitForURLAsync("**/Account/RegisterConfirmation**");
-
-            var confirmEmail = await fixture.Email.WaitForEmailAsync(email);
-            var confirmLink = EmailCaptureService.ExtractLink(confirmEmail.HtmlBody, "http");
-            await page.GotoAsync(confirmLink);
-            await page.WaitForURLAsync("**/Account/ConfirmEmail**");
-        }
-
-        return (email, password);
     }
 }

@@ -6,6 +6,11 @@
 # Claude Code
 .claude/
 
+# Test output
+test-results/
+TestResults/
+*-playwright-artifacts/
+
 # User-specific files
 *.rsuser
 *.suo

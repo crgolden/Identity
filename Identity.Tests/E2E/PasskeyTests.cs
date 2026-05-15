@@ -14,7 +14,7 @@ public sealed class PasskeyTests(PlaywrightFixture fixture)
     [Fact]
     public async Task PasskeyManagePage_RendersSubmitButton_NotGenericElement()
     {
-        var (email, password) = await CreateAndLoginAsync();
+        var (email, password) = await fixture.CreateConfirmedUserAsync();
 
         var (context, page) = await fixture.NewPageAsync();
         await using (context)
@@ -60,29 +60,5 @@ public sealed class PasskeyTests(PlaywrightFixture fixture)
             var text = await button.TextContentAsync();
             Assert.Contains("passkey", text, StringComparison.OrdinalIgnoreCase);
         }
-    }
-
-    private async Task<(string Email, string Password)> CreateAndLoginAsync()
-    {
-        var email = $"e2e-{Guid.NewGuid()}@test.invalid";
-        const string password = "Test@123456!";
-
-        var (ctx, page) = await fixture.NewPageAsync();
-        await using (ctx)
-        {
-            await page.GotoAsync("/Account/Register");
-            await page.FillAsync("input[name='Input.Email']", email);
-            await page.FillAsync("input[name='Input.Password']", password);
-            await page.FillAsync("input[name='Input.ConfirmPassword']", password);
-            await page.ClickAsync("#registerSubmit");
-            await page.WaitForURLAsync("**/Account/RegisterConfirmation**");
-
-            var confirmEmail = await fixture.Email.WaitForEmailAsync(email);
-            var confirmLink = EmailCaptureService.ExtractLink(confirmEmail.HtmlBody, "http");
-            await page.GotoAsync(confirmLink);
-            await page.WaitForURLAsync("**/Account/ConfirmEmail**");
-        }
-
-        return (email, password);
     }
 }

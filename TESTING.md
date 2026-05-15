@@ -1418,6 +1418,24 @@ Provision or repair the shared Azure Monitor resources with:
 .\scripts\Ensure-PlaywrightMonitor.ps1
 ```
 
+### Downloading CI artifacts locally
+
+Use `gh run download` from the repo root to pull failure artifacts for a specific run. The downloaded folders are gitignored by pattern so they are never accidentally committed:
+
+```powershell
+# Download Playwright failure artifacts (lands in identity-playwright-artifacts/)
+gh run download <run-id> --name identity-playwright-artifacts
+
+# Download TRX test results (lands in test-results/)
+gh run download <run-id> --name test-results
+```
+
+`.gitignore` entries:
+- `test-results/` — matches the `test-results` artifact download folder
+- `*-playwright-artifacts/` — matches any `<name>-playwright-artifacts` artifact download folder
+
+Do not add specific folder names to `.gitignore` for these artifacts; use the patterns above so they remain valid if the artifact name changes.
+
 For local script validation against an existing TRX:
 
 ```powershell

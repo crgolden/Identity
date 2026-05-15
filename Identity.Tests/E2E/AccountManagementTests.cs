@@ -9,7 +9,7 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
     [Fact]
     public async Task ChangePassword_Success_OldPasswordNoLongerWorks()
     {
-        var (email, oldPassword) = await CreateAndLoginAsync();
+        var (email, oldPassword) = await fixture.CreateConfirmedUserAsync();
         const string newPassword = "Changed@789012!";
 
         var (context, page) = await fixture.NewPageAsync();
@@ -52,7 +52,7 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
     [Fact]
     public async Task DeleteAccount_Success_SubsequentLoginFails()
     {
-        var (email, password) = await CreateAndLoginAsync();
+        var (email, password) = await fixture.CreateConfirmedUserAsync();
 
         var (context, page) = await fixture.NewPageAsync();
         await using (context)
@@ -90,7 +90,7 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
     [Fact]
     public async Task Logout_Succeeds_ProtectedPageRedirectsToLogin()
     {
-        var (email, password) = await CreateAndLoginAsync();
+        var (email, password) = await fixture.CreateConfirmedUserAsync();
 
         var (context, page) = await fixture.NewPageAsync();
         await using (context)
@@ -116,7 +116,7 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
     [Fact]
     public async Task ChangeEmail_Succeeds_NewEmailWorks()
     {
-        var (oldEmail, password) = await CreateAndLoginAsync();
+        var (oldEmail, password) = await fixture.CreateConfirmedUserAsync();
         var newEmail = $"e2e-changed-{Guid.NewGuid()}@test.invalid";
 
         var (context, page) = await fixture.NewPageAsync();
@@ -198,29 +198,5 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
             await page3.WaitForURLAsync(url => !url.Contains("/Account/Login"));
             Assert.DoesNotContain("/Account/Login", page3.Url);
         }
-    }
-
-    private async Task<(string Email, string Password)> CreateAndLoginAsync(string? emailOverride = null)
-    {
-        var email = emailOverride ?? $"e2e-{Guid.NewGuid()}@test.invalid";
-        const string password = "Test@123456!";
-
-        var (ctx, page) = await fixture.NewPageAsync();
-        await using (ctx)
-        {
-            await page.GotoAsync("/Account/Register");
-            await page.FillAsync("input[name='Input.Email']", email);
-            await page.FillAsync("input[name='Input.Password']", password);
-            await page.FillAsync("input[name='Input.ConfirmPassword']", password);
-            await page.ClickAsync("#registerSubmit");
-            await page.WaitForURLAsync("**/Account/RegisterConfirmation**");
-
-            var confirmEmail = await fixture.Email.WaitForEmailAsync(email);
-            var confirmLink = EmailCaptureService.ExtractLink(confirmEmail.HtmlBody, "http");
-            await page.GotoAsync(confirmLink);
-            await page.WaitForURLAsync("**/Account/ConfirmEmail**");
-        }
-
-        return (email, password);
     }
 }
