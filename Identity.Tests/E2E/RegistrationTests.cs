@@ -35,7 +35,7 @@ public sealed class RegistrationTests(PlaywrightFixture fixture)
             await page2.ClickAsync("#registerSubmit");
 
             await page2.WaitForURLAsync("**/Account/Register**");
-            var errorText = await page2.TextContentAsync(".validation-summary-errors, .text-danger");
+            var errorText = await page2.TextContentAsync("#validation-errors");
             Assert.NotNull(errorText);
         }
     }
@@ -68,7 +68,7 @@ public sealed class RegistrationTests(PlaywrightFixture fixture)
             await page2.ClickAsync("#login-submit");
 
             await page2.WaitForURLAsync("**/Account/Login**");
-            var errorText = await page2.TextContentAsync(".validation-summary-errors, .text-danger");
+            var errorText = await page2.TextContentAsync("#validation-errors");
             Assert.NotNull(errorText);
         }
     }

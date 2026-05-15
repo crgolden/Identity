@@ -40,7 +40,7 @@ public sealed class AccountSmokeTests(PlaywrightFixture fixture)
             // DELETE
             await page.GotoAsync("/Account/Manage/DeletePersonalData");
             await page.FillAsync("input[name='Input.Password']", password);
-            await page.ClickAsync("button.btn-danger");
+            await page.ClickAsync("#delete-account-submit");
             await page.WaitForURLAsync(url => !url.Contains("/Account/Manage"));
         }
 
@@ -53,7 +53,7 @@ public sealed class AccountSmokeTests(PlaywrightFixture fixture)
             await page2.FillAsync("input[name='Input.Password']", password);
             await page2.ClickAsync("#login-submit");
             await page2.WaitForURLAsync("**/Account/Login**");
-            var error = await page2.TextContentAsync(".validation-summary-errors, .text-danger");
+            var error = await page2.TextContentAsync("#validation-errors");
             Assert.NotNull(error);
         }
     }

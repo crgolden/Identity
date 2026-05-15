@@ -34,7 +34,7 @@ public sealed class ConsentTests(PlaywrightFixture fixture)
 
             // Capture the redirect URL from the browser request event before ERR_CONNECTION_REFUSED
             var request = await page.RunAndWaitForRequestAsync(
-                async () => await page.ClickAsync("button[value='no']"),
+                async () => await page.ClickAsync("#consent-deny"),
                 r => r.Url.Contains("localhost:9999"));
 
             Assert.Contains("error=access_denied", request.Url);
@@ -65,7 +65,7 @@ public sealed class ConsentTests(PlaywrightFixture fixture)
             Assert.Contains("/Account/Manage/Consent", page.Url);
 
             // Check all scope checkboxes so the scopes are included in the form submission.
-            var checkboxes = await page.QuerySelectorAllAsync("input[type='checkbox'][name='Input.ScopesConsented']:not([disabled])");
+            var checkboxes = await page.QuerySelectorAllAsync("input[id^='scope_']:not([disabled])");
             foreach (var checkbox in checkboxes)
             {
                 await checkbox.CheckAsync();
@@ -73,7 +73,7 @@ public sealed class ConsentTests(PlaywrightFixture fixture)
 
             // Capture the redirect URL from the browser request event before ERR_CONNECTION_REFUSED.
             var request = await page.RunAndWaitForRequestAsync(
-                async () => await page.ClickAsync("button[value='yes']"),
+                async () => await page.ClickAsync("#consent-allow"),
                 r => r.Url.Contains("localhost:9999"),
                 new PageRunAndWaitForRequestOptions { Timeout = 15_000 });
 
@@ -102,7 +102,7 @@ public sealed class ConsentTests(PlaywrightFixture fixture)
             }
 
             // Uncheck all non-required scopes
-            var checkboxes = await page.QuerySelectorAllAsync("input[type='checkbox'][name='Input.ScopesConsented']:not([disabled])");
+            var checkboxes = await page.QuerySelectorAllAsync("input[id^='scope_']:not([disabled])");
             foreach (var checkbox in checkboxes)
             {
                 if (await checkbox.IsCheckedAsync())
@@ -112,7 +112,7 @@ public sealed class ConsentTests(PlaywrightFixture fixture)
             }
 
             await page.RunAndWaitForResponseAsync(
-                () => page.ClickAsync("button[value='yes']"),
+                () => page.ClickAsync("#consent-allow"),
                 r => r.Url.Contains("/Account/Manage/Consent") && r.Request.Method == "POST");
 
             Assert.Contains("/Account/Manage/Consent", page.Url);

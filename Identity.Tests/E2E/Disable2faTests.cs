@@ -26,11 +26,11 @@ public sealed class Disable2faTests(PlaywrightFixture fixture)
             await setupPage.WaitForURLAsync(url => !url.Contains("/Account/Login"));
 
             await setupPage.GotoAsync("/Account/Manage/TwoFactorAuthentication");
-            await setupPage.ClickAsync("a[href*='EnableAuthenticator']");
+            await setupPage.ClickAsync("#enable-authenticator");
             await setupPage.WaitForURLAsync("**/Account/Manage/EnableAuthenticator**");
 
-            var sharedKeyEl = setupPage.Locator("kbd");
-            capturedSharedKey = (await sharedKeyEl.First.TextContentAsync() ?? string.Empty)
+            var sharedKeyEl = setupPage.Locator("#shared-key");
+            capturedSharedKey = (await sharedKeyEl.TextContentAsync() ?? string.Empty)
                 .Replace(" ", string.Empty)
                 .Replace("-", string.Empty)
                 .ToUpperInvariant();
@@ -40,7 +40,7 @@ public sealed class Disable2faTests(PlaywrightFixture fixture)
             var code = totp.ComputeTotp();
 
             await setupPage.FillAsync("input[name='Input.Code']", code);
-            await setupPage.ClickAsync("button.btn-primary");
+            await setupPage.ClickAsync("#verify-authenticator-submit");
 
             await setupPage.WaitForURLAsync(url =>
                 url.Contains("ShowRecoveryCodes") || url.Contains("TwoFactorAuthentication"));
@@ -79,7 +79,7 @@ public sealed class Disable2faTests(PlaywrightFixture fixture)
             // Navigate to Disable2fa and confirm
             await disablePage.GotoAsync("/Account/Manage/Disable2fa");
             await disablePage.WaitForURLAsync("**/Account/Manage/Disable2fa**");
-            await disablePage.ClickAsync("button.btn-danger");
+            await disablePage.ClickAsync("#disable-2fa-submit");
             await disablePage.WaitForURLAsync("**/Account/Manage/TwoFactorAuthentication**");
         }
 

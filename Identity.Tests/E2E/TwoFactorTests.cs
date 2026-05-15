@@ -24,11 +24,11 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
 
             // Navigate to 2FA setup
             await page.GotoAsync("/Account/Manage/TwoFactorAuthentication");
-            await page.ClickAsync("a[href*='EnableAuthenticator']");
+            await page.ClickAsync("#enable-authenticator");
             await page.WaitForURLAsync("**/Account/Manage/EnableAuthenticator**");
 
             // Extract shared key from page
-            var sharedKeyEl = page.Locator("kbd");
+            var sharedKeyEl = page.Locator("#shared-key");
             var sharedKey = (await sharedKeyEl.First.TextContentAsync() ?? string.Empty)
                 .Replace(" ", string.Empty)
                 .Replace("-", string.Empty)
@@ -41,7 +41,7 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
 
             // Submit the code
             await page.FillAsync("input[name='Input.Code']", code);
-            await page.ClickAsync("button.btn-primary");
+            await page.ClickAsync("#verify-authenticator-submit");
 
             // Should show recovery codes or success confirmation
             await page.WaitForURLAsync(url =>
@@ -68,10 +68,10 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
             await setupPage.WaitForURLAsync(url => !url.Contains("/Account/Login"));
 
             await setupPage.GotoAsync("/Account/Manage/TwoFactorAuthentication");
-            await setupPage.ClickAsync("a[href*='EnableAuthenticator']");
+            await setupPage.ClickAsync("#enable-authenticator");
             await setupPage.WaitForURLAsync("**/Account/Manage/EnableAuthenticator**");
 
-            var sharedKeyEl = setupPage.Locator("kbd");
+            var sharedKeyEl = setupPage.Locator("#shared-key");
             var sharedKey = (await sharedKeyEl.First.TextContentAsync() ?? string.Empty)
                 .Replace(" ", string.Empty).Replace("-", string.Empty).ToUpperInvariant();
             var keyBytes = Base32Encoding.ToBytes(sharedKey);
@@ -79,14 +79,14 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
             var code = totp.ComputeTotp();
 
             await setupPage.FillAsync("input[name='Input.Code']", code);
-            await setupPage.ClickAsync("button.btn-primary");
+            await setupPage.ClickAsync("#verify-authenticator-submit");
 
             // Generate recovery codes
             await setupPage.GotoAsync("/Account/Manage/GenerateRecoveryCodes");
-            await setupPage.ClickAsync("button.btn-danger");
+            await setupPage.ClickAsync("#generate-codes-submit");
             await setupPage.WaitForURLAsync("**/Account/Manage/ShowRecoveryCodes**");
 
-            var codeEl = setupPage.Locator("code").First;
+            var codeEl = setupPage.Locator("#recovery-code-0");
             recoveryCode = (await codeEl.TextContentAsync() ?? string.Empty).Trim();
         }
 
@@ -103,7 +103,7 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
             await loginPage.WaitForURLAsync("**/Account/LoginWith2fa**");
 
             // Use recovery code path
-            await loginPage.ClickAsync("a[href*='LoginWithRecoveryCode']");
+            await loginPage.ClickAsync("#recovery-code-login");
             await loginPage.WaitForURLAsync("**/Account/LoginWithRecoveryCode**");
             await loginPage.FillAsync("input[name='Input.RecoveryCode']", recoveryCode);
             await loginPage.ClickAsync("#recovery-code-submit");
@@ -129,14 +129,14 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
 
             // Enable 2FA
             await page.GotoAsync("/Account/Manage/TwoFactorAuthentication");
-            await page.ClickAsync("a[href*='EnableAuthenticator']");
+            await page.ClickAsync("#enable-authenticator");
             await page.WaitForURLAsync("**/Account/Manage/EnableAuthenticator**");
 
-            var sharedKey = (await page.Locator("kbd").First.TextContentAsync() ?? string.Empty)
+            var sharedKey = (await page.Locator("#shared-key").TextContentAsync() ?? string.Empty)
                 .Replace(" ", string.Empty).Replace("-", string.Empty).ToUpperInvariant();
             var totp = new Totp(Base32Encoding.ToBytes(sharedKey));
             await page.FillAsync("input[name='Input.Code']", totp.ComputeTotp());
-            await page.ClickAsync("button.btn-primary");
+            await page.ClickAsync("#verify-authenticator-submit");
             await page.WaitForURLAsync(url =>
                 url.Contains("ShowRecoveryCodes") || url.Contains("TwoFactorAuthentication"));
 

@@ -39,7 +39,7 @@ public sealed class LoginTests(PlaywrightFixture fixture)
 
             // Should stay on login page with a validation error
             await page.WaitForURLAsync("**/Account/Login**");
-            var errorText = await page.TextContentAsync(".validation-summary-errors, .text-danger");
+            var errorText = await page.TextContentAsync("#validation-errors");
             Assert.NotNull(errorText);
         }
     }
@@ -72,7 +72,7 @@ public sealed class LoginTests(PlaywrightFixture fixture)
                 }
                 else
                 {
-                    await page.Locator("h1:has-text('Locked out')").WaitForAsync();
+                    await page.Locator("#lockout-heading").WaitForAsync();
                 }
             }
 

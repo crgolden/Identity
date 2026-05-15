@@ -27,7 +27,7 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.OldPassword']", oldPassword);
             await page.FillAsync("input[name='Input.NewPassword']", newPassword);
             await page.FillAsync("input[name='Input.ConfirmPassword']", newPassword);
-            await page.ClickAsync("button.btn-primary");
+            await page.ClickAsync("#change-password-submit");
 
             // Confirm success message
             await page.WaitForURLAsync("**/Account/Manage/ChangePassword**");
@@ -44,7 +44,7 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
             await page2.FillAsync("input[name='Input.Password']", oldPassword);
             await page2.ClickAsync("#login-submit");
             await page2.WaitForURLAsync("**/Account/Login**");
-            var errorText = await page2.TextContentAsync(".validation-summary-errors, .text-danger");
+            var errorText = await page2.TextContentAsync("#validation-errors");
             Assert.NotNull(errorText);
         }
     }
@@ -67,7 +67,7 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
             // Delete account
             await page.GotoAsync("/Account/Manage/DeletePersonalData");
             await page.FillAsync("input[name='Input.Password']", password);
-            await page.ClickAsync("button.btn-danger");
+            await page.ClickAsync("#delete-account-submit");
 
             // Should redirect to home/login after deletion
             await page.WaitForURLAsync(url => !url.Contains("/Account/Manage"));
@@ -82,7 +82,7 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
             await page2.FillAsync("input[name='Input.Password']", password);
             await page2.ClickAsync("#login-submit");
             await page2.WaitForURLAsync("**/Account/Login**");
-            var errorText = await page2.TextContentAsync(".validation-summary-errors, .text-danger");
+            var errorText = await page2.TextContentAsync("#validation-errors");
             Assert.NotNull(errorText);
         }
     }

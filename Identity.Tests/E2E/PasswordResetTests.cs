@@ -73,7 +73,7 @@ public sealed class PasswordResetTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Password']", oldPassword);
             await page.ClickAsync("#login-submit");
             await page.WaitForURLAsync("**/Account/Login**");
-            var errorText = await page.TextContentAsync(".validation-summary-errors, .text-danger");
+            var errorText = await page.TextContentAsync("#validation-errors");
             Assert.NotNull(errorText);
         }
     }
