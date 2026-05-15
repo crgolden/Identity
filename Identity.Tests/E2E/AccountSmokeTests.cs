@@ -12,6 +12,9 @@ public sealed class AccountSmokeTests(PlaywrightFixture fixture)
         var email = Environment.GetEnvironmentVariable("TEST_USERNAME") ?? throw new InvalidOperationException("TEST_USERNAME is not set.");
         var password = Environment.GetEnvironmentVariable("TEST_PASSWORD") ?? throw new InvalidOperationException("TEST_PASSWORD is not set.");
 
+        // Clean up any leftover account from a previous partial run before registering.
+        await fixture.DeleteUserIfExistsAsync(email);
+
         var (ctx, page) = await fixture.NewPageAsync("Smoke");
         await using (ctx)
         {
@@ -27,6 +30,7 @@ public sealed class AccountSmokeTests(PlaywrightFixture fixture)
             await fixture.ConfirmUserEmailAsync(email);
 
             // LOGIN — reCAPTCHA bypassed for smoke account
+            await page.GotoAsync("/Account/Login");
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("#login-submit");

@@ -154,29 +154,13 @@ public sealed class PlaywrightFixture : IAsyncLifetime
     /// <returns>A task that completes when the email is confirmed.</returns>
     public async Task ConfirmUserEmailAsync(string email)
     {
-        if (IsSmoke && !IsNullOrWhiteSpace(DataSource) && !IsNullOrWhiteSpace(InitialCatalog) && !IsNullOrWhiteSpace(UserID) && !IsNullOrWhiteSpace(Password))
+        if (IsSmoke)
         {
-            var builder = new SqlConnectionStringBuilder
-            {
-                DataSource = DataSource,
-                InitialCatalog = InitialCatalog,
-                UserID = UserID,
-                Password = Password,
-                IntegratedSecurity = false,
-                Encrypt = true,
-                TrustServerCertificate = false
-            };
-
-            var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-                .UseSqlServer(builder.ConnectionString)
-                .Options;
-
-            await using var db = new ApplicationDbContext(options);
-            var normalizedEmail = email.ToUpperInvariant();
-            await db.Users
-                .Where(u => u.NormalizedEmail == normalizedEmail)
-                .ExecuteUpdateAsync(s => s.SetProperty(u => u.EmailConfirmed, true));
-
+            await using var conn = OpenSmokeConnection();
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText = "UPDATE AspNetUsers SET EmailConfirmed = 1 WHERE NormalizedEmail = @email";
+            cmd.Parameters.AddWithValue("@email", email.ToUpperInvariant());
+            await cmd.ExecuteNonQueryAsync();
             return;
         }
 
@@ -190,6 +174,34 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         {
             throw new InvalidOperationException(
                 string.Join(", ", result.Errors.Select(e => e.Description)));
+        }
+    }
+
+    /// <summary>
+    /// Deletes the user with <paramref name="email"/> from the database if they exist.
+    /// Used at the start of smoke tests to recover from a previous partial run that left
+    /// the account registered but not deleted.
+    /// </summary>
+    /// <param name="email">The email address of the user to delete.</param>
+    /// <returns>A task that completes when the user has been deleted (or was not found).</returns>
+    public async Task DeleteUserIfExistsAsync(string email)
+    {
+        if (IsSmoke)
+        {
+            await using var conn = OpenSmokeConnection();
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText = "DELETE FROM AspNetUsers WHERE NormalizedEmail = @email";
+            cmd.Parameters.AddWithValue("@email", email.ToUpperInvariant());
+            await cmd.ExecuteNonQueryAsync();
+            return;
+        }
+
+        await using var scope = _factory!.Services.CreateAsyncScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser<Guid>>>();
+        var user = await userManager.FindByEmailAsync(email);
+        if (user is not null)
+        {
+            await userManager.DeleteAsync(user);
         }
     }
 
@@ -251,10 +263,44 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         await _factory!.DisposeAsync();
     }
 
+    private static SqlConnection OpenSmokeConnection()
+    {
+        if (IsNullOrWhiteSpace(DataSource) || IsNullOrWhiteSpace(InitialCatalog) || IsNullOrWhiteSpace(UserID) || IsNullOrWhiteSpace(Password))
+        {
+            var missing = new[]
+            {
+                IsNullOrWhiteSpace(DataSource) ? "SMOKE_DB_DATA_SOURCE" : null,
+                IsNullOrWhiteSpace(InitialCatalog) ? "SqlConnectionStringBuilder__InitialCatalog" : null,
+                IsNullOrWhiteSpace(UserID) ? "SqlConnectionStringBuilder__UserID" : null,
+                IsNullOrWhiteSpace(Password) ? "SqlConnectionStringBuilder__Password" : null,
+            }.Where(v => v is not null);
+            throw new InvalidOperationException($"Missing smoke DB env vars: {string.Join(", ", missing)}");
+        }
+
+        var connectionString = new SqlConnectionStringBuilder
+        {
+            DataSource = DataSource,
+            InitialCatalog = InitialCatalog,
+            UserID = UserID,
+            Password = Password,
+            IntegratedSecurity = false,
+            Encrypt = true,
+            TrustServerCertificate = false
+        }.ConnectionString;
+
+        var conn = new SqlConnection(connectionString);
+        conn.Open();
+        return conn;
+    }
+
     private async Task CleanupDatabaseAsync()
     {
         await using var scope = _factory!.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        if (!db.Database.GetDbConnection().Database.EndsWith("Test"))
+        {
+            return;
+        }
 
         // Identity — cascade deletes UserClaims, UserLogins, UserTokens, UserPasskeys, UserRoles
         await db.Users.ExecuteDeleteAsync();
