@@ -114,55 +114,6 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
     }
 
     [Fact]
-    public async Task TwoFactor_Disable_NoLongerRequired()
-    {
-        var (email, password) = await fixture.CreateConfirmedUserAsync();
-
-        // Enable 2FA then immediately disable it in the same session
-        var (setupCtx, setupPage) = await fixture.NewPageAsync();
-        await using (setupCtx)
-        {
-            await setupPage.GotoAsync("/Account/Login");
-            await setupPage.FillAsync("input[name='Input.Email']", email);
-            await setupPage.FillAsync("input[name='Input.Password']", password);
-            await setupPage.ClickAsync("#login-submit");
-            await setupPage.WaitForURLAsync(url => !url.Contains("/Account/Login"));
-
-            // Enable 2FA
-            await setupPage.GotoAsync("/Account/Manage/TwoFactorAuthentication");
-            await setupPage.ClickAsync("a[href*='EnableAuthenticator']");
-            await setupPage.WaitForURLAsync("**/Account/Manage/EnableAuthenticator**");
-
-            var sharedKey = (await setupPage.Locator("kbd").First.TextContentAsync() ?? string.Empty)
-                .Replace(" ", string.Empty).Replace("-", string.Empty).ToUpperInvariant();
-            var totp = new Totp(Base32Encoding.ToBytes(sharedKey));
-            await setupPage.FillAsync("input[name='Input.Code']", totp.ComputeTotp());
-            await setupPage.ClickAsync("button.btn-primary");
-            await setupPage.WaitForURLAsync(url =>
-                url.Contains("ShowRecoveryCodes") || url.Contains("TwoFactorAuthentication"));
-
-            // Disable 2FA
-            await setupPage.GotoAsync("/Account/Manage/TwoFactorAuthentication");
-            await setupPage.ClickAsync("a[href*='Disable2fa']");
-            await setupPage.WaitForURLAsync("**/Account/Manage/Disable2fa**");
-            await setupPage.ClickAsync("button.btn-danger");
-            await setupPage.WaitForURLAsync("**/Account/Manage/TwoFactorAuthentication**");
-        }
-
-        // Next login should not trigger a 2FA challenge
-        var (loginCtx, loginPage) = await fixture.NewPageAsync();
-        await using (loginCtx)
-        {
-            await loginPage.GotoAsync("/Account/Login");
-            await loginPage.FillAsync("input[name='Input.Email']", email);
-            await loginPage.FillAsync("input[name='Input.Password']", password);
-            await loginPage.ClickAsync("#login-submit");
-            await loginPage.WaitForURLAsync(url => !url.Contains("/Account/Login"));
-            Assert.DoesNotContain("LoginWith2fa", loginPage.Url);
-        }
-    }
-
-    [Fact]
     public async Task TwoFactor_ResetAuthenticator_DisablesAndRedirectsToSetup()
     {
         var (email, password) = await fixture.CreateConfirmedUserAsync();

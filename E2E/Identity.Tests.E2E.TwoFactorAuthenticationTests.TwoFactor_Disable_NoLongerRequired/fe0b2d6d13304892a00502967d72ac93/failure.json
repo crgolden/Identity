@@ -1,0 +1,17 @@
+{
+  "outcome": "Failed",
+  "executionTimeSeconds": 71667.6459,
+  "exceptionTypes": [
+    "System.TimeoutException",
+    "System.TimeoutException"
+  ],
+  "exceptionMessages": [
+    "Timeout 60000ms exceeded.\n=========================== logs ===========================\n  \u0022NetworkIdle\u0022 event fired\n============================================================",
+    "Timeout 60000ms exceeded."
+  ],
+  "exceptionStackTraces": [
+    "   at Microsoft.Playwright.Core.Waiter.WaitForPromiseAsync[T](Task\u00601 task, Action dispose) in /_/src/Playwright/Core/Waiter.cs:line 226\r\n   at Microsoft.Playwright.Core.Frame.WaitForLoadStateAsync(Nullable\u00601 state, FrameWaitForLoadStateOptions options) in /_/src/Playwright/Core/Frame.cs:line 247\r\n   at Identity.Tests.E2E.TwoFactorAuthenticationTests.TwoFactor_Disable_NoLongerRequired() in D:\\a\\Identity\\Identity\\Identity.Tests\\E2E\\TwoFactorTests.cs:line 160\r\n   at Identity.Tests.E2E.TwoFactorAuthenticationTests.TwoFactor_Disable_NoLongerRequired() in D:\\a\\Identity\\Identity\\Identity.Tests\\E2E\\TwoFactorTests.cs:line 161\r\n   at Xunit.v3.TestRunner\u00602.\u003C\u003Ec__DisplayClass5_0.\u003C\u003CInvokeTest\u003Eb__1\u003Ed.MoveNext() in /_/src/xunit.v3.core/Runners/TestRunner.cs:line 170\r\n--- End of stack trace from previous location ---\r\n   at Xunit.v3.ExceptionAggregator.RunAsync(Func\u00601 code) in /_/src/xunit.v3.core/Exceptions/ExceptionAggregator.cs:line 124",
+    "   at Microsoft.Playwright.Helpers.TaskHelper.\u003C\u003Ec__DisplayClass2_0.\u003CWithTimeout\u003Eb__0() in /_/src/Playwright/Helpers/TaskHelper.cs:line 72\r\n   at Microsoft.Playwright.Helpers.TaskHelper.WithTimeout(Task task, Func\u00601 timeoutAction, TimeSpan timeout, CancellationToken cancellationToken) in /_/src/Playwright/Helpers/TaskHelper.cs:line 108\r\n   at Microsoft.Playwright.Core.Waiter.WaitForPromiseAsync[T](Task\u00601 task, Action dispose) in /_/src/Playwright/Core/Waiter.cs:line 218"
+  ],
+  "failureCause": "Exception"
+}

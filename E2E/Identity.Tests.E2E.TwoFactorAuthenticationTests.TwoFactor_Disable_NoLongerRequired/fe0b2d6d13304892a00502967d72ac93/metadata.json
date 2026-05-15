@@ -1,0 +1,14 @@
+{
+  "app": "Identity",
+  "suite": "E2E",
+  "testId": "3f73bb8291418a1d7f1e6ee4277c502d3526b61d872fa3fc6e31b011b4331366",
+  "testName": "Identity.Tests.E2E.TwoFactorAuthenticationTests.TwoFactor_Disable_NoLongerRequired",
+  "artifactName": "Identity.Tests.E2E.TwoFactorAuthenticationTests.TwoFactor_Disable_NoLongerRequired",
+  "startedAt": "2026-05-15T14:15:56.1852944+00:00",
+  "completedAt": "2026-05-15T14:15:59.5497905+00:00",
+  "githubRunId": "25922423738",
+  "githubRunAttempt": "1",
+  "githubRepository": "crgolden/Identity",
+  "githubSha": "fb306589f79dbea840633b96b7255ad8958ac0d0",
+  "githubRef": "refs/heads/main"
+}
