@@ -114,7 +114,8 @@ try
             .AddAzureClientsCore(true);
         builder.Services.Configure<ReCAPTCHAOptions>(recaptchaOptions =>
         {
-            recaptchaOptions.SmokeTestEmail = secrets.SmokeTestEmail.Value;
+            recaptchaOptions.AdminEmail = secrets.AdminEmail.Value;
+            recaptchaOptions.TestEmail = secrets.TestEmail.Value;
         });
     }
     else

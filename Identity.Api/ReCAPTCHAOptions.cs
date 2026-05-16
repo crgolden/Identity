@@ -13,5 +13,7 @@ public sealed class ReCAPTCHAOptions
 
     public Uri? VerifyEndpoint { get; set; }
 
-    public string? SmokeTestEmail { get; set; }
+    public string? AdminEmail { get; set; }
+
+    public string? TestEmail { get; set; }
 }

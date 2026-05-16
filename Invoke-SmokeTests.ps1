@@ -4,7 +4,7 @@
 # so they never need to be set as OS environment variables.
 #
 # Local (default): targets https://localhost:7261 — requires Identity running locally with
-# ReCAPTCHA:SmokeTestEmail set via its User Secrets to match TEST_USERNAME.
+# ReCAPTCHA:SmokeTestEmail set via its User Secrets to match TestEmail.
 #
 # Deployed: pass -BaseUrl https://crgolden-identity.azurewebsites.net
 param(
@@ -14,10 +14,10 @@ param(
 $secretsPath = Join-Path $env:APPDATA "Microsoft\UserSecrets\aspnet-Identity-149346d0-999f-4a74-8ff7-2a92d39790f2\secrets.json"
 $secrets     = Get-Content $secretsPath -Raw | ConvertFrom-Json
 
-$env:SMOKE_BASE_URL = $BaseUrl
-$env:TEST_USERNAME  = $secrets.TEST_USERNAME
-$env:TEST_PASSWORD  = $secrets.TEST_PASSWORD
-$env:SMOKE_DB_DATA_SOURCE                        = $secrets.SMOKE_DB_DATA_SOURCE
+$env:SmokeBaseUrl = $BaseUrl
+$env:SmokeDataSource = $secrets.SmokeDataSource
+$env:TestEmail = $secrets.TestEmail
+$env:TestPassword = $secrets.TestPassword
 $env:SqlConnectionStringBuilder__InitialCatalog = $secrets.SqlConnectionStringBuilder.InitialCatalog
 $env:SqlConnectionStringBuilder__UserID         = $secrets.SqlConnectionStringBuilder.UserID
 $env:SqlConnectionStringBuilder__Password       = $secrets.SqlConnectionStringBuilder.Password
@@ -28,9 +28,8 @@ try
 }
 finally
 {
-    Remove-Item Env:SMOKE_BASE_URL, Env:TEST_USERNAME, Env:TEST_PASSWORD `
-        -ErrorAction SilentlyContinue
-    Remove-Item Env:SMOKE_DB_DATA_SOURCE, Env:SqlConnectionStringBuilder__InitialCatalog, `
+    Remove-Item Env:SmokeBaseUrl, Env:TestEmail, Env:TestPassword `
+        Env:SmokeDataSource, Env:SqlConnectionStringBuilder__InitialCatalog, `
         Env:SqlConnectionStringBuilder__UserID, Env:SqlConnectionStringBuilder__Password `
         -ErrorAction SilentlyContinue
 }

@@ -78,7 +78,7 @@ public class RegisterModel : PageModel
             return Page();
         }
 
-        if (!string.Equals(Input.Email, _recaptchaOptions.Value.SmokeTestEmail, StringComparison.Ordinal))
+        if (!string.Equals(Input.Email, _recaptchaOptions.Value.TestEmail, StringComparison.OrdinalIgnoreCase))
         {
             var score = await _captchaService.VerifyAsync(Input.RecaptchaToken, HttpContext.RequestAborted);
             if (score < _captchaService.ScoreThreshold)

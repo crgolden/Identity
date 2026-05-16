@@ -9,8 +9,8 @@ public sealed class AccountSmokeTests(PlaywrightFixture fixture)
     [Fact]
     public async Task Account_register_and_delete_lifecycle()
     {
-        var email = Environment.GetEnvironmentVariable("TEST_USERNAME") ?? throw new InvalidOperationException("TEST_USERNAME is not set.");
-        var password = Environment.GetEnvironmentVariable("TEST_PASSWORD") ?? throw new InvalidOperationException("TEST_PASSWORD is not set.");
+        var email = Environment.GetEnvironmentVariable("TestEmail") ?? throw new InvalidOperationException("TestEmail is not set.");
+        var password = Environment.GetEnvironmentVariable("TestPassword") ?? throw new InvalidOperationException("TestPassword is not set.");
 
         // Clean up any leftover account from a previous partial run before registering.
         await fixture.DeleteUserIfExistsAsync(email);

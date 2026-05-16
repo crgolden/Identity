@@ -545,7 +545,7 @@ public class LoginModelTests
     private static IOptions<ReCAPTCHAOptions> CreateRecaptchaOptionsMock(decimal threshold = 0.5m, string? smokeTestEmail = null)
     {
         var mock = new Mock<IOptions<ReCAPTCHAOptions>>();
-        mock.Setup(o => o.Value).Returns(new ReCAPTCHAOptions { ScoreThreshold = threshold, SmokeTestEmail = smokeTestEmail });
+        mock.Setup(o => o.Value).Returns(new ReCAPTCHAOptions { ScoreThreshold = threshold, TestEmail = smokeTestEmail });
         return mock.Object;
     }
 }

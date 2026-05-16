@@ -16,8 +16,8 @@ public sealed class PlaywrightFixture : IAsyncLifetime
     private static readonly bool CI = bool.TryParse(Environment.GetEnvironmentVariable("CI"), out var isCi) && isCi;
     private static readonly bool Headless = !string.Equals(Environment.GetEnvironmentVariable("PLAYWRIGHT_HEADED"), "1", StringComparison.OrdinalIgnoreCase);
     private static readonly bool StrykerActive = Environment.GetEnvironmentVariable("STRYKER_MUTANT_FILE") is not null;
-    private static readonly string? SmokeBaseUrl = Environment.GetEnvironmentVariable("SMOKE_BASE_URL");
-    private static readonly string? DataSource = Environment.GetEnvironmentVariable("SMOKE_DB_DATA_SOURCE");
+    private static readonly string? SmokeBaseUrl = Environment.GetEnvironmentVariable("SmokeBaseUrl");
+    private static readonly string? DataSource = Environment.GetEnvironmentVariable("SmokeDataSource");
     private static readonly string? InitialCatalog = Environment.GetEnvironmentVariable("SqlConnectionStringBuilder__InitialCatalog");
     private static readonly string? UserID = Environment.GetEnvironmentVariable("SqlConnectionStringBuilder__UserID");
     private static readonly string? Password = Environment.GetEnvironmentVariable("SqlConnectionStringBuilder__Password");
@@ -269,7 +269,7 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         {
             var missing = new[]
             {
-                IsNullOrWhiteSpace(DataSource) ? "SMOKE_DB_DATA_SOURCE" : null,
+                IsNullOrWhiteSpace(DataSource) ? "SmokeDataSource" : null,
                 IsNullOrWhiteSpace(InitialCatalog) ? "SqlConnectionStringBuilder__InitialCatalog" : null,
                 IsNullOrWhiteSpace(UserID) ? "SqlConnectionStringBuilder__UserID" : null,
                 IsNullOrWhiteSpace(Password) ? "SqlConnectionStringBuilder__Password" : null,

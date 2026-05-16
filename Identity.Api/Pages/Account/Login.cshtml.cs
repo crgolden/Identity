@@ -86,11 +86,8 @@ public class LoginModel : PageModel
                 return Page();
             }
 
-            if (string.Equals(Input.Email, _recaptchaOptions.Value.SmokeTestEmail, StringComparison.Ordinal))
-            {
-                _logger.LogTrace("Skipping reCAPTCHA verification for smoke test account.");
-            }
-            else
+            if (!string.Equals(Input.Email, _recaptchaOptions.Value.AdminEmail, StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(Input.Email, _recaptchaOptions.Value.TestEmail, StringComparison.OrdinalIgnoreCase))
             {
                 var score = await _captchaService.VerifyAsync(Input.RecaptchaToken, HttpContext.RequestAborted);
                 if (score < _recaptchaOptions.Value.ScoreThreshold)
