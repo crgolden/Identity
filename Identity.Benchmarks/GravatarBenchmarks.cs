@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Text;
 using BenchmarkDotNet.Attributes;
+using Microsoft.VSDiagnostics;
 
 /// <summary>
 /// Measures the SHA-256 hashing used by GravatarService to derive avatar URLs.
@@ -11,6 +12,7 @@ using BenchmarkDotNet.Attributes;
 /// </summary>
 [SimpleJob]
 [MemoryDiagnoser]
+[CPUUsageDiagnoser]
 [ExcludeFromCodeCoverage]
 public class GravatarBenchmarks
 {
