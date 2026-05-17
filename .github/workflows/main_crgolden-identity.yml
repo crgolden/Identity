@@ -265,7 +265,7 @@ jobs:
 
       - name: dotnet publish
         run: >
-          dotnet publish Identity.Api/Identity.Api.csproj
+          dotnet publish Identity/Identity.csproj
           -c Release
           -r win-x86
           --self-contained false
