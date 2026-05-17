@@ -46,11 +46,8 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Code']", code);
             await page.ClickAsync("#verify-authenticator-submit");
 
-            // Should show recovery codes or success confirmation
-            await page.WaitForURLAsync(url =>
-                url.Contains("ShowRecoveryCodes") || url.Contains("EnableAuthenticator") || url.Contains("TwoFactorAuthentication"));
-            var bodyText = await page.TextContentAsync("body");
-            Assert.Contains("verified", bodyText, StringComparison.OrdinalIgnoreCase);
+            // WaitForURLAsync misses navigations that complete before the listener registers; poll DOM instead.
+            await Assertions.Expect(page.GetByText("verified", new() { Exact = false })).ToBeVisibleAsync(new LocatorAssertionsToBeVisibleOptions { Timeout = 60_000 });
         }
     }
 
@@ -87,7 +84,9 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
             // Generate recovery codes
             await setupPage.GotoAsync("/Account/Manage/GenerateRecoveryCodes");
             await setupPage.ClickAsync("#generate-codes-submit");
-            await setupPage.WaitForURLAsync("**/Account/Manage/ShowRecoveryCodes**");
+
+            // WaitForURLAsync misses navigations that complete before the listener registers; poll DOM instead.
+            await Assertions.Expect(setupPage.Locator("#recovery-code-0")).ToBeVisibleAsync(new LocatorAssertionsToBeVisibleOptions { Timeout = 60_000 });
 
             var codeEl = setupPage.Locator("#recovery-code-0");
             recoveryCode = (await codeEl.TextContentAsync() ?? string.Empty).Trim();
@@ -140,8 +139,9 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
             var totp = new Totp(Base32Encoding.ToBytes(sharedKey));
             await page.FillAsync("input[name='Input.Code']", totp.ComputeTotp());
             await page.ClickAsync("#verify-authenticator-submit");
-            await page.WaitForURLAsync(url =>
-                url.Contains("ShowRecoveryCodes") || url.Contains("TwoFactorAuthentication"));
+
+            // WaitForURLAsync misses navigations that complete before the listener registers; poll DOM instead.
+            await Assertions.Expect(page.GetByText("verified", new() { Exact = false })).ToBeVisibleAsync(new LocatorAssertionsToBeVisibleOptions { Timeout = 60_000 });
 
             // Reset authenticator key
             await page.GotoAsync("/Account/Manage/TwoFactorAuthentication");
