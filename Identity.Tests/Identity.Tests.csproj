@@ -29,7 +29,7 @@
     <PackageReference Include="Microsoft.Playwright" Version="1.59.0" />
     <PackageReference Include="Moq" Version="4.20.72" />
     <PackageReference Include="Otp.NET" Version="1.4.1" />
-    <PackageReference Include="SonarAnalyzer.CSharp" Version="10.25.0.139117">
+    <PackageReference Include="SonarAnalyzer.CSharp" Version="10.26.0.140279">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>

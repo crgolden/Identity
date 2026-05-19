@@ -58,7 +58,8 @@ try
             dataProtectionKeyIdentifier = builder.Configuration.GetRequired<Uri>("DataProtectionKeyIdentifier"),
             elasticsearchNode = builder.Configuration.GetRequired<Uri>("ElasticsearchNode"),
             keyVaultUrl = builder.Configuration.GetRequired<Uri>("KeyVaultUri");
-        var applicationName = builder.Configuration.GetRequired<string>("WEBSITE_SITE_NAME");
+        string applicationName = builder.Configuration.GetRequired<string>("WEBSITE_SITE_NAME"),
+            serviceBusNamespace = builder.Configuration.GetRequired<string>("ServiceBusNamespace");
         var secretClient = new SecretClient(keyVaultUrl, tokenCredential);
         var secrets = secretClient.GetIdentitySecrets();
         googleClientId = secrets.GoogleClientId.Value;
@@ -124,7 +125,7 @@ try
             .AddAzureClients(azureClientFactoryBuilder =>
             {
                 azureClientFactoryBuilder.UseCredential(tokenCredential);
-                azureClientFactoryBuilder.AddServiceBusClientWithNamespace(secrets.ServiceBusNamespace.Value);
+                azureClientFactoryBuilder.AddServiceBusClientWithNamespace(serviceBusNamespace);
                 azureClientFactoryBuilder.AddClient(serviceBusSenderFactory).WithName("email");
             });
     }

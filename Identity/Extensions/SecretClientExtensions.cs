@@ -10,7 +10,6 @@ public static class SecretClientExtensions
         public (
             KeyVaultSecret GoogleClientId,
             KeyVaultSecret GoogleClientSecret,
-            KeyVaultSecret ServiceBusNamespace,
             KeyVaultSecret GravatarApiSecretKey,
             KeyVaultSecret SqlServerUserId,
             KeyVaultSecret SqlServerPassword,
@@ -24,7 +23,6 @@ public static class SecretClientExtensions
         {
             var googleClientId = secretClient.GetSecret("GoogleClientId");
             var googleClientSecret = secretClient.GetSecret("GoogleClientSecret");
-            var serviceBusNamespace = secretClient.GetSecret("ServiceBusNamespace");
             var gravatarApiSecretKey = secretClient.GetSecret("GravatarApiSecretKey");
             var sqlServerUserId = secretClient.GetSecret("SqlServerUserId");
             var sqlServerPassword = secretClient.GetSecret("SqlServerPassword");
@@ -37,7 +35,6 @@ public static class SecretClientExtensions
             return (
                 googleClientId.Value,
                 googleClientSecret.Value,
-                serviceBusNamespace.Value,
                 gravatarApiSecretKey.Value,
                 sqlServerUserId.Value,
                 sqlServerPassword.Value,
