@@ -28,6 +28,9 @@ public static class Telemetry
         private static readonly Counter<long> GrantsRevokedCounter =
             Meter.CreateCounter<long>("identity.grants.revoked", description: "Number of client grants revoked by users.");
 
+        private static readonly Counter<long> ExceptionCounter =
+            Meter.CreateCounter<long>("identity.exceptions", description: "Number of unhandled exceptions.");
+
         /// <summary>Records a consent grant for the specified client and scopes.</summary>
         /// <param name="clientId">The client that was granted consent.</param>
         /// <param name="scopes">The scopes that were consented to.</param>
@@ -54,5 +57,10 @@ public static class Telemetry
         /// <param name="clientId">The client whose grants were revoked.</param>
         public static void GrantsRevoked(string? clientId) =>
             GrantsRevokedCounter.Add(1, new TagList { { "client_id", clientId } });
+
+        /// <summary>Records an unhandled exception caught by the global exception handler.</summary>
+        /// <param name="exceptionType">The short type name of the exception.</param>
+        public static void ExceptionOccurred(string exceptionType) =>
+            ExceptionCounter.Add(1, new TagList { { "exception.type", exceptionType } });
     }
 }

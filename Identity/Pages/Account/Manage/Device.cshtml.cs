@@ -1,6 +1,5 @@
 namespace Identity.Pages.Account.Manage;
 
-using Duende.IdentityServer.Configuration;
 using Duende.IdentityServer.Events;
 using Duende.IdentityServer.Extensions;
 using Duende.IdentityServer.Models;
@@ -8,7 +7,6 @@ using Duende.IdentityServer.Services;
 using Filters;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 
 /// <summary>Page model for the device authorization flow consent screen.</summary>
 [Authorize]
@@ -17,17 +15,13 @@ public class DeviceModel : ConsentPageModelBase
 {
     private readonly IDeviceFlowInteractionService _interaction;
     private readonly IEventService _events;
-    private readonly ILogger<DeviceModel> _logger;
 
     public DeviceModel(
         IDeviceFlowInteractionService interaction,
-        IEventService events,
-        IOptions<IdentityServerOptions> options,
-        ILogger<DeviceModel> logger)
+        IEventService events)
     {
         _interaction = interaction;
         _events = events;
-        _logger = logger;
     }
 
     /// <summary>Gets or sets the bound input model from the device flow consent form.</summary>
@@ -146,7 +140,6 @@ public class DeviceModel : ConsentPageModelBase
             return true;
         }
 
-        _logger.LogWarning("No device flow authorization context found for user code.");
         View = new ViewModel();
         return false;
     }

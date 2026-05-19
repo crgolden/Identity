@@ -76,9 +76,7 @@ public class ResetAuthenticatorModelTests
             schemesMock.Object,
             confirmationMock.Object);
 
-        var loggerMock = new Mock<ILogger<ResetAuthenticatorModel>>();
-
-        var model = new ResetAuthenticatorModel(userManagerMock.Object, signInManager, loggerMock.Object);
+        var model = new ResetAuthenticatorModel(userManagerMock.Object, signInManager);
 
         // Set up a minimal PageContext with a ClaimsPrincipal so PageModel.User is available
         var principal = new ClaimsPrincipal(new ClaimsIdentity(
@@ -150,9 +148,7 @@ public class ResetAuthenticatorModelTests
             Mock.Of<IAuthenticationSchemeProvider>(),
             Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
 
-        var mockLogger = new Mock<ILogger<ResetAuthenticatorModel>>();
-
-        var model = new ResetAuthenticatorModel(mockUserManager.Object, mockSignInManager.Object, mockLogger.Object);
+        var model = new ResetAuthenticatorModel(mockUserManager.Object, mockSignInManager.Object);
 
         // Provide a ClaimsPrincipal (not used beyond forwarding to mocks)
         var principal = new ClaimsPrincipal(new ClaimsIdentity());
@@ -205,10 +201,6 @@ public class ResetAuthenticatorModelTests
             .Setup(um => um.ResetAuthenticatorKeyAsync(user))
             .ReturnsAsync(identityResult);
 
-        mockUserManager
-            .Setup(um => um.GetUserIdAsync(user))
-            .ReturnsAsync("the-user-id");
-
         var mockSignInManager = new Mock<SignInManager<IdentityUser<Guid>>>(
             mockUserManager.Object,
             Mock.Of<IHttpContextAccessor>(),
@@ -222,9 +214,7 @@ public class ResetAuthenticatorModelTests
             .Setup(sm => sm.RefreshSignInAsync(user))
             .Returns(Task.CompletedTask);
 
-        var mockLogger = new Mock<ILogger<ResetAuthenticatorModel>>();
-
-        var model = new ResetAuthenticatorModel(mockUserManager.Object, mockSignInManager.Object, mockLogger.Object);
+        var model = new ResetAuthenticatorModel(mockUserManager.Object, mockSignInManager.Object);
         model.PageContext = new PageContext { HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity()) } };
 
         // Act
@@ -238,7 +228,6 @@ public class ResetAuthenticatorModelTests
         // Verify operations were attempted regardless of identity result success/failure
         mockUserManager.Verify(um => um.SetTwoFactorEnabledAsync(user, false), Times.Once);
         mockUserManager.Verify(um => um.ResetAuthenticatorKeyAsync(user), Times.Once);
-        mockUserManager.Verify(um => um.GetUserIdAsync(user), Times.Once);
         mockSignInManager.Verify(sm => sm.RefreshSignInAsync(user), Times.Once);
     }
 
@@ -250,16 +239,13 @@ public class ResetAuthenticatorModelTests
         // is environment-specific and requires stores, options, context accessors, and factories.
         // Do NOT implement fakes or custom test types here per project rules. Use DI-provided or
         // helper-factory instances in real tests.
-        var loggerMock = new Mock<ILogger<ResetAuthenticatorModel>>();
 
         // Passing null managers because the constructor only stores the references and does not access them.
         UserManager<IdentityUser<Guid>>? userManager = null;
         SignInManager<IdentityUser<Guid>>? signInManager = null;
 
         // Act
-        // The test was previously skipped. For the purpose of verifying the constructor does not throw,
-        // we pass null managers because the constructor only stores the references and does not access them.
-        var model = new ResetAuthenticatorModel(userManager, signInManager, loggerMock.Object);
+        var model = new ResetAuthenticatorModel(userManager, signInManager);
 
         // Assert
         // If constructor completes, the test should verify no exception was thrown.
@@ -270,12 +256,11 @@ public class ResetAuthenticatorModelTests
     public void ResetAuthenticatorModel_Constructor_NullDependencies_BehaviorDocumented()
     {
         // Arrange
-        var loggerMock = new Mock<ILogger<ResetAuthenticatorModel>>();
         UserManager<IdentityUser<Guid>>? nullUserManager = null;
         SignInManager<IdentityUser<Guid>>? nullSignInManager = null;
 
         // Act
-        var model = new ResetAuthenticatorModel(nullUserManager, nullSignInManager, loggerMock.Object);
+        var model = new ResetAuthenticatorModel(nullUserManager, nullSignInManager);
 
         // Assert
         Assert.NotNull(model);

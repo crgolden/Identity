@@ -12,14 +12,10 @@ using static Microsoft.Net.Http.Headers.HeaderNames;
 public class DownloadPersonalDataModel : PageModel
 {
     private readonly UserManager<IdentityUser<Guid>> _userManager;
-    private readonly ILogger<DownloadPersonalDataModel> _logger;
 
-    public DownloadPersonalDataModel(
-        UserManager<IdentityUser<Guid>> userManager,
-        ILogger<DownloadPersonalDataModel> logger)
+    public DownloadPersonalDataModel(UserManager<IdentityUser<Guid>> userManager)
     {
         _userManager = userManager;
-        _logger = logger;
     }
 
     /// <summary>Handles the GET request, returning a not-found result to prevent direct access.</summary>
@@ -37,11 +33,6 @@ public class DownloadPersonalDataModel : PageModel
         if (user is null)
         {
             return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
-        }
-
-        if (_logger.IsEnabled(LogLevel.Trace))
-        {
-            _logger.LogTrace("User with ID '{UserId}' asked for their personal data.", _userManager.GetUserId(User));
         }
 
         var personalData = typeof(IdentityUser<Guid>)

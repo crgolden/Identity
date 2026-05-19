@@ -11,16 +11,13 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 public class LogoutModel : PageModel
 {
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
-    private readonly ILogger<LogoutModel> _logger;
     private readonly IIdentityServerInteractionService _interactionService;
 
     public LogoutModel(
         SignInManager<IdentityUser<Guid>> signInManager,
-        ILogger<LogoutModel> logger,
         IIdentityServerInteractionService interactionService)
     {
         _signInManager = signInManager;
-        _logger = logger;
         _interactionService = interactionService;
     }
 
@@ -54,7 +51,6 @@ public class LogoutModel : PageModel
     public async Task<IActionResult> OnPostAsync(string? logoutId = null)
     {
         await _signInManager.SignOutAsync();
-        _logger.LogTrace("User logged out.");
         await SetLogoutContextAsync(logoutId);
         return Page();
     }

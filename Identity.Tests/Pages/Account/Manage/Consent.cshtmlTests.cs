@@ -10,7 +10,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.Extensions.Logging;
 using Moq;
 
 [Collection(UnitCollection.Name)]
@@ -18,10 +17,10 @@ using Moq;
 public class ConsentIndexModelTests
 {
     [Theory]
-    [InlineData(true, true, true)]
-    [InlineData(false, false, false)]
-    [InlineData(true, false, true)]
-    public void Constructor_NullParameters_DoesNotThrow(bool provideInteraction, bool provideEvents, bool provideLogger)
+    [InlineData(true, true)]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    public void Constructor_NullParameters_DoesNotThrow(bool provideInteraction, bool provideEvents)
     {
         // Arrange
         IIdentityServerInteractionService? interaction = provideInteraction
@@ -30,13 +29,10 @@ public class ConsentIndexModelTests
         IEventService? events = provideEvents
             ? new Mock<IEventService>(MockBehavior.Strict).Object
             : null;
-        ILogger<ConsentModel>? logger = provideLogger
-            ? new Mock<ILogger<ConsentModel>>(MockBehavior.Loose).Object
-            : null;
 
         // Act
         ConsentModel model = null!;
-        var ex = Record.Exception(() => model = new ConsentModel(interaction, events, logger));
+        var ex = Record.Exception(() => model = new ConsentModel(interaction, events));
 
         // Assert
         Assert.Null(ex);
@@ -53,8 +49,7 @@ public class ConsentIndexModelTests
             .Setup(x => x.GetAuthorizationContextAsync(It.IsAny<string>()))
             .ReturnsAsync((AuthorizationRequest?)null);
 
-        var mockLogger = new Mock<ILogger<ConsentModel>>(MockBehavior.Loose);
-        var model = CreateModel(mockInteraction.Object, logger: mockLogger.Object);
+        var model = CreateModel(mockInteraction.Object);
 
         // Act
         var result = await model.OnGetAsync(null);
@@ -73,8 +68,7 @@ public class ConsentIndexModelTests
             .Setup(x => x.GetAuthorizationContextAsync("https://example.com"))
             .ReturnsAsync((AuthorizationRequest?)null);
 
-        var mockLogger = new Mock<ILogger<ConsentModel>>(MockBehavior.Loose);
-        var model = CreateModel(mockInteraction.Object, logger: mockLogger.Object);
+        var model = CreateModel(mockInteraction.Object);
 
         // Act
         var result = await model.OnGetAsync("https://example.com");
@@ -93,8 +87,7 @@ public class ConsentIndexModelTests
             .Setup(x => x.GetAuthorizationContextAsync("https://example.com"))
             .ReturnsAsync((AuthorizationRequest?)null);
 
-        var mockLogger = new Mock<ILogger<ConsentModel>>(MockBehavior.Loose);
-        var model = CreateModel(mockInteraction.Object, logger: mockLogger.Object);
+        var model = CreateModel(mockInteraction.Object);
         model.Input = new ConsentModel.InputModel { ReturnUrl = "https://example.com" };
 
         // Act
@@ -122,8 +115,7 @@ public class ConsentIndexModelTests
             .Setup(x => x.GetAuthorizationContextAsync(It.IsAny<string>()))
             .ReturnsAsync((AuthorizationRequest?)null);
 
-        var mockLogger = new Mock<ILogger<ConsentModel>>(MockBehavior.Loose);
-        var model = CreateModel(mockInteraction.Object, logger: mockLogger.Object);
+        var model = CreateModel(mockInteraction.Object);
         model.Input = new ConsentModel.InputModel
         {
             Button = "yes",
@@ -141,10 +133,9 @@ public class ConsentIndexModelTests
 
     private static ConsentModel CreateModel(
         IIdentityServerInteractionService? interaction = null,
-        IEventService? events = null,
-        ILogger<ConsentModel>? logger = null)
+        IEventService? events = null)
     {
-        var model = new ConsentModel(interaction, events, logger);
+        var model = new ConsentModel(interaction, events);
         var httpContext = new DefaultHttpContext();
         model.PageContext = new PageContext
         {

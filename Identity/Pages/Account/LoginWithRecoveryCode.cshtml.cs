@@ -11,17 +11,10 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 public class LoginWithRecoveryCodeModel : PageModel
 {
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
-    private readonly UserManager<IdentityUser<Guid>> _userManager;
-    private readonly ILogger<LoginWithRecoveryCodeModel> _logger;
 
-    public LoginWithRecoveryCodeModel(
-        SignInManager<IdentityUser<Guid>> signInManager,
-        UserManager<IdentityUser<Guid>> userManager,
-        ILogger<LoginWithRecoveryCodeModel> logger)
+    public LoginWithRecoveryCodeModel(SignInManager<IdentityUser<Guid>> signInManager)
     {
         _signInManager = signInManager;
-        _userManager = userManager;
-        _logger = logger;
     }
 
     [BindProperty]
@@ -65,31 +58,14 @@ public class LoginWithRecoveryCodeModel : PageModel
 
         var result = await _signInManager.TwoFactorRecoveryCodeSignInAsync(recoveryCode);
 
-        var userId = await _userManager.GetUserIdAsync(user);
-
         if (result.Succeeded)
         {
-            if (_logger.IsEnabled(LogLevel.Trace))
-            {
-                _logger.LogTrace("User with ID '{UserId}' logged in with a recovery code.", userId);
-            }
-
             return Url.IsLocalUrl(returnUrl) ? LocalRedirect(returnUrl) : LocalRedirect("~/");
         }
 
         if (result.IsLockedOut)
         {
-            if (_logger.IsEnabled(LogLevel.Trace))
-            {
-                _logger.LogTrace("User account locked out.");
-            }
-
             return RedirectToPage("./Lockout");
-        }
-
-        if (_logger.IsEnabled(LogLevel.Trace))
-        {
-            _logger.LogTrace("Invalid recovery code entered for user with ID '{UserId}' ", userId);
         }
 
         ModelState.AddModelError(Empty, "Invalid recovery code entered.");

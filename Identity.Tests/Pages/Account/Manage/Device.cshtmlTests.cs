@@ -3,7 +3,6 @@
 namespace Identity.Tests.Pages.Account.Manage;
 using Infrastructure;
 
-using Duende.IdentityServer.Configuration;
 using Duende.IdentityServer.Models;
 using Duende.IdentityServer.Services;
 using Identity.Pages.Account.Manage;
@@ -11,8 +10,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Moq;
 
 [Collection(UnitCollection.Name)]
@@ -25,12 +22,10 @@ public class DeviceIndexModelTests
         // Arrange
         IDeviceFlowInteractionService? interaction = null;
         IEventService? events = null;
-        IOptions<IdentityServerOptions>? options = null;
-        ILogger<DeviceModel>? logger = null;
 
         // Act
         DeviceModel model = null!;
-        var ex = Record.Exception(() => model = new DeviceModel(interaction, events, options, logger));
+        var ex = Record.Exception(() => model = new DeviceModel(interaction, events));
 
         // Assert
         Assert.Null(ex);
@@ -42,9 +37,7 @@ public class DeviceIndexModelTests
     public async Task OnGetAsync_NullUserCode_ReturnsPage()
     {
         // Arrange
-        var options = Options.Create(new IdentityServerOptions());
-        var mockLogger = new Mock<ILogger<DeviceModel>>(MockBehavior.Loose);
-        var model = CreateModel(options: options, logger: mockLogger.Object);
+        var model = CreateModel();
 
         // Act
         var result = await model.OnGetAsync(null);
@@ -62,9 +55,7 @@ public class DeviceIndexModelTests
             .Setup(x => x.GetAuthorizationContextAsync("invalid-code"))
             .ReturnsAsync((DeviceFlowAuthorizationRequest?)null);
 
-        var options = Options.Create(new IdentityServerOptions());
-        var mockLogger = new Mock<ILogger<DeviceModel>>(MockBehavior.Loose);
-        var model = CreateModel(mockInteraction.Object, options: options, logger: mockLogger.Object);
+        var model = CreateModel(mockInteraction.Object);
 
         // Act
         var result = await model.OnGetAsync("invalid-code");
@@ -83,9 +74,7 @@ public class DeviceIndexModelTests
             .Setup(x => x.GetAuthorizationContextAsync("test-code"))
             .ReturnsAsync((DeviceFlowAuthorizationRequest?)null);
 
-        var options = Options.Create(new IdentityServerOptions());
-        var mockLogger = new Mock<ILogger<DeviceModel>>(MockBehavior.Loose);
-        var model = CreateModel(mockInteraction.Object, options: options, logger: mockLogger.Object);
+        var model = CreateModel(mockInteraction.Object);
         model.Input = new DeviceModel.InputModel { UserCode = "test-code" };
 
         // Act
@@ -98,12 +87,9 @@ public class DeviceIndexModelTests
 
     private static DeviceModel CreateModel(
         IDeviceFlowInteractionService? interaction = null,
-        IEventService? events = null,
-        IOptions<IdentityServerOptions>? options = null,
-        ILogger<DeviceModel>? logger = null)
+        IEventService? events = null)
     {
-        options ??= Options.Create(new IdentityServerOptions());
-        var model = new DeviceModel(interaction, events, options, logger);
+        var model = new DeviceModel(interaction, events);
         var httpContext = new DefaultHttpContext();
         model.PageContext = new PageContext
         {

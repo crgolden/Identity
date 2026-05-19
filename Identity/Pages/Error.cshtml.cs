@@ -14,15 +14,11 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 #pragma warning restore S4502
 public class ErrorModel : PageModel
 {
-    private readonly ILogger _logger;
     private readonly IIdentityServerInteractionService _interactionService;
 
     /// <inheritdoc cref="PageModel" />
-    public ErrorModel(
-        ILogger<ErrorModel> logger,
-        IIdentityServerInteractionService interactionService)
+    public ErrorModel(IIdentityServerInteractionService interactionService)
     {
-        _logger = logger;
         _interactionService = interactionService;
     }
 
@@ -30,7 +26,7 @@ public class ErrorModel : PageModel
 
     public bool ShowRequestId => !IsNullOrWhiteSpace(RequestId);
 
-    /// <summary>Handles the GET request, logging any IdentityServer error context for the given error ID.</summary>
+    /// <summary>Handles the GET request, tracing any IdentityServer error context for the given error ID.</summary>
     /// <param name="errorId">The IdentityServer error identifier, if any.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     public async Task OnGetAsync(string? errorId = null)
@@ -39,7 +35,10 @@ public class ErrorModel : PageModel
         if (!IsNullOrWhiteSpace(errorId))
         {
             var errorMessage = await _interactionService.GetErrorContextAsync(errorId);
-            _logger.LogError("{ErrorMessage}", errorMessage);
+            using var activity = Telemetry.ActivitySource.StartActivity("identity.error.oidc");
+            activity?.SetTag("oidc.error_id", errorId);
+            activity?.SetTag("oidc.error", errorMessage?.Error);
+            activity?.SetTag("oidc.error_description", errorMessage?.ErrorDescription);
         }
     }
 }

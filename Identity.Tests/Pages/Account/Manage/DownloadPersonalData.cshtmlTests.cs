@@ -17,11 +17,8 @@ public class DownloadPersonalDataModelTests
     [Fact]
     public void OnGet_DefaultState_ReturnsNotFoundResult()
     {
-        // Arrange
-        var loggerMock = new Mock<ILogger<DownloadPersonalDataModel>>();
-
         // userManager is not used by OnGet; pass null with null-forgiving to satisfy compiler nullable analysis.
-        var model = new DownloadPersonalDataModel(null!, loggerMock.Object);
+        var model = new DownloadPersonalDataModel(null!);
 
         // Act
         var result = model.OnGet();
@@ -29,23 +26,6 @@ public class DownloadPersonalDataModelTests
         // Assert
         var notFound = Assert.IsType<NotFoundResult>(result);
         Assert.Equal(404, notFound.StatusCode);
-    }
-
-    [Fact]
-    public void OnGet_DoesNotCallLogger_NoLoggerInteractions()
-    {
-        // Arrange
-        var loggerMock = new Mock<ILogger<DownloadPersonalDataModel>>(MockBehavior.Strict);
-        var model = new DownloadPersonalDataModel(null!, loggerMock.Object);
-
-        // Act
-        var exception = Record.Exception(() => model.OnGet());
-
-        // Assert
-        Assert.Null(exception); // no exception thrown
-
-        // Verify no calls were made to the logger
-        loggerMock.VerifyNoOtherCalls();
     }
 
     [Fact]
@@ -64,9 +44,7 @@ public class DownloadPersonalDataModelTests
             .Setup(u => u.GetUserId(It.IsAny<System.Security.Claims.ClaimsPrincipal>()))
             .Returns(userId);
 
-        var loggerMock = new Mock<ILogger<DownloadPersonalDataModel>>();
-
-        var model = new DownloadPersonalDataModel(userManagerMock.Object, loggerMock.Object)
+        var model = new DownloadPersonalDataModel(userManagerMock.Object)
         {
             PageContext = new PageContext { HttpContext = new DefaultHttpContext() }
         };
@@ -106,10 +84,8 @@ public class DownloadPersonalDataModelTests
             serviceProviderMock.Object,
             userManagerLoggerMock.Object);
 
-        var loggerMock = new Mock<ILogger<DownloadPersonalDataModel>>();
-
         // Act
-        var model = new DownloadPersonalDataModel(userManager, loggerMock.Object);
+        var model = new DownloadPersonalDataModel(userManager);
 
         // Assert
         Assert.NotNull(model);

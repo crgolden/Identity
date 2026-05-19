@@ -59,13 +59,8 @@ public class DeletePersonalDataModelTests
             schemesMock.Object,
             userConfirmationMock.Object);
 
-        var modelLoggerMock = new Mock<ILogger<DeletePersonalDataModel>>();
-
         // Act
-        var model = new DeletePersonalDataModel(
-            userManager,
-            signInManager,
-            modelLoggerMock.Object);
+        var model = new DeletePersonalDataModel(userManager, signInManager);
 
         // Assert
         Assert.NotNull(model);
@@ -106,9 +101,7 @@ public class DeletePersonalDataModelTests
             Mock.Of<IAuthenticationSchemeProvider>(),
             Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
 
-        var logger = Mock.Of<ILogger<DeletePersonalDataModel>>();
-
-        var model = new DeletePersonalDataModel(mockUserManager.Object, signInManagerMock.Object, logger);
+        var model = new DeletePersonalDataModel(mockUserManager.Object, signInManagerMock.Object);
 
         // Ensure PageModel.User is populated (the actual claims are not used by the mock setup that uses It.IsAny)
         var principal = new ClaimsPrincipal(new ClaimsIdentity([]));

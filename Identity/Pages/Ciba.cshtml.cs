@@ -13,14 +13,10 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 public class CibaModel : PageModel
 {
     private readonly IBackchannelAuthenticationInteractionService _backchannelInteraction;
-    private readonly ILogger<CibaModel> _logger;
 
-    public CibaModel(
-        IBackchannelAuthenticationInteractionService backchannelInteraction,
-        ILogger<CibaModel> logger)
+    public CibaModel(IBackchannelAuthenticationInteractionService backchannelInteraction)
     {
         _backchannelInteraction = backchannelInteraction;
-        _logger = logger;
     }
 
     /// <summary>Gets or sets the login request loaded for this CIBA session.</summary>
@@ -39,7 +35,6 @@ public class CibaModel : PageModel
         var result = await _backchannelInteraction.GetLoginRequestByInternalIdAsync(id);
         if (result == null)
         {
-            _logger.LogWarning("Invalid backchannel authentication login ID: {Id}", id);
             return RedirectToPage("/Error");
         }
 

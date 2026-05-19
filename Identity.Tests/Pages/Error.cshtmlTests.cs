@@ -7,13 +7,17 @@ using Duende.IdentityServer.Services;
 using Identity.Pages;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.Extensions.Logging;
 using Moq;
 
+/// <summary>Unit tests for <see cref="Identity.Pages.ErrorModel"/>.</summary>
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class ErrorModelTests
 {
+    /// <summary>
+    /// Provides MockBehavior values to exercise constructor under different mock configurations.
+    /// </summary>
+    /// <returns></returns>
     public static TheoryData<MockBehavior> GetMockBehaviors() => new()
     {
         MockBehavior.Loose,
@@ -34,7 +38,7 @@ public class ErrorModelTests
     public static TheoryData<string, bool> NonEmptyErrorIdCases()
     {
         var longId = new string('x', 5000);
-        var specialId = "err\0or\n\t\u2603-!@#$%^&*()";
+        var specialId = "err\0or\n\t☃-!@#$%^&*()";
         return new TheoryData<string, bool>
         {
             // Normal id
@@ -76,20 +80,26 @@ public class ErrorModelTests
         { "\r\n", false },
 
         // string with special characters => true
-        { "\u00A9\u00AE\u2122!@#$%^&*()", true },
+        { "©®™!@#$%^&*()", true },
     };
 
+    /// <summary>
+    /// Verifies that the constructor accepts a valid IIdentityServerInteractionService and
+    /// produces a usable ErrorModel instance without throwing. This uses different mock
+    /// behaviors to ensure the constructor is resilient to the mock's configuration.
+    /// Input conditions: a non-null mocked IIdentityServerInteractionService with the provided MockBehavior.
+    /// Expected result: ErrorModel instance is created successfully, RequestId is null, and ShowRequestId is false.
+    /// </summary>
     [Theory]
     [MemberData(nameof(GetMockBehaviors))]
     public void Constructor_ValidInteractionService_InitializesDefaults(MockBehavior mockBehavior)
     {
         // Arrange
-        var mockLogger = new Mock<ILogger<ErrorModel>>();
         var mockInteraction = new Mock<IIdentityServerInteractionService>(mockBehavior);
 
         // Act
-        var exception = Record.Exception(() => new ErrorModel(mockLogger.Object, mockInteraction.Object));
-        var model = exception is null ? new ErrorModel(mockLogger.Object, mockInteraction.Object) : null;
+        var exception = Record.Exception(() => new ErrorModel(mockInteraction.Object));
+        var model = exception is null ? new ErrorModel(mockInteraction.Object) : null;
 
         // Assert
         Assert.Null(exception);
@@ -102,16 +112,22 @@ public class ErrorModelTests
         Assert.False(model?.ShowRequestId);
     }
 
+    /// <summary>
+    /// Tests that when errorId is null, empty, or whitespace the interaction service is NOT called,
+    /// and the RequestId is taken from Activity.Current.Id when present, otherwise from HttpContext.TraceIdentifier.
+    /// Inputs tested: null, empty string, whitespace-only string; with Activity.Current present and absent.
+    /// Expected: no call to GetErrorContextAsync and RequestId equals the activity id (if set) or trace identifier.
+    /// </summary>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [MemberData(nameof(NoErrorIdCases))]
     public async Task OnGetAsync_NullOrWhitespaceErrorId_SkipsInteractionService(string? errorId, bool setActivity)
     {
         // Arrange
-        var mockLogger = new Mock<ILogger<ErrorModel>>();
         var mockInteraction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
 
         // No setup for GetErrorContextAsync - we expect it to not be called.
-        var model = new ErrorModel(mockLogger.Object, mockInteraction.Object);
+        var model = new ErrorModel(mockInteraction.Object);
 
         // Prepare HttpContext with a known trace identifier.
         var httpContext = new DefaultHttpContext();
@@ -160,12 +176,19 @@ public class ErrorModelTests
         }
     }
 
+    /// <summary>
+    /// Tests that when a non-empty errorId is provided, the interaction service is called exactly once with that id,
+    /// and RequestId is set from Activity.Current.Id if present or from HttpContext.TraceIdentifier otherwise.
+    /// Inputs tested: normal id, very long id, id with special/control characters; with Activity.Current present and absent.
+    /// Expected: GetErrorContextAsync invoked once with the exact id, no exception thrown even if service returns null,
+    /// and RequestId set appropriately. Also ShowRequestId is true when RequestId is not null/empty.
+    /// </summary>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [MemberData(nameof(NonEmptyErrorIdCases))]
     public async Task OnGetAsync_ValidErrorId_CallsInteractionService(string errorId, bool setActivity)
     {
         // Arrange
-        var mockLogger = new Mock<ILogger<ErrorModel>>();
         var mockInteraction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
 
         // Return null from service to ensure code handles nullable returns without throwing.
@@ -174,7 +197,7 @@ public class ErrorModelTests
             .ReturnsAsync((ErrorMessage?)null)
             .Verifiable();
 
-        var model = new ErrorModel(mockLogger.Object, mockInteraction.Object);
+        var model = new ErrorModel(mockInteraction.Object);
 
         var httpContext = new DefaultHttpContext();
         httpContext.TraceIdentifier = $"trace-{Guid.NewGuid():N}";
@@ -218,14 +241,18 @@ public class ErrorModelTests
         }
     }
 
+    /// <summary>
+    /// Verifies ShowRequestId returns expected boolean depending on various RequestId inputs.
+    /// Tests null, empty, whitespace-only, typical non-empty, very long, and control-character strings.
+    /// Expected: false for null and empty; true for any non-empty value (including whitespace and control chars).
+    /// </summary>
     [Theory]
     [MemberData(nameof(RequestIdTestCases))]
     public void ShowRequestId_VariousValues_ReturnsExpected(string? requestId, bool expected)
     {
         // Arrange
-        var mockLogger = new Mock<ILogger<ErrorModel>>();
         var mockInteraction = new Mock<IIdentityServerInteractionService>();
-        var model = new ErrorModel(mockLogger.Object, mockInteraction.Object)
+        var model = new ErrorModel(mockInteraction.Object)
         {
             RequestId = requestId
         };
@@ -237,33 +264,46 @@ public class ErrorModelTests
         Assert.Equal(expected, actual);
     }
 
+    /// <summary>
+    /// Verifies that when a non-empty errorId is provided and the interaction service returns an ErrorMessage,
+    /// an activity named "identity.error.oidc" is started with the expected OIDC error tags.
+    /// </summary>
+    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
-    public async Task OnGetAsync_ValidErrorId_WithErrorMessage_LogsError()
+    public async Task OnGetAsync_ValidErrorId_StartsOidcActivity()
     {
         // Arrange
-        var mockLogger = new Mock<ILogger<ErrorModel>>();
-        var mockInteraction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
         var errorMessage = new ErrorMessage { Error = "access_denied", ErrorDescription = "User denied access." };
+        var mockInteraction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
         mockInteraction
             .Setup(s => s.GetErrorContextAsync("error-abc"))
             .ReturnsAsync(errorMessage);
 
-        var model = new ErrorModel(mockLogger.Object, mockInteraction.Object);
+        var model = new ErrorModel(mockInteraction.Object);
         model.PageContext = new PageContext { HttpContext = new DefaultHttpContext() };
         Activity.Current = null;
+
+        Activity? capturedActivity = null;
+        using var listener = new ActivityListener
+        {
+            ShouldListenTo = source => string.Equals(source.Name, nameof(Identity), StringComparison.Ordinal),
+            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+            ActivityStarted = activity =>
+            {
+                if (string.Equals(activity.OperationName, "identity.error.oidc", StringComparison.Ordinal))
+                {
+                    capturedActivity = activity;
+                }
+            },
+        };
+        ActivitySource.AddActivityListener(listener);
 
         // Act
         await model.OnGetAsync("error-abc");
 
         // Assert
-        mockLogger.Verify(
-            l => l.Log(
-                LogLevel.Error,
-                It.IsAny<EventId>(),
-                It.IsAny<It.IsAnyType>(),
-                It.IsAny<Exception?>(),
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-            Times.Once,
-            "LogError should be called once when GetErrorContextAsync returns an error message.");
+        Assert.NotNull(capturedActivity);
+        Assert.Equal("access_denied", capturedActivity.GetTagItem("oidc.error"));
+        Assert.Equal("error-abc", capturedActivity.GetTagItem("oidc.error_id"));
     }
 }

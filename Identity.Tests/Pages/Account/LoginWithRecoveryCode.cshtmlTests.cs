@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -25,7 +24,7 @@ public class LoginWithRecoveryCodeModelTests
         string.Empty,
         " ",
         "/account/manage?return=true",
-        "/path/with/special?param=\ufffd\ufffd\ufffd\ufffdd\ufffd&x=1",
+        "/path/with/special?param=����d�&x=1",
 
         // long string (~2048 chars) to test boundary for very long URLs
         new string('a', 2048),
@@ -46,24 +45,13 @@ public class LoginWithRecoveryCodeModelTests
     {
         // Arrange
         var twoFactorUser = new IdentityUser<Guid> { Id = Guid.NewGuid(), UserName = "testuser" };
-
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
-            new Mock<UserManager<IdentityUser<Guid>>>(Mock.Of<IUserStore<IdentityUser<Guid>>>(), null, null, null, null, null, null, null, null).Object,
-            Mock.Of<IHttpContextAccessor>(),
-            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
-            Options.Create(new IdentityOptions()),
-            Mock.Of<ILogger<SignInManager<IdentityUser<Guid>>>>(),
-            Mock.Of<IAuthenticationSchemeProvider>(),
-            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
+        var signInManagerMock = CreateSignInManagerMock();
 
         signInManagerMock
             .Setup(s => s.GetTwoFactorAuthenticationUserAsync())
             .ReturnsAsync(twoFactorUser);
 
-        var userManager = new Mock<UserManager<IdentityUser<Guid>>>(Mock.Of<IUserStore<IdentityUser<Guid>>>(), null, null, null, null, null, null, null, null).Object;
-        var logger = Mock.Of<ILogger<LoginWithRecoveryCodeModel>>();
-
-        var model = new LoginWithRecoveryCodeModel(signInManagerMock.Object, userManager, logger);
+        var model = new LoginWithRecoveryCodeModel(signInManagerMock.Object);
 
         // Act
         var result = await model.OnGetAsync(returnUrl);
@@ -77,19 +65,8 @@ public class LoginWithRecoveryCodeModelTests
     public async Task OnPostAsync_ModelStateInvalid_ReturnsPageResult()
     {
         // Arrange
-        var userStoreMock = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(userStoreMock, null, null, null, null, null, null, null, null);
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManagerMock.Object,
-            Mock.Of<IHttpContextAccessor>(),
-            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
-            Mock.Of<IOptions<IdentityOptions>>(),
-            Mock.Of<ILogger<SignInManager<IdentityUser<Guid>>>>(),
-            Mock.Of<IAuthenticationSchemeProvider>(),
-            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
-        var loggerMock = new Mock<ILogger<LoginWithRecoveryCodeModel>>();
-
-        var model = new LoginWithRecoveryCodeModel(signInManagerMock.Object, userManagerMock.Object, loggerMock.Object);
+        var signInManagerMock = CreateSignInManagerMock();
+        var model = new LoginWithRecoveryCodeModel(signInManagerMock.Object);
 
         // Make ModelState invalid
         model.ModelState.AddModelError("key", "error");
@@ -110,22 +87,10 @@ public class LoginWithRecoveryCodeModelTests
     public async Task OnPostAsync_NoTwoFactorUser_ThrowsInvalidOperationException()
     {
         // Arrange
-        var userStoreMock = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(userStoreMock, null, null, null, null, null, null, null, null);
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManagerMock.Object,
-            Mock.Of<IHttpContextAccessor>(),
-            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
-            Mock.Of<IOptions<IdentityOptions>>(),
-            Mock.Of<ILogger<SignInManager<IdentityUser<Guid>>>>(),
-            Mock.Of<IAuthenticationSchemeProvider>(),
-            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
-
+        var signInManagerMock = CreateSignInManagerMock();
         signInManagerMock.Setup(s => s.GetTwoFactorAuthenticationUserAsync()).ReturnsAsync((IdentityUser<Guid>?)null);
 
-        var loggerMock = new Mock<ILogger<LoginWithRecoveryCodeModel>>();
-
-        var model = new LoginWithRecoveryCodeModel(signInManagerMock.Object, userManagerMock.Object, loggerMock.Object);
+        var model = new LoginWithRecoveryCodeModel(signInManagerMock.Object);
         model.Input = new LoginWithRecoveryCodeModel.InputModel { RecoveryCode = "code" };
 
         // Act & Assert
@@ -137,36 +102,14 @@ public class LoginWithRecoveryCodeModelTests
     }
 
     [Fact]
-    public void LoginWithRecoveryCodeModel_Constructor_AllNulls_DoesNotThrowAndDefaults()
+    public void LoginWithRecoveryCodeModel_Constructor_NullSignInManager_DoesNotThrowAndDefaults()
     {
         // Arrange
         SignInManager<IdentityUser<Guid>>? signInManager = null;
-        UserManager<IdentityUser<Guid>>? userManager = null;
-        ILogger<LoginWithRecoveryCodeModel>? logger = null;
 
         // Act
-        var exception = Record.Exception(() => new LoginWithRecoveryCodeModel(signInManager, userManager, logger));
-        var model = new LoginWithRecoveryCodeModel(signInManager, userManager, logger);
-
-        // Assert
-        Assert.Null(exception);
-        Assert.NotNull(model);
-        Assert.NotNull(model.Input);
-        Assert.Null(model.ReturnUrl);
-    }
-
-    [Fact]
-    public void LoginWithRecoveryCodeModel_Constructor_WithLoggerMock_DoesNotThrowAndDefaults()
-    {
-        // Arrange
-        SignInManager<IdentityUser<Guid>>? signInManager = null;
-        UserManager<IdentityUser<Guid>>? userManager = null;
-        var loggerMock = new Mock<ILogger<LoginWithRecoveryCodeModel>>();
-        var logger = loggerMock.Object;
-
-        // Act
-        var exception = Record.Exception(() => new LoginWithRecoveryCodeModel(signInManager, userManager, logger));
-        var model = new LoginWithRecoveryCodeModel(signInManager, userManager, logger);
+        var exception = Record.Exception(() => new LoginWithRecoveryCodeModel(signInManager));
+        var model = new LoginWithRecoveryCodeModel(signInManager);
 
         // Assert
         Assert.Null(exception);
@@ -179,18 +122,9 @@ public class LoginWithRecoveryCodeModelTests
     public async Task OnGetAsync_NoTwoFactorUser_ThrowsInvalidOperationException()
     {
         // Arrange
-        var userStoreMock = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(userStoreMock, null, null, null, null, null, null, null, null);
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManagerMock.Object,
-            Mock.Of<IHttpContextAccessor>(),
-            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
-            Mock.Of<IOptions<IdentityOptions>>(),
-            Mock.Of<ILogger<SignInManager<IdentityUser<Guid>>>>(),
-            Mock.Of<IAuthenticationSchemeProvider>(),
-            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
+        var signInManagerMock = CreateSignInManagerMock();
         signInManagerMock.Setup(s => s.GetTwoFactorAuthenticationUserAsync()).ReturnsAsync((IdentityUser<Guid>?)null);
-        var model = new LoginWithRecoveryCodeModel(signInManagerMock.Object, userManagerMock.Object, Mock.Of<ILogger<LoginWithRecoveryCodeModel>>());
+        var model = new LoginWithRecoveryCodeModel(signInManagerMock.Object);
 
         // Act & Assert
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => model.OnGetAsync(null));
@@ -202,20 +136,10 @@ public class LoginWithRecoveryCodeModelTests
     {
         // Arrange
         var user = new IdentityUser<Guid>();
-        var userStoreMock = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(userStoreMock, null, null, null, null, null, null, null, null);
-        userManagerMock.Setup(u => u.GetUserIdAsync(user)).ReturnsAsync("user-id");
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManagerMock.Object,
-            Mock.Of<IHttpContextAccessor>(),
-            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
-            Mock.Of<IOptions<IdentityOptions>>(),
-            Mock.Of<ILogger<SignInManager<IdentityUser<Guid>>>>(),
-            Mock.Of<IAuthenticationSchemeProvider>(),
-            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
+        var signInManagerMock = CreateSignInManagerMock();
         signInManagerMock.Setup(s => s.GetTwoFactorAuthenticationUserAsync()).ReturnsAsync(user);
         signInManagerMock.Setup(s => s.TwoFactorRecoveryCodeSignInAsync("ABCD1234")).ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Success);
-        var model = new LoginWithRecoveryCodeModel(signInManagerMock.Object, userManagerMock.Object, Mock.Of<ILogger<LoginWithRecoveryCodeModel>>());
+        var model = new LoginWithRecoveryCodeModel(signInManagerMock.Object);
         model.Input = new LoginWithRecoveryCodeModel.InputModel { RecoveryCode = "ABCD 1234" };
         var mockUrl = new Mock<IUrlHelper>();
         mockUrl.Setup(u => u.IsLocalUrl(It.IsAny<string?>())).Returns(false);
@@ -234,20 +158,10 @@ public class LoginWithRecoveryCodeModelTests
     {
         // Arrange
         var user = new IdentityUser<Guid>();
-        var userStoreMock = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(userStoreMock, null, null, null, null, null, null, null, null);
-        userManagerMock.Setup(u => u.GetUserIdAsync(user)).ReturnsAsync("user-id");
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManagerMock.Object,
-            Mock.Of<IHttpContextAccessor>(),
-            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
-            Mock.Of<IOptions<IdentityOptions>>(),
-            Mock.Of<ILogger<SignInManager<IdentityUser<Guid>>>>(),
-            Mock.Of<IAuthenticationSchemeProvider>(),
-            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
+        var signInManagerMock = CreateSignInManagerMock();
         signInManagerMock.Setup(s => s.GetTwoFactorAuthenticationUserAsync()).ReturnsAsync(user);
         signInManagerMock.Setup(s => s.TwoFactorRecoveryCodeSignInAsync("code")).ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.LockedOut);
-        var model = new LoginWithRecoveryCodeModel(signInManagerMock.Object, userManagerMock.Object, Mock.Of<ILogger<LoginWithRecoveryCodeModel>>());
+        var model = new LoginWithRecoveryCodeModel(signInManagerMock.Object);
         model.Input = new LoginWithRecoveryCodeModel.InputModel { RecoveryCode = "code" };
 
         // Act
@@ -263,20 +177,10 @@ public class LoginWithRecoveryCodeModelTests
     {
         // Arrange
         var user = new IdentityUser<Guid>();
-        var userStoreMock = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(userStoreMock, null, null, null, null, null, null, null, null);
-        userManagerMock.Setup(u => u.GetUserIdAsync(user)).ReturnsAsync("user-id");
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManagerMock.Object,
-            Mock.Of<IHttpContextAccessor>(),
-            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
-            Mock.Of<IOptions<IdentityOptions>>(),
-            Mock.Of<ILogger<SignInManager<IdentityUser<Guid>>>>(),
-            Mock.Of<IAuthenticationSchemeProvider>(),
-            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
+        var signInManagerMock = CreateSignInManagerMock();
         signInManagerMock.Setup(s => s.GetTwoFactorAuthenticationUserAsync()).ReturnsAsync(user);
         signInManagerMock.Setup(s => s.TwoFactorRecoveryCodeSignInAsync("badcode")).ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Failed);
-        var model = new LoginWithRecoveryCodeModel(signInManagerMock.Object, userManagerMock.Object, Mock.Of<ILogger<LoginWithRecoveryCodeModel>>());
+        var model = new LoginWithRecoveryCodeModel(signInManagerMock.Object);
         model.Input = new LoginWithRecoveryCodeModel.InputModel { RecoveryCode = "badcode" };
 
         // Act
@@ -285,5 +189,19 @@ public class LoginWithRecoveryCodeModelTests
         // Assert
         Assert.IsType<PageResult>(result);
         Assert.False(model.ModelState.IsValid);
+    }
+
+    private static Mock<SignInManager<IdentityUser<Guid>>> CreateSignInManagerMock()
+    {
+        var userStoreMock = Mock.Of<IUserStore<IdentityUser<Guid>>>();
+        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(userStoreMock, null, null, null, null, null, null, null, null);
+        return new Mock<SignInManager<IdentityUser<Guid>>>(
+            userManagerMock.Object,
+            Mock.Of<IHttpContextAccessor>(),
+            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
+            Mock.Of<IOptions<IdentityOptions>>(),
+            Mock.Of<ILogger<SignInManager<IdentityUser<Guid>>>>(),
+            Mock.Of<IAuthenticationSchemeProvider>(),
+            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
     }
 }

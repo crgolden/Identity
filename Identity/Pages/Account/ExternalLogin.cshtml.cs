@@ -22,20 +22,17 @@ public class ExternalLoginModel : PageModel
     private readonly IUserStore<IdentityUser<Guid>> _userStore;
     private readonly IUserEmailStore<IdentityUser<Guid>> _emailStore;
     private readonly ServiceBusSender _serviceBusSender;
-    private readonly ILogger<ExternalLoginModel> _logger;
 
     public ExternalLoginModel(
         SignInManager<IdentityUser<Guid>> signInManager,
         UserManager<IdentityUser<Guid>> userManager,
         IUserStore<IdentityUser<Guid>> userStore,
-        ILogger<ExternalLoginModel> logger,
         IAzureClientFactory<ServiceBusSender> serviceBusSenderFactory)
     {
         _signInManager = signInManager;
         _userManager = userManager;
         _userStore = userStore;
         _emailStore = (IUserEmailStore<IdentityUser<Guid>>)_userStore;
-        _logger = logger;
         _serviceBusSender = serviceBusSenderFactory.CreateClient("email");
     }
 
@@ -87,11 +84,6 @@ public class ExternalLoginModel : PageModel
         var result = await _signInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, isPersistent: false, bypassTwoFactor: true);
         if (result.Succeeded)
         {
-            if (_logger.IsEnabled(LogLevel.Trace))
-            {
-                _logger.LogTrace("{Name} logged in with {LoginProvider} provider.", info.Principal.Identity?.Name, info.LoginProvider);
-            }
-
             return Url.IsLocalUrl(returnUrl) ? LocalRedirect(returnUrl) : LocalRedirect("~/");
         }
 
@@ -162,11 +154,6 @@ public class ExternalLoginModel : PageModel
         if (!result.Succeeded)
         {
             return null;
-        }
-
-        if (_logger.IsEnabled(LogLevel.Trace))
-        {
-            _logger.LogTrace("User created an account using {Name} provider.", info.LoginProvider);
         }
 
         var userId = await _userManager.GetUserIdAsync(user);

@@ -9,16 +9,13 @@ public class ResetAuthenticatorModel : PageModel
 {
     private readonly UserManager<IdentityUser<Guid>> _userManager;
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
-    private readonly ILogger<ResetAuthenticatorModel> _logger;
 
     public ResetAuthenticatorModel(
         UserManager<IdentityUser<Guid>> userManager,
-        SignInManager<IdentityUser<Guid>> signInManager,
-        ILogger<ResetAuthenticatorModel> logger)
+        SignInManager<IdentityUser<Guid>> signInManager)
     {
         _userManager = userManager;
         _signInManager = signInManager;
-        _logger = logger;
     }
 
     [TempData]
@@ -49,12 +46,6 @@ public class ResetAuthenticatorModel : PageModel
 
         await _userManager.SetTwoFactorEnabledAsync(user, false);
         await _userManager.ResetAuthenticatorKeyAsync(user);
-        var userId = await _userManager.GetUserIdAsync(user);
-        if (_logger.IsEnabled(LogLevel.Trace))
-        {
-            _logger.LogTrace("User with ID '{UserId}' has reset their authentication app key.", userId);
-        }
-
         await _signInManager.RefreshSignInAsync(user);
         StatusMessage = "Your authenticator app key has been reset, you will need to configure your authenticator app using the new key.";
         return RedirectToPage("./EnableAuthenticator");

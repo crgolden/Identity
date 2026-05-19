@@ -16,16 +16,13 @@ public class ConsentModel : ConsentPageModelBase
 {
     private readonly IIdentityServerInteractionService _interaction;
     private readonly IEventService _events;
-    private readonly ILogger<ConsentModel> _logger;
 
     public ConsentModel(
         IIdentityServerInteractionService interaction,
-        IEventService events,
-        ILogger<ConsentModel> logger)
+        IEventService events)
     {
         _interaction = interaction;
         _events = events;
-        _logger = logger;
     }
 
     /// <summary>Gets or sets the bound input model from the consent form POST.</summary>
@@ -137,7 +134,6 @@ public class ConsentModel : ConsentPageModelBase
     {
         if (IsNullOrWhiteSpace(returnUrl))
         {
-            _logger.LogWarning("Consent page loaded with no return URL.");
             return false;
         }
 
@@ -148,7 +144,6 @@ public class ConsentModel : ConsentPageModelBase
             return true;
         }
 
-        _logger.LogWarning("No consent request matching return URL: {ReturnUrl}", returnUrl);
         return false;
     }
 

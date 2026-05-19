@@ -107,13 +107,10 @@ public class ExternalLoginModelTests
             schemesMock.Object,
             userConfirmationMock.Object);
 
-        var loggerMock = new Mock<ILogger<ExternalLoginModel>>();
-
         var model = new ExternalLoginModel(
             signInManagerMock.Object,
             userManagerMock.Object,
             userStoreAsUserStore,
-            loggerMock.Object,
             CreateSenderFactory());
 
         // Act
@@ -166,14 +163,12 @@ public class ExternalLoginModelTests
         signInManagerMock.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>()))
             .ReturnsAsync((ExternalLoginInfo?)null);
 
-        var loggerMock = new Mock<ILogger<ExternalLoginModel>>();
-
         userManagerMock.SetupGet(um => um.SupportsUserEmail).Returns(true);
 
         var urlHelperMock = new Mock<IUrlHelper>();
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
 
-        var model = new ExternalLoginModel(signInManagerMock.Object, userManagerMock.Object, userStoreMock.Object, loggerMock.Object, CreateSenderFactory())
+        var model = new ExternalLoginModel(signInManagerMock.Object, userManagerMock.Object, userStoreMock.Object, CreateSenderFactory())
         {
             Url = urlHelperMock.Object,
             PageContext = new PageContext { HttpContext = new DefaultHttpContext() }
@@ -239,12 +234,10 @@ public class ExternalLoginModelTests
         signInManagerMock.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>()))
             .ReturnsAsync(info);
 
-        var loggerMock = new Mock<ILogger<ExternalLoginModel>>();
-
         var urlHelperMock = new Mock<IUrlHelper>();
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
 
-        var model = new ExternalLoginModel(signInManagerMock.Object, userManagerMock.Object, userStoreMock.Object, loggerMock.Object, CreateSenderFactory())
+        var model = new ExternalLoginModel(signInManagerMock.Object, userManagerMock.Object, userStoreMock.Object, CreateSenderFactory())
         {
             Url = urlHelperMock.Object,
             PageContext = new PageContext { HttpContext = new DefaultHttpContext() }
@@ -336,8 +329,6 @@ public class ExternalLoginModelTests
 
         var (factory, senderMock) = CreateSenderFactoryWithMock();
 
-        var loggerMock = new Mock<ILogger<ExternalLoginModel>>();
-
         var urlHelperMock = new Mock<IUrlHelper>();
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
         urlHelperMock.Setup(u => u.IsLocalUrl("/localReturn")).Returns(true);
@@ -349,7 +340,7 @@ public class ExternalLoginModelTests
             new ActionContext(new DefaultHttpContext(), urlRouteData, new ActionDescriptor()));
         urlHelperMock.SetReturnsDefault<string?>("https://example/confirm");
 
-        var model = new ExternalLoginModel(signInManagerMock.Object, userManagerMock.Object, userStoreMock.Object, loggerMock.Object, factory)
+        var model = new ExternalLoginModel(signInManagerMock.Object, userManagerMock.Object, userStoreMock.Object, factory)
         {
             Url = urlHelperMock.Object,
             PageContext = new PageContext { HttpContext = new DefaultHttpContext() },
@@ -419,14 +410,10 @@ public class ExternalLoginModelTests
             new Mock<IAuthenticationSchemeProvider>().Object,
             new Mock<IUserConfirmation<IdentityUser<Guid>>>().Object);
 
-        // ExternalLoginModel dependencies
-        var loggerMock = new Mock<ILogger<ExternalLoginModel>>();
-
         var model = new ExternalLoginModel(
             signInManagerMock.Object,
             userManagerMock.Object,
             userStore.Object,
-            loggerMock.Object,
             CreateSenderFactory());
 
         // Provide Url helper so Url.Content("~/") works

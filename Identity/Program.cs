@@ -235,6 +235,7 @@ try
             forwardedHeadersOptions.KnownProxies.Clear();
         })
         .AddRazorPages().Services
+        .AddProblemDetails()
         .AddHealthChecks()
         .AddDbContextCheck<ApplicationDbContext>();
 
@@ -261,7 +262,9 @@ try
     }
     else
     {
-        webApplication.UseExceptionHandler("/Error").UseHsts();
+        webApplication
+            .UseExceptionHandler(exceptionHandlerApp => exceptionHandlerApp.Run(context => context.HandleException()))
+            .UseHsts();
     }
 
     webApplication

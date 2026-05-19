@@ -262,6 +262,7 @@ Defined in `Telemetry.cs`, meter name `"Identity"`:
 | `identity.consent.granted` | `client_id`, `remember` (bool), `scope_count` | `/Account/Manage/Consent` on allow |
 | `identity.consent.denied` | `client_id`, `scope_count` | `/Account/Manage/Consent` on deny |
 | `identity.grants.revoked` | `client_id` | `/Account/Manage/Grants` on revoke |
+| `identity.exceptions` | `exception.type` | Global exception handler (`HttpContextExtensions.HandleException`) |
 
 ---
 
@@ -306,14 +307,15 @@ Allowed origins are read from the `CorsPolicy:Origins` configuration array (supp
 12. CORS
 13. Health checks (DbContext check)
 14. Data Protection (Azure Blob + Key Vault)
-15. Database developer page exception filter (Development only)
-16. Passkey origin validator (Development only — relaxed to `https://localhost:7261`)
+15. Problem Details (`AddProblemDetails`) — enables `IProblemDetailsService` used by the global exception handler
+16. Database developer page exception filter (Development only)
+17. Passkey origin validator (Development only — relaxed to `https://localhost:7261`)
 
 ### Middleware pipeline order
 
 ```
 UseSerilogRequestLogging
-→ UseExceptionHandler / UseDeveloperExceptionPage
+→ UseExceptionHandler(lambda: HandleException) / UseDeveloperExceptionPage
 → UseHsts (production)
 → UseHttpsRedirection
 → UseRouting

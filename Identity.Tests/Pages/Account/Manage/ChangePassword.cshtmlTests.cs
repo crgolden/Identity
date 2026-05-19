@@ -37,8 +37,7 @@ public class ChangePasswordModelTests
         var userStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(userStore, null, null, null, null, null, null, null, null);
         var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(userManagerMock.Object, Mock.Of<IHttpContextAccessor>(), Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(), null, null, null, null);
-        var loggerMock = new Mock<ILogger<ChangePasswordModel>>();
-        var model = new ChangePasswordModel(userManagerMock.Object, signInManagerMock.Object, loggerMock.Object);
+        var model = new ChangePasswordModel(userManagerMock.Object, signInManagerMock.Object);
 
         // Put a dummy principal on the PageContext (not strictly used because we expect early exit)
         model.PageContext = new PageContext
@@ -69,8 +68,7 @@ public class ChangePasswordModelTests
         var userStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(userStore, null, null, null, null, null, null, null, null);
         var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(userManagerMock.Object, Mock.Of<IHttpContextAccessor>(), Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(), null, null, null, null);
-        var loggerMock = new Mock<ILogger<ChangePasswordModel>>();
-        var model = new ChangePasswordModel(userManagerMock.Object, signInManagerMock.Object, loggerMock.Object);
+        var model = new ChangePasswordModel(userManagerMock.Object, signInManagerMock.Object);
 
         // Prepare a principal and page context
         var principal = new ClaimsPrincipal(new ClaimsIdentity());
@@ -118,10 +116,9 @@ public class ChangePasswordModelTests
         var schemes = new Mock<IAuthenticationSchemeProvider>().Object;
         var confirmation = new Mock<IUserConfirmation<IdentityUser<Guid>>>().Object;
         var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(userManagerMock.Object, httpContextAccessor, claimsFactory, identityOptions, signInManagerLogger, schemes, confirmation);
-        var loggerMock = new Mock<ILogger<ChangePasswordModel>>();
 
         // Act
-        var model = new ChangePasswordModel(userManagerMock.Object, signInManagerMock.Object, loggerMock.Object);
+        var model = new ChangePasswordModel(userManagerMock.Object, signInManagerMock.Object);
 
         // Assert
         Assert.NotNull(model);
@@ -133,10 +130,9 @@ public class ChangePasswordModelTests
         // Arrange
         // The current implementation of ChangePasswordModel does not validate constructor arguments.
         // Verify that constructing with null managers does not throw (reflects current behavior).
-        var loggerMock = new Mock<ILogger<ChangePasswordModel>>();
 
         // Act
-        var exception = Record.Exception(() => new ChangePasswordModel(null!, null!, loggerMock.Object));
+        var exception = Record.Exception(() => new ChangePasswordModel(null!, null!));
 
         // Assert
         Assert.Null(exception);
@@ -146,11 +142,11 @@ public class ChangePasswordModelTests
     public async Task OnGetAsync_UserNotFound_ReturnsNotFound()
     {
         // Arrange
-        var (userManagerMock, signInManagerMock, loggerMock) = CreateMocks();
+        var (userManagerMock, signInManagerMock) = CreateMocks();
         userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync((IdentityUser<Guid>?)null);
         userManagerMock.Setup(um => um.GetUserId(It.IsAny<ClaimsPrincipal>())).Returns("some-user-id");
 
-        var model = CreateModel(userManagerMock.Object, signInManagerMock.Object, loggerMock.Object);
+        var model = CreateModel(userManagerMock.Object, signInManagerMock.Object);
 
         // Act
         var result = await model.OnGetAsync();
@@ -164,12 +160,12 @@ public class ChangePasswordModelTests
     public async Task OnGetAsync_UserHasNoPassword_RedirectsToSetPassword()
     {
         // Arrange
-        var (userManagerMock, signInManagerMock, loggerMock) = CreateMocks();
+        var (userManagerMock, signInManagerMock) = CreateMocks();
         var user = new IdentityUser<Guid>();
         userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
         userManagerMock.Setup(um => um.HasPasswordAsync(user)).ReturnsAsync(false);
 
-        var model = CreateModel(userManagerMock.Object, signInManagerMock.Object, loggerMock.Object);
+        var model = CreateModel(userManagerMock.Object, signInManagerMock.Object);
 
         // Act
         var result = await model.OnGetAsync();
@@ -183,12 +179,12 @@ public class ChangePasswordModelTests
     public async Task OnGetAsync_UserHasPassword_ReturnsPage()
     {
         // Arrange
-        var (userManagerMock, signInManagerMock, loggerMock) = CreateMocks();
+        var (userManagerMock, signInManagerMock) = CreateMocks();
         var user = new IdentityUser<Guid>();
         userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
         userManagerMock.Setup(um => um.HasPasswordAsync(user)).ReturnsAsync(true);
 
-        var model = CreateModel(userManagerMock.Object, signInManagerMock.Object, loggerMock.Object);
+        var model = CreateModel(userManagerMock.Object, signInManagerMock.Object);
 
         // Act
         var result = await model.OnGetAsync();
@@ -201,8 +197,8 @@ public class ChangePasswordModelTests
     public async Task OnPostAsync_NullOldPassword_ReturnsPageWithoutCallingGetUser()
     {
         // Arrange
-        var (userManagerMock, signInManagerMock, loggerMock) = CreateMocks();
-        var model = CreateModel(userManagerMock.Object, signInManagerMock.Object, loggerMock.Object);
+        var (userManagerMock, signInManagerMock) = CreateMocks();
+        var model = CreateModel(userManagerMock.Object, signInManagerMock.Object);
         model.Input = new ChangePasswordModel.InputModel { OldPassword = null, NewPassword = "NewP@ss1!" };
 
         // Act
@@ -217,7 +213,7 @@ public class ChangePasswordModelTests
     public async Task OnPostAsync_ChangePasswordFails_ReturnsPageWithModelErrors()
     {
         // Arrange
-        var (userManagerMock, signInManagerMock, loggerMock) = CreateMocks();
+        var (userManagerMock, signInManagerMock) = CreateMocks();
         var user = new IdentityUser<Guid>();
         var failedResult = IdentityResult.Failed(new IdentityError { Description = "Password too weak." });
         userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
@@ -225,7 +221,7 @@ public class ChangePasswordModelTests
             .Setup(um => um.ChangePasswordAsync(user, "OldP@ss1!", "NewP@ss1!"))
             .ReturnsAsync(failedResult);
 
-        var model = CreateModel(userManagerMock.Object, signInManagerMock.Object, loggerMock.Object);
+        var model = CreateModel(userManagerMock.Object, signInManagerMock.Object);
         model.Input = new ChangePasswordModel.InputModel { OldPassword = "OldP@ss1!", NewPassword = "NewP@ss1!" };
 
         // Act
@@ -241,7 +237,7 @@ public class ChangePasswordModelTests
     public async Task OnPostAsync_ChangePasswordSucceeds_SetsStatusMessageAndRedirects()
     {
         // Arrange
-        var (userManagerMock, signInManagerMock, loggerMock) = CreateMocks();
+        var (userManagerMock, signInManagerMock) = CreateMocks();
         var user = new IdentityUser<Guid>();
         userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
         userManagerMock
@@ -251,7 +247,7 @@ public class ChangePasswordModelTests
             .Setup(sm => sm.RefreshSignInAsync(user))
             .Returns(Task.CompletedTask);
 
-        var model = CreateModel(userManagerMock.Object, signInManagerMock.Object, loggerMock.Object);
+        var model = CreateModel(userManagerMock.Object, signInManagerMock.Object);
         model.Input = new ChangePasswordModel.InputModel { OldPassword = "OldP@ss1!", NewPassword = "NewP@ss1!" };
 
         // Act
@@ -264,8 +260,7 @@ public class ChangePasswordModelTests
     }
 
     private static (Mock<UserManager<IdentityUser<Guid>>> userManager,
-                    Mock<SignInManager<IdentityUser<Guid>>> signInManager,
-                    Mock<ILogger<ChangePasswordModel>> logger) CreateMocks()
+                    Mock<SignInManager<IdentityUser<Guid>>> signInManager) CreateMocks()
     {
         var userStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
@@ -278,16 +273,14 @@ public class ChangePasswordModelTests
             null,
             null,
             null);
-        var loggerMock = new Mock<ILogger<ChangePasswordModel>>();
-        return (userManagerMock, signInManagerMock, loggerMock);
+        return (userManagerMock, signInManagerMock);
     }
 
     private static ChangePasswordModel CreateModel(
         UserManager<IdentityUser<Guid>> userManager,
-        SignInManager<IdentityUser<Guid>> signInManager,
-        ILogger<ChangePasswordModel> logger)
+        SignInManager<IdentityUser<Guid>> signInManager)
     {
-        var model = new ChangePasswordModel(userManager, signInManager, logger);
+        var model = new ChangePasswordModel(userManager, signInManager);
         model.PageContext = new PageContext
         {
             HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal() },

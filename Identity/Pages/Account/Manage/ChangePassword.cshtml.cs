@@ -10,16 +10,13 @@ public class ChangePasswordModel : PageModel
 {
     private readonly UserManager<IdentityUser<Guid>> _userManager;
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
-    private readonly ILogger<ChangePasswordModel> _logger;
 
     public ChangePasswordModel(
         UserManager<IdentityUser<Guid>> userManager,
-        SignInManager<IdentityUser<Guid>> signInManager,
-        ILogger<ChangePasswordModel> logger)
+        SignInManager<IdentityUser<Guid>> signInManager)
     {
         _userManager = userManager;
         _signInManager = signInManager;
-        _logger = logger;
     }
 
     [BindProperty]
@@ -74,7 +71,6 @@ public class ChangePasswordModel : PageModel
         }
 
         await _signInManager.RefreshSignInAsync(user);
-        _logger.LogTrace("User changed their password successfully.");
         StatusMessage = "Your password has been changed.";
 
         return RedirectToPage();

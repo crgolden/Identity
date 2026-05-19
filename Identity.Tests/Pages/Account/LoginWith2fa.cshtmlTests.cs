@@ -30,18 +30,8 @@ public class LoginWith2faModelTests
     public async Task OnPostAsync_ModelStateInvalid_ReturnsPage()
     {
         // Arrange
-        var userStoreMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(userStoreMock.Object, null, null, null, null, null, null, null, null);
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManagerMock.Object,
-            Mock.Of<IHttpContextAccessor>(),
-            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
-            Options.Create(new IdentityOptions()),
-            Mock.Of<ILogger<SignInManager<IdentityUser<Guid>>>>(),
-            Mock.Of<IAuthenticationSchemeProvider>(),
-            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
-        var loggerMock = new Mock<ILogger<LoginWith2faModel>>();
-        var model = new LoginWith2faModel(signInManagerMock.Object, userManagerMock.Object, loggerMock.Object)
+        var signInManagerMock = CreateSignInManagerMock();
+        var model = new LoginWith2faModel(signInManagerMock.Object)
         {
             Input = new LoginWith2faModel.InputModel
             {
@@ -68,19 +58,9 @@ public class LoginWith2faModelTests
     public async Task OnPostAsync_NoTwoFactorUser_ThrowsInvalidOperationException()
     {
         // Arrange
-        var userStoreMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(userStoreMock.Object, null, null, null, null, null, null, null, null);
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManagerMock.Object,
-            Mock.Of<IHttpContextAccessor>(),
-            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
-            Options.Create(new IdentityOptions()),
-            Mock.Of<ILogger<SignInManager<IdentityUser<Guid>>>>(),
-            Mock.Of<IAuthenticationSchemeProvider>(),
-            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
+        var signInManagerMock = CreateSignInManagerMock();
         signInManagerMock.Setup(s => s.GetTwoFactorAuthenticationUserAsync()).ReturnsAsync((IdentityUser<Guid>?)null);
-        var loggerMock = new Mock<ILogger<LoginWith2faModel>>();
-        var model = new LoginWith2faModel(signInManagerMock.Object, userManagerMock.Object, loggerMock.Object)
+        var model = new LoginWith2faModel(signInManagerMock.Object)
         {
             Input = new LoginWith2faModel.InputModel
             {
@@ -102,13 +82,12 @@ public class LoginWith2faModelTests
     public async Task OnGetAsync_UserIsNull_ThrowsInvalidOperationException()
     {
         // Arrange
-        var (signInManagerMock, userManagerMock) = CreateSignInAndUserManagerMocks();
+        var signInManagerMock = CreateSignInManagerMock();
         signInManagerMock
             .Setup(s => s.GetTwoFactorAuthenticationUserAsync())
             .ReturnsAsync((IdentityUser<Guid>?)null);
 
-        var loggerMock = new Mock<ILogger<LoginWith2faModel>>();
-        var model = new LoginWith2faModel(signInManagerMock.Object, userManagerMock.Object, loggerMock.Object);
+        var model = new LoginWith2faModel(signInManagerMock.Object);
 
         // Act
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => model.OnGetAsync(false, null));
@@ -122,14 +101,13 @@ public class LoginWith2faModelTests
     public async Task OnGetAsync_ValidUser_SetsPropertiesAndReturnsPageResult(bool rememberMe, string? returnUrl)
     {
         // Arrange
-        var (signInManagerMock, userManagerMock) = CreateSignInAndUserManagerMocks();
+        var signInManagerMock = CreateSignInManagerMock();
         var user = new IdentityUser<Guid> { Id = Guid.NewGuid(), UserName = "testuser" };
         signInManagerMock
             .Setup(s => s.GetTwoFactorAuthenticationUserAsync())
             .ReturnsAsync(user);
 
-        var loggerMock = new Mock<ILogger<LoginWith2faModel>>();
-        var model = new LoginWith2faModel(signInManagerMock.Object, userManagerMock.Object, loggerMock.Object);
+        var model = new LoginWith2faModel(signInManagerMock.Object);
 
         // Act
         var result = await model.OnGetAsync(rememberMe, returnUrl);
@@ -144,12 +122,10 @@ public class LoginWith2faModelTests
     public void Constructor_ValidDependencies_DoesNotThrowAndInitializesDefaults()
     {
         // Arrange
-        var userManagerMock = CreateUserManagerMock();
-        var signInManagerMock = CreateSignInManagerMock(userManagerMock.Object);
-        var loggerMock = new Mock<ILogger<LoginWith2faModel>>();
+        var signInManagerMock = CreateSignInManagerMock();
 
         // Act
-        var model = new LoginWith2faModel(signInManagerMock.Object, userManagerMock.Object, loggerMock.Object);
+        var model = new LoginWith2faModel(signInManagerMock.Object);
 
         // Assert
         Assert.NotNull(model);
@@ -169,11 +145,8 @@ public class LoginWith2faModelTests
         var models = new List<LoginWith2faModel>();
         for (var i = 0; i < instances; i++)
         {
-            var userManagerMock = CreateUserManagerMock();
-            var signInManagerMock = CreateSignInManagerMock(userManagerMock.Object);
-            var loggerMock = new Mock<ILogger<LoginWith2faModel>>();
-
-            var model = new LoginWith2faModel(signInManagerMock.Object, userManagerMock.Object, loggerMock.Object);
+            var signInManagerMock = CreateSignInManagerMock();
+            var model = new LoginWith2faModel(signInManagerMock.Object);
             models.Add(model);
         }
 
@@ -192,16 +165,14 @@ public class LoginWith2faModelTests
     public async Task OnPostAsync_LockedOut_RedirectsToLockoutPage()
     {
         // Arrange
-        var (signInManagerMock, userManagerMock) = CreateSignInAndUserManagerMocks();
+        var signInManagerMock = CreateSignInManagerMock();
         var user = new IdentityUser<Guid>();
         signInManagerMock.Setup(s => s.GetTwoFactorAuthenticationUserAsync()).ReturnsAsync(user);
         signInManagerMock
             .Setup(s => s.TwoFactorAuthenticatorSignInAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>()))
             .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.LockedOut);
-        userManagerMock.Setup(u => u.GetUserIdAsync(user)).ReturnsAsync("user-id");
 
-        var loggerMock = new Mock<ILogger<LoginWith2faModel>>(MockBehavior.Loose);
-        var model = new LoginWith2faModel(signInManagerMock.Object, userManagerMock.Object, loggerMock.Object)
+        var model = new LoginWith2faModel(signInManagerMock.Object)
         {
             Input = new LoginWith2faModel.InputModel { TwoFactorCode = "123456", RememberMachine = false }
         };
@@ -221,16 +192,14 @@ public class LoginWith2faModelTests
     public async Task OnPostAsync_InvalidCode_AddsModelErrorAndReturnsPage()
     {
         // Arrange
-        var (signInManagerMock, userManagerMock) = CreateSignInAndUserManagerMocks();
+        var signInManagerMock = CreateSignInManagerMock();
         var user = new IdentityUser<Guid>();
         signInManagerMock.Setup(s => s.GetTwoFactorAuthenticationUserAsync()).ReturnsAsync(user);
         signInManagerMock
             .Setup(s => s.TwoFactorAuthenticatorSignInAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>()))
             .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Failed);
-        userManagerMock.Setup(u => u.GetUserIdAsync(user)).ReturnsAsync("user-id");
 
-        var loggerMock = new Mock<ILogger<LoginWith2faModel>>(MockBehavior.Loose);
-        var model = new LoginWith2faModel(signInManagerMock.Object, userManagerMock.Object, loggerMock.Object)
+        var model = new LoginWith2faModel(signInManagerMock.Object)
         {
             Input = new LoginWith2faModel.InputModel { TwoFactorCode = "000000", RememberMachine = false }
         };
@@ -246,101 +215,20 @@ public class LoginWith2faModelTests
         Assert.False(model.ModelState.IsValid);
     }
 
-    // Helper factory methods are placed inside the test class per requirements.
-
-    // Helper to create the complex mocks required by SignInManager and UserManager.
-    // All helpers are inside the test class as required.
-    private static (Mock<SignInManager<IdentityUser<Guid>>>, Mock<UserManager<IdentityUser<Guid>>>) CreateSignInAndUserManagerMocks()
+    private static Mock<SignInManager<IdentityUser<Guid>>> CreateSignInManagerMock()
     {
-        // Mock dependencies for UserManager
         var userStoreMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var optionsMock = new Mock<IOptions<IdentityOptions>>();
-        optionsMock.Setup(o => o.Value).Returns(new IdentityOptions());
-        var passwordHasherMock = new Mock<IPasswordHasher<IdentityUser<Guid>>>();
-        var userValidators = new List<IUserValidator<IdentityUser<Guid>>>();
-        var passwordValidators = new List<IPasswordValidator<IdentityUser<Guid>>>();
-        var keyNormalizerMock = new Mock<ILookupNormalizer>();
-        var errorDescriber = new IdentityErrorDescriber();
-        var services = new Mock<IServiceProvider>();
-        var userManagerLogger = new Mock<ILogger<UserManager<IdentityUser<Guid>>>>();
-
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
-            userStoreMock.Object,
-            optionsMock.Object,
-            passwordHasherMock.Object,
-            userValidators,
-            passwordValidators,
-            keyNormalizerMock.Object,
-            errorDescriber,
-            services.Object,
-            userManagerLogger.Object);
-
-        // Mock dependencies for SignInManager
-        var httpContextAccessorMock = new Mock<IHttpContextAccessor>();
-        var claimsFactoryMock = new Mock<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>();
-        var signInManagerLogger = new Mock<ILogger<SignInManager<IdentityUser<Guid>>>>();
-        var schemeProviderMock = new Mock<IAuthenticationSchemeProvider>();
-        var userConfirmationMock = new Mock<IUserConfirmation<IdentityUser<Guid>>>();
-
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManagerMock.Object,
-            httpContextAccessorMock.Object,
-            claimsFactoryMock.Object,
-            optionsMock.Object,
-            signInManagerLogger.Object,
-            schemeProviderMock.Object,
-            userConfirmationMock.Object);
-
-        return (signInManagerMock, userManagerMock);
-    }
-
-    private static Mock<UserManager<IdentityUser<Guid>>> CreateUserManagerMock()
-    {
-        var userStore = new Mock<IUserStore<IdentityUser<Guid>>>().Object;
-        var passwordHasher = new Mock<IPasswordHasher<IdentityUser<Guid>>>().Object;
-        var userValidators = new List<IUserValidator<IdentityUser<Guid>>>();
-        var passwordValidators = new List<IPasswordValidator<IdentityUser<Guid>>>();
-        var keyNormalizer = new Mock<ILookupNormalizer>().Object;
-        var errors = new IdentityErrorDescriber();
-        var services = new Mock<IServiceProvider>().Object;
-        var logger = new Mock<ILogger<UserManager<IdentityUser<Guid>>>>().Object;
-
-        var mock = new Mock<UserManager<IdentityUser<Guid>>>(
-            userStore,
-            Options.Create(new IdentityOptions()),
-            passwordHasher,
-            userValidators,
-            passwordValidators,
-            keyNormalizer,
-            errors,
-            services,
-            logger)
-        {
-            CallBase = true
-        };
-
-        return mock;
-    }
-
-    private static Mock<SignInManager<IdentityUser<Guid>>> CreateSignInManagerMock(UserManager<IdentityUser<Guid>> userManager)
-    {
-        var contextAccessor = new Mock<IHttpContextAccessor>().Object;
-        var claimsFactory = new Mock<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>().Object;
-        var logger = new Mock<ILogger<SignInManager<IdentityUser<Guid>>>>().Object;
-        var schemes = new Mock<IAuthenticationSchemeProvider>().Object;
-        var confirmation = new Mock<IUserConfirmation<IdentityUser<Guid>>>().Object;
+            userStoreMock.Object, null, null, null, null, null, null, null, null);
 
         var mock = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManager,
-            contextAccessor,
-            claimsFactory,
+            userManagerMock.Object,
+            Mock.Of<IHttpContextAccessor>(),
+            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
             Options.Create(new IdentityOptions()),
-            logger,
-            schemes,
-            confirmation)
-        {
-            CallBase = true
-        };
+            Mock.Of<ILogger<SignInManager<IdentityUser<Guid>>>>(),
+            Mock.Of<IAuthenticationSchemeProvider>(),
+            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
 
         return mock;
     }

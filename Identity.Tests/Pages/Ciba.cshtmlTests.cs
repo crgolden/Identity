@@ -10,7 +10,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.Extensions.Logging;
 using Moq;
 
 [Collection(UnitCollection.Name)]
@@ -22,11 +21,10 @@ public class CibaIndexModelTests
     {
         // Arrange
         IBackchannelAuthenticationInteractionService? backchannelInteraction = null;
-        ILogger<CibaModel>? logger = null;
 
         // Act
         CibaModel model = null!;
-        var ex = Record.Exception(() => model = new CibaModel(backchannelInteraction, logger));
+        var ex = Record.Exception(() => model = new CibaModel(backchannelInteraction));
 
         // Assert
         Assert.Null(ex);
@@ -39,8 +37,7 @@ public class CibaIndexModelTests
     {
         // Arrange
         var mockService = new Mock<IBackchannelAuthenticationInteractionService>(MockBehavior.Strict);
-        var mockLogger = new Mock<ILogger<CibaModel>>(MockBehavior.Loose);
-        var model = CreateModel(mockService.Object, mockLogger.Object);
+        var model = CreateModel(mockService.Object);
 
         // Act
         var result = await model.OnGetAsync(null);
@@ -59,8 +56,7 @@ public class CibaIndexModelTests
             .Setup(x => x.GetLoginRequestByInternalIdAsync("invalid-id"))
             .ReturnsAsync((BackchannelUserLoginRequest?)null);
 
-        var mockLogger = new Mock<ILogger<CibaModel>>(MockBehavior.Loose);
-        var model = CreateModel(mockService.Object, mockLogger.Object);
+        var model = CreateModel(mockService.Object);
 
         // Act
         var result = await model.OnGetAsync("invalid-id");
@@ -80,8 +76,7 @@ public class CibaIndexModelTests
             .Setup(x => x.GetLoginRequestByInternalIdAsync("valid-id"))
             .ReturnsAsync(loginRequest);
 
-        var mockLogger = new Mock<ILogger<CibaModel>>(MockBehavior.Loose);
-        var model = CreateModel(mockService.Object, mockLogger.Object);
+        var model = CreateModel(mockService.Object);
 
         // Act
         var result = await model.OnGetAsync("valid-id");
@@ -92,10 +87,9 @@ public class CibaIndexModelTests
     }
 
     private static CibaModel CreateModel(
-        IBackchannelAuthenticationInteractionService? backchannelInteraction = null,
-        ILogger<CibaModel>? logger = null)
+        IBackchannelAuthenticationInteractionService? backchannelInteraction = null)
     {
-        var model = new CibaModel(backchannelInteraction, logger);
+        var model = new CibaModel(backchannelInteraction);
         var httpContext = new DefaultHttpContext();
         model.PageContext = new PageContext
         {

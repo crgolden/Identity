@@ -8,14 +8,10 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 public class GenerateRecoveryCodesModel : PageModel
 {
     private readonly UserManager<IdentityUser<Guid>> _userManager;
-    private readonly ILogger<GenerateRecoveryCodesModel> _logger;
 
-    public GenerateRecoveryCodesModel(
-        UserManager<IdentityUser<Guid>> userManager,
-        ILogger<GenerateRecoveryCodesModel> logger)
+    public GenerateRecoveryCodesModel(UserManager<IdentityUser<Guid>> userManager)
     {
         _userManager = userManager;
-        _logger = logger;
     }
 
     [TempData]
@@ -51,7 +47,6 @@ public class GenerateRecoveryCodesModel : PageModel
         }
 
         var isTwoFactorEnabled = await _userManager.GetTwoFactorEnabledAsync(user);
-        var userId = await _userManager.GetUserIdAsync(user);
         if (!isTwoFactorEnabled)
         {
             throw new InvalidOperationException($"Cannot generate recovery codes for user as they do not have 2FA enabled.");
@@ -59,11 +54,6 @@ public class GenerateRecoveryCodesModel : PageModel
 
         var recoveryCodes = await _userManager.GenerateNewTwoFactorRecoveryCodesAsync(user, 10);
         RecoveryCodes = recoveryCodes?.ToArray() ?? RecoveryCodes;
-        if (_logger.IsEnabled(LogLevel.Trace))
-        {
-            _logger.LogTrace("User with ID '{UserId}' has generated new 2FA recovery codes.", userId);
-        }
-
         StatusMessage = "You have generated new recovery codes.";
         return RedirectToPage("./ShowRecoveryCodes");
     }

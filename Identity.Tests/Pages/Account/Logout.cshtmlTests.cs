@@ -10,24 +10,20 @@ using Identity.Pages.Account;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.Extensions.Logging;
 using Moq;
 
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class LogoutModelTests
 {
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public void Constructor_NullSignInManager_DoesNotThrow(bool loggerIsNull)
+    [Fact]
+    public void Constructor_NullSignInManager_DoesNotThrow()
     {
         SignInManager<IdentityUser<Guid>>? signInManager = null;
-        var logger = loggerIsNull ? null : new Mock<ILogger<LogoutModel>>().Object;
 
         var exception = Record.Exception(() =>
         {
-            var model = new LogoutModel(signInManager, logger, Mock.Of<IIdentityServerInteractionService>());
+            var model = new LogoutModel(signInManager, Mock.Of<IIdentityServerInteractionService>());
             Assert.NotNull(model);
         });
 
@@ -160,7 +156,6 @@ public class LogoutModelTests
             null);
         return new LogoutModel(
             signInManager.Object,
-            Mock.Of<ILogger<LogoutModel>>(),
             interactionService ?? Mock.Of<IIdentityServerInteractionService>());
     }
 

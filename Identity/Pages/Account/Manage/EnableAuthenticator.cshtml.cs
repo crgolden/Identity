@@ -17,16 +17,13 @@ public class EnableAuthenticatorModel : PageModel
 #pragma warning restore S1075
 
     private readonly UserManager<IdentityUser<Guid>> _userManager;
-    private readonly ILogger<EnableAuthenticatorModel> _logger;
     private readonly UrlEncoder _urlEncoder;
 
     public EnableAuthenticatorModel(
         UserManager<IdentityUser<Guid>> userManager,
-        ILogger<EnableAuthenticatorModel> logger,
         UrlEncoder urlEncoder)
     {
         _userManager = userManager;
-        _logger = logger;
         _urlEncoder = urlEncoder;
     }
 
@@ -84,12 +81,6 @@ public class EnableAuthenticatorModel : PageModel
         }
 
         await _userManager.SetTwoFactorEnabledAsync(user, true);
-        var userId = await _userManager.GetUserIdAsync(user);
-        if (_logger.IsEnabled(LogLevel.Trace))
-        {
-            _logger.LogTrace("User with ID '{UserId}' has enabled 2FA with an authenticator app.", userId);
-        }
-
         StatusMessage = "Your authenticator app has been verified.";
         if (await _userManager.CountRecoveryCodesAsync(user) > 0)
         {

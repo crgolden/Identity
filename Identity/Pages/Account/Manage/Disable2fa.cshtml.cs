@@ -10,14 +10,10 @@ public class Disable2faModel : PageModel
 #pragma warning restore S101
 {
     private readonly UserManager<IdentityUser<Guid>> _userManager;
-    private readonly ILogger<Disable2faModel> _logger;
 
-    public Disable2faModel(
-        UserManager<IdentityUser<Guid>> userManager,
-        ILogger<Disable2faModel> logger)
+    public Disable2faModel(UserManager<IdentityUser<Guid>> userManager)
     {
         _userManager = userManager;
-        _logger = logger;
     }
 
     [TempData]
@@ -55,11 +51,6 @@ public class Disable2faModel : PageModel
         if (!disable2faResult.Succeeded)
         {
             throw new InvalidOperationException($"Unexpected error occurred disabling 2FA.");
-        }
-
-        if (_logger.IsEnabled(LogLevel.Trace))
-        {
-            _logger.LogTrace("User with ID '{UserId}' has disabled 2fa.", _userManager.GetUserId(User));
         }
 
         StatusMessage = "2fa has been disabled. You can reenable 2fa when you setup an authenticator app";

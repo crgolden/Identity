@@ -22,7 +22,6 @@ public partial class EnableAuthenticatorModelTests
     public void Constructor_NullDependency_ExpectedBehavior()
     {
         // Arrange
-        var loggerMock = new Mock<ILogger<EnableAuthenticatorModel>>();
         var urlEncoderMock = new Mock<UrlEncoder>();
 
         // Create a minimal UserManager required to construct the model.
@@ -48,7 +47,7 @@ public partial class EnableAuthenticatorModelTests
             umLogger);
 
         // Act & Assert
-        var model = new EnableAuthenticatorModel(userManager, loggerMock.Object, urlEncoderMock.Object);
+        var model = new EnableAuthenticatorModel(userManager, urlEncoderMock.Object);
         Assert.NotNull(model);
     }
 
@@ -58,7 +57,6 @@ public partial class EnableAuthenticatorModelTests
         // Arrange
         var storeMock = Mock.Of<IUserStore<IdentityUser<Guid>>>();
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock, null, null, null, null, null, null, null, null);
-        var loggerMock = new Mock<ILogger<EnableAuthenticatorModel>>();
         var urlEncoder = UrlEncoder.Default;
 
         var expectedId = "missing-user-id";
@@ -67,7 +65,7 @@ public partial class EnableAuthenticatorModelTests
         userManagerMock.Setup(um => um.GetUserId(It.IsAny<ClaimsPrincipal>()))
             .Returns(expectedId);
 
-        var model = new EnableAuthenticatorModel(userManagerMock.Object, loggerMock.Object, urlEncoder);
+        var model = new EnableAuthenticatorModel(userManagerMock.Object, urlEncoder);
 
         // Act
         var result = await model.OnPostAsync();
@@ -94,7 +92,6 @@ public partial class EnableAuthenticatorModelTests
             null,
             null,
             null);
-        var loggerMock = new Mock<ILogger<EnableAuthenticatorModel>>();
         var urlEncoder = UrlEncoder.Default;
 
         var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
@@ -108,7 +105,7 @@ public partial class EnableAuthenticatorModelTests
         userManagerMock.Setup(um => um.ResetAuthenticatorKeyAsync(It.IsAny<IdentityUser<Guid>>()))
             .ReturnsAsync(IdentityResult.Success);
 
-        var model = new EnableAuthenticatorModel(userManagerMock.Object, loggerMock.Object, urlEncoder);
+        var model = new EnableAuthenticatorModel(userManagerMock.Object, urlEncoder);
 
         // make the model state invalid
         model.ModelState.AddModelError("SomeKey", "Some error");
@@ -127,7 +124,6 @@ public partial class EnableAuthenticatorModelTests
         var storeMock = Mock.Of<IUserStore<IdentityUser<Guid>>>();
         var options = Options.Create(new IdentityOptions { Tokens = new TokenOptions { AuthenticatorTokenProvider = "Authenticator" } });
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock, options, null, null, null, null, null, null, null);
-        var loggerMock = new Mock<ILogger<EnableAuthenticatorModel>>();
         var urlEncoder = UrlEncoder.Default;
 
         var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
@@ -152,7 +148,7 @@ public partial class EnableAuthenticatorModelTests
                 It.Is<string>(s => s == stripped)))
             .ReturnsAsync(false);
 
-        var model = new EnableAuthenticatorModel(userManagerMock.Object, loggerMock.Object, urlEncoder)
+        var model = new EnableAuthenticatorModel(userManagerMock.Object, urlEncoder)
         {
             Input = new EnableAuthenticatorModel.InputModel { Code = rawCode }
         };
@@ -176,7 +172,6 @@ public partial class EnableAuthenticatorModelTests
         // Arrange
         var storeMock = Mock.Of<IUserStore<IdentityUser<Guid>>>();
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock, null, null, null, null, null, null, null, null);
-        var loggerMock = new Mock<ILogger<EnableAuthenticatorModel>>();
         var urlEncoder = UrlEncoder.Default;
 
         var user = new IdentityUser<Guid> { Id = Guid.NewGuid(), UserName = "testuser", Email = "user@test.com" };
@@ -206,7 +201,7 @@ public partial class EnableAuthenticatorModelTests
         userManagerMock.Setup(um => um.ResetAuthenticatorKeyAsync(It.IsAny<IdentityUser<Guid>>()))
             .ReturnsAsync(IdentityResult.Success);
 
-        var model = new EnableAuthenticatorModel(userManagerMock.Object, loggerMock.Object, urlEncoder)
+        var model = new EnableAuthenticatorModel(userManagerMock.Object, urlEncoder)
         {
             Input = new EnableAuthenticatorModel.InputModel { Code = "123456" }
         };
@@ -257,10 +252,9 @@ public partial class EnableAuthenticatorModelTests
         userManagerMock.Setup(um => um.GetUserId(It.IsAny<ClaimsPrincipal>()))
             .Returns(expectedId);
 
-        var loggerMock = new Mock<ILogger<EnableAuthenticatorModel>>();
         var urlEncoder = UrlEncoder.Default;
 
-        var pageModel = new EnableAuthenticatorModel(userManagerMock.Object, loggerMock.Object, urlEncoder);
+        var pageModel = new EnableAuthenticatorModel(userManagerMock.Object, urlEncoder);
 
         // Provide a principal so PageModel.User is non-null (the mocks use It.IsAny but set up for realism)
         var principal = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, expectedId)], "TestAuth"));

@@ -13,17 +13,10 @@ public class LoginWith2faModel : PageModel
 #pragma warning restore S101
 {
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
-    private readonly UserManager<IdentityUser<Guid>> _userManager;
-    private readonly ILogger<LoginWith2faModel> _logger;
 
-    public LoginWith2faModel(
-        SignInManager<IdentityUser<Guid>> signInManager,
-        UserManager<IdentityUser<Guid>> userManager,
-        ILogger<LoginWith2faModel> logger)
+    public LoginWith2faModel(SignInManager<IdentityUser<Guid>> signInManager)
     {
         _signInManager = signInManager;
-        _userManager = userManager;
-        _logger = logger;
     }
 
     [BindProperty]
@@ -76,31 +69,14 @@ public class LoginWith2faModel : PageModel
 
         var result = await _signInManager.TwoFactorAuthenticatorSignInAsync(authenticatorCode, rememberMe, Input.RememberMachine);
 
-        var userId = await _userManager.GetUserIdAsync(user);
-
         if (result.Succeeded)
         {
-            if (_logger.IsEnabled(LogLevel.Trace))
-            {
-                _logger.LogTrace("User with ID '{UserId}' logged in with 2fa.", userId);
-            }
-
             return Url.IsLocalUrl(returnUrl) ? LocalRedirect(returnUrl) : LocalRedirect("~/");
         }
 
         if (result.IsLockedOut)
         {
-            if (_logger.IsEnabled(LogLevel.Trace))
-            {
-                _logger.LogTrace("User with ID '{UserId}' account locked out.", userId);
-            }
-
             return RedirectToPage("./Lockout");
-        }
-
-        if (_logger.IsEnabled(LogLevel.Trace))
-        {
-            _logger.LogTrace("Invalid authenticator code entered for user with ID '{UserId}'.", userId);
         }
 
         ModelState.AddModelError(Empty, "Invalid authenticator code.");

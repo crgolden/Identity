@@ -1,5 +1,6 @@
 namespace Identity;
 
+using System.Diagnostics;
 using System.Security.Claims;
 using System.Threading.Channels;
 using Microsoft.AspNetCore.Identity;
@@ -9,16 +10,13 @@ public class PictureClaimWorker : BackgroundService
 {
     private readonly ChannelReader<string> _pictureClaimReader;
     private readonly IServiceScopeFactory _scopeFactory;
-    private readonly ILogger<PictureClaimWorker> _logger;
 
     public PictureClaimWorker(
         ChannelReader<string> pictureClaimReader,
-        IServiceScopeFactory scopeFactory,
-        ILogger<PictureClaimWorker> logger)
+        IServiceScopeFactory scopeFactory)
     {
         _pictureClaimReader = pictureClaimReader;
         _scopeFactory = scopeFactory;
-        _logger = logger;
     }
 
     /// <inheritdoc/>
@@ -54,7 +52,12 @@ public class PictureClaimWorker : BackgroundService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Picture claim background task failed.");
+                Activity.Current?.SetStatus(ActivityStatusCode.Error, ex.Message);
+                Activity.Current?.AddEvent(new ActivityEvent("exception", tags: new ActivityTagsCollection
+                {
+                    { "exception.type", ex.GetType().FullName },
+                    { "exception.message", ex.Message },
+                }));
             }
         }
     }

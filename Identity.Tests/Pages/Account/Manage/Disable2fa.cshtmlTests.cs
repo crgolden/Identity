@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.Extensions.Logging;
 using Moq;
 
 [Collection(UnitCollection.Name)]
@@ -32,9 +31,7 @@ public class Disable2faModelTests
             .Setup(m => m.GetUserId(It.IsAny<ClaimsPrincipal>()))
             .Returns(expectedId);
 
-        var loggerMock = new Mock<ILogger<Disable2faModel>>();
-
-        var model = new Disable2faModel(userManagerMock.Object, loggerMock.Object)
+        var model = new Disable2faModel(userManagerMock.Object)
         {
             PageContext = new PageContext
             {
@@ -74,9 +71,7 @@ public class Disable2faModelTests
             .Setup(m => m.GetTwoFactorEnabledAsync(existingUser))
             .ReturnsAsync(twoFactorEnabled);
 
-        var loggerMock = new Mock<ILogger<Disable2faModel>>();
-
-        var model = new Disable2faModel(userManagerMock.Object, loggerMock.Object)
+        var model = new Disable2faModel(userManagerMock.Object)
         {
             PageContext = new PageContext
             {
@@ -112,8 +107,7 @@ public class Disable2faModelTests
         userManagerMock.Setup(um => um.GetUserId(It.IsAny<ClaimsPrincipal>()))
             .Returns(userId);
 
-        var loggerMock = new Mock<ILogger<Disable2faModel>>();
-        var model = new Disable2faModel(userManagerMock.Object, loggerMock.Object)
+        var model = new Disable2faModel(userManagerMock.Object)
         {
             PageContext = new PageContext
             {
@@ -146,8 +140,7 @@ public class Disable2faModelTests
         userManagerMock.Setup(um => um.SetTwoFactorEnabledAsync(user, false))
             .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "some-error" }));
 
-        var loggerMock = new Mock<ILogger<Disable2faModel>>();
-        var model = new Disable2faModel(userManagerMock.Object, loggerMock.Object)
+        var model = new Disable2faModel(userManagerMock.Object)
         {
             PageContext = new PageContext
             {
@@ -164,7 +157,7 @@ public class Disable2faModelTests
     }
 
     [Fact]
-    public async Task OnPostAsync_Succeeds_RedirectsAndSetsStatusMessageAndLogs()
+    public async Task OnPostAsync_Succeeds_RedirectsAndSetsStatusMessage()
     {
         // Arrange
         var userId = "user-123";
@@ -179,9 +172,7 @@ public class Disable2faModelTests
         userManagerMock.Setup(um => um.GetUserId(It.IsAny<ClaimsPrincipal>()))
             .Returns(userId);
 
-        var loggerMock = new Mock<ILogger<Disable2faModel>>();
-        loggerMock.Setup(l => l.IsEnabled(LogLevel.Trace)).Returns(true);
-        var model = new Disable2faModel(userManagerMock.Object, loggerMock.Object)
+        var model = new Disable2faModel(userManagerMock.Object)
         {
             PageContext = new PageContext
             {
@@ -199,17 +190,5 @@ public class Disable2faModelTests
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("./TwoFactorAuthentication", redirect.PageName);
         Assert.Equal("2fa has been disabled. You can reenable 2fa when you setup an authenticator app", model.StatusMessage);
-
-        // Verify logger was called with an information level entry containing the expected phrase.
-#pragma warning disable CA1873
-        loggerMock.Verify(
-            l => l.Log(
-                LogLevel.Trace,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString() != null && $"{v}".Contains("has disabled 2fa.")),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-            Times.Once);
-#pragma warning restore CA1873
     }
 }

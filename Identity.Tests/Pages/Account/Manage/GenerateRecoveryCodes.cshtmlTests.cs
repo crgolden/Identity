@@ -19,7 +19,6 @@ public class GenerateRecoveryCodesModelTests
     public void Constructor_WithValidDependencies_CreatesInstance()
     {
         // Arrange
-        var loggerMock = new Mock<ILogger<GenerateRecoveryCodesModel>>();
         var userStoreMock = new Mock<IUserStore<IdentityUser<Guid>>>();
         var options = Microsoft.Extensions.Options.Options.Create(new IdentityOptions());
         var passwordHasherMock = new Mock<IPasswordHasher<IdentityUser<Guid>>>();
@@ -39,7 +38,7 @@ public class GenerateRecoveryCodesModelTests
             new Mock<ILogger<UserManager<IdentityUser<Guid>>>>().Object);
 
         // Act
-        var model = new GenerateRecoveryCodesModel(userManagerMock.Object, loggerMock.Object);
+        var model = new GenerateRecoveryCodesModel(userManagerMock.Object);
 
         // Assert
         Assert.NotNull(model);
@@ -49,7 +48,7 @@ public class GenerateRecoveryCodesModelTests
     public void Constructor_NullDependencies_ThrowsArgumentNullException()
     {
         // Arrange & Act
-        var exception = Record.Exception(() => new GenerateRecoveryCodesModel(null, null));
+        var exception = Record.Exception(() => new GenerateRecoveryCodesModel(null));
 
         // Assert
         Assert.Null(exception);
@@ -71,9 +70,7 @@ public class GenerateRecoveryCodesModelTests
             .Setup(um => um.GetUserId(It.IsAny<ClaimsPrincipal>()))
             .Returns(expectedUserId);
 
-        var loggerMock = new Mock<ILogger<GenerateRecoveryCodesModel>>();
-
-        var model = new GenerateRecoveryCodesModel(userManagerMock.Object, loggerMock.Object)
+        var model = new GenerateRecoveryCodesModel(userManagerMock.Object)
         {
             PageContext = new PageContext { HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal() } }
         };
@@ -107,9 +104,7 @@ public class GenerateRecoveryCodesModelTests
             .Setup(um => um.GetUserIdAsync(user))
             .ReturnsAsync("some-user-id");
 
-        var loggerMock = new Mock<ILogger<GenerateRecoveryCodesModel>>();
-
-        var model = new GenerateRecoveryCodesModel(userManagerMock.Object, loggerMock.Object)
+        var model = new GenerateRecoveryCodesModel(userManagerMock.Object)
         {
             PageContext = new PageContext { HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal() } }
         };
@@ -143,9 +138,7 @@ public class GenerateRecoveryCodesModelTests
             .Setup(um => um.GenerateNewTwoFactorRecoveryCodesAsync(user, 10))
             .ReturnsAsync(generatedCodes);
 
-        var loggerMock = new Mock<ILogger<GenerateRecoveryCodesModel>>();
-
-        var model = new GenerateRecoveryCodesModel(userManagerMock.Object, loggerMock.Object)
+        var model = new GenerateRecoveryCodesModel(userManagerMock.Object)
         {
             PageContext = new PageContext { HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal() } }
         };
@@ -183,9 +176,7 @@ public class GenerateRecoveryCodesModelTests
             .Setup(um => um.GetUserId(It.IsAny<ClaimsPrincipal>()))
             .Returns(expectedId);
 
-        var loggerMock = new Mock<ILogger<GenerateRecoveryCodesModel>>();
-
-        var model = new GenerateRecoveryCodesModel(userManagerMock.Object, loggerMock.Object);
+        var model = new GenerateRecoveryCodesModel(userManagerMock.Object);
 
         // Provide a ClaimsPrincipal for completeness
         model.PageContext = new PageContext
@@ -226,9 +217,7 @@ public class GenerateRecoveryCodesModelTests
             .Setup(um => um.GetTwoFactorEnabledAsync(It.IsAny<IdentityUser<Guid>>()))
             .ReturnsAsync(isTwoFactorEnabled);
 
-        var loggerMock = new Mock<ILogger<GenerateRecoveryCodesModel>>();
-
-        var model = new GenerateRecoveryCodesModel(userManagerMock.Object, loggerMock.Object);
+        var model = new GenerateRecoveryCodesModel(userManagerMock.Object);
 
         // Provide a simple ClaimsPrincipal (not relied upon by mocked methods, but realistic)
         model.PageContext = new PageContext

@@ -10,16 +10,13 @@ public class DeletePersonalDataModel : PageModel
 {
     private readonly UserManager<IdentityUser<Guid>> _userManager;
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
-    private readonly ILogger<DeletePersonalDataModel> _logger;
 
     public DeletePersonalDataModel(
         UserManager<IdentityUser<Guid>> userManager,
-        SignInManager<IdentityUser<Guid>> signInManager,
-        ILogger<DeletePersonalDataModel> logger)
+        SignInManager<IdentityUser<Guid>> signInManager)
     {
         _userManager = userManager;
         _signInManager = signInManager;
-        _logger = logger;
     }
 
     [BindProperty]
@@ -59,19 +56,12 @@ public class DeletePersonalDataModel : PageModel
         }
 
         var result = await _userManager.DeleteAsync(user);
-        var userId = await _userManager.GetUserIdAsync(user);
         if (!result.Succeeded)
         {
             throw new InvalidOperationException($"Unexpected error occurred deleting user.");
         }
 
         await _signInManager.SignOutAsync();
-
-        if (_logger.IsEnabled(LogLevel.Trace))
-        {
-            _logger.LogTrace("User with ID '{UserId}' deleted themselves.", userId);
-        }
-
         return Redirect("~/");
     }
 
