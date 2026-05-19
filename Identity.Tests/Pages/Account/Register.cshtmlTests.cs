@@ -1,25 +1,21 @@
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account;
 
+using Azure.Messaging.ServiceBus;
 using Identity.Pages.Account;
 using Infrastructure;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Moq;
 using System.Threading.Channels;
 
-/// <summary>
-/// Tests for Identity.Pages.Account.RegisterModel.OnGetAsync.
-/// Focus: ensure ReturnUrl assignment and ExternalLogins population behavior.
-/// </summary>
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class RegisterModelTests
@@ -39,12 +35,6 @@ public class RegisterModelTests
         },
     };
 
-    /// <summary>
-    /// Tests that OnGetAsync assigns the provided returnUrl value to the ReturnUrl property.
-    /// Input conditions: various returnUrl values including null, empty, whitespace-only, long, and special characters.
-    /// Expected result: ReturnUrl equals the input returnUrl and no exception is thrown.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [InlineData(null)]
     [InlineData("")]
@@ -55,7 +45,6 @@ public class RegisterModelTests
     public async Task OnGetAsync_VariousReturnUrlValues_AssignsReturnUrlAndDoesNotThrow(string? returnUrl)
     {
         // Arrange
-        var userEmailStoreMock = new Mock<IUserEmailStore<IdentityUser<Guid>>>();
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
             Mock.Of<IUserStore<IdentityUser<Guid>>>(), null, null, null, null, null, null, null, null);
         userManagerMock.SetupGet(u => u.SupportsUserEmail).Returns(true);
@@ -74,18 +63,12 @@ public class RegisterModelTests
             .Setup(s => s.GetExternalAuthenticationSchemesAsync())
             .ReturnsAsync([]);
 
-        var logger = Mock.Of<ILogger<RegisterModel>>();
-        var emailSender = Mock.Of<IEmailSender>();
-
         var model = new RegisterModel(
             userManagerMock.Object,
-            userEmailStoreMock.Object,
             signInManagerMock.Object,
-            Channel.CreateUnbounded<Func<IServiceProvider, CancellationToken, Task>>().Writer,
-            logger,
-            emailSender,
-            CreateRecaptchaServiceMock().Object,
-            CreateRecaptchaOptionsMock());
+            Channel.CreateUnbounded<string>().Writer,
+            CreateSenderFactory(),
+            CreateRecaptchaServiceMock().Object);
 
         // Act & Assert: ensure no exception and ReturnUrl set as expected
         var ex = await Record.ExceptionAsync(() => model.OnGetAsync(returnUrl));
@@ -97,19 +80,12 @@ public class RegisterModelTests
         Assert.Empty(model.ExternalLogins);
     }
 
-    /// <summary>
-    /// Tests that OnGetAsync populates ExternalLogins from SignInManager's GetExternalAuthenticationSchemesAsync.
-    /// Input conditions: various collections of AuthenticationScheme (empty, single, multiple).
-    /// Expected result: ExternalLogins contains the same schemes (order preserved) and count matches.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
 #pragma warning disable xUnit1045
     [Theory]
     [MemberData(nameof(ExternalSchemesData))]
     public async Task OnGetAsync_ExternalSchemesReturned_PopulatesExternalLogins(IEnumerable<AuthenticationScheme> schemes)
     {
         // Arrange
-        var userEmailStoreMock = new Mock<IUserEmailStore<IdentityUser<Guid>>>();
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
             Mock.Of<IUserStore<IdentityUser<Guid>>>(), null, null, null, null, null, null, null, null);
         userManagerMock.SetupGet(u => u.SupportsUserEmail).Returns(true);
@@ -127,18 +103,12 @@ public class RegisterModelTests
             .Setup(s => s.GetExternalAuthenticationSchemesAsync())
             .ReturnsAsync(schemes);
 
-        var logger = Mock.Of<ILogger<RegisterModel>>();
-        var emailSender = Mock.Of<IEmailSender>();
-
         var model = new RegisterModel(
             userManagerMock.Object,
-            userEmailStoreMock.Object,
             signInManagerMock.Object,
-            Channel.CreateUnbounded<Func<IServiceProvider, CancellationToken, Task>>().Writer,
-            logger,
-            emailSender,
-            CreateRecaptchaServiceMock().Object,
-            CreateRecaptchaOptionsMock());
+            Channel.CreateUnbounded<string>().Writer,
+            CreateSenderFactory(),
+            CreateRecaptchaServiceMock().Object);
 
         // Act
         await model.OnGetAsync("someReturn");
@@ -155,18 +125,10 @@ public class RegisterModelTests
     }
 #pragma warning restore xUnit1045
 
-    /// <summary>
-    /// Tests that when the PageModel's ModelState is invalid OnPostAsync returns PageResult
-    /// and does not attempt to create a user. This ensures validation short-circuits creation logic.
-    /// Input conditions: ModelState contains an error.
-    /// Expected result: IActionResult is PageResult and GetExternalAuthenticationSchemesAsync was still invoked.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact(DisplayName = "OnPostAsync_ModelStateInvalid_ReturnsPage")]
     public async Task OnPostAsync_ModelStateInvalid_ReturnsPage()
     {
         // Arrange
-        var userStoreMock = new Mock<IUserEmailStore<IdentityUser<Guid>>>();
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
             Mock.Of<IUserStore<IdentityUser<Guid>>>(), null, null, null, null, null, null, null, null);
         userManagerMock.SetupGet(u => u.SupportsUserEmail).Returns(true);
@@ -183,18 +145,12 @@ public class RegisterModelTests
             .Setup(s => s.GetExternalAuthenticationSchemesAsync())
             .ReturnsAsync([]);
 
-        var loggerMock = new Mock<ILogger<RegisterModel>>();
-        var emailSenderMock = new Mock<IEmailSender>();
-
         var model = new RegisterModel(
             userManagerMock.Object,
-            userStoreMock.Object,
             signInManagerMock.Object,
-            Channel.CreateUnbounded<Func<IServiceProvider, CancellationToken, Task>>().Writer,
-            loggerMock.Object,
-            emailSenderMock.Object,
-            CreateRecaptchaServiceMock().Object,
-            CreateRecaptchaOptionsMock());
+            Channel.CreateUnbounded<string>().Writer,
+            CreateSenderFactory(),
+            CreateRecaptchaServiceMock().Object);
 
         // Configure PageContext/Url/Request
         var ctx = new DefaultHttpContext();
@@ -219,20 +175,12 @@ public class RegisterModelTests
         userManagerMock.Verify(u => u.CreateAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>()), Times.Never);
     }
 
-    /// <summary>
-    /// Parameterized test covering both branches of RequireConfirmedAccount.
-    /// Input conditions: Valid ModelState, CreateAsync succeeds.
-    /// - When requireConfirmed is true: expect RedirectToPageResult for RegisterConfirmation.
-    /// - When requireConfirmed is false: expect LocalRedirectResult to the provided returnUrl and SignInAsync invoked.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory(DisplayName = "OnPostAsync_CreateSucceeds_RespectsRequireConfirmedAccount")]
     [InlineData(true, "/confirmed-redirect")]
     [InlineData(false, "/local-redirect")]
     public async Task OnPostAsync_CreateSucceeds_RespectsRequireConfirmedAccount(bool requireConfirmed, string returnUrl)
     {
         // Arrange
-        var userEmailStoreMock = new Mock<IUserEmailStore<IdentityUser<Guid>>>();
 
         // Pass IdentityOptions with RequireConfirmedAccount through the constructor
         // (Options property is non-virtual and cannot be set up via Moq)
@@ -275,21 +223,14 @@ public class RegisterModelTests
             .Returns(Task.CompletedTask)
             .Verifiable();
 
-        var loggerMock = new Mock<ILogger<RegisterModel>>();
-        var emailSenderMock = new Mock<IEmailSender>();
-        emailSenderMock.Setup(e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-            .Returns(Task.CompletedTask)
-            .Verifiable();
+        var (senderFactory, senderMock) = CreateSenderFactoryWithMock();
 
         var model = new RegisterModel(
             userManagerMock.Object,
-            userEmailStoreMock.Object,
             signInManagerMock.Object,
-            Channel.CreateUnbounded<Func<IServiceProvider, CancellationToken, Task>>().Writer,
-            loggerMock.Object,
-            emailSenderMock.Object,
-            CreateRecaptchaServiceMock().Object,
-            CreateRecaptchaOptionsMock());
+            Channel.CreateUnbounded<string>().Writer,
+            senderFactory,
+            CreateRecaptchaServiceMock().Object);
 
         // Configure PageContext/Url/Request
         var ctx = new DefaultHttpContext();
@@ -324,7 +265,7 @@ public class RegisterModelTests
         // Assert
         // Always should call CreateAsync
         userManagerMock.Verify(u => u.CreateAsync(It.IsAny<IdentityUser<Guid>>(), It.Is<string>(p => p == model.Input.Password)), Times.Once);
-        emailSenderMock.Verify(e => e.SendEmailAsync(model.Input.Email, It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+        senderMock.Verify(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()), Times.Once);
 
         if (requireConfirmed)
         {
@@ -350,7 +291,6 @@ public class RegisterModelTests
     [Fact]
     public async Task OnPostAsync_RecaptchaScoreBelowThreshold_ReturnsPageWithModelError()
     {
-        var userStoreMock = new Mock<IUserEmailStore<IdentityUser<Guid>>>();
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
             Mock.Of<IUserStore<IdentityUser<Guid>>>(), null, null, null, null, null, null, null, null);
         userManagerMock.SetupGet(u => u.SupportsUserEmail).Returns(true);
@@ -368,13 +308,10 @@ public class RegisterModelTests
 
         var model = new RegisterModel(
             userManagerMock.Object,
-            userStoreMock.Object,
             signInManagerMock.Object,
-            Channel.CreateUnbounded<Func<IServiceProvider, CancellationToken, Task>>().Writer,
-            Mock.Of<ILogger<RegisterModel>>(),
-            Mock.Of<IEmailSender>(),
-            recaptchaServiceMock.Object,
-            CreateRecaptchaOptionsMock());
+            Channel.CreateUnbounded<string>().Writer,
+            CreateSenderFactory(),
+            recaptchaServiceMock.Object);
 
         var ctx = new DefaultHttpContext();
         ctx.Request.Scheme = "https";
@@ -393,11 +330,80 @@ public class RegisterModelTests
         userManagerMock.Verify(u => u.CreateAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>()), Times.Never);
     }
 
-    private static IOptions<ReCAPTCHAOptions> CreateRecaptchaOptionsMock()
+    [Fact]
+    public async Task OnPostAsync_TestEmail_SkipsRecaptchaAndCreatesUser()
     {
-        var mock = new Mock<IOptions<ReCAPTCHAOptions>>();
-        mock.Setup(o => o.Value).Returns(new ReCAPTCHAOptions());
-        return mock.Object;
+        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
+            Mock.Of<IUserStore<IdentityUser<Guid>>>(), null, null, null, null, null, null, null, null);
+        userManagerMock.SetupGet(u => u.SupportsUserEmail).Returns(true);
+        userManagerMock
+            .Setup(u => u.CreateAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>()))
+            .ReturnsAsync(IdentityResult.Success);
+        userManagerMock
+            .Setup(u => u.GetUserIdAsync(It.IsAny<IdentityUser<Guid>>()))
+            .ReturnsAsync("test-user-id");
+        userManagerMock
+            .Setup(u => u.GenerateEmailConfirmationTokenAsync(It.IsAny<IdentityUser<Guid>>()))
+            .ReturnsAsync("raw-token");
+
+        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
+            userManagerMock.Object,
+            Mock.Of<IHttpContextAccessor>(),
+            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
+            null,
+            Mock.Of<ILogger<SignInManager<IdentityUser<Guid>>>>(),
+            Mock.Of<IAuthenticationSchemeProvider>(),
+            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
+        signInManagerMock.Setup(s => s.GetExternalAuthenticationSchemesAsync()).ReturnsAsync([]);
+
+        var recaptchaServiceMock = CreateRecaptchaServiceMock(score: 0.0m);
+        recaptchaServiceMock.Setup(s => s.IsExempt("smoke@example.com")).Returns(true);
+
+        var model = new RegisterModel(
+            userManagerMock.Object,
+            signInManagerMock.Object,
+            Channel.CreateUnbounded<string>().Writer,
+            CreateSenderFactory(),
+            recaptchaServiceMock.Object);
+
+        var ctx = new DefaultHttpContext();
+        ctx.Request.Scheme = "https";
+        model.PageContext = new PageContext { HttpContext = ctx };
+
+        var urlHelperMock = new Mock<IUrlHelper>();
+        var urlRouteData = new RouteData();
+        urlRouteData.Values["page"] = "/Account/Register";
+        urlHelperMock.SetupGet(u => u.ActionContext).Returns(
+            new ActionContext(new DefaultHttpContext(), urlRouteData, new ActionDescriptor()));
+        urlHelperMock.SetReturnsDefault<string?>("https://example/confirm");
+        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
+        model.Url = urlHelperMock.Object;
+        model.Input = new RegisterModel.InputModel { Email = "smoke@example.com", Password = "P@ssw0rd!" };
+
+        await model.OnPostAsync("/return");
+
+        userManagerMock.Verify(u => u.CreateAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>()), Times.Once);
+        recaptchaServiceMock.Verify(s => s.VerifyAsync(It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    private static IAzureClientFactory<ServiceBusSender> CreateSenderFactory()
+    {
+        var senderMock = new Mock<ServiceBusSender>();
+        senderMock.Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        var factoryMock = new Mock<IAzureClientFactory<ServiceBusSender>>();
+        factoryMock.Setup(f => f.CreateClient("email")).Returns(senderMock.Object);
+        return factoryMock.Object;
+    }
+
+    private static (IAzureClientFactory<ServiceBusSender> factory, Mock<ServiceBusSender> senderMock) CreateSenderFactoryWithMock()
+    {
+        var senderMock = new Mock<ServiceBusSender>();
+        senderMock.Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        var factoryMock = new Mock<IAzureClientFactory<ServiceBusSender>>();
+        factoryMock.Setup(f => f.CreateClient("email")).Returns(senderMock.Object);
+        return (factoryMock.Object, senderMock);
     }
 
     private static Mock<ICAPTCHAService> CreateRecaptchaServiceMock(decimal score = 1.0m, decimal threshold = 0.5m)
@@ -407,6 +413,7 @@ public class RegisterModelTests
         mock.Setup(s => s.ScoreThreshold).Returns(threshold);
         mock.Setup(s => s.VerifyAsync(It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(score);
+        mock.Setup(s => s.IsExempt(It.IsAny<string?>())).Returns(false);
         return mock;
     }
 

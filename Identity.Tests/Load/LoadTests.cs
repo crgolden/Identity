@@ -2,11 +2,6 @@ namespace Identity.Tests.Load;
 
 using Infrastructure;
 
-/// <summary>
-/// Load tests that measure throughput and failure rate of core endpoints
-/// using parallel HttpClient requests. Run separately from unit/E2E tests:
-/// --filter-trait Category=Load
-/// </summary>
 [Trait("Category", "Load")]
 [Collection(E2ECollection.Name)]
 public sealed class LoadTests : IDisposable

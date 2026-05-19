@@ -1,37 +1,26 @@
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account;
-using Identity.Tests.Infrastructure;
+using Infrastructure;
 
 using System.Security.Claims;
+using Azure.Messaging.ServiceBus;
 using Identity.Pages.Account;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 
-/// <summary>
-/// Tests for ExternalLoginModel.OnGetCallbackAsync covering success, error and edge cases
-/// involving external login info, sign-in results and email claim presence.
-/// </summary>
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class ExternalLoginModelTests
 {
-    /// <summary>
-    /// Provides combinations of UserManager.SupportsUserEmail and whether the provided user store implements IUserEmailStore.
-    /// The tuple values are:
-    /// - supportsEmail: bool indicating UserManager.SupportsUserEmail
-    /// - storeIsEmailStore: bool indicating whether the provided user store implements IUserEmailStore
-    /// - expectedExceptionType: Type? expected exception type (null if construction should succeed)
-    /// </summary>
-    /// <returns></returns>
     public static IEnumerable<object?[]> ConstructorTestData()
     {
         yield return [false, true, typeof(NotSupportedException)];
@@ -39,12 +28,6 @@ public class ExternalLoginModelTests
         yield return [true, true, null];
     }
 
-    /// <summary>
-    /// Test that when remoteError is non-null the method sets ErrorMessage appropriately and redirects to the Login page.
-    /// Inputs: returnUrl can be null or a non-empty string. remoteError is non-null.
-    /// Expectation: ErrorMessage contains the remoteError and RedirectToPage("./Login") is returned with correct ReturnUrl value.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [InlineData(null)]
     [InlineData("/some/return")]
@@ -74,12 +57,6 @@ public class ExternalLoginModelTests
         signInManagerMock.Verify(s => s.GetExternalLoginInfoAsync(), Times.Never);
     }
 
-    /// <summary>
-    /// Test that when external login info cannot be loaded (info == null) the method sets an error and redirects to Login.
-    /// Input: returnUrl tested for null and non-null.
-    /// Expectation: ErrorMessage is set to indicate loading error and RedirectToPage("./Login") is returned.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [InlineData(null)]
     [InlineData("/return/here")]
@@ -102,11 +79,6 @@ public class ExternalLoginModelTests
         signInManagerMock.Verify(s => s.GetExternalLoginInfoAsync(), Times.Once);
     }
 
-    /// <summary>
-    /// Verifies that OnGet returns a RedirectToPageResult pointing to the expected Login page.
-    /// Input conditions: an ExternalLoginModel constructed with mocked dependencies that satisfy constructor expectations.
-    /// Expected result: a RedirectToPageResult whose PageName equals "./Login".
-    /// </summary>
     [Fact]
     public void OnGet_NoParameters_ReturnsRedirectToLoginPage()
     {
@@ -136,14 +108,13 @@ public class ExternalLoginModelTests
             userConfirmationMock.Object);
 
         var loggerMock = new Mock<ILogger<ExternalLoginModel>>();
-        var emailSenderMock = new Mock<IEmailSender>();
 
         var model = new ExternalLoginModel(
             signInManagerMock.Object,
             userManagerMock.Object,
             userStoreAsUserStore,
             loggerMock.Object,
-            emailSenderMock.Object);
+            CreateSenderFactory());
 
         // Act
         var result = model.OnGet();
@@ -153,12 +124,6 @@ public class ExternalLoginModelTests
         Assert.Equal("./Login", redirect.PageName);
     }
 
-    /// <summary>
-    /// Test that when ExternalLoginInfo is null, the method sets ErrorMessage and redirects to the Login page.
-    /// Input conditions: returnUrl is null (causing Url.Content("~/") to be used) and SignInManager.GetExternalLoginInfoAsync returns null.
-    /// Expected result: RedirectToPageResult to "./Login" with route value ReturnUrl equal to Url.Content("~/"), and ErrorMessage set.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostConfirmationAsync_InfoNull_ReturnsRedirectToLoginAndSetsErrorMessage()
     {
@@ -201,7 +166,6 @@ public class ExternalLoginModelTests
         signInManagerMock.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>()))
             .ReturnsAsync((ExternalLoginInfo?)null);
 
-        var emailSenderMock = new Mock<IEmailSender>();
         var loggerMock = new Mock<ILogger<ExternalLoginModel>>();
 
         userManagerMock.SetupGet(um => um.SupportsUserEmail).Returns(true);
@@ -209,7 +173,7 @@ public class ExternalLoginModelTests
         var urlHelperMock = new Mock<IUrlHelper>();
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
 
-        var model = new ExternalLoginModel(signInManagerMock.Object, userManagerMock.Object, userStoreMock.Object, loggerMock.Object, emailSenderMock.Object)
+        var model = new ExternalLoginModel(signInManagerMock.Object, userManagerMock.Object, userStoreMock.Object, loggerMock.Object, CreateSenderFactory())
         {
             Url = urlHelperMock.Object,
             PageContext = new PageContext { HttpContext = new DefaultHttpContext() }
@@ -226,12 +190,6 @@ public class ExternalLoginModelTests
         Assert.Equal("Error loading external login information during confirmation.", model.ErrorMessage);
     }
 
-    /// <summary>
-    /// When ModelState is invalid, but external login info is present, provider display name and return url should be set and the page returned.
-    /// Input conditions: ModelState invalid, ExternalLoginInfo available with ProviderDisplayName.
-    /// Expected result: PageResult returned, ProviderDisplayName and ReturnUrl set from info and parameter.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostConfirmationAsync_ModelStateInvalid_ReturnsPageAndSetsProviderDisplayNameAndReturnUrl()
     {
@@ -281,13 +239,12 @@ public class ExternalLoginModelTests
         signInManagerMock.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>()))
             .ReturnsAsync(info);
 
-        var emailSenderMock = new Mock<IEmailSender>();
         var loggerMock = new Mock<ILogger<ExternalLoginModel>>();
 
         var urlHelperMock = new Mock<IUrlHelper>();
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
 
-        var model = new ExternalLoginModel(signInManagerMock.Object, userManagerMock.Object, userStoreMock.Object, loggerMock.Object, emailSenderMock.Object)
+        var model = new ExternalLoginModel(signInManagerMock.Object, userManagerMock.Object, userStoreMock.Object, loggerMock.Object, CreateSenderFactory())
         {
             Url = urlHelperMock.Object,
             PageContext = new PageContext { HttpContext = new DefaultHttpContext() }
@@ -305,15 +262,6 @@ public class ExternalLoginModelTests
         Assert.Equal("/return", model.ReturnUrl);
     }
 
-    /// <summary>
-    /// Parameterized test for successful CreateAsync + AddLoginAsync flows.
-    /// Input conditions: CreateAsync and AddLoginAsync succeed; tests both cases where RequireConfirmedAccount is true and false.
-    /// Expected result:
-    /// - If RequireConfirmedAccount is true: RedirectToPageResult to "./RegisterConfirmation" with route value Email.
-    /// - If false: LocalRedirectResult to the provided returnUrl.
-    /// Also verifies that an email is sent and SignInAsync is invoked only when RequireConfirmedAccount is false.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
@@ -386,10 +334,7 @@ public class ExternalLoginModelTests
         signInManagerMock.Setup(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<bool>(), It.IsAny<string?>()))
             .Returns(Task.CompletedTask);
 
-        var emailSenderMock = new Mock<IEmailSender>();
-        emailSenderMock.Setup(e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-            .Returns(Task.CompletedTask)
-            .Verifiable();
+        var (factory, senderMock) = CreateSenderFactoryWithMock();
 
         var loggerMock = new Mock<ILogger<ExternalLoginModel>>();
 
@@ -404,7 +349,7 @@ public class ExternalLoginModelTests
             new ActionContext(new DefaultHttpContext(), urlRouteData, new ActionDescriptor()));
         urlHelperMock.SetReturnsDefault<string?>("https://example/confirm");
 
-        var model = new ExternalLoginModel(signInManagerMock.Object, userManagerMock.Object, userStoreMock.Object, loggerMock.Object, emailSenderMock.Object)
+        var model = new ExternalLoginModel(signInManagerMock.Object, userManagerMock.Object, userStoreMock.Object, loggerMock.Object, factory)
         {
             Url = urlHelperMock.Object,
             PageContext = new PageContext { HttpContext = new DefaultHttpContext() },
@@ -437,13 +382,9 @@ public class ExternalLoginModelTests
         }
 
         // Email should be sent in both cases (the UI sends confirmation email)
-        emailSenderMock.Verify(e => e.SendEmailAsync("user@example.com", "Confirm your email", It.Is<string>(s => s.Contains("clicking here") || s.Contains("clicking here"))), Times.Once);
+        senderMock.Verify(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    /// <summary>
-    /// Helper to create a configured ExternalLoginModel instance along with commonly needed mocks.
-    /// Ensures UserManager.SupportsUserEmail returns true and the provided external sign-in manager is used.
-    /// </summary>
     private static (ExternalLoginModel model, Mock<SignInManager<IdentityUser<Guid>>> signInManagerMock, Mock<UserManager<IdentityUser<Guid>>> userManagerMock) CreateModelWithMocks()
     {
         // IUserEmailStore needed as the constructor calls GetEmailStore which casts userStore to IUserEmailStore
@@ -480,14 +421,13 @@ public class ExternalLoginModelTests
 
         // ExternalLoginModel dependencies
         var loggerMock = new Mock<ILogger<ExternalLoginModel>>();
-        var emailSenderMock = new Mock<IEmailSender>();
 
         var model = new ExternalLoginModel(
             signInManagerMock.Object,
             userManagerMock.Object,
             userStore.Object,
             loggerMock.Object,
-            emailSenderMock.Object);
+            CreateSenderFactory());
 
         // Provide Url helper so Url.Content("~/") works
         var urlHelperMock = new Mock<IUrlHelper>();
@@ -495,5 +435,25 @@ public class ExternalLoginModelTests
         model.Url = urlHelperMock.Object;
 
         return (model, signInManagerMock, userManagerMock);
+    }
+
+    private static IAzureClientFactory<ServiceBusSender> CreateSenderFactory()
+    {
+        var senderMock = new Mock<ServiceBusSender>();
+        senderMock.Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        var factoryMock = new Mock<IAzureClientFactory<ServiceBusSender>>();
+        factoryMock.Setup(f => f.CreateClient("email")).Returns(senderMock.Object);
+        return factoryMock.Object;
+    }
+
+    private static (IAzureClientFactory<ServiceBusSender> factory, Mock<ServiceBusSender> senderMock) CreateSenderFactoryWithMock()
+    {
+        var senderMock = new Mock<ServiceBusSender>();
+        senderMock.Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        var factoryMock = new Mock<IAzureClientFactory<ServiceBusSender>>();
+        factoryMock.Setup(f => f.CreateClient("email")).Returns(senderMock.Object);
+        return (factoryMock.Object, senderMock);
     }
 }

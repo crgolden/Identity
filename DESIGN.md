@@ -210,7 +210,7 @@ EF Core migrations are not used. The `Identity.Data/` SQL Server Database Projec
 
 | Service | Purpose | Registration |
 |---|---|---|
-| **Resend** | Transactional email (confirmation, password reset) | `IEmailSender` → `EmailSender` (transient); API token from Key Vault |
+| **Azure Service Bus** | Transactional email (confirmation, password reset) | Pages inject `IAzureClientFactory<ServiceBusSender>` directly; namespace from Key Vault (production) or connection string (non-production) |
 | **Gravatar** | User avatar images via SHA-256 email hash | `IAvatarService` → `GravatarService` (scoped); NSwag-generated `IGravatar` HTTP client with Bearer auth |
 | **Google APIs** | External OpenID Connect login | `AddGoogleOpenIdConnect`; Client ID/Secret from Key Vault |
 | **Azure Key Vault** | Runtime secrets (DB credentials, API keys, OAuth secrets) | `SecretClient`; 8 secrets fetched concurrently at startup via `Task.WhenAll` |
@@ -300,7 +300,7 @@ Allowed origins are read from the `CorsPolicy:Origins` configuration array (supp
 6. ASP.NET Identity (`IdentityUser<Guid>`, `IdentityRole<Guid>`) + EF stores
 7. IdentityServer (configuration store + operational store + ASP.NET Identity integration)
 8. Google OpenID Connect external authentication
-9. Resend (`IResend` + `IEmailSender`)
+9. Azure Service Bus (`ServiceBusClient` + named `ServiceBusSender` "email")
 10. Gravatar HTTP client (`IGravatar` + `IAvatarService`)
 11. Razor Pages
 12. CORS
@@ -344,7 +344,7 @@ UseSerilogRequestLogging
 
 **`IdentityWebApplicationFactory`** — extends `WebApplicationFactory<Program>`:
 - Starts a real Kestrel HTTPS server on a random port for Playwright.
-- Replaces `IEmailSender` with `EmailCaptureService` (captures email tokens instead of calling Resend).
+- Replaces `IAzureClientFactory<ServiceBusSender>` with `TestServiceBusSenderFactory` backed by `EmailCaptureSender` (captures email messages instead of calling Azure Service Bus).
 - Replaces `IAvatarService` with `NullAvatarService` (avoids Gravatar HTTP calls).
 - In Development, replaces Serilog `ILoggerFactory` with a console logger (avoids Elasticsearch connection at startup).
 
@@ -364,7 +364,7 @@ Test collections run serially (`parallelizeTestCollections: false` in `xunit.run
 
 ### Mutation testing
 
-Stryker targets four core files: `EmailSender.cs`, `GravatarService.cs`, `ConfigurationExtensions.cs`, `EndpointRouteBuilderExtensions.cs`. Thresholds: high ≥ 80, low ≥ 60, break < 50.
+Stryker targets three core files: `GravatarService.cs`, `ConfigurationExtensions.cs`, `EndpointRouteBuilderExtensions.cs`. Thresholds: high ≥ 80, low ≥ 60, break < 50.
 
 ---
 

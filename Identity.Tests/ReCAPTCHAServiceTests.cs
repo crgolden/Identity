@@ -3,7 +3,7 @@ namespace Identity.Tests;
 using System.Net;
 using System.Net.Http.Json;
 using Identity;
-using Identity.Tests.Infrastructure;
+using Infrastructure;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -69,11 +69,48 @@ public class ReCAPTCHAServiceTests
         Assert.Equal(0m, result);
     }
 
+    [Fact]
+    public void IsExempt_AdminEmail_ReturnsTrue()
+    {
+        var service = CreateService(responseScore: 0.9m, adminEmail: "admin@example.com");
+        Assert.True(service.IsExempt("admin@example.com"));
+    }
+
+    [Fact]
+    public void IsExempt_AdminEmailCaseInsensitive_ReturnsTrue()
+    {
+        var service = CreateService(responseScore: 0.9m, adminEmail: "admin@example.com");
+        Assert.True(service.IsExempt("ADMIN@EXAMPLE.COM"));
+    }
+
+    [Fact]
+    public void IsExempt_TestEmail_ReturnsTrue()
+    {
+        var service = CreateService(responseScore: 0.9m, testEmail: "smoke@example.com");
+        Assert.True(service.IsExempt("smoke@example.com"));
+    }
+
+    [Fact]
+    public void IsExempt_NullEmail_ReturnsFalse()
+    {
+        var service = CreateService(responseScore: 0.9m, adminEmail: "admin@example.com");
+        Assert.False(service.IsExempt(null));
+    }
+
+    [Fact]
+    public void IsExempt_UnknownEmail_ReturnsFalse()
+    {
+        var service = CreateService(responseScore: 0.9m, adminEmail: "admin@example.com", testEmail: "smoke@example.com");
+        Assert.False(service.IsExempt("other@example.com"));
+    }
+
     private static ReCAPTCHAService CreateService(
         decimal responseScore,
         bool success = true,
         HttpStatusCode httpStatusCode = HttpStatusCode.OK,
-        string? secretKey = "test-secret")
+        string? secretKey = "test-secret",
+        string? adminEmail = null,
+        string? testEmail = null)
     {
         var json = $$"""{"success":{{(success ? "true" : "false")}},"score":{{responseScore}}}""";
 
@@ -94,7 +131,7 @@ public class ReCAPTCHAServiceTests
             BaseAddress = new UriBuilder("https", "recaptcha.test").Uri
         };
         var optionsMock = new Mock<IOptions<ReCAPTCHAOptions>>();
-        optionsMock.Setup(o => o.Value).Returns(new ReCAPTCHAOptions { SecretKey = secretKey });
+        optionsMock.Setup(o => o.Value).Returns(new ReCAPTCHAOptions { SecretKey = secretKey, AdminEmail = adminEmail, TestEmail = testEmail });
         return new ReCAPTCHAService(httpClient, optionsMock.Object, NullLogger<ReCAPTCHAService>.Instance);
     }
 }

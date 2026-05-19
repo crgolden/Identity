@@ -1,7 +1,7 @@
 #pragma warning disable CS8604 // Possible null reference argument.
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account.Manage;
-using Identity.Tests.Infrastructure;
+using Infrastructure;
 
 using System.Security.Claims;
 using Identity.Pages.Account.Manage;
@@ -15,20 +15,10 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 
-/// <summary>
-/// Tests for SetPasswordModel constructor behavior.
-/// Note: Constructing real UserManager&lt;TUser&gt; or SignInManager&lt;TUser&gt; requires many framework dependencies.
-/// Where such construction/mocking is required, a skipped test with guidance is provided.
-/// </summary>
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class SetPasswordModelTests
 {
-    /// <summary>
-    /// Verifies that the SetPasswordModel constructor does not throw when both dependencies are null.
-    /// Input conditions: userManager = null, signInManager = null.
-    /// Expected result: An instance of SetPasswordModel is created successfully (no exception) and is not null.
-    /// </summary>
     [Fact]
     public void Constructor_BothDependenciesNull_DoesNotThrowAndCreatesInstance()
     {
@@ -45,17 +35,6 @@ public class SetPasswordModelTests
         Assert.NotNull(model);
     }
 
-    /// <summary>
-    /// Partial test: constructing SetPasswordModel with non-null UserManager and SignInManager.
-    /// Input conditions: requires properly constructed/mocked UserManager&lt;IdentityUser&lt;Guid&gt;&gt; and SignInManager&lt;IdentityUser&lt;Guid&gt;&gt;.
-    /// Expected result: an instance is created without exceptions.
-    ///
-    /// Rationale and next steps:
-    /// Creating concrete UserManager and SignInManager instances requires many dependencies (stores, accessors, loggers, options, etc.).
-    /// According to project constraints, do NOT create custom fake types. Instead, use Moq to mock only if the types' constructors can be satisfied.
-    /// To complete this test, provide properly configured mocks or factory methods to create UserManager and SignInManager (e.g., mock IUserStore&lt;T&gt; and other ctor args).
-    /// This test is marked skipped until such factory/mocks are provided.
-    /// </summary>
     [Fact]
     public void Constructor_WithNonNullDependencies_NotImplemented()
     {
@@ -106,12 +85,6 @@ public class SetPasswordModelTests
         Assert.NotNull(model);
     }
 
-    /// <summary>
-    /// Verifies that when the model state is invalid, OnPostAsync returns a PageResult without calling user manager or sign-in manager.
-    /// Condition: ModelState contains an error.
-    /// Expected: PageResult is returned.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_ModelStateInvalid_ReturnsPage()
     {
@@ -144,12 +117,6 @@ public class SetPasswordModelTests
         signInManagerMock.Verify(s => s.RefreshSignInAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
     }
 
-    /// <summary>
-    /// Verifies that when the current user cannot be found, OnPostAsync returns NotFoundObjectResult containing the user id.
-    /// Condition: UserManager.GetUserAsync returns null and GetUserId returns a known id.
-    /// Expected: NotFoundObjectResult with the expected message.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_UserNotFound_ReturnsNotFoundWithMessage()
     {
@@ -189,13 +156,6 @@ public class SetPasswordModelTests
         userManagerMock.Verify(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>()), Times.Once);
     }
 
-    /// <summary>
-    /// Verifies that when UserManager.GetUserAsync returns null the handler returns NotFoundObjectResult
-    /// containing the UserId obtained from UserManager.GetUserId(User).
-    /// Input: UserManager.GetUserAsync returns null and GetUserId returns a specific id string.
-    /// Expected: NotFoundObjectResult whose Value string contains the configured id.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGetAsync_UserNotFound_ReturnsNotFoundWithUserIdInMessage()
     {
@@ -252,14 +212,6 @@ public class SetPasswordModelTests
         Assert.Contains("Unable to load user with ID", value);
     }
 
-    /// <summary>
-    /// Verifies OnGetAsync behavior for existing users when HasPasswordAsync is true or false.
-    /// Inputs: a non-null user returned by GetUserAsync and HasPasswordAsync = true/false.
-    /// Expected:
-    ///  - when true: RedirectToPageResult to "./ChangePassword".
-    ///  - when false: PageResult returned to allow setting a password.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
@@ -321,12 +273,6 @@ public class SetPasswordModelTests
         }
     }
 
-    /// <summary>
-    /// Verifies that when AddPasswordAsync fails, errors are added to ModelState and Page is returned.
-    /// Input conditions: valid user, AddPasswordAsync returns IdentityResult.Failed with errors.
-    /// Expected result: PageResult with invalid ModelState containing the error description.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_AddPasswordFails_AddsModelErrorsAndReturnsPage()
     {
@@ -360,12 +306,6 @@ public class SetPasswordModelTests
         Assert.Contains(model.ModelState.Values, v => v.Errors.Any(e => e.ErrorMessage == "Password too weak."));
     }
 
-    /// <summary>
-    /// Verifies that when AddPasswordAsync succeeds, the sign-in is refreshed and the page redirects.
-    /// Input conditions: valid user, AddPasswordAsync returns IdentityResult.Success.
-    /// Expected result: RedirectToPageResult and StatusMessage is set.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_AddPasswordSucceeds_RefreshesSignInAndRedirects()
     {

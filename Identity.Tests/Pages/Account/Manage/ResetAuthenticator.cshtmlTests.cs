@@ -1,7 +1,7 @@
 #pragma warning disable CS8604 // Possible null reference argument.
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account.Manage;
-using Identity.Tests.Infrastructure;
+using Infrastructure;
 
 using System.Security.Claims;
 using Identity.Pages.Account.Manage;
@@ -32,16 +32,6 @@ public class ResetAuthenticatorModelTests
         };
     }
 
-    /// <summary>
-    /// Tests OnGet behavior for both when a user is present and when user retrieval returns null.
-    /// Inputs:
-    /// - userExists: whether UserManager.GetUserAsync returns a non-null IdentityUser.
-    /// - expectedUserId: the value that UserManager.GetUserId(User) should return when user is null.
-    /// Expected:
-    /// - When userExists is true, OnGet returns a PageResult.
-    /// - When userExists is false, OnGet returns a NotFoundObjectResult with message containing the expectedUserId.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [MemberData(nameof(OnGetTestCases))]
     public async Task OnGet_UserExistence_ReturnsExpectedResult(bool userExists, string? expectedUserId, Type expectedResultType, string? expectedMessage)
@@ -124,13 +114,6 @@ public class ResetAuthenticatorModelTests
         }
     }
 
-    /// <summary>
-    /// Ensures that when the user cannot be found by UserManager.GetUserAsync, OnPostAsync returns a NotFoundObjectResult
-    /// containing the user id obtained from UserManager.GetUserId(User), and that no further user management methods are invoked.
-    /// Input: UserManager.GetUserAsync returns null; UserManager.GetUserId returns a specific id string.
-    /// Expected: NotFoundObjectResult with the expected message.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_UserNotFound_ReturnsNotFoundWithExpectedMessage()
     {
@@ -188,20 +171,6 @@ public class ResetAuthenticatorModelTests
         mockSignInManager.Verify(sm => sm.RefreshSignInAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
     }
 
-    /// <summary>
-    /// Validates that when a user is returned, OnPostAsync will attempt to disable two-factor, reset the authenticator key,
-    /// refresh the sign-in, set the StatusMessage, and redirect to the EnableAuthenticator page.
-    /// This test is parameterized to run for both IdentityResult.Success and IdentityResult.Failed for the user manager operations,
-    /// because the implementation does not branch on the IdentityResult values.
-    /// Inputs:
-    /// - userExists: true (a user object).
-    /// - succeedOperations: controls whether SetTwoFactorEnabledAsync and ResetAuthenticatorKeyAsync return success or failed results.
-    /// Expected:
-    /// - RedirectToPageResult to \"./EnableAuthenticator\".
-    /// - StatusMessage set to the expected informative string.
-    /// - Calls to SetTwoFactorEnabledAsync, ResetAuthenticatorKeyAsync, GetUserIdAsync, and RefreshSignInAsync occur exactly once.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
@@ -273,12 +242,6 @@ public class ResetAuthenticatorModelTests
         mockSignInManager.Verify(sm => sm.RefreshSignInAsync(user), Times.Once);
     }
 
-    /// <summary>
-    /// Verifies that the constructor does not throw when provided with valid dependencies.
-    /// Input conditions: valid ILogger mock is provided; UserManager and SignInManager must be
-    /// provided as real instances or proper mocks configured by the test environment.
-    /// Expected result: constructor completes without throwing exceptions.
-    /// </summary>
     [Fact]
     public void ResetAuthenticatorModel_Constructor_WithValidDependencies_DoesNotThrow()
     {
@@ -303,14 +266,6 @@ public class ResetAuthenticatorModelTests
         Assert.NotNull(model);
     }
 
-    /// <summary>
-    /// Verifies behavior when nulls are provided for constructor parameters.
-    /// Input conditions: nulls passed for one or more constructor parameters.
-    /// Expected result: This test is skipped because the source constructor performs no null checks
-    /// and test code must not assign null to non-nullable parameters without explicit nullability changes.
-    /// If the constructor is later updated to validate arguments, replace this skipped test with
-    /// explicit assertions for ArgumentNullException and related messages.
-    /// </summary>
     [Fact]
     public void ResetAuthenticatorModel_Constructor_NullDependencies_BehaviorDocumented()
     {

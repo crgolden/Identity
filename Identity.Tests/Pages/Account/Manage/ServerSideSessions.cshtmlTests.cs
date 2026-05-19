@@ -1,7 +1,7 @@
 #pragma warning disable CS8604
 #pragma warning disable CS8625
 namespace Identity.Tests.Pages.Account.Manage;
-using Identity.Tests.Infrastructure;
+using Infrastructure;
 
 using Duende.IdentityServer.Services;
 using Identity.Pages.Account.Manage;
@@ -11,16 +11,10 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Routing;
 using Moq;
 
-/// <summary>Unit tests for <see cref="Identity.Pages.Account.Manage.ServerSideSessionsModel"/>.</summary>
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class ServerSideSessionsIndexModelTests
 {
-    /// <summary>
-    /// Verifies that the ServerSideSessionsModel constructor does not throw when the optional service is null.
-    /// Inputs: sessionManagement = null.
-    /// Expected: no exception is thrown and the constructed instance is not null.
-    /// </summary>
     [Fact]
     public void Constructor_NullService_DoesNotThrow()
     {
@@ -33,11 +27,6 @@ public class ServerSideSessionsIndexModelTests
         Assert.NotNull(model);
     }
 
-    /// <summary>
-    /// Verifies that the ServerSideSessionsModel default constructor (no arguments) does not throw.
-    /// Inputs: no arguments (uses optional parameter default of null).
-    /// Expected: no exception is thrown and the constructed instance is not null.
-    /// </summary>
     [Fact]
     public void Constructor_NoService_DefaultConstructor_DoesNotThrow()
     {
@@ -51,12 +40,6 @@ public class ServerSideSessionsIndexModelTests
         Assert.IsType<PageModel>(model, exactMatch: false);
     }
 
-    /// <summary>
-    /// Verifies that OnGetAsync with a null session management service leaves UserSessions as null.
-    /// Inputs: sessionManagement = null.
-    /// Expected: model.UserSessions is null after OnGetAsync.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGetAsync_NullService_UserSessionsRemainsNull()
     {
@@ -70,12 +53,6 @@ public class ServerSideSessionsIndexModelTests
         Assert.Null(model.UserSessions);
     }
 
-    /// <summary>
-    /// Verifies that OnPostAsync with a null session management service still redirects to the page.
-    /// Inputs: sessionManagement = null.
-    /// Expected: result is RedirectToPageResult pointing to "/Account/Manage/ServerSideSessions".
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_NullService_RedirectsToPage()
     {
@@ -90,13 +67,6 @@ public class ServerSideSessionsIndexModelTests
         Assert.Equal("/Account/Manage/ServerSideSessions", redirect.PageName);
     }
 
-    /// <summary>
-    /// Verifies that OnPostAsync with a live session management service calls RemoveSessionsAsync
-    /// and then redirects to the page.
-    /// Inputs: mock service that accepts RemoveSessionsAsync, SessionId = "session-abc".
-    /// Expected: RemoveSessionsAsync is called once and result is RedirectToPageResult.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_WithService_RemovesSessionAndRedirects()
     {

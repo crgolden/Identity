@@ -1,7 +1,6 @@
 ﻿namespace Identity.Pages.Account;
 
 using System.ComponentModel.DataAnnotations;
-using System.Security.Claims;
 using System.Threading.Channels;
 using Manage;
 using Microsoft.AspNetCore.Authentication;
@@ -9,30 +8,23 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.Extensions.Options;
 
 /// <summary>Page model for the Login page.</summary>
 [AllowAnonymous]
 public class LoginModel : PageModel
 {
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
-    private readonly ChannelWriter<Func<IServiceProvider, CancellationToken, Task>> _backgroundWriter;
-    private readonly ILogger<LoginModel> _logger;
+    private readonly ChannelWriter<string> _pictureClaimWriter;
     private readonly ICAPTCHAService _captchaService;
-    private readonly IOptions<ReCAPTCHAOptions> _recaptchaOptions;
 
     public LoginModel(
         SignInManager<IdentityUser<Guid>> signInManager,
-        ChannelWriter<Func<IServiceProvider, CancellationToken, Task>> backgroundWriter,
-        ILogger<LoginModel> logger,
-        ICAPTCHAService captchaService,
-        IOptions<ReCAPTCHAOptions> recaptchaOptions)
+        ChannelWriter<string> pictureClaimWriter,
+        ICAPTCHAService captchaService)
     {
         _signInManager = signInManager;
-        _backgroundWriter = backgroundWriter;
-        _logger = logger;
+        _pictureClaimWriter = pictureClaimWriter;
         _captchaService = captchaService;
-        _recaptchaOptions = recaptchaOptions;
     }
 
     [BindProperty]
@@ -61,7 +53,7 @@ public class LoginModel : PageModel
         ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
         ReturnUrl = returnUrl;
         ReturnUrl ??= Url.Content("~/");
-        RecaptchaSiteKey = _recaptchaOptions.Value.SiteKey;
+        RecaptchaSiteKey = _captchaService.SiteKey;
     }
 
     /// <summary>Handles the POST request to authenticate the user.</summary>
@@ -86,11 +78,10 @@ public class LoginModel : PageModel
                 return Page();
             }
 
-            if (!string.Equals(Input.Email, _recaptchaOptions.Value.AdminEmail, StringComparison.OrdinalIgnoreCase) &&
-                !string.Equals(Input.Email, _recaptchaOptions.Value.TestEmail, StringComparison.OrdinalIgnoreCase))
+            if (!_captchaService.IsExempt(Input.Email))
             {
                 var score = await _captchaService.VerifyAsync(Input.RecaptchaToken, HttpContext.RequestAborted);
-                if (score < _recaptchaOptions.Value.ScoreThreshold)
+                if (score < _captchaService.ScoreThreshold)
                 {
                     ModelState.AddModelError(Empty, "Request could not be verified.");
                     return Page();
@@ -107,10 +98,9 @@ public class LoginModel : PageModel
         {
             if (!IsNullOrWhiteSpace(Input.Email))
             {
-                TryAddAvatarClaim(Input.Email);
+                _pictureClaimWriter.TryWrite(Input.Email);
             }
 
-            _logger.LogTrace("User logged in.");
             return Url.IsLocalUrl(returnUrl) ? LocalRedirect(returnUrl) : LocalRedirect("~/");
         }
 
@@ -121,38 +111,11 @@ public class LoginModel : PageModel
 
         if (result.IsLockedOut)
         {
-            _logger.LogTrace("User account locked out.");
             return RedirectToPage("./Lockout");
         }
 
         ModelState.AddModelError(Empty, "Invalid login attempt.");
         return Page();
-    }
-
-    private void TryAddAvatarClaim(string email)
-    {
-        _backgroundWriter.TryWrite(async (sp, ct) =>
-        {
-            var avatarService = sp.GetRequiredService<IAvatarService>();
-            var userManager = sp.GetRequiredService<UserManager<IdentityUser<Guid>>>();
-            var avatarUrl = await avatarService.GetAvatarUrlAsync(email, ct);
-            if (avatarUrl is null)
-            {
-                return;
-            }
-
-            var existingUser = await userManager.FindByNameAsync(email);
-            if (existingUser is null)
-            {
-                return;
-            }
-
-            var claims = await userManager.GetClaimsAsync(existingUser);
-            if (!claims.Any(x => string.Equals("picture", x.Type, StringComparison.Ordinal)))
-            {
-                await userManager.AddClaimAsync(existingUser, new Claim("picture", avatarUrl.ToString()));
-            }
-        });
     }
 
     /// <summary>Provides the form input values bound from the request.</summary>

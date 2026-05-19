@@ -1,5 +1,5 @@
 namespace Identity.Tests.Filters;
-using Identity.Tests.Infrastructure;
+using Infrastructure;
 
 using Identity.Filters;
 using Microsoft.AspNetCore.Http;
@@ -9,16 +9,10 @@ using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Routing;
 
-/// <summary>Unit tests for <see cref="SecurityHeadersAttribute"/>.</summary>
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public sealed class SecurityHeadersAttributeTests
 {
-    /// <summary>
-    /// Verifies that OnResultExecuting sets X-Content-Type-Options to "nosniff" when the result is a PageResult.
-    /// Input: ResultExecutingContext with PageResult.
-    /// Expected: X-Content-Type-Options header equals "nosniff".
-    /// </summary>
     [Fact]
     public void OnResultExecuting_PageResult_SetsXContentTypeOptionsNosniff()
     {
@@ -33,11 +27,6 @@ public sealed class SecurityHeadersAttributeTests
         Assert.Equal("nosniff", (string?)context.HttpContext.Response.Headers.XContentTypeOptions);
     }
 
-    /// <summary>
-    /// Verifies that OnResultExecuting sets X-Frame-Options to "SAMEORIGIN" when the result is a PageResult.
-    /// Input: ResultExecutingContext with PageResult.
-    /// Expected: X-Frame-Options header equals "SAMEORIGIN".
-    /// </summary>
     [Fact]
     public void OnResultExecuting_PageResult_SetsXFrameOptionsSameorigin()
     {
@@ -52,11 +41,6 @@ public sealed class SecurityHeadersAttributeTests
         Assert.Equal("SAMEORIGIN", (string?)context.HttpContext.Response.Headers.XFrameOptions);
     }
 
-    /// <summary>
-    /// Verifies that OnResultExecuting sets Referrer-Policy to "no-referrer" when the result is a PageResult.
-    /// Input: ResultExecutingContext with PageResult.
-    /// Expected: Referrer-Policy header equals "no-referrer".
-    /// </summary>
     [Fact]
     public void OnResultExecuting_PageResult_SetsReferrerPolicyNoReferrer()
     {
@@ -71,11 +55,6 @@ public sealed class SecurityHeadersAttributeTests
         Assert.Equal("no-referrer", (string?)context.HttpContext.Response.Headers["Referrer-Policy"]);
     }
 
-    /// <summary>
-    /// Verifies that OnResultExecuting sets Content-Security-Policy to the default strict value when the result is a PageResult.
-    /// Input: ResultExecutingContext with PageResult and no pre-existing CSP header.
-    /// Expected: Content-Security-Policy header equals the expected default policy string.
-    /// </summary>
     [Fact]
     public void OnResultExecuting_PageResult_SetsDefaultContentSecurityPolicy()
     {
@@ -92,11 +71,6 @@ public sealed class SecurityHeadersAttributeTests
             (string?)context.HttpContext.Response.Headers.ContentSecurityPolicy);
     }
 
-    /// <summary>
-    /// Verifies that OnResultExecuting does not set any security headers when the result is not a PageResult.
-    /// Input: ResultExecutingContext with ContentResult (not a PageResult).
-    /// Expected: none of the four security headers are present in the response.
-    /// </summary>
     [Fact]
     public void OnResultExecuting_NonPageResult_DoesNotSetAnyHeaders()
     {
@@ -115,12 +89,6 @@ public sealed class SecurityHeadersAttributeTests
         Assert.False(headers.ContainsKey("Content-Security-Policy"));
     }
 
-    /// <summary>
-    /// Verifies that OnResultExecuting does not overwrite an existing Content-Security-Policy header,
-    /// while still setting the other three headers.
-    /// Input: ResultExecutingContext with PageResult and a pre-existing CSP header value.
-    /// Expected: CSP retains its original value; X-Content-Type-Options, X-Frame-Options, and Referrer-Policy are set.
-    /// </summary>
     [Fact]
     public void OnResultExecuting_PageResult_ExistingCspNotOverwritten()
     {
@@ -141,13 +109,6 @@ public sealed class SecurityHeadersAttributeTests
         Assert.Equal("no-referrer", (string?)context.HttpContext.Response.Headers["Referrer-Policy"]);
     }
 
-    /// <summary>
-    /// Verifies that calling OnResultExecuting twice on the same context leaves headers at their expected values.
-    /// The second call must not overwrite the X-Content-Type-Options, X-Frame-Options, or Referrer-Policy headers
-    /// with a different value, and must not overwrite the CSP header set by the first call.
-    /// Input: PageResult context; filter called twice in sequence.
-    /// Expected: all four headers equal the expected values after both calls.
-    /// </summary>
     [Fact]
     public void OnResultExecuting_PageResult_CalledTwice_HeaderValuesUnchanged()
     {

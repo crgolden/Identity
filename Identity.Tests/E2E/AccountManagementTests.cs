@@ -136,7 +136,7 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
 
             // Confirm via link sent to the new address
             var changeEmail = await fixture.Email.WaitForEmailAsync(newEmail);
-            var changeLink = EmailCaptureService.ExtractLink(changeEmail.HtmlBody, "http");
+            var changeLink = EmailCaptureSender.ExtractLink(changeEmail.HtmlBody, "http");
             await page.GotoAsync(changeLink);
             await page.WaitForURLAsync("**/Account/ConfirmEmailChange**");
         }
@@ -182,7 +182,7 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
             await page2.ClickAsync("#resend-email-submit");
 
             var newConfirmEmail = await fixture.Email.WaitForEmailAsync(email);
-            var confirmLink = EmailCaptureService.ExtractLink(newConfirmEmail.HtmlBody, "http");
+            var confirmLink = EmailCaptureSender.ExtractLink(newConfirmEmail.HtmlBody, "http");
             await page2.GotoAsync(confirmLink);
             await page2.WaitForURLAsync("**/Account/ConfirmEmail**");
         }

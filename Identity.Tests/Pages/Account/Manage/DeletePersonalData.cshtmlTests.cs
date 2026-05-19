@@ -1,5 +1,5 @@
 namespace Identity.Tests.Pages.Account.Manage;
-using Identity.Tests.Infrastructure;
+using Infrastructure;
 
 using System.Security.Claims;
 using Identity.Pages.Account.Manage;
@@ -12,24 +12,10 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 
-/// <summary>
-/// Tests for Identity.Pages.Account.Manage.DeletePersonalDataModel constructor.
-/// </summary>
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class DeletePersonalDataModelTests
 {
-    /// <summary>
-    /// Verifies that providing valid, non-null dependencies to the constructor
-    /// results in a constructed instance and default public property values.
-    /// Conditions:
-    /// - All constructor parameters are valid concrete or mocked instances.
-    /// Expected:
-    /// - No exception is thrown.
-    /// - The returned instance is not null.
-    /// - Public property 'Input' is null by default.
-    /// - Public property 'RequirePassword' is false by default.
-    /// </summary>
     [Fact]
     public void Constructor_ValidDependencies_InitializesDefaults()
     {
@@ -87,16 +73,6 @@ public class DeletePersonalDataModelTests
         Assert.False(model.RequirePassword);
     }
 
-    /// <summary>
-    /// Verifies that when the user manager cannot find a user, OnGet returns NotFoundObjectResult
-    /// containing the user id as returned by UserManager.GetUserId.
-    /// Input conditions:
-    /// - UserManager.GetUserAsync returns null.
-    /// - UserManager.GetUserId returns a known id string.
-    /// Expected result:
-    /// - The action result is NotFoundObjectResult and the value matches the expected message.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGet_UserNotFound_ReturnsNotFoundObjectResultWithMessage()
     {

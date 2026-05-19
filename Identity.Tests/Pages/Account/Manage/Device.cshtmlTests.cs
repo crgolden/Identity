@@ -1,7 +1,7 @@
 #pragma warning disable CS8604
 #pragma warning disable CS8625
 namespace Identity.Tests.Pages.Account.Manage;
-using Identity.Tests.Infrastructure;
+using Infrastructure;
 
 using Duende.IdentityServer.Configuration;
 using Duende.IdentityServer.Models;
@@ -15,16 +15,10 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 
-/// <summary>Unit tests for <see cref="Identity.Pages.Account.Manage.DeviceModel"/>.</summary>
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class DeviceIndexModelTests
 {
-    /// <summary>
-    /// Verifies that the DeviceModel constructor does not throw when parameters are null.
-    /// Inputs: all constructor parameters are null.
-    /// Expected: no exception is thrown and the constructed instance is not null.
-    /// </summary>
     [Fact]
     public void Constructor_NullParameters_DoesNotThrow()
     {
@@ -44,13 +38,6 @@ public class DeviceIndexModelTests
         Assert.IsType<PageModel>(model, exactMatch: false);
     }
 
-    /// <summary>
-    /// Verifies that OnGetAsync returns a PageResult when userCode is null, because no
-    /// device code lookup is needed — the user code entry form is shown.
-    /// Inputs: userCode = null.
-    /// Expected: result is PageResult.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGetAsync_NullUserCode_ReturnsPage()
     {
@@ -66,13 +53,6 @@ public class DeviceIndexModelTests
         Assert.IsType<PageResult>(result);
     }
 
-    /// <summary>
-    /// Verifies that OnGetAsync returns a PageResult and adds a model error when userCode is provided
-    /// but the interaction service cannot resolve it (returns null).
-    /// Inputs: userCode = "invalid-code", interaction.GetAuthorizationContextAsync returns null.
-    /// Expected: result is PageResult and ModelState is invalid.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGetAsync_InvalidUserCode_ReturnsPageWithModelError()
     {
@@ -94,13 +74,6 @@ public class DeviceIndexModelTests
         Assert.False(model.ModelState.IsValid);
     }
 
-    /// <summary>
-    /// Verifies that OnPostAsync redirects to the error page when the authorization context
-    /// cannot be resolved for Input.UserCode (interaction returns null).
-    /// Inputs: Input.UserCode = "code", interaction.GetAuthorizationContextAsync returns null.
-    /// Expected: result is RedirectToPageResult with page "/Error".
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_NullAuthorizationContext_RedirectsToError()
     {

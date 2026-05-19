@@ -4,21 +4,8 @@ using Duende.IdentityServer.EntityFramework.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-/// <summary>
-/// Helper for seeding Duende IdentityServer client configurations into the database
-/// during E2E tests. Clients seeded here are cleaned up when
-/// <see cref="PlaywrightFixture.DisposeAsync"/> runs <c>db.Clients.ExecuteDeleteAsync()</c>.
-/// </summary>
 public sealed class TestClientHelper(PlaywrightFixture fixture)
 {
-    /// <summary>
-    /// Seeds a minimal public OIDC client with <c>RequireConsent = true</c> into the
-    /// configuration store and returns its generated <c>clientId</c>.
-    /// Also seeds the <c>openid</c> and <c>profile</c> identity resources if they are
-    /// not already present.
-    /// </summary>
-    /// <param name="redirectUri">The redirect URI to register for the client.</param>
-    /// <returns>A task resolving to the generated client ID.</returns>
     public async Task<string> SeedConsentClientAsync(string redirectUri = "https://localhost:9999/callback")
     {
         var clientId = $"test-{Guid.NewGuid():N}";

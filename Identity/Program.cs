@@ -3,7 +3,9 @@ using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Threading.Channels;
+using Azure.Core;
 using Azure.Identity;
+using Azure.Messaging.ServiceBus;
 using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Azure.Security.KeyVault.Secrets;
 using Duende.IdentityServer;
@@ -18,7 +20,6 @@ using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -27,22 +28,27 @@ using OpenTelemetry.Instrumentation.AspNetCore;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
-using Resend;
 using Serilog;
 using Serilog.Filters;
 #pragma warning restore SA1200
 
-Serilog.Log.Logger = new LoggerConfiguration().WriteTo.Console().CreateBootstrapLogger();
+Log.Logger = new LoggerConfiguration().WriteTo.Console().CreateBootstrapLogger();
 
 try
 {
     var builder = WebApplication.CreateBuilder(args);
-    string googleClientId, googleClientSecret, resendApiToken, gravatarApiSecretKey, reCAPTCHASiteKey, reCAPTCHASecretKey;
+    string googleClientId, googleClientSecret, gravatarApiSecretKey, reCAPTCHASiteKey, reCAPTCHASecretKey;
+    var serviceBusSenderFactory = (ServiceBusClientOptions _, TokenCredential _, IServiceProvider sp) =>
+    {
+        var serviceBusClient = sp.GetRequiredService<ServiceBusClient>();
+        return serviceBusClient.CreateSender("email");
+    };
     var sqlConnectionStringBuilderSection = builder.Configuration.GetRequiredSection(nameof(SqlConnectionStringBuilder));
     var sqlConnectionStringBuilder = sqlConnectionStringBuilderSection.Get<SqlConnectionStringBuilder>() ?? throw new InvalidOperationException($"Invalid '{nameof(SqlConnectionStringBuilder)}' section.");
     var corsPolicySection = builder.Configuration.GetRequiredSection(nameof(CorsPolicy));
     var corsPolicy = corsPolicySection.Get<CorsPolicy>() ?? throw new InvalidOperationException($"Invalid '{nameof(CorsPolicy)}' section.");
     var recaptchaVerifyEndpoint = builder.Configuration.GetRequired<Uri>("RecaptchaVerifyEndpoint");
+    var backgroundChannel = Channel.CreateUnbounded<string>(new UnboundedChannelOptions { SingleReader = true });
     if (builder.Environment.IsProduction())
     {
         var defaultAzureCredentialOptionsSection = builder.Configuration.GetRequiredSection(nameof(DefaultAzureCredentialOptions));
@@ -57,7 +63,6 @@ try
         var secrets = secretClient.GetIdentitySecrets();
         googleClientId = secrets.GoogleClientId.Value;
         googleClientSecret = secrets.GoogleClientSecret.Value;
-        resendApiToken = secrets.ResendApiToken.Value;
         gravatarApiSecretKey = secrets.GravatarApiSecretKey.Value;
         reCAPTCHASiteKey = secrets.ReCAPTCHASiteKey.Value;
         reCAPTCHASecretKey = secrets.ReCAPTCHASecretKey.Value;
@@ -70,6 +75,11 @@ try
             openTelemetryLoggerOptions.IncludeScopes = true;
         });
         builder.Services
+            .Configure<ReCAPTCHAOptions>(recaptchaOptions =>
+            {
+                recaptchaOptions.AdminEmail = secrets.AdminEmail.Value;
+                recaptchaOptions.TestEmail = secrets.TestEmail.Value;
+            })
             .AddSerilog((serviceProvider, loggerConfiguration) => loggerConfiguration
                 .ReadFrom.Configuration(builder.Configuration)
                 .ReadFrom.Services(serviceProvider)
@@ -111,12 +121,12 @@ try
             .SetApplicationName(applicationName)
             .PersistKeysToAzureBlobStorage(blobUri, tokenCredential)
             .ProtectKeysWithAzureKeyVault(dataProtectionKeyIdentifier, tokenCredential).Services
-            .AddAzureClientsCore(true);
-        builder.Services.Configure<ReCAPTCHAOptions>(recaptchaOptions =>
-        {
-            recaptchaOptions.AdminEmail = secrets.AdminEmail.Value;
-            recaptchaOptions.TestEmail = secrets.TestEmail.Value;
-        });
+            .AddAzureClients(azureClientFactoryBuilder =>
+            {
+                azureClientFactoryBuilder.UseCredential(tokenCredential);
+                azureClientFactoryBuilder.AddServiceBusClientWithNamespace(secrets.ServiceBusNamespace.Value);
+                azureClientFactoryBuilder.AddClient(serviceBusSenderFactory).WithName("email");
+            });
     }
     else
     {
@@ -134,7 +144,6 @@ try
         var secrets = builder.Configuration.GetIdentitySecrets();
         googleClientId = secrets.GoogleClientId;
         googleClientSecret = secrets.GoogleClientSecret;
-        resendApiToken = secrets.ResendApiToken;
         gravatarApiSecretKey = secrets.GravatarApiSecretKey;
         reCAPTCHASiteKey = secrets.ReCAPTCHASiteKey;
         reCAPTCHASecretKey = secrets.ReCAPTCHASecretKey;
@@ -144,11 +153,14 @@ try
                 .ReadFrom.Services(serviceProvider)
                 .Filter.ByExcluding(Matching.FromSource("Duende.IdentityServer.Diagnostics.Summary")))
             .AddDataProtection()
-            .UseEphemeralDataProtectionProvider();
+            .UseEphemeralDataProtectionProvider().Services
+            .AddAzureClients(azureClientFactoryBuilder =>
+            {
+                azureClientFactoryBuilder.AddServiceBusClient(secrets.ServiceBusConnectionString);
+                azureClientFactoryBuilder.AddClient(serviceBusSenderFactory).WithName("email");
+            });
     }
 
-    var backgroundChannel = Channel.CreateUnbounded<Func<IServiceProvider, CancellationToken, Task>>(
-        new UnboundedChannelOptions { SingleReader = true });
     builder.Services
         .AddDbContextPool<ApplicationDbContext>(dbContextOptionsBuilder => dbContextOptionsBuilder
             .UseSqlServer(sqlConnectionStringBuilder.ConnectionString, sqlServerDbContextOptionsBuilder =>
@@ -199,13 +211,6 @@ try
                 openIdConnectOptions.ClientId = googleClientId;
                 openIdConnectOptions.ClientSecret = googleClientSecret;
             }).Services
-        .Configure<ResendClientOptions>(configureOptions =>
-        {
-            configureOptions.ApiToken = resendApiToken;
-        })
-        .AddHttpClient<ResendClient>().Services
-        .AddTransient<IResend, ResendClient>()
-        .AddTransient<IEmailSender, EmailSender>()
         .AddHttpClient<IGravatar, Gravatar>(httpClient =>
         {
             httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(IdentityConstants.BearerScheme, gravatarApiSecretKey);
@@ -220,7 +225,7 @@ try
         .AddHttpClient<ICAPTCHAService, ReCAPTCHAService>().Services
         .AddSingleton(backgroundChannel.Writer)
         .AddSingleton(backgroundChannel.Reader)
-        .AddHostedService<BackgroundTaskWorker>()
+        .AddHostedService<PictureClaimWorker>()
         .AddCors()
         .Configure<ForwardedHeadersOptions>(forwardedHeadersOptions =>
         {
@@ -288,9 +293,9 @@ try
 }
 catch (Exception ex) when (ex is not HostAbortedException)
 {
-    Serilog.Log.Fatal(ex, "Application terminated unexpectedly");
+    Log.Fatal(ex, "Application terminated unexpectedly");
 }
 finally
 {
-    await Serilog.Log.CloseAndFlushAsync();
+    await Log.CloseAndFlushAsync();
 }

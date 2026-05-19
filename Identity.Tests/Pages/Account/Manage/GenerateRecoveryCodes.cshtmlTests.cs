@@ -1,6 +1,6 @@
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account.Manage;
-using Identity.Tests.Infrastructure;
+using Infrastructure;
 
 using System.Security.Claims;
 using Identity.Pages.Account.Manage;
@@ -15,16 +15,6 @@ using Moq;
 [Trait("Category", "Unit")]
 public class GenerateRecoveryCodesModelTests
 {
-    /// <summary>
-    /// Verifies that the constructor can be invoked with valid dependencies and produces a non-null instance.
-    /// This test is marked as skipped because creating a usable UserManager{IdentityUser{Guid}} instance
-    /// or a fully functional Mock of it requires complex setup (store, options, password hasher, etc.).
-    /// The ILogger can be mocked with Moq; however the UserManager cannot be trivially mocked without
-    /// supplying constructor arguments. Implementers should provide an appropriate UserManager mock or
-    /// factory before enabling this test.
-    /// Input conditions: a mock ILogger and a mock or real UserManager supplied.
-    /// Expected result: an instance of GenerateRecoveryCodesModel is created and is not null.
-    /// </summary>
     [Fact]
     public void Constructor_WithValidDependencies_CreatesInstance()
     {
@@ -55,15 +45,6 @@ public class GenerateRecoveryCodesModelTests
         Assert.NotNull(model);
     }
 
-    /// <summary>
-    /// Validates constructor behavior when dependencies are null.
-    /// This test is marked as skipped because the production constructor does not perform null checks
-    /// and the code's nullability annotations in the source are disabled (#nullable disable).
-    /// If the intended behavior is to guard against null arguments, add ArgumentNullException checks
-    /// to the production constructor and then update this test to assert that exceptions are thrown.
-    /// Input conditions: null userManager and/or null logger.
-    /// Expected result (if constructor is changed): ArgumentNullException is thrown for null parameters.
-    /// </summary>
     [Fact]
     public void Constructor_NullDependencies_ThrowsArgumentNullException()
     {
@@ -74,16 +55,6 @@ public class GenerateRecoveryCodesModelTests
         Assert.Null(exception);
     }
 
-    /// <summary>
-    /// Verifies that when the UserManager cannot find a user for the current principal,
-    /// OnPostAsync returns a NotFoundObjectResult containing the user id returned by UserManager.GetUserId.
-    /// Input conditions:
-    ///  - UserManager.GetUserAsync returns null
-    ///  - UserManager.GetUserId returns a specific id string
-    /// Expected result:
-    ///  - IActionResult is NotFoundObjectResult and its Value matches the expected message.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_UserNotFound_ReturnsNotFoundWithMessage()
     {
@@ -117,16 +88,6 @@ public class GenerateRecoveryCodesModelTests
         Assert.Equal(expectedMessage, (string)notFound.Value);
     }
 
-    /// <summary>
-    /// Verifies that when a user is found but two-factor authentication is disabled,
-    /// OnPostAsync throws an InvalidOperationException.
-    /// Input conditions:
-    ///  - UserManager.GetUserAsync returns a non-null user
-    ///  - UserManager.GetTwoFactorEnabledAsync returns false
-    /// Expected result:
-    ///  - InvalidOperationException is thrown with the expected message.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_TwoFactorDisabled_ThrowsInvalidOperationException()
     {
@@ -158,19 +119,6 @@ public class GenerateRecoveryCodesModelTests
         Assert.Equal("Cannot generate recovery codes for user as they do not have 2FA enabled.", ex.Message);
     }
 
-    /// <summary>
-    /// Verifies that when a user is found and two-factor authentication is enabled,
-    /// OnPostAsync generates recovery codes, sets RecoveryCodes and StatusMessage, and redirects to ShowRecoveryCodes.
-    /// Input conditions:
-    ///  - UserManager.GetUserAsync returns a non-null user
-    ///  - UserManager.GetTwoFactorEnabledAsync returns true
-    ///  - UserManager.GenerateNewTwoFactorRecoveryCodesAsync returns a collection of codes
-    /// Expected result:
-    ///  - IActionResult is RedirectToPageResult with PageName "./ShowRecoveryCodes"
-    ///  - Model.RecoveryCodes contains the generated codes
-    ///  - Model.StatusMessage has the success message
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_TwoFactorEnabled_GeneratesCodesAndRedirects()
     {
@@ -216,13 +164,6 @@ public class GenerateRecoveryCodesModelTests
         Assert.Equal("You have generated new recovery codes.", model.StatusMessage);
     }
 
-    /// <summary>
-    /// Verifies that when the user manager cannot find a user for the current principal,
-    /// OnGetAsync returns a NotFoundObjectResult containing the user id provided by UserManager.GetUserId.
-    /// Input conditions: UserManager.GetUserAsync returns null and GetUserId returns a known id string.
-    /// Expected result: NotFoundObjectResult with message: "Unable to load user with ID '{id}'."
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGetAsync_UserNotFound_ReturnsNotFoundWithUserIdMessage()
     {
@@ -266,16 +207,6 @@ public class GenerateRecoveryCodesModelTests
         Assert.Equal($"Unable to load user with ID '{expectedId}'.", message);
     }
 
-    /// <summary>
-    /// Tests behavior of OnGetAsync when a user exists and two-factor authentication flag varies.
-    /// Input conditions:
-    ///  - A valid user is returned by UserManager.GetUserAsync.
-    ///  - UserManager.GetTwoFactorEnabledAsync returns the provided boolean (true/false).
-    /// Expected results:
-    ///  - If true: method returns a PageResult.
-    ///  - If false: method throws InvalidOperationException with the expected message.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [InlineData(true)]
     [InlineData(false)]

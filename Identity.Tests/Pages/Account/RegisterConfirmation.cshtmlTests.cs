@@ -1,6 +1,6 @@
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account;
-using Identity.Tests.Infrastructure;
+using Infrastructure;
 
 using Identity.Pages.Account;
 using Microsoft.AspNetCore.Identity;
@@ -9,22 +9,10 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
 using Moq;
 
-/// <summary>Unit tests for <see cref="Identity.Pages.Account.RegisterConfirmationModel"/>.</summary>
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class RegisterConfirmationModelTests
 {
-    /// <summary>
-    /// Verifies that the RegisterConfirmationModel constructor can be invoked with valid dependencies.
-    /// Input conditions:
-    /// - A valid IEmailSender mock is available.
-    /// - A UserManager instance or mock is required but creating a reliable mock for UserManager requires
-    ///   providing multiple dependencies (store, options, passwordHasher, userValidators, etc.). Because UserManager
-    ///   in many frameworks is not trivially mockable without supplying constructor parameters, this test is marked skipped.
-    /// Expected result:
-    /// - Constructor should not throw when supplied valid instances. This test is left as a scaffold for the consumer to
-    ///   complete by providing a concrete UserManager or an adequate mock setup.
-    /// </summary>
     [Fact]
     public void Constructor_WithValidDependencies_DoesNotThrow()
     {
@@ -48,15 +36,6 @@ public class RegisterConfirmationModelTests
         Assert.NotNull(model);
     }
 
-    /// <summary>
-    /// Verifies constructor behavior when sender dependency is provided but UserManager construction is not set up.
-    /// Input conditions:
-    /// - IEmailSender is mocked.
-    /// - UserManager is not provided due to complexity of construction in unit test environment.
-    /// Expected result:
-    /// - This test is marked skipped and documents how to complete it: either construct a UserManager with real dependencies
-    ///   or provide a fully initialized mock via Moq using the appropriate constructor arguments.
-    /// </summary>
     [Fact]
     public void Constructor_MissingUserManager_DescribeExpectedBehavior()
     {
@@ -71,12 +50,6 @@ public class RegisterConfirmationModelTests
         Assert.NotNull(model);
     }
 
-    /// <summary>
-    /// Verifies that when email is null the handler redirects to the Index page.
-    /// Input: email == null.
-    /// Expected: RedirectToPageResult with PageName '/Index'.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGetAsync_EmailIsNull_RedirectsToIndex()
     {
@@ -93,12 +66,6 @@ public class RegisterConfirmationModelTests
         Assert.Equal("/Index", redirect.PageName);
     }
 
-    /// <summary>
-    /// Verifies that when the user cannot be found for various non-null email inputs, the handler returns NotFound with an explanatory message.
-    /// Inputs tested: empty string, whitespace-only string, arbitrary non-existent email.
-    /// Expected: NotFoundObjectResult with the message "Unable to load user with email '{email}'."
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [InlineData("nonexistent@example.com")]
     public async Task OnGetAsync_UserNotFound_ReturnsNotFoundObjectResult_ForVariousEmails(string email)
@@ -123,13 +90,6 @@ public class RegisterConfirmationModelTests
         Assert.Null(model.Email);
     }
 
-    /// <summary>
-    /// Ensures that when a user exists the handler returns Page and sets Email regardless of returnUrl.
-    /// Url.Content is never called by the handler.
-    /// Inputs: returnUrl == null and returnUrl == "/custom".
-    /// Expected: PageResult, Email set to provided email.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [InlineData(null)]
     [InlineData("/custom")]

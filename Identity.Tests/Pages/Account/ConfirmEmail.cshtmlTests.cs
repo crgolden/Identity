@@ -1,7 +1,7 @@
-﻿#pragma warning disable CS8604 // Possible null reference argument.
+#pragma warning disable CS8604 // Possible null reference argument.
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account;
-using Identity.Tests.Infrastructure;
+using Infrastructure;
 
 using System.Text;
 using Identity.Pages.Account;
@@ -17,11 +17,6 @@ using Moq;
 [Trait("Category", "Unit")]
 public partial class ConfirmEmailModelTests
 {
-    /// <summary>
-    /// Test data for null userId or null code inputs which should redirect to the Index page.
-    /// Covers: userId null, code null, both null.
-    /// </summary>
-    /// <returns></returns>
     public static TheoryData<string?, string?> RedirectNullOrWhitespaceCases() => new()
     {
         { null, "non-null-code" },
@@ -33,12 +28,6 @@ public partial class ConfirmEmailModelTests
         { "non-null-user", "  " },
     };
 
-    /// <summary>
-    /// Verifies that when either userId or code is null the action redirects to the Index page.
-    /// Input conditions: combinations where userId or code (or both) are null.
-    /// Expected result: RedirectToPageResult with PageName \"/Index\".
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [MemberData(nameof(RedirectNullOrWhitespaceCases))]
     public async Task OnGetAsync_NullOrWhitespaceUserIdOrCode_RedirectsToIndex(string? userId, string? code)
@@ -56,12 +45,6 @@ public partial class ConfirmEmailModelTests
         Assert.Equal("/Index", redirect.PageName);
     }
 
-    /// <summary>
-    /// Verifies that when the user is not found the action returns NotFoundObjectResult with a descriptive message.
-    /// Input conditions: valid (non-null) userId and code, but UserManager.FindByIdAsync returns null.
-    /// Expected result: NotFoundObjectResult with message \"Unable to load user with ID '{userId}'.\".
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGetAsync_UserNotFound_ReturnsNotFoundObjectResult()
     {
@@ -84,12 +67,6 @@ public partial class ConfirmEmailModelTests
         Assert.Equal($"Unable to load user with ID '{userId}'.", notFound.Value);
     }
 
-    /// <summary>
-    /// Verifies that the constructor does not throw when a null UserManager is provided
-    /// and that the public StatusMessage property is null by default.
-    /// Input conditions: userManager parameter = null.
-    /// Expected result: instance is created successfully and StatusMessage remains null.
-    /// </summary>
     [Fact]
     public void ConfirmEmailModel_Constructor_UserManagerNull_DoesNotThrowAndStatusMessageIsNull()
     {
@@ -148,12 +125,6 @@ public partial class ConfirmEmailModelTests
         Assert.Equal("Error confirming your email.", model.StatusMessage);
     }
 
-    /// <summary>
-    /// Verifies that the constructor accepts a valid UserManager instance and
-    /// that the public StatusMessage property is null by default.
-    /// Input conditions: userManager parameter = a constructed UserManager with minimal dependencies.
-    /// Expected result: instance is created successfully and StatusMessage remains null.
-    /// </summary>
     [Fact]
     public void ConfirmEmailModel_Constructor_ValidUserManager_InstanceCreatedAndStatusMessageIsNull()
     {

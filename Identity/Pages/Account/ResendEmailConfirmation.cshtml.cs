@@ -1,24 +1,26 @@
-﻿namespace Identity.Pages.Account;
+namespace Identity.Pages.Account;
 
 using System.ComponentModel.DataAnnotations;
 using System.Text.Encodings.Web;
+using Azure.Messaging.ServiceBus;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Azure;
 
 /// <summary>Page model for the Resend Email Confirmation page.</summary>
 [AllowAnonymous]
 public class ResendEmailConfirmationModel : PageModel
 {
+    private const string From = "noreply@crgolden.com";
     private readonly UserManager<IdentityUser<Guid>> _userManager;
-    private readonly IEmailSender _emailSender;
+    private readonly ServiceBusSender _serviceBusSender;
 
-    public ResendEmailConfirmationModel(UserManager<IdentityUser<Guid>> userManager, IEmailSender emailSender)
+    public ResendEmailConfirmationModel(UserManager<IdentityUser<Guid>> userManager, IAzureClientFactory<ServiceBusSender> serviceBusSenderFactory)
     {
         _userManager = userManager;
-        _emailSender = emailSender;
+        _serviceBusSender = serviceBusSenderFactory.CreateClient("email");
     }
 
     [BindProperty]
@@ -51,10 +53,14 @@ public class ResendEmailConfirmationModel : PageModel
             protocol: Request.Scheme);
         if (!IsNullOrWhiteSpace(callbackUrl))
         {
-            await _emailSender.SendEmailAsync(
-                Input.Email,
-                "Confirm your email",
-                $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+            var htmlMessage = $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.";
+            var message = new ServiceBusMessage(htmlMessage)
+            {
+                ReplyTo = From,
+                Subject = "Confirm your email",
+                To = Input.Email
+            };
+            await _serviceBusSender.SendMessageAsync(message, HttpContext.RequestAborted);
         }
 
         ModelState.AddModelError(Empty, "Verification email sent. Please check your email.");

@@ -1,18 +1,19 @@
 #pragma warning disable CS8604 // Possible null reference argument.
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account.Manage;
-using Identity.Tests.Infrastructure;
+using Infrastructure;
 
 using System.Security.Claims;
 using System.Text.Encodings.Web;
+using Azure.Messaging.ServiceBus;
 using Identity.Pages.Account.Manage;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -27,20 +28,12 @@ public class EmailModelTests
         "user+tag@exa-mple.co.uk",
     };
 
-    /// <summary>
-    /// Tests that when no user is found (UserManager.GetUserAsync returns null),
-    /// the handler returns a NotFoundObjectResult containing the user id from UserManager.GetUserId.
-    /// Condition: UserManager.GetUserAsync returns null.
-    /// Expected: NotFoundObjectResult with message referencing provided user id.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostSendVerificationEmailAsync_UserNotFound_ReturnsNotFoundWithUserId()
     {
         // Arrange
         var storeMock = Mock.Of<IUserStore<IdentityUser<Guid>>>();
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock, null, null, null, null, null, null, null, null);
-        var emailSenderMock = new Mock<IEmailSender>();
         var principal = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "ignored")]));
         userManagerMock
             .Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
@@ -49,7 +42,7 @@ public class EmailModelTests
             .Setup(um => um.GetUserId(It.IsAny<ClaimsPrincipal>()))
             .Returns("expected-user-id");
 
-        var model = new EmailModel(userManagerMock.Object, emailSenderMock.Object)
+        var model = new EmailModel(userManagerMock.Object, CreateSenderFactory())
         {
             PageContext = new PageContext
             {
@@ -66,19 +59,12 @@ public class EmailModelTests
         Assert.Contains("expected-user-id", notFound.Value.ToString(), StringComparison.Ordinal);
     }
 
-    /// <summary>
-    /// Tests that when the ModelState is invalid the handler loads the page (returns PageResult).
-    /// Condition: ModelState is invalid and a user exists.
-    /// Expected: PageResult is returned and no email is sent.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostSendVerificationEmailAsync_InvalidModelState_ReturnsPage()
     {
         // Arrange
         var storeMock = Mock.Of<IUserStore<IdentityUser<Guid>>>();
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock, null, null, null, null, null, null, null, null);
-        var emailSenderMock = new Mock<IEmailSender>();
         var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
         var principal = new ClaimsPrincipal(new ClaimsIdentity());
 
@@ -86,7 +72,8 @@ public class EmailModelTests
             .Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
             .ReturnsAsync(user);
 
-        var model = new EmailModel(userManagerMock.Object, emailSenderMock.Object)
+        var (factory, senderMock) = CreateSenderFactoryWithMock();
+        var model = new EmailModel(userManagerMock.Object, factory)
         {
             PageContext = new PageContext
             {
@@ -104,20 +91,9 @@ public class EmailModelTests
         Assert.IsType<PageResult>(result);
 
         // Ensure no email was attempted to be sent
-        emailSenderMock.Verify(es => es.SendEmailAsync(It.IsAny<string?>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        senderMock.Verify(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    /// <summary>
-    /// Tests that when a valid user exists and ModelState is valid the handler:
-    /// - generates a token,
-    /// - builds a callback URL via Url.Page,
-    /// - sends an email with encoded callback URL,
-    /// - sets the StatusMessage,
-    /// - and redirects to the page.
-    /// Condition: Valid user, various email values provided by MemberData.
-    /// Expected: SendEmailAsync invoked with expected email/subject/body and RedirectToPageResult is returned.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [MemberData(nameof(ValidEmailCases))]
     public async Task OnPostSendVerificationEmailAsync_ValidUser_SendsEmailAndRedirects(string? returnedEmail)
@@ -125,7 +101,6 @@ public class EmailModelTests
         // Arrange
         var storeMock = Mock.Of<IUserStore<IdentityUser<Guid>>>();
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock, null, null, null, null, null, null, null, null);
-        var emailSenderMock = new Mock<IEmailSender>();
         var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
         var principal = new ClaimsPrincipal(new ClaimsIdentity());
 
@@ -143,7 +118,6 @@ public class EmailModelTests
             .ReturnsAsync("raw-token");
 
         const string fixedCallbackUrl = "https://example.test/Account/ConfirmEmail?userId=the-user-id&code=abc";
-        var capturedCallbackUrl = fixedCallbackUrl;
         var urlHelperMock = new Mock<IUrlHelper>();
 
         // ActionContext must be non-null because UrlHelperExtensions.Page always accesses it
@@ -155,21 +129,16 @@ public class EmailModelTests
         // SetReturnsDefault covers all string?-returning methods including RouteUrl called by Url.Page
         urlHelperMock.SetReturnsDefault<string?>(fixedCallbackUrl);
 
-        string? capturedEmail = null;
-        string? capturedSubject = null;
-        string? capturedBody = null;
-
-        emailSenderMock
-            .Setup(es => es.SendEmailAsync(It.IsAny<string?>(), It.IsAny<string>(), It.IsAny<string>()))
+        ServiceBusMessage? capturedMessage = null;
+        var senderMock = new Mock<ServiceBusSender>();
+        senderMock
+            .Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask)
-            .Callback<string?, string, string>((addr, subj, body) =>
-            {
-                capturedEmail = addr;
-                capturedSubject = subj;
-                capturedBody = body;
-            });
+            .Callback<ServiceBusMessage, CancellationToken>((msg, _) => capturedMessage = msg);
+        var factoryMock = new Mock<IAzureClientFactory<ServiceBusSender>>();
+        factoryMock.Setup(f => f.CreateClient("email")).Returns(senderMock.Object);
 
-        var model = new EmailModel(userManagerMock.Object, emailSenderMock.Object)
+        var model = new EmailModel(userManagerMock.Object, factoryMock.Object)
         {
             PageContext = new PageContext
             {
@@ -188,49 +157,29 @@ public class EmailModelTests
         var result = await model.OnPostSendVerificationEmailAsync();
 
         // Assert
-        // RedirectToPageResult expected
         Assert.IsType<RedirectToPageResult>(result);
-
-        // StatusMessage should be set to expected value
         Assert.Equal("Verification email sent. Please check your email.", model.StatusMessage);
 
-        // Verify email sender was invoked once
-        emailSenderMock.Verify(es => es.SendEmailAsync(It.IsAny<string?>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+        senderMock.Verify(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()), Times.Once);
 
-        // Subject should be the expected confirmation subject
-        Assert.Equal("Confirm your email", capturedSubject);
-
-        // The email address passed through should match returnedEmail (may be null)
-        Assert.Equal(returnedEmail, capturedEmail);
+        Assert.NotNull(capturedMessage);
+        Assert.Equal("Confirm your email", capturedMessage.Subject);
+        Assert.Equal(returnedEmail, capturedMessage.To);
 
         // The body should contain the encoded callback url
-        Assert.NotNull(capturedBody);
-        Assert.NotNull(capturedCallbackUrl);
-
-        // Handler encodes callbackUrl via HtmlEncoder.Default.Encode
-        var expectedEncodedUrl = HtmlEncoder.Default.Encode(capturedCallbackUrl);
+        var capturedBody = capturedMessage.Body.ToString();
+        var expectedEncodedUrl = HtmlEncoder.Default.Encode(fixedCallbackUrl);
         Assert.Contains(expectedEncodedUrl, capturedBody);
     }
 
-    /// <summary>
-    /// Verifies that the EmailModel constructor does not throw when provided with valid dependencies
-    /// and that public properties are initialized to their expected defaults (null/false).
-    /// Input conditions:
-    /// - A real-ish UserManager and SignInManager are created via Moq with minimal required constructor arguments.
-    /// - A mocked IEmailSender is provided.
-    /// Expected result:
-    /// - An instance is constructed successfully.
-    /// - Email and StatusMessage are null, IsEmailConfirmed is false, and Input is null.
-    /// </summary>
     [Fact]
     public void Constructor_ValidDependencies_InitializesDefaults()
     {
         // Arrange
         var userManager = CreateUserManager();
-        var emailSenderMock = new Mock<IEmailSender>();
 
         // Act
-        var model = new EmailModel(userManager, emailSenderMock.Object);
+        var model = new EmailModel(userManager, CreateSenderFactory());
 
         // Assert
         Assert.NotNull(model);
@@ -240,28 +189,18 @@ public class EmailModelTests
         Assert.NotNull(model.Input);
     }
 
-    /// <summary>
-    /// Ensures multiple instances constructed with different dependency instances are independent
-    /// and all initialize to the same default public state.
-    /// Input conditions:
-    /// - Two distinct sets of dependencies (different mocks) are provided.
-    /// Expected result:
-    /// - Both instances are constructed without exception and expose identical default public property values.
-    /// </summary>
     [Fact]
     public void Constructor_MultipleInstances_AreIndependent()
     {
         // Arrange - first instance
         var userManager1 = CreateUserManager();
-        var emailSender1 = new Mock<IEmailSender>();
 
         // Arrange - second instance
         var userManager2 = CreateUserManager();
-        var emailSender2 = new Mock<IEmailSender>();
 
         // Act
-        var model1 = new EmailModel(userManager1, emailSender1.Object);
-        var model2 = new EmailModel(userManager2, emailSender2.Object);
+        var model1 = new EmailModel(userManager1, CreateSenderFactory());
+        var model2 = new EmailModel(userManager2, CreateSenderFactory());
 
         // Assert
         Assert.NotNull(model1);
@@ -279,11 +218,6 @@ public class EmailModelTests
         Assert.NotNull(model2.Input);
     }
 
-    /// <summary>
-    /// Test that when the current user cannot be loaded (UserManager.GetUserAsync returns null),
-    /// OnPostChangeEmailAsync returns a NotFoundObjectResult containing the user id returned by UserManager.GetUserId.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostChangeEmailAsync_UserNotFound_ReturnsNotFound()
     {
@@ -315,9 +249,7 @@ public class EmailModelTests
             .Setup(u => u.GetUserId(It.IsAny<ClaimsPrincipal>()))
             .Returns("missing-user-id");
 
-        var emailSenderMock = new Mock<IEmailSender>();
-
-        var model = new EmailModel(userManagerMock.Object, emailSenderMock.Object)
+        var model = new EmailModel(userManagerMock.Object, CreateSenderFactory())
         {
             // Ensure PageContext is available (PageModel may access Request, Url etc. but not needed here)
             PageContext = new PageContext { HttpContext = new DefaultHttpContext() }
@@ -332,7 +264,26 @@ public class EmailModelTests
     }
 
     // Helper methods to create minimal mocks/instances needed for constructor invocation.
-    // These helpers are local to the test class to avoid adding any extra types at namespace scope.
+    private static IAzureClientFactory<ServiceBusSender> CreateSenderFactory()
+    {
+        var senderMock = new Mock<ServiceBusSender>();
+        senderMock.Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        var factoryMock = new Mock<IAzureClientFactory<ServiceBusSender>>();
+        factoryMock.Setup(f => f.CreateClient("email")).Returns(senderMock.Object);
+        return factoryMock.Object;
+    }
+
+    private static (IAzureClientFactory<ServiceBusSender> factory, Mock<ServiceBusSender> senderMock) CreateSenderFactoryWithMock()
+    {
+        var senderMock = new Mock<ServiceBusSender>();
+        senderMock.Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        var factoryMock = new Mock<IAzureClientFactory<ServiceBusSender>>();
+        factoryMock.Setup(f => f.CreateClient("email")).Returns(senderMock.Object);
+        return (factoryMock.Object, senderMock);
+    }
+
     private static UserManager<IdentityUser<Guid>> CreateUserManager()
     {
         // Minimal IUserStore needed for UserManager constructor

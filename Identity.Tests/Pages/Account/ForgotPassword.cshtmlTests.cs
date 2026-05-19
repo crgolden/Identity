@@ -1,19 +1,17 @@
 #pragma warning disable CS8604 // Possible null reference argument.
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account;
-using Identity.Tests.Infrastructure;
+using Infrastructure;
 
+using Azure.Messaging.ServiceBus;
 using Identity.Pages.Account;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Azure;
 using Moq;
 
-/// <summary>
-/// Tests for Identity.Pages.Account.ForgotPasswordModel.OnPostAsync
-/// </summary>
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class ForgotPasswordModelTests
@@ -22,19 +20,10 @@ public class ForgotPasswordModelTests
     {
         { false, false }, // both provided
         { true, false },  // userManager null
-        { false, true },  // emailSender null
-        { true, true },   // both null
+        { false, true },  // factory with no sender setup
+        { true, true },   // userManager null and factory with no sender setup
     };
 
-    /// <summary>
-    /// Test Purpose:
-    /// Verifies that when ModelState is invalid the handler returns PageResult without calling user manager or email sender.
-    /// Input Conditions:
-    /// - ModelState contains a model error.
-    /// Expected Result:
-    /// - Method returns PageResult and no calls are made to FindByEmailAsync or SendEmailAsync.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_ModelStateInvalid_ReturnsPage()
     {
@@ -43,9 +32,9 @@ public class ForgotPasswordModelTests
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
             store.Object, null, null, null, null, null, null, null, null);
 
-        var emailSenderMock = new Mock<IEmailSender>(MockBehavior.Strict);
+        var (factory, senderMock) = CreateSenderFactoryWithMock();
 
-        var model = new ForgotPasswordModel(userManagerMock.Object, emailSenderMock.Object);
+        var model = new ForgotPasswordModel(userManagerMock.Object, factory);
 
         // Make ModelState invalid
         model.PageContext = new PageContext { HttpContext = new DefaultHttpContext() };
@@ -61,22 +50,9 @@ public class ForgotPasswordModelTests
 
         // Ensure no calls were made to user manager or email sender
         userManagerMock.Verify(um => um.FindByEmailAsync(It.IsAny<string>()), Times.Never);
-        emailSenderMock.Verify(es => es.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        senderMock.Verify(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    /// <summary>
-    /// Test Purpose:
-    /// Verifies that when the found user is null or email is not confirmed the handler redirects to the confirmation page and does not send email.
-    /// Input Conditions:
-    /// - ModelState is valid.
-    /// - Parameterized:
-    ///   * userExists = false -> FindByEmailAsync returns null
-    ///   * userExists = true, isConfirmed = false -> FindByEmailAsync returns user and IsEmailConfirmedAsync returns false
-    /// Expected Result:
-    /// - Method returns RedirectToPageResult to "./ForgotPasswordConfirmation".
-    /// - No email is sent.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [InlineData(false, false)]
     [InlineData(true, false)]
@@ -87,9 +63,9 @@ public class ForgotPasswordModelTests
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
             store.Object, null, null, null, null, null, null, null, null);
 
-        var emailSenderMock = new Mock<IEmailSender>(MockBehavior.Strict);
+        var (factory, senderMock) = CreateSenderFactoryWithMock();
 
-        var model = new ForgotPasswordModel(userManagerMock.Object, emailSenderMock.Object);
+        var model = new ForgotPasswordModel(userManagerMock.Object, factory);
 
         model.PageContext = new PageContext { HttpContext = new DefaultHttpContext() };
         model.Input = new ForgotPasswordModel.InputModel { Email = "user@example.com" };
@@ -120,29 +96,17 @@ public class ForgotPasswordModelTests
         Assert.Equal("./ForgotPasswordConfirmation", redirect.PageName);
 
         // Email should not be sent in these cases
-        emailSenderMock.Verify(es => es.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        senderMock.Verify(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()), Times.Never);
 
         userManagerMock.Verify();
     }
 
-    /// <summary>
-    /// Test constructor behavior when dependencies may be null or present.
-    /// This parameterized test covers combinations where the UserManager and IEmailSender
-    /// are either provided or null. The constructor in the source simply assigns fields
-    /// without validation, so construction should succeed without throwing in all cases.
-    /// Input conditions:
-    /// - userManagerNull: when true, pass null for UserManager; otherwise construct a minimal UserManager.
-    /// - emailSenderNull: when true, pass null for IEmailSender; otherwise pass a mocked IEmailSender.
-    /// Expected result: No exception is thrown, the model instance is created, it derives from PageModel,
-    /// and the Input property is null by default.
-    /// </summary>
     [Theory]
     [MemberData(nameof(ConstructorNullCombinations))]
-    public void ForgotPasswordModel_Constructor_DependencyNullAllowed_ShouldCreateInstance(bool userManagerNull, bool emailSenderNull)
+    public void ForgotPasswordModel_Constructor_DependencyNullAllowed_ShouldCreateInstance(bool userManagerNull, bool factoryMinimal)
     {
         // Arrange
         UserManager<IdentityUser<Guid>>? userManager = null;
-        IEmailSender? emailSender = null;
 
         if (!userManagerNull)
         {
@@ -162,15 +126,20 @@ public class ForgotPasswordModelTests
                 logger: null);
         }
 
-        if (!emailSenderNull)
+        IAzureClientFactory<ServiceBusSender> factory;
+        if (!factoryMinimal)
         {
-            var emailSenderMock = new Mock<IEmailSender>();
-            emailSender = emailSenderMock.Object;
+            factory = CreateSenderFactory();
+        }
+        else
+        {
+            // Factory that returns null sender — constructor won't throw but sender is null.
+            factory = new Mock<IAzureClientFactory<ServiceBusSender>>().Object;
         }
 
         // Act
-        var ex = Record.Exception(() => new ForgotPasswordModel(userManager, emailSender));
-        var model = new ForgotPasswordModel(userManager, emailSender);
+        var ex = Record.Exception(() => new ForgotPasswordModel(userManager, factory));
+        var model = new ForgotPasswordModel(userManager, factory);
 
         // Assert
         Assert.Null(ex);
@@ -180,5 +149,25 @@ public class ForgotPasswordModelTests
 
         // Constructor initializes Input with a default InputModel instance.
         Assert.NotNull(model.Input);
+    }
+
+    private static IAzureClientFactory<ServiceBusSender> CreateSenderFactory()
+    {
+        var senderMock = new Mock<ServiceBusSender>();
+        senderMock.Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        var factoryMock = new Mock<IAzureClientFactory<ServiceBusSender>>();
+        factoryMock.Setup(f => f.CreateClient("email")).Returns(senderMock.Object);
+        return factoryMock.Object;
+    }
+
+    private static (IAzureClientFactory<ServiceBusSender> factory, Mock<ServiceBusSender> senderMock) CreateSenderFactoryWithMock()
+    {
+        var senderMock = new Mock<ServiceBusSender>();
+        senderMock.Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        var factoryMock = new Mock<IAzureClientFactory<ServiceBusSender>>();
+        factoryMock.Setup(f => f.CreateClient("email")).Returns(senderMock.Object);
+        return (factoryMock.Object, senderMock);
     }
 }

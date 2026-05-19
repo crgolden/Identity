@@ -1,21 +1,13 @@
 namespace Identity.Tests.Pages.Account;
-using Identity.Tests.Infrastructure;
+using Infrastructure;
 
 using Identity.Pages.Account;
 using Microsoft.AspNetCore.Authorization;
 
-/// <summary>
-/// Tests for <see cref="AccessDeniedModel"/>.
-/// </summary>
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class AccessDeniedModelTests
 {
-    /// <summary>
-    /// Verifies that the <see cref="AccessDeniedModel"/> class is decorated with <see cref="AllowAnonymousAttribute"/>.
-    /// Input conditions: reflection-based inspection of the type.
-    /// Expected result: the attribute is present on the class.
-    /// </summary>
     [Fact]
     public void AccessDeniedModel_Class_HasAllowAnonymousAttribute()
     {

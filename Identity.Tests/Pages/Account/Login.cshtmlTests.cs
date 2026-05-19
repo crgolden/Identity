@@ -17,38 +17,19 @@ using Microsoft.Extensions.Options;
 using Moq;
 using System.Threading.Channels;
 
-/// <summary>
-/// Tests for Identity.Pages.Account.LoginModel constructor behavior.
-/// </summary>
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class LoginModelTests
 {
-    /// <summary>
-    /// Verifies that the LoginModel constructor does not throw and produces a usable PageModel instance
-    /// when signInManager is null and logger is either provided or null.
-    /// Inputs:
-    ///  - signInManager: null (SignInManager{IdentityUser{Guid}}?).
-    ///  - logger: nullable; tested both null and a mocked ILogger instance.
-    /// Expected:
-    ///  - No exception is thrown.
-    ///  - The constructed instance is not null and is assignable to PageModel.
-    ///  - Public properties that are not initialized by the constructor (e.g., Input) remain null.
-    /// </summary>
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public void Constructor_NullSignInManager_DoesNotThrow(bool provideLogger)
+    [Fact]
+    public void Constructor_NullSignInManager_DoesNotThrow()
     {
         // Arrange
         SignInManager<IdentityUser<Guid>>? signInManager = null;
-        var logger = provideLogger
-            ? new Mock<ILogger<LoginModel>>().Object
-            : null;
 
         // Act
         LoginModel model = null!;
-        var ex = Record.Exception(() => model = new LoginModel(signInManager, null, logger, null, null));
+        var ex = Record.Exception(() => model = new LoginModel(signInManager, null, null));
 
         // Assert
         Assert.Null(ex);
@@ -66,23 +47,14 @@ public class LoginModelTests
         Assert.Empty(model.ExternalLogins);
     }
 
-    /// <summary>
-    /// Verifies that the LoginModel constructor accepts both parameters as null without throwing.
-    /// Inputs:
-    ///  - signInManager: null
-    ///  - logger: null
-    /// Expected:
-    ///  - No exception is thrown and instance is constructible.
-    /// </summary>
     [Fact]
     public void Constructor_BothParametersNull_DoesNotThrow()
     {
         // Arrange
         SignInManager<IdentityUser<Guid>>? signInManager = null;
-        ILogger<LoginModel>? logger = null;
 
         // Act & Assert
-        var ex = Record.Exception(() => new LoginModel(signInManager, null, logger, null, null));
+        var ex = Record.Exception(() => new LoginModel(signInManager, null, null));
         Assert.Null(ex);
     }
 
@@ -168,7 +140,7 @@ public class LoginModelTests
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
         urlHelperMock.Setup(u => u.IsLocalUrl("/")).Returns(true);
 
-        var model = new LoginModel(signInManagerMock.Object, Channel.CreateUnbounded<Func<IServiceProvider, CancellationToken, Task>>().Writer, Mock.Of<ILogger<LoginModel>>(), CreateRecaptchaServiceMock().Object, CreateRecaptchaOptionsMock())
+        var model = new LoginModel(signInManagerMock.Object, Channel.CreateUnbounded<string>().Writer, CreateRecaptchaServiceMock().Object)
         {
             Url = urlHelperMock.Object,
             PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
@@ -195,7 +167,7 @@ public class LoginModelTests
         var urlHelperMock = new Mock<IUrlHelper>();
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
 
-        var model = new LoginModel(signInManagerMock.Object, Channel.CreateUnbounded<Func<IServiceProvider, CancellationToken, Task>>().Writer, Mock.Of<ILogger<LoginModel>>(), CreateRecaptchaServiceMock().Object, CreateRecaptchaOptionsMock())
+        var model = new LoginModel(signInManagerMock.Object, Channel.CreateUnbounded<string>().Writer, CreateRecaptchaServiceMock().Object)
         {
             Url = urlHelperMock.Object,
             PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
@@ -222,7 +194,7 @@ public class LoginModelTests
         var urlHelperMock = new Mock<IUrlHelper>();
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
 
-        var model = new LoginModel(signInManagerMock.Object, Channel.CreateUnbounded<Func<IServiceProvider, CancellationToken, Task>>().Writer, Mock.Of<ILogger<LoginModel>>(), CreateRecaptchaServiceMock().Object, CreateRecaptchaOptionsMock())
+        var model = new LoginModel(signInManagerMock.Object, Channel.CreateUnbounded<string>().Writer, CreateRecaptchaServiceMock().Object)
         {
             Url = urlHelperMock.Object,
             PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
@@ -249,7 +221,7 @@ public class LoginModelTests
         var urlHelperMock = new Mock<IUrlHelper>();
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
 
-        var model = new LoginModel(signInManagerMock.Object, Channel.CreateUnbounded<Func<IServiceProvider, CancellationToken, Task>>().Writer, Mock.Of<ILogger<LoginModel>>(), CreateRecaptchaServiceMock().Object, CreateRecaptchaOptionsMock())
+        var model = new LoginModel(signInManagerMock.Object, Channel.CreateUnbounded<string>().Writer, CreateRecaptchaServiceMock().Object)
         {
             Url = urlHelperMock.Object,
             PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
@@ -276,7 +248,7 @@ public class LoginModelTests
         var urlHelperMock = new Mock<IUrlHelper>();
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
 
-        var model = new LoginModel(signInManagerMock.Object, Channel.CreateUnbounded<Func<IServiceProvider, CancellationToken, Task>>().Writer, Mock.Of<ILogger<LoginModel>>(), CreateRecaptchaServiceMock().Object, CreateRecaptchaOptionsMock())
+        var model = new LoginModel(signInManagerMock.Object, Channel.CreateUnbounded<string>().Writer, CreateRecaptchaServiceMock().Object)
         {
             Url = urlHelperMock.Object,
             Input = new LoginModel.InputModel
@@ -292,13 +264,6 @@ public class LoginModelTests
         Assert.IsType<LocalRedirectResult>(result);
     }
 
-    /// <summary>
-    /// Verifies that when the model state is invalid and no passkey credential is provided,
-    /// the method returns PageResult without calling PasswordSignInAsync.
-    /// Input conditions: Input.Passkey is null and ModelState contains an error.
-    /// Expected result: returns PageResult and PasswordSignInAsync is not invoked.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_InvalidModelState_ReturnsPageWithoutSignIn()
     {
@@ -326,11 +291,10 @@ public class LoginModelTests
         signInManagerMock.Setup(s => s.GetExternalAuthenticationSchemesAsync())
             .ReturnsAsync([]);
 
-        var loggerMock = new Mock<ILogger<LoginModel>>();
         var urlHelperMock = new Mock<IUrlHelper>();
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
 
-        var model = new LoginModel(signInManagerMock.Object, Channel.CreateUnbounded<Func<IServiceProvider, CancellationToken, Task>>().Writer, loggerMock.Object, CreateRecaptchaServiceMock().Object, CreateRecaptchaOptionsMock())
+        var model = new LoginModel(signInManagerMock.Object, Channel.CreateUnbounded<string>().Writer, CreateRecaptchaServiceMock().Object)
         {
             Url = urlHelperMock.Object,
             Input = new LoginModel.InputModel
@@ -362,7 +326,7 @@ public class LoginModelTests
         var urlHelperMock = new Mock<IUrlHelper>();
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
 
-        var model = new LoginModel(signInManagerMock.Object, Channel.CreateUnbounded<Func<IServiceProvider, CancellationToken, Task>>().Writer, Mock.Of<ILogger<LoginModel>>(), recaptchaServiceMock.Object, CreateRecaptchaOptionsMock())
+        var model = new LoginModel(signInManagerMock.Object, Channel.CreateUnbounded<string>().Writer, recaptchaServiceMock.Object)
         {
             Url = urlHelperMock.Object,
             PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
@@ -391,7 +355,7 @@ public class LoginModelTests
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
         urlHelperMock.Setup(u => u.IsLocalUrl("/")).Returns(true);
 
-        var model = new LoginModel(signInManagerMock.Object, Channel.CreateUnbounded<Func<IServiceProvider, CancellationToken, Task>>().Writer, Mock.Of<ILogger<LoginModel>>(), recaptchaServiceMock.Object, CreateRecaptchaOptionsMock())
+        var model = new LoginModel(signInManagerMock.Object, Channel.CreateUnbounded<string>().Writer, recaptchaServiceMock.Object)
         {
             Url = urlHelperMock.Object,
             Input = new LoginModel.InputModel
@@ -415,12 +379,13 @@ public class LoginModelTests
             .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Success);
 
         var recaptchaServiceMock = CreateRecaptchaServiceMock(score: 0.0m);
+        recaptchaServiceMock.Setup(s => s.IsExempt("smoke@example.com")).Returns(true);
 
         var urlHelperMock = new Mock<IUrlHelper>();
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
         urlHelperMock.Setup(u => u.IsLocalUrl("/")).Returns(true);
 
-        var model = new LoginModel(signInManagerMock.Object, Channel.CreateUnbounded<Func<IServiceProvider, CancellationToken, Task>>().Writer, Mock.Of<ILogger<LoginModel>>(), recaptchaServiceMock.Object, CreateRecaptchaOptionsMock(smokeTestEmail: "smoke@example.com"))
+        var model = new LoginModel(signInManagerMock.Object, Channel.CreateUnbounded<string>().Writer, recaptchaServiceMock.Object)
         {
             Url = urlHelperMock.Object,
             PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
@@ -442,7 +407,7 @@ public class LoginModelTests
         var urlHelperMock = new Mock<IUrlHelper>();
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
 
-        var model = new LoginModel(signInManagerMock.Object, Channel.CreateUnbounded<Func<IServiceProvider, CancellationToken, Task>>().Writer, Mock.Of<ILogger<LoginModel>>(), recaptchaServiceMock.Object, CreateRecaptchaOptionsMock(smokeTestEmail: "smoke@example.com"))
+        var model = new LoginModel(signInManagerMock.Object, Channel.CreateUnbounded<string>().Writer, recaptchaServiceMock.Object)
         {
             Url = urlHelperMock.Object,
             PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
@@ -465,7 +430,7 @@ public class LoginModelTests
         var urlHelperMock = new Mock<IUrlHelper>();
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
 
-        var model = new LoginModel(signInManagerMock.Object, Channel.CreateUnbounded<Func<IServiceProvider, CancellationToken, Task>>().Writer, Mock.Of<ILogger<LoginModel>>(), recaptchaServiceMock.Object, CreateRecaptchaOptionsMock(smokeTestEmail: null))
+        var model = new LoginModel(signInManagerMock.Object, Channel.CreateUnbounded<string>().Writer, recaptchaServiceMock.Object)
         {
             Url = urlHelperMock.Object,
             PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
@@ -477,6 +442,34 @@ public class LoginModelTests
         Assert.IsType<PageResult>(result);
         Assert.False(model.ModelState.IsValid);
         recaptchaServiceMock.Verify(s => s.VerifyAsync(It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_AdminEmail_SkipsRecaptchaAndSucceeds()
+    {
+        var signInManagerMock = CreateSignInManagerMock();
+        signInManagerMock
+            .Setup(s => s.PasswordSignInAsync("admin@example.com", "pass", false, true))
+            .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Success);
+
+        var recaptchaServiceMock = CreateRecaptchaServiceMock(score: 0.0m);
+        recaptchaServiceMock.Setup(s => s.IsExempt("admin@example.com")).Returns(true);
+
+        var urlHelperMock = new Mock<IUrlHelper>();
+        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
+        urlHelperMock.Setup(u => u.IsLocalUrl("/")).Returns(true);
+
+        var model = new LoginModel(signInManagerMock.Object, Channel.CreateUnbounded<string>().Writer, recaptchaServiceMock.Object)
+        {
+            Url = urlHelperMock.Object,
+            PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
+            Input = new LoginModel.InputModel { Email = "admin@example.com", Password = "pass" }
+        };
+
+        var result = await model.OnPostAsync();
+
+        Assert.IsType<LocalRedirectResult>(result);
+        recaptchaServiceMock.Verify(s => s.VerifyAsync(It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     private static (LoginModel model, Mock<SignInManager<IdentityUser<Guid>>> signInManagerMock) CreateModelWithContext(
@@ -506,7 +499,7 @@ public class LoginModelTests
             .BuildServiceProvider();
 
         var httpContext = new DefaultHttpContext { RequestServices = serviceProvider };
-        var model = new LoginModel(signInManagerMock.Object, Channel.CreateUnbounded<Func<IServiceProvider, CancellationToken, Task>>().Writer, Mock.Of<ILogger<LoginModel>>(), CreateRecaptchaServiceMock().Object, CreateRecaptchaOptionsMock());
+        var model = new LoginModel(signInManagerMock.Object, Channel.CreateUnbounded<string>().Writer, CreateRecaptchaServiceMock().Object);
         model.PageContext = new PageContext(new ActionContext(httpContext, new RouteData(), new PageActionDescriptor()));
 
         var urlHelperMock = new Mock<IUrlHelper>();
@@ -534,18 +527,13 @@ public class LoginModelTests
         return signInManagerMock;
     }
 
-    private static Mock<ICAPTCHAService> CreateRecaptchaServiceMock(decimal score = 1.0m)
+    private static Mock<ICAPTCHAService> CreateRecaptchaServiceMock(decimal score = 1.0m, decimal threshold = 0.5m)
     {
         var mock = new Mock<ICAPTCHAService>();
         mock.Setup(s => s.VerifyAsync(It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(score);
+        mock.Setup(s => s.ScoreThreshold).Returns(threshold);
+        mock.Setup(s => s.IsExempt(It.IsAny<string?>())).Returns(false);
         return mock;
-    }
-
-    private static IOptions<ReCAPTCHAOptions> CreateRecaptchaOptionsMock(decimal threshold = 0.5m, string? smokeTestEmail = null)
-    {
-        var mock = new Mock<IOptions<ReCAPTCHAOptions>>();
-        mock.Setup(o => o.Value).Returns(new ReCAPTCHAOptions { ScoreThreshold = threshold, TestEmail = smokeTestEmail });
-        return mock.Object;
     }
 }

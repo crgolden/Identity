@@ -1,5 +1,5 @@
 namespace Identity.Tests;
-using Identity.Tests.Infrastructure;
+using Infrastructure;
 
 using System.Diagnostics;
 using System.Security.Cryptography;

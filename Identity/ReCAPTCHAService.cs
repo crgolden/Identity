@@ -24,6 +24,11 @@ public sealed class ReCAPTCHAService : ICAPTCHAService
 
     public decimal ScoreThreshold => _options.ScoreThreshold;
 
+    public bool IsExempt(string? email) =>
+        !IsNullOrWhiteSpace(email) &&
+        (string.Equals(email, _options.AdminEmail, StringComparison.OrdinalIgnoreCase) ||
+         string.Equals(email, _options.TestEmail, StringComparison.OrdinalIgnoreCase));
+
     public async Task<decimal> VerifyAsync(string? token, CancellationToken cancellationToken = default)
     {
         if (IsNullOrWhiteSpace(token) || IsNullOrWhiteSpace(_options.SecretKey))

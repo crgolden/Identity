@@ -1,50 +1,39 @@
 ﻿namespace Identity.Pages.Account;
 
 using System.ComponentModel.DataAnnotations;
-using System.Security.Claims;
-using System.Text.Encodings.Web;
 using System.Threading.Channels;
+using System.Text.Encodings.Web;
+using Azure.Messaging.ServiceBus;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Azure;
 
 /// <summary>Page model for the Register page.</summary>
 [AllowAnonymous]
 public class RegisterModel : PageModel
 {
+    private const string From = "noreply@crgolden.com";
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
     private readonly UserManager<IdentityUser<Guid>> _userManager;
-    private readonly IUserStore<IdentityUser<Guid>> _userStore;
-    private readonly ChannelWriter<Func<IServiceProvider, CancellationToken, Task>> _backgroundWriter;
-    private readonly IUserEmailStore<IdentityUser<Guid>> _emailStore;
-    private readonly ILogger<RegisterModel> _logger;
-    private readonly IEmailSender _emailSender;
+    private readonly ChannelWriter<string> _pictureClaimWriter;
+    private readonly ServiceBusSender _emailSender;
     private readonly ICAPTCHAService _captchaService;
-    private readonly IOptions<ReCAPTCHAOptions> _recaptchaOptions;
 
     public RegisterModel(
         UserManager<IdentityUser<Guid>> userManager,
-        IUserStore<IdentityUser<Guid>> userStore,
         SignInManager<IdentityUser<Guid>> signInManager,
-        ChannelWriter<Func<IServiceProvider, CancellationToken, Task>> backgroundWriter,
-        ILogger<RegisterModel> logger,
-        IEmailSender emailSender,
-        ICAPTCHAService captchaService,
-        IOptions<ReCAPTCHAOptions> recaptchaOptions)
+        ChannelWriter<string> pictureClaimWriter,
+        IAzureClientFactory<ServiceBusSender> serviceBusSenderFactory,
+        ICAPTCHAService captchaService)
     {
         _userManager = userManager;
-        _userStore = userStore;
-        _emailStore = (IUserEmailStore<IdentityUser<Guid>>)_userStore;
         _signInManager = signInManager;
-        _backgroundWriter = backgroundWriter;
-        _logger = logger;
-        _emailSender = emailSender;
+        _pictureClaimWriter = pictureClaimWriter;
+        _emailSender = serviceBusSenderFactory.CreateClient("email");
         _captchaService = captchaService;
-        _recaptchaOptions = recaptchaOptions;
     }
 
     [BindProperty]
@@ -78,7 +67,7 @@ public class RegisterModel : PageModel
             return Page();
         }
 
-        if (!string.Equals(Input.Email, _recaptchaOptions.Value.TestEmail, StringComparison.OrdinalIgnoreCase))
+        if (!_captchaService.IsExempt(Input.Email))
         {
             var score = await _captchaService.VerifyAsync(Input.RecaptchaToken, HttpContext.RequestAborted);
             if (score < _captchaService.ScoreThreshold)
@@ -89,36 +78,16 @@ public class RegisterModel : PageModel
         }
 
         var user = new IdentityUser<Guid>();
-        await _userStore.SetUserNameAsync(user, Input.Email, HttpContext.RequestAborted);
-        await _emailStore.SetEmailAsync(user, Input.Email, HttpContext.RequestAborted);
+        await _userManager.SetUserNameAsync(user, Input.Email);
+        await _userManager.SetEmailAsync(user, Input.Email);
         using var activity = Telemetry.ActivitySource.StartActivity("identity.register");
         var result = await _userManager.CreateAsync(user, Input.Password);
         if (result.Succeeded)
         {
             activity?.SetTag("succeeded", true);
-            _logger.LogTrace("User created a new account with password.");
-
             var userId = await _userManager.GetUserIdAsync(user);
             var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-            var email = Input.Email!;
-            var newUserId = user.Id;
-            _backgroundWriter.TryWrite(async (sp, ct) =>
-            {
-                var avatarService = sp.GetRequiredService<IAvatarService>();
-                var userManager = sp.GetRequiredService<UserManager<IdentityUser<Guid>>>();
-                var avatarUrl = await avatarService.GetAvatarUrlAsync(email, ct);
-                if (avatarUrl is null)
-                {
-                    return;
-                }
-
-                var newUser = await userManager.FindByIdAsync(newUserId.ToString());
-                if (newUser is not null)
-                {
-                    await userManager.AddClaimAsync(newUser, new Claim("picture", avatarUrl.ToString()));
-                }
-            });
-
+            _pictureClaimWriter.TryWrite(Input.Email);
             var input = UTF8.GetBytes(code);
             code = Base64UrlEncode(input);
             var callbackUrl = Url.Page(
@@ -130,10 +99,14 @@ public class RegisterModel : PageModel
             var emailConfirmationSent = !IsNullOrWhiteSpace(callbackUrl);
             if (emailConfirmationSent)
             {
-                await _emailSender.SendEmailAsync(
-                    Input.Email,
-                    "Confirm your email",
-                    $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl!)}'>clicking here</a>.");
+                var htmlMessage = $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl!)}'>clicking here</a>.";
+                var sbMessage = new ServiceBusMessage(htmlMessage)
+                {
+                    ReplyTo = From,
+                    Subject = "Confirm your email",
+                    To = Input.Email
+                };
+                await _emailSender.SendMessageAsync(sbMessage, HttpContext.RequestAborted);
             }
 
             activity?.SetTag("email_confirmation_sent", emailConfirmationSent);

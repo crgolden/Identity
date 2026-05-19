@@ -1,4 +1,4 @@
-﻿namespace Identity.Extensions;
+namespace Identity.Extensions;
 
 using Azure.Security.KeyVault.Secrets;
 
@@ -10,7 +10,7 @@ public static class SecretClientExtensions
         public (
             KeyVaultSecret GoogleClientId,
             KeyVaultSecret GoogleClientSecret,
-            KeyVaultSecret ResendApiToken,
+            KeyVaultSecret ServiceBusNamespace,
             KeyVaultSecret GravatarApiSecretKey,
             KeyVaultSecret SqlServerUserId,
             KeyVaultSecret SqlServerPassword,
@@ -24,7 +24,7 @@ public static class SecretClientExtensions
         {
             var googleClientId = secretClient.GetSecret("GoogleClientId");
             var googleClientSecret = secretClient.GetSecret("GoogleClientSecret");
-            var resendApiToken = secretClient.GetSecret("ResendApiToken");
+            var serviceBusNamespace = secretClient.GetSecret("ServiceBusNamespace");
             var gravatarApiSecretKey = secretClient.GetSecret("GravatarApiSecretKey");
             var sqlServerUserId = secretClient.GetSecret("SqlServerUserId");
             var sqlServerPassword = secretClient.GetSecret("SqlServerPassword");
@@ -37,7 +37,7 @@ public static class SecretClientExtensions
             return (
                 googleClientId.Value,
                 googleClientSecret.Value,
-                resendApiToken.Value,
+                serviceBusNamespace.Value,
                 gravatarApiSecretKey.Value,
                 sqlServerUserId.Value,
                 sqlServerPassword.Value,

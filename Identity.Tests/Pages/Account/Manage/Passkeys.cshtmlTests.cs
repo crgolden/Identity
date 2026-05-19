@@ -1,6 +1,6 @@
-﻿#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account.Manage;
-using Identity.Tests.Infrastructure;
+using Infrastructure;
 
 using System.Security.Claims;
 using Identity.Pages.Account.Manage;
@@ -13,9 +13,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 
-/// <summary>
-/// Tests for PasskeysModel constructor behavior.
-/// </summary>
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public partial class PasskeysModelTests
@@ -27,16 +24,6 @@ public partial class PasskeysModelTests
         yield return [string.Empty];
     }
 
-    /// <summary>
-    /// Verifies that constructing PasskeysModel with valid manager instances does not throw
-    /// and that public properties are initially null (default) after construction.
-    /// Input conditions:
-    /// - UserManager and SignInManager are provided with either empty or one-element validator collections.
-    /// Expected result:
-    /// - No exception thrown.
-    /// - CurrentPasskeys, Input, and StatusMessage are null by default.
-    /// </summary>
-    /// <param name="useSingleValidator">If true, provide a single-item validators collection; otherwise provide an empty collection.</param>
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
@@ -99,12 +86,6 @@ public partial class PasskeysModelTests
         Assert.Null(model.StatusMessage); // StatusMessage default (not set) after construction
     }
 
-    /// <summary>
-    /// Verifies that when the current user cannot be loaded the handler returns NotFound with the user id from UserManager.
-    /// Input conditions: UserManager.GetUserAsync returns null and GetUserId returns a known id.
-    /// Expected: NotFoundObjectResult containing the message with the provided id.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAddPasskeyAsync_UserNotFound_ReturnsNotFound()
     {
@@ -137,15 +118,6 @@ public partial class PasskeysModelTests
         Assert.Contains("Unable to load user with ID 'the-user-id'", notFound.Value?.ToString() ?? string.Empty);
     }
 
-    /// <summary>
-    /// Partial test placeholder: Verifies behavior when attestation fails. This test is marked as skipped because constructing
-    /// a framework PasskeyAttestationResult and its Failure.Message requires the concrete framework type details which are not present
-    /// in the provided scope. To complete:
-    /// - Create or obtain a PasskeyAttestationResult instance (or mock) with Succeeded == false and Failure.Message set.
-    /// - Setup SignInManager.PerformPasskeyAttestationAsync to return that result.
-    /// - Assert RedirectToPageResult and proper StatusMessage ("Could not add the passkey: {message}.").
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
 #pragma warning disable S2699
     [Fact]
     public async Task OnPostAddPasskeyAsync_AttestationFails_RedirectsWithFailureMessage_Partial()
@@ -155,17 +127,6 @@ public partial class PasskeysModelTests
     }
 #pragma warning restore S2699
 
-    /// <summary>
-    /// Partial test placeholder: Verifies behavior when adding/updating the passkey on the user fails.
-    /// This test is marked as skipped because it requires constructing a PasskeyAttestationResult.Passkey instance
-    /// and wiring UserManager.AddOrUpdatePasskeyAsync behavior which depends on framework types not provided in scope.
-    /// To complete:
-    /// - Construct an attestation result with Succeeded == true and a Passkey containing a CredentialId.
-    /// - Setup SignInManager.PerformPasskeyAttestationAsync to return the attestation.
-    /// - Setup UserManager.AddOrUpdatePasskeyAsync to return IdentityResult.Failed(...) and assert
-    ///   RedirectToPageResult and StatusMessage equals "The passkey could not be added to your account.".
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAddPasskeyAsync_AddOrUpdateFails_RedirectsWithFailureMessage_Partial()
     {
@@ -174,17 +135,6 @@ public partial class PasskeysModelTests
         Assert.True(true);
     }
 
-    /// <summary>
-    /// Partial test placeholder: Verifies the success path where the passkey is added and the user is redirected to RenamePasskey with the Base64Url encoded id.
-    /// This test is skipped because constructing the PasskeyAttestationResult.Passkey and ensuring AddOrUpdatePasskeyAsync succeeds
-    /// requires framework types that are not present in the provided source scope.
-    /// To complete:
-    /// - Construct a Passkey with a known CredentialId byte[].
-    /// - Return a PasskeyAttestationResult with Succeeded == true and the Passkey.
-    /// - Setup UserManager.AddOrUpdatePasskeyAsync to return IdentityResult.Success.
-    /// - Call the handler and assert RedirectToPageResult.PageName == "./RenamePasskey" and RouteValues["id"] equals Base64Url.EncodeToString(CredentialId).
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
 #pragma warning disable S2699
     [Fact]
     public async Task OnPostAddPasskeyAsync_Success_RedirectsToRenamePasskey_Partial()
@@ -194,12 +144,6 @@ public partial class PasskeysModelTests
     }
 #pragma warning restore S2699
 
-    /// <summary>
-    /// Verifies that when no user is found the handler returns NotFound with the user id supplied by UserManager.GetUserId.
-    /// Input conditions: UserManager.GetUserAsync returns null and GetUserId returns a known id.
-    /// Expected: NotFoundObjectResult with a message containing the id.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostUpdatePasskeyAsync_UserNotFound_ReturnsNotFoundObjectResult()
     {
@@ -235,13 +179,6 @@ public partial class PasskeysModelTests
         Assert.Contains("missing-user-id", notFound.Value as string, StringComparison.Ordinal);
     }
 
-    /// <summary>
-    /// Verifies that when UserManager.GetUserAsync returns null, OnGetAsync returns a NotFoundObjectResult
-    /// containing the ID returned by UserManager.GetUserId(User).
-    /// Input conditions: mocked GetUserAsync -> null; mocked GetUserId -> specific string.
-    /// Expected: NotFoundObjectResult with the exact message "Unable to load user with ID '{id}'."
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGetAsync_UserNotFound_ReturnsNotFoundWithUserIdMessage()
     {

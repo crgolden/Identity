@@ -7,10 +7,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Playwright;
 using static String;
 
-/// <summary>
-/// xUnit collection fixture that owns the <see cref="IdentityWebApplicationFactory"/>,
-/// the Playwright browser, and provides per-test page creation.
-/// </summary>
 public sealed class PlaywrightFixture : IAsyncLifetime
 {
     private static readonly bool CI = bool.TryParse(Environment.GetEnvironmentVariable("CI"), out var isCi) && isCi;
@@ -32,7 +28,7 @@ public sealed class PlaywrightFixture : IAsyncLifetime
             _factory = new IdentityWebApplicationFactory();
         }
 
-        BaseAddress = string.Empty;
+        BaseAddress = Empty;
         SharedEmail = $"e2e-shared-{Guid.NewGuid()}@test.invalid";
         SharedPassword = $"Test@{Guid.NewGuid():N}!A1";
     }
@@ -42,7 +38,7 @@ public sealed class PlaywrightFixture : IAsyncLifetime
     public IdentityWebApplicationFactory Factory =>
         _factory ?? throw new InvalidOperationException("Factory is not available in smoke mode.");
 
-    public EmailCaptureService Email =>
+    public EmailCaptureSender Email =>
         _factory?.EmailCapture ?? throw new InvalidOperationException("Email capture is not available in smoke mode.");
 
     public string BaseAddress { get; private set; }
@@ -51,7 +47,6 @@ public sealed class PlaywrightFixture : IAsyncLifetime
 
     public string SharedPassword { get; }
 
-    /// <inheritdoc/>
     public async ValueTask InitializeAsync()
     {
         if (StrykerActive)
@@ -110,16 +105,10 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         if (!createResult.Succeeded)
         {
             throw new InvalidOperationException(
-                $"Failed to create shared test user: {string.Join(", ", createResult.Errors.Select(e => e.Description))}");
+                $"Failed to create shared test user: {Join(", ", createResult.Errors.Select(e => e.Description))}");
         }
     }
 
-    /// <summary>
-    /// Creates a confirmed user directly via <see cref="UserManager{TUser}"/> (no browser flow).
-    /// Use in tests that need a pre-existing authenticated user but do not test the registration UI.
-    /// This is orders of magnitude faster than the browser-based registration flow.
-    /// </summary>
-    /// <returns>A task that resolves to the new user's email and password.</returns>
     public async Task<(string Email, string Password)> CreateConfirmedUserAsync()
     {
         const string password = "Test@123456!";
@@ -137,21 +126,12 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         if (!result.Succeeded)
         {
             throw new InvalidOperationException(
-                string.Join(", ", result.Errors.Select(e => e.Description)));
+                Join(", ", result.Errors.Select(e => e.Description)));
         }
 
         return (email, password);
     }
 
-    /// <summary>
-    /// Confirms <paramref name="email"/>'s email address directly in the database.
-    /// In smoke mode, constructs <see cref="ApplicationDbContext"/> from the same
-    /// <c>SqlConnectionStringBuilder__*</c> env vars used by the app, but targets the
-    /// production catalog (<c>SqlConnectionStringBuilder__InitialCatalog</c>).
-    /// In non-smoke mode, delegates to <see cref="UserManager{TUser}"/> via the factory DI container.
-    /// </summary>
-    /// <param name="email">The email address to confirm.</param>
-    /// <returns>A task that completes when the email is confirmed.</returns>
     public async Task ConfirmUserEmailAsync(string email)
     {
         if (IsSmoke)
@@ -173,17 +153,10 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         if (!result.Succeeded)
         {
             throw new InvalidOperationException(
-                string.Join(", ", result.Errors.Select(e => e.Description)));
+                Join(", ", result.Errors.Select(e => e.Description)));
         }
     }
 
-    /// <summary>
-    /// Deletes the user with <paramref name="email"/> from the database if they exist.
-    /// Used at the start of smoke tests to recover from a previous partial run that left
-    /// the account registered but not deleted.
-    /// </summary>
-    /// <param name="email">The email address of the user to delete.</param>
-    /// <returns>A task that completes when the user has been deleted (or was not found).</returns>
     public async Task DeleteUserIfExistsAsync(string email)
     {
         if (IsSmoke)
@@ -205,9 +178,6 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         }
     }
 
-    /// <summary>Creates a new Playwright browser context and page configured with <see cref="BaseAddress"/>.</summary>
-    /// <param name="suiteName">Artifact sub-directory name; defaults to <c>"E2E"</c>, pass <c>"Smoke"</c> for smoke tests.</param>
-    /// <returns>A task that resolves to a tuple of the browser context and page.</returns>
     public async Task<(IAsyncDisposable Context, IPage Page)> NewPageAsync(string suiteName = "E2E")
     {
         if (_browser is null)
@@ -240,7 +210,6 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         return (session, page);
     }
 
-    /// <inheritdoc/>
     public async ValueTask DisposeAsync()
     {
         if (_browser is not null)
@@ -274,7 +243,7 @@ public sealed class PlaywrightFixture : IAsyncLifetime
                 IsNullOrWhiteSpace(UserID) ? "SqlConnectionStringBuilder__UserID" : null,
                 IsNullOrWhiteSpace(Password) ? "SqlConnectionStringBuilder__Password" : null,
             }.Where(v => v is not null);
-            throw new InvalidOperationException($"Missing smoke DB env vars: {string.Join(", ", missing)}");
+            throw new InvalidOperationException($"Missing smoke DB env vars: {Join(", ", missing)}");
         }
 
         var connectionString = new SqlConnectionStringBuilder

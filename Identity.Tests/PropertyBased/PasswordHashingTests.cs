@@ -1,15 +1,10 @@
 namespace Identity.Tests.PropertyBased;
-using Identity.Tests.Infrastructure;
+using Infrastructure;
 
 using CsCheck;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 
-/// <summary>
-/// Property-based tests for ASP.NET Core Identity's PasswordHasher.
-/// Verifies round-trip correctness and cross-instance consistency across
-/// a large random sample of inputs.
-/// </summary>
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public sealed class PasswordHashingTests

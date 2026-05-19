@@ -1,6 +1,6 @@
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account.Manage;
-using Identity.Tests.Infrastructure;
+using Infrastructure;
 
 using Identity.Pages.Account.Manage;
 using Microsoft.AspNetCore.Http;
@@ -14,11 +14,6 @@ using Moq;
 [Trait("Category", "Unit")]
 public class DownloadPersonalDataModelTests
 {
-    /// <summary>
-    /// Verifies that OnGet returns a NotFoundResult (HTTP 404).
-    /// Condition: Default state of the page model with dependencies provided (userManager passed as null via null-forgiving and a mocked logger).
-    /// Expected: Method returns a NotFoundResult and the status code equals 404. No exception is thrown.
-    /// </summary>
     [Fact]
     public void OnGet_DefaultState_ReturnsNotFoundResult()
     {
@@ -36,11 +31,6 @@ public class DownloadPersonalDataModelTests
         Assert.Equal(404, notFound.StatusCode);
     }
 
-    /// <summary>
-    /// Ensures that calling OnGet does not interact with the injected logger.
-    /// Condition: Mocked ILogger is provided and userManager passed as null via null-forgiving.
-    /// Expected: No calls are made to the logger mock during OnGet execution.
-    /// </summary>
     [Fact]
     public void OnGet_DoesNotCallLogger_NoLoggerInteractions()
     {
@@ -58,13 +48,6 @@ public class DownloadPersonalDataModelTests
         loggerMock.VerifyNoOtherCalls();
     }
 
-    /// <summary>
-    /// Tests that when the user manager cannot find a user for the current principal OnPostAsync returns a NotFoundObjectResult
-    /// containing the user id obtained from the UserManager.GetUserId call.
-    /// Input conditions: GetUserAsync returns null and GetUserId returns a sentinel id string.
-    /// Expected result: NotFoundObjectResult with message that contains the sentinel id.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_UserNotFound_ReturnsNotFoundObjectResult()
     {
@@ -98,20 +81,6 @@ public class DownloadPersonalDataModelTests
         Assert.Contains(userId, message);
     }
 
-    /// <summary>
-    /// Verifies that an instance of DownloadPersonalDataModel can be created when valid (mocked)
-    /// dependencies are provided, and that simple PageModel behavior (OnGet) remains functional.
-    /// This test is marked as skipped because constructing a concrete UserManager{TUser} requires
-    /// multiple supporting dependencies (IUserStore, IOptions, IPasswordHasher, validators, etc.).
-    /// The body includes guidance (commented) showing how to create those mocks with Moq if full
-    /// instantiation is desired.
-    /// Input conditions:
-    /// - A non-null ILogger{DownloadPersonalDataModel} mock is available.
-    /// - A constructed UserManager{IdentityUser<Guid>} instance is required (complex).
-    /// Expected result:
-    /// - The DownloadPersonalDataModel constructor should complete without throwing for valid inputs,
-    ///   and OnGet should return a NotFoundResult.
-    /// </summary>
     [Fact]
     public void Constructor_WithValidDependencies_InstanceCreatedAndOnGetReturnsNotFound()
     {
@@ -148,16 +117,6 @@ public class DownloadPersonalDataModelTests
         Assert.IsType<NotFoundResult>(result);
     }
 
-    /// <summary>
-    /// Partial test to document the effect of passing null dependencies to the constructor.
-    /// Purpose: provide guidance rather than asserting behavior because the source code does not
-    /// validate inputs and assigning null to non-nullable parameters is disallowed in generated tests.
-    /// Input conditions:
-    /// - Intended to show that passing null for dependencies is not recommended; actual behavior
-    ///   may result in later NullReferenceExceptions when dependencies are used.
-    /// Expected result:
-    /// - This test is skipped and documents next steps for implementers who want to assert null handling.
-    /// </summary>
     [Fact]
     public void Constructor_NullDependencies_DocumentationOnly()
     {

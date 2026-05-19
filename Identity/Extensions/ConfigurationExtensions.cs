@@ -1,4 +1,4 @@
-﻿namespace Identity.Extensions;
+namespace Identity.Extensions;
 
 public static class ConfigurationExtensions
 {
@@ -14,7 +14,7 @@ public static class ConfigurationExtensions
         internal (
             string GoogleClientId,
             string GoogleClientSecret,
-            string ResendApiToken,
+            string ServiceBusConnectionString,
             string GravatarApiSecretKey,
             string ReCAPTCHASiteKey,
             string ReCAPTCHASecretKey
@@ -22,14 +22,14 @@ public static class ConfigurationExtensions
         {
             var googleClientId = configuration.GetRequired<string>("GoogleClientId");
             var googleClientSecret = configuration.GetRequired<string>("GoogleClientSecret");
-            var resendApiToken = configuration.GetRequired<string>("ResendApiToken");
+            var serviceBusConnectionString = configuration.GetRequired<string>("ServiceBusConnectionString");
             var gravatarApiSecretKey = configuration.GetRequired<string>("GravatarApiSecretKey");
             var recaptchaSiteKey = configuration.GetRequired<string>("ReCAPTCHASiteKey");
             var recaptchaSecretKey = configuration.GetRequired<string>("ReCAPTCHASecretKey");
             return (
                 googleClientId,
                 googleClientSecret,
-                resendApiToken,
+                serviceBusConnectionString,
                 gravatarApiSecretKey,
                 recaptchaSiteKey,
                 recaptchaSecretKey

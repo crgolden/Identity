@@ -1,5 +1,5 @@
 namespace Identity.Tests.Pages.Account.Manage;
-using Identity.Tests.Infrastructure;
+using Infrastructure;
 
 using Identity.Pages.Account.Manage;
 using Microsoft.AspNetCore.Antiforgery;
@@ -7,26 +7,10 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Razor.TagHelpers;
 using Moq;
 
-/// <summary>
-/// Tests for PasskeySubmitTagHelper constructor behavior.
-/// </summary>
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class PasskeySubmitTagHelperTests
 {
-    /// <summary>
-    /// Verifies that constructing PasskeySubmitTagHelper with a valid IHttpContextAccessor instance
-    /// does not throw and initializes publicly observable properties to their declared defaults.
-    /// Input conditions:
-    /// - httpContextAccessor: a non-null mocked IHttpContextAccessor with either Loose or Strict behavior.
-    /// Expected result:
-    /// - No exception is thrown.
-    /// - The instance is non-null.
-    /// - Operation has the enum default value.
-    /// - Name is null at runtime (declared with null-forgiving in source).
-    /// - EmailName is null.
-    /// </summary>
-    /// <param name="useStrictMock">If true, create Mock with MockBehavior.Strict; otherwise Loose.</param>
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -52,15 +36,6 @@ public class PasskeySubmitTagHelperTests
         Assert.Null(emailName);
     }
 
-    /// <summary>
-    /// Ensures that multiple independent instances can be created with different IHttpContextAccessor objects
-    /// and that each instance maintains independent property defaults.
-    /// Input conditions:
-    /// - Two different mocked IHttpContextAccessor instances.
-    /// Expected result:
-    /// - No exception is thrown during construction.
-    /// - Each created instance is independent and has the expected default values.
-    /// </summary>
     [Fact]
     public void Constructor_DifferentAccessors_CreatesIndependentInstances()
     {
@@ -94,14 +69,6 @@ public class PasskeySubmitTagHelperTests
         Assert.Null(emailB);
     }
 
-    /// <summary>
-    /// Verifies that when no IAntiforgery service is available (tokens == null)
-    /// and EmailName is null, the output HTML contains an empty request token name/value
-    /// and email-name is rendered as an empty string. Also ensures attributes meant
-    /// for the button are written and 'operation','name','email-name' are not included
-    /// as button attributes.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task ProcessAsync_NullAntiforgeryTokens_EmitsEmptyTokenAttributes()
     {

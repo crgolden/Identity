@@ -1,7 +1,7 @@
 #pragma warning disable CS8604 // Possible null reference argument.
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account.Manage;
-using Identity.Tests.Infrastructure;
+using Infrastructure;
 
 using System.Security.Claims;
 using Identity.Pages.Account.Manage;
@@ -14,10 +14,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 
-/// <summary>
-/// Tests for TwoFactorAuthenticationModel constructor and basic property behavior.
-/// Focuses on constructor behavior given nullable dependencies and ensures public properties initialize to expected defaults.
-/// </summary>
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class TwoFactorAuthenticationModelTests
@@ -31,18 +27,6 @@ public class TwoFactorAuthenticationModelTests
         { null, true, false, int.MinValue },
     };
 
-    /// <summary>
-    /// Verifies that constructing TwoFactorAuthenticationModel with null userManager and signInManager
-    /// and an optional logger does not throw and initializes public properties to their default values.
-    /// Input conditions:
-    /// - userManager: null
-    /// - signInManager: null
-    /// - logger: present or null (parameterized)
-    /// Expected result:
-    /// - No exception thrown.
-    /// - Public properties are default: HasAuthenticator == false, RecoveryCodesLeft == 0,
-    ///   Is2faEnabled == false, IsMachineRemembered == false, StatusMessage == null.
-    /// </summary>
     [Fact]
     public void Constructor_NullUserManagerAndSignInManager_InitializesDefaults()
     {
@@ -66,14 +50,6 @@ public class TwoFactorAuthenticationModelTests
         Assert.Null(model.StatusMessage);
     }
 
-    /// <summary>
-    /// Verifies that public auto-properties are writable after construction and reflect assigned values.
-    /// Input conditions:
-    /// - Construct with null dependencies.
-    /// - Set each public property to a non-default value.
-    /// Expected result:
-    /// - Properties return the values they were set to.
-    /// </summary>
     [Fact]
     public void Properties_SetAfterConstruction_ReflectAssignedValues()
     {
@@ -98,12 +74,6 @@ public class TwoFactorAuthenticationModelTests
         Assert.Equal("status", model.StatusMessage);
     }
 
-    /// <summary>
-    /// Tests that when the user manager cannot find the current user, OnPostAsync returns NotFound with the expected message.
-    /// Input conditions: UserManager.GetUserAsync returns null and UserManager.GetUserId returns a non-null identifier.
-    /// Expected result: NotFoundObjectResult containing the formatted message and SignInManager.ForgetTwoFactorClientAsync is not called.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_UserNotFound_ReturnsNotFoundWithUserIdMessage()
     {
@@ -143,13 +113,6 @@ public class TwoFactorAuthenticationModelTests
         signInManagerMock.Verify(s => s.ForgetTwoFactorClientAsync(), Times.Never);
     }
 
-    /// <summary>
-    /// Tests that when a user is found, OnPostAsync calls ForgetTwoFactorClientAsync, sets the StatusMessage,
-    /// and returns a RedirectToPageResult.
-    /// Input conditions: UserManager.GetUserAsync returns a valid user; SignInManager.ForgetTwoFactorClientAsync completes successfully.
-    /// Expected result: RedirectToPageResult, StatusMessage set to the expected text, and ForgetTwoFactorClientAsync invoked once.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_UserFound_ForgetsClientAndRedirectsAndSetsStatusMessage()
     {
@@ -200,13 +163,6 @@ public class TwoFactorAuthenticationModelTests
         signInManagerMock.Verify(sm => sm.ForgetTwoFactorClientAsync(), Times.Once);
     }
 
-    /// <summary>
-    /// Tests that when GetUserAsync returns null the handler returns NotFoundObjectResult
-    /// with a message containing the value returned by GetUserId(User).
-    /// Input conditions: UserManager.GetUserAsync returns null; UserManager.GetUserId returns a known id.
-    /// Expected result: NotFoundObjectResult with the expected message.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGetAsync_UserNotFound_ReturnsNotFoundObjectResult()
     {
@@ -243,16 +199,6 @@ public class TwoFactorAuthenticationModelTests
         Assert.Equal($"Unable to load user with ID '{expectedId}'.", notFoundResult.Value);
     }
 
-    /// <summary>
-    /// Parameterized test for the successful path of OnGetAsync.
-    /// Purpose: Verify that when GetUserAsync returns a user, the model properties are set
-    /// according to the values returned by the user manager and sign-in manager and that PageResult is returned.
-    /// Inputs: combinations of authenticator key (null or non-null), two-factor enabled flag,
-    /// client-remembered flag, and recovery codes count (including boundary ints).
-    /// Expected: Properties HasAuthenticator, Is2faEnabled, IsMachineRemembered, RecoveryCodesLeft match inputs;
-    /// result is PageResult.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [MemberData(nameof(GetOnGetAsyncCases))]
     public async Task OnGetAsync_UserFound_SetsPropertiesAndReturnsPageResult(string? authenticatorKey, bool is2faEnabled, bool isMachineRemembered, int recoveryCodes)

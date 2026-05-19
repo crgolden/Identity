@@ -2,10 +2,11 @@
 
 using System.ComponentModel.DataAnnotations;
 using System.Text.Encodings.Web;
+using Azure.Messaging.ServiceBus;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Azure;
 using static String;
 using static System.Text.Encoding;
 using static Microsoft.AspNetCore.WebUtilities.WebEncoders;
@@ -13,13 +14,14 @@ using static Microsoft.AspNetCore.WebUtilities.WebEncoders;
 /// <summary>Page model for the Email management page.</summary>
 public class EmailModel : PageModel
 {
+    private const string From = "noreply@crgolden.com";
     private readonly UserManager<IdentityUser<Guid>> _userManager;
-    private readonly IEmailSender _emailSender;
+    private readonly ServiceBusSender _serviceBusSender;
 
-    public EmailModel(UserManager<IdentityUser<Guid>> userManager, IEmailSender emailSender)
+    public EmailModel(UserManager<IdentityUser<Guid>> userManager, IAzureClientFactory<ServiceBusSender> serviceBusSenderFactory)
     {
         _userManager = userManager;
-        _emailSender = emailSender;
+        _serviceBusSender = serviceBusSenderFactory.CreateClient("email");
     }
 
     public string? Email { get; set; }
@@ -90,9 +92,14 @@ public class EmailModel : PageModel
             if (!IsNullOrWhiteSpace(callbackUrl))
             {
                 var link = HtmlEncoder.Default.Encode(callbackUrl);
-                const string subject = "Confirm your email";
                 var htmlMessage = $"Please confirm your account by <a href='{link}'>clicking here</a>.";
-                await _emailSender.SendEmailAsync(Input.NewEmail, subject, htmlMessage);
+                var sbMessage = new ServiceBusMessage(htmlMessage)
+                {
+                    ReplyTo = From,
+                    Subject = "Confirm your email",
+                    To = Input.NewEmail
+                };
+                await _serviceBusSender.SendMessageAsync(sbMessage, HttpContext.RequestAborted);
             }
 
             StatusMessage = "Confirmation link to change email sent. Please check your email.";
@@ -137,10 +144,15 @@ public class EmailModel : PageModel
             protocol: Request.Scheme);
         if (!IsNullOrWhiteSpace(email) && !IsNullOrWhiteSpace(callbackUrl))
         {
-            const string subject = "Confirm your email";
             var link = HtmlEncoder.Default.Encode(callbackUrl);
             var htmlMessage = $"Please confirm your account by <a href='{link}'>clicking here</a>.";
-            await _emailSender.SendEmailAsync(email, subject, htmlMessage);
+            var sbMessage = new ServiceBusMessage(htmlMessage)
+            {
+                ReplyTo = From,
+                Subject = "Confirm your email",
+                To = email
+            };
+            await _serviceBusSender.SendMessageAsync(sbMessage, HttpContext.RequestAborted);
         }
 
         StatusMessage = "Verification email sent. Please check your email.";

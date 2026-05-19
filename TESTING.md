@@ -123,7 +123,7 @@ flowchart LR
 
     subgraph Svc["Services"]
         Gravatar:::service
-        EmailSvc["EmailSender (Resend)"]:::service
+        EmailSvc["ServiceBusSender"]:::service
     end
 
     Register -->|"confirm email"| Login
@@ -1061,14 +1061,6 @@ flowchart TD
         GV_Cancel["Cancellation token\npropagates"]:::unitOnly
     end
 
-    subgraph EmailSvc["EmailSender (IEmailSender via Resend)"]
-        ES_Send["SendEmailAsync calls Resend API"]:::unitOnly
-
-        ES_Throw["Resend throws\nexception propagates"]:::unitOnly
-
-        ES_Ctor["Constructor variants"]:::unitOnly
-    end
-
     GV_Hash --> GV_Found
     GV_Hash --> GV_NotFound
     GV_Hash --> GV_NullUrl
@@ -1086,9 +1078,6 @@ flowchart TD
 | Gravatar — non-404 exception | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_NonNotFoundApiException_PropagatesException` |
 | Gravatar — SHA-256 hash casing | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_AlwaysHashesEmailToSha256Lowercase` |
 | Gravatar — cancellation token | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_PassesCancellationToken` |
-| EmailSender — sends via Resend | `EmailSenderTests.cs` | `SendEmailAsync_VariousInputs_CallsResendWithExpectedMessage` |
-| EmailSender — Resend throws | `EmailSenderTests.cs` | `SendEmailAsync_ResendThrows_PropagatesException` |
-| EmailSender — constructor | `EmailSenderTests.cs` | `Constructor_ValidResend_CreatesInstance` |
 
 ### Configuration & Startup Extension Tests
 
@@ -1104,8 +1093,6 @@ flowchart TD
 | `AddDataProtection` — missing key identifier throws | `Extensions/HostApplicationBuilderExtensionsTests.cs` | `AddDataProtection_MissingDataProtectionKeyIdentifier_ThrowsInvalidOperationException` |
 | `AddObservabilityAsync` — missing ElasticsearchNode throws | `Extensions/HostApplicationBuilderExtensionsTests.cs` | `AddObservabilityAsync_MissingElasticsearchNode_ThrowsInvalidOperationException` |
 | `AddPersistenceAsync` — missing SqlConnectionStringBuilder throws | `Extensions/HostApplicationBuilderExtensionsTests.cs` | `AddPersistenceAsync_MissingSqlConnectionStringBuilderSection_ThrowsInvalidOperationException` |
-| `AddEmailAsync` — registers IEmailSender | `Extensions/HostApplicationBuilderExtensionsTests.cs` | `AddEmailAsync_RegistersEmailSenderService` |
-| `AddEmailAsync` — sets ApiToken from secret | `Extensions/HostApplicationBuilderExtensionsTests.cs` | `AddEmailAsync_SetsApiTokenFromSecret` |
 | `AddPictureAsync` — registers IAvatarService | `Extensions/HostApplicationBuilderExtensionsTests.cs` | `AddPictureAsync_RegistersAvatarService` |
 | `AddAuthAsync` — registers IAuthenticationService | `Extensions/HostApplicationBuilderExtensionsTests.cs` | `AddAuthAsync_RegistersAuthenticationServices` |
 
@@ -1356,17 +1343,16 @@ Load tests use `Parallel.ForEachAsync` + `HttpClient` (self-signed cert ignored)
 
 | File | Focus |
 |---|---|
-| `ServiceResilienceTests.cs` | `EmailSender` propagates `ResendException`; `GravatarService` surfaces non-404 API exceptions; `SecretClient` propagates `RequestFailedException`; services tolerate `CancellationToken` cancellation |
+| `ServiceResilienceTests.cs` | `GravatarService` surfaces non-404 API exceptions; `SecretClient` propagates `RequestFailedException`; services tolerate `CancellationToken` cancellation |
 
 ---
 
 ## 20. Mutation Testing (Stryker)
 
-Stryker.NET is configured in `stryker-config.json` with `mutation-level: Advanced`. It targets four core source files:
+Stryker.NET is configured in `stryker-config.json` with `mutation-level: Advanced`. It targets three core source files:
 
 | File | Why it's targeted |
 |---|---|
-| `Identity.Api/EmailSender.cs` | Only production email path |
 | `Identity.Api/GravatarService.cs` | Hash computation and error handling |
 | `Identity.Api/Extensions/ConfigurationExtensions.cs` | Key Vault URI → `SecretClient` factory; startup config extraction |
 | `Identity.Api/Extensions/EndpointRouteBuilderExtensions.cs` | Passkey endpoint registration |

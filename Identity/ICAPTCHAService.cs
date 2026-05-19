@@ -8,5 +8,7 @@ public interface ICAPTCHAService
 
     decimal ScoreThreshold { get; }
 
+    bool IsExempt(string? email);
+
     Task<decimal> VerifyAsync(string? token, CancellationToken cancellationToken = default);
 }

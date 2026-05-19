@@ -1,7 +1,7 @@
 #pragma warning disable CS8604 // Possible null reference argument.
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account.Manage;
-using Identity.Tests.Infrastructure;
+using Infrastructure;
 
 using System.Security.Claims;
 using Identity.Pages.Account.Manage;
@@ -18,13 +18,6 @@ using Moq;
 [Trait("Category", "Unit")]
 public class RenamePasskeyModelTests
 {
-    /// <summary>
-    /// Provides valid constructor argument combinations:
-    /// - A mocked ApplicationDbContext instance and a constructed UserManager&lt;IdentityUser&lt;Guid&gt; &gt;.
-    /// - A real ApplicationDbContext constructed with default DbContextOptions and the same UserManager instance.
-    /// This member returns tuples of (ApplicationDbContext, UserManager&lt;IdentityUser&lt;Guid&gt; &gt;).
-    /// </summary>
-    /// <returns></returns>
     public static TheoryData<ApplicationDbContext, UserManager<IdentityUser<Guid>>> ValidConstructorArguments()
     {
         // Build a usable UserManager instance using lightweight mocked collaborators.
@@ -52,12 +45,6 @@ public class RenamePasskeyModelTests
         };
     }
 
-    /// <summary>
-    /// Tests that when no user is returned from UserManager.GetUserAsync the handler returns NotFound with the expected message.
-    /// Condition: UserManager.GetUserAsync returns null and UserManager.GetUserId returns a known id.
-    /// Expected: NotFoundObjectResult whose value contains the expected user id message.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGetAsync_UserNotFound_ReturnsNotFoundWithMessage()
     {
@@ -90,12 +77,6 @@ public class RenamePasskeyModelTests
         Assert.Contains("Unable to load user with ID 'expected-user-id'.", message);
     }
 
-    /// <summary>
-    /// Tests that when the provided id cannot be decoded as Base64Url the handler sets StatusMessage and redirects to Passkeys page.
-    /// Condition: User exists, provided id is invalid Base64Url.
-    /// Expected: RedirectToPageResult pointing to ./Passkeys and StatusMessage set to the invalid format message.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGetAsync_InvalidBase64Id_RedirectsToPasskeysAndSetsStatusMessage()
     {
@@ -129,12 +110,6 @@ public class RenamePasskeyModelTests
         Assert.Equal("The specified passkey ID had an invalid format.", model.StatusMessage);
     }
 
-    /// <summary>
-    /// Tests that when a passkey is not found for a decoded credential id the handler returns NotFound with expected message.
-    /// Condition: User exists, id decodes successfully but GetPasskeyAsync returns null.
-    /// Expected: NotFoundObjectResult containing the expected passkey-not-found message with user id.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGetAsync_PasskeyNotFound_ReturnsNotFoundWithMessage()
     {
@@ -176,13 +151,6 @@ public class RenamePasskeyModelTests
         Assert.Contains("Unable to load passkey ID 'user-42'.", message);
     }
 
-    /// <summary>
-    /// Verifies that when the current user cannot be loaded (GetUserAsync returns null),
-    /// OnPostAsync returns a NotFoundObjectResult whose message contains the string returned by GetUserId.
-    /// Input and DbContext are irrelevant for this path.
-    /// Expected: NotFoundObjectResult with message containing returned id.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_UserNotFound_ReturnsNotFoundWithMessage()
     {
@@ -211,15 +179,6 @@ public class RenamePasskeyModelTests
         Assert.Contains("missing-user-id", Convert.ToString(notFound.Value));
     }
 
-    /// <summary>
-    /// The constructor should create an instance when provided with valid, non-null dependencies.
-    /// Inputs:
-    /// - dbContext: an ApplicationDbContext (mocked or real).
-    /// - userManager: a constructed UserManager&lt;IdentityUser&lt;Guid&gt; &gt;.
-    /// Expected:
-    /// - A non-null RenamePasskeyModel instance is produced.
-    /// - The Input bind property is null by default.
-    /// </summary>
 #pragma warning disable xUnit1045
     [Theory]
     [MemberData(nameof(ValidConstructorArguments))]
@@ -238,13 +197,6 @@ public class RenamePasskeyModelTests
     }
 #pragma warning restore xUnit1045
 
-    /// <summary>
-    /// Verifies that multiple constructions with the same dependencies produce distinct RenamePasskeyModel instances.
-    /// Inputs:
-    /// - A mocked ApplicationDbContext and a constructed UserManager instance.
-    /// Expected:
-    /// - Two separate instances are returned (reference inequality).
-    /// </summary>
     [Fact]
     public void Constructor_MultipleInvocations_ReturnsDistinctInstances()
     {

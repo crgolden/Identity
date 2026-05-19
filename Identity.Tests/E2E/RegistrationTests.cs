@@ -96,7 +96,7 @@ public sealed class RegistrationTests(PlaywrightFixture fixture)
 
             // Get confirmation link from captured email
             var captured = await fixture.Email.WaitForEmailAsync(email);
-            var confirmLink = EmailCaptureService.ExtractLink(captured.HtmlBody, "http");
+            var confirmLink = EmailCaptureSender.ExtractLink(captured.HtmlBody, "http");
 
             // Navigate to confirmation link
             await page.GotoAsync(confirmLink);

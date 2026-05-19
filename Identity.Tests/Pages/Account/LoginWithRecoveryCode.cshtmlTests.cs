@@ -1,7 +1,7 @@
 #pragma warning disable CS8604 // Possible null reference argument.
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account;
-using Identity.Tests.Infrastructure;
+using Infrastructure;
 
 using Identity.Pages.Account;
 using Microsoft.AspNetCore.Authentication;
@@ -14,9 +14,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 
-/// <summary>
-/// Tests for LoginWithRecoveryCodeModel.OnGetAsync
-/// </summary>
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class LoginWithRecoveryCodeModelTests
@@ -43,12 +40,6 @@ public class LoginWithRecoveryCodeModelTests
         { "/some/local/path", "/some/local/path" },
     };
 
-    /// <summary>
-    /// Verifies that when a two-factor authentication user exists the handler returns a PageResult and sets ReturnUrl to the provided value.
-    /// Input conditions: SignInManager.GetTwoFactorAuthenticationUserAsync returns a non-null IdentityUser; various returnUrl inputs including null, empty, whitespace, long and special-character strings are tested.
-    /// Expected result: Method returns PageResult and model.ReturnUrl equals the provided returnUrl.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [MemberData(nameof(ReturnUrlValues))]
     public async Task OnGetAsync_TwoFactorUserExists_SetsReturnUrlAndReturnsPage(string? returnUrl)
@@ -82,12 +73,6 @@ public class LoginWithRecoveryCodeModelTests
         Assert.Equal(returnUrl, model.ReturnUrl);
     }
 
-    /// <summary>
-    /// Verifies that when ModelState is invalid the handler returns PageResult without calling sign-in flows.
-    /// Input conditions: ModelState contains an error.
-    /// Expected result: PageResult is returned.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_ModelStateInvalid_ReturnsPageResult()
     {
@@ -121,12 +106,6 @@ public class LoginWithRecoveryCodeModelTests
         signInManagerMock.Verify(s => s.TwoFactorRecoveryCodeSignInAsync(It.IsAny<string>()), Times.Never);
     }
 
-    /// <summary>
-    /// Verifies that when GetTwoFactorAuthenticationUserAsync returns null, an InvalidOperationException is thrown.
-    /// Input conditions: valid ModelState, no two-factor user available.
-    /// Expected result: InvalidOperationException with specific message.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_NoTwoFactorUser_ThrowsInvalidOperationException()
     {
@@ -157,18 +136,6 @@ public class LoginWithRecoveryCodeModelTests
         signInManagerMock.Verify(s => s.TwoFactorRecoveryCodeSignInAsync(It.IsAny<string>()), Times.Never);
     }
 
-    /// <summary>
-    /// Verifies that constructing LoginWithRecoveryCodeModel with all null dependencies does not throw
-    /// and that public properties (Input and ReturnUrl) are left at their default (null) values.
-    /// Input conditions:
-    /// - signInManager: null
-    /// - userManager: null
-    /// - logger: null
-    /// Expected result:
-    /// - No exception thrown.
-    /// - Instance is created successfully.
-    /// - Input and ReturnUrl are null by default.
-    /// </summary>
     [Fact]
     public void LoginWithRecoveryCodeModel_Constructor_AllNulls_DoesNotThrowAndDefaults()
     {
@@ -188,18 +155,6 @@ public class LoginWithRecoveryCodeModelTests
         Assert.Null(model.ReturnUrl);
     }
 
-    /// <summary>
-    /// Verifies that constructing LoginWithRecoveryCodeModel with a provided logger (mocked)
-    /// and null managers does not throw and results in default public property values.
-    /// Input conditions:
-    /// - signInManager: null
-    /// - userManager: null
-    /// - logger: mocked ILogger<LoginWithRecoveryCodeModel>
-    /// Expected result:
-    /// - No exception thrown.
-    /// - Instance is created successfully.
-    /// - Input and ReturnUrl are null by default.
-    /// </summary>
     [Fact]
     public void LoginWithRecoveryCodeModel_Constructor_WithLoggerMock_DoesNotThrowAndDefaults()
     {
@@ -220,12 +175,6 @@ public class LoginWithRecoveryCodeModelTests
         Assert.Null(model.ReturnUrl);
     }
 
-    /// <summary>
-    /// Verifies that OnGetAsync throws when GetTwoFactorAuthenticationUserAsync returns null.
-    /// Input conditions: GetTwoFactorAuthenticationUserAsync returns null.
-    /// Expected result: InvalidOperationException with expected message.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGetAsync_NoTwoFactorUser_ThrowsInvalidOperationException()
     {
@@ -248,12 +197,6 @@ public class LoginWithRecoveryCodeModelTests
         Assert.Equal("Unable to load two-factor authentication user.", ex.Message);
     }
 
-    /// <summary>
-    /// Verifies that OnPostAsync redirects to root when the recovery code succeeds and returnUrl is null.
-    /// Input conditions: valid code, result.Succeeded = true, returnUrl = null.
-    /// Expected result: LocalRedirectResult to "~/".
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_Succeeded_RedirectsToRoot()
     {
@@ -286,12 +229,6 @@ public class LoginWithRecoveryCodeModelTests
         Assert.Equal("~/", redirect.Url);
     }
 
-    /// <summary>
-    /// Verifies that OnPostAsync redirects to the Lockout page when the account is locked out.
-    /// Input conditions: valid code, result.IsLockedOut = true.
-    /// Expected result: RedirectToPageResult to "./Lockout".
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_LockedOut_RedirectsToLockoutPage()
     {
@@ -321,12 +258,6 @@ public class LoginWithRecoveryCodeModelTests
         Assert.Equal("./Lockout", redirect.PageName);
     }
 
-    /// <summary>
-    /// Verifies that OnPostAsync adds a model error and returns Page when the recovery code is invalid.
-    /// Input conditions: valid code, result is not Succeeded and not LockedOut.
-    /// Expected result: PageResult with invalid ModelState.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_InvalidCode_AddsModelErrorAndReturnsPage()
     {

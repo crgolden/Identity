@@ -9,8 +9,6 @@ public sealed class ConsentTests(PlaywrightFixture fixture)
 {
     private const string RedirectUri = "https://localhost:9999/callback";
 
-    /// <summary>Verifies that clicking Deny on the consent screen redirects to the client with access_denied.</summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task Consent_Deny_RedirectsWithAccessDenied()
     {
@@ -41,8 +39,6 @@ public sealed class ConsentTests(PlaywrightFixture fixture)
         }
     }
 
-    /// <summary>Verifies that clicking Allow on the consent screen redirects to the client with an authorization code.</summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task Consent_Allow_RedirectsWithCode()
     {
@@ -81,8 +77,6 @@ public sealed class ConsentTests(PlaywrightFixture fixture)
         }
     }
 
-    /// <summary>Verifies that submitting the consent form without selecting any scopes shows a validation error.</summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task Consent_NoScopesConsented_ShowsError()
     {

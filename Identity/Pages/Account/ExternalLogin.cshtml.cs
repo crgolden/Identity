@@ -3,23 +3,25 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
+using Azure.Messaging.ServiceBus;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Azure;
 
 /// <summary>Page model for the External Login page.</summary>
 [AllowAnonymous]
 public class ExternalLoginModel : PageModel
 {
     private const string LoginPageName = "./Login";
+    private const string From = "noreply@crgolden.com";
 
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
     private readonly UserManager<IdentityUser<Guid>> _userManager;
     private readonly IUserStore<IdentityUser<Guid>> _userStore;
     private readonly IUserEmailStore<IdentityUser<Guid>> _emailStore;
-    private readonly IEmailSender _emailSender;
+    private readonly ServiceBusSender _serviceBusSender;
     private readonly ILogger<ExternalLoginModel> _logger;
 
     public ExternalLoginModel(
@@ -27,14 +29,14 @@ public class ExternalLoginModel : PageModel
         UserManager<IdentityUser<Guid>> userManager,
         IUserStore<IdentityUser<Guid>> userStore,
         ILogger<ExternalLoginModel> logger,
-        IEmailSender emailSender)
+        IAzureClientFactory<ServiceBusSender> serviceBusSenderFactory)
     {
         _signInManager = signInManager;
         _userManager = userManager;
         _userStore = userStore;
         _emailStore = (IUserEmailStore<IdentityUser<Guid>>)_userStore;
         _logger = logger;
-        _emailSender = emailSender;
+        _serviceBusSender = serviceBusSenderFactory.CreateClient("email");
     }
 
     [BindProperty]
@@ -179,10 +181,15 @@ public class ExternalLoginModel : PageModel
 
         if (!IsNullOrWhiteSpace(callbackUrl))
         {
-            const string subject = "Confirm your email";
             var link = HtmlEncoder.Default.Encode(callbackUrl);
             var htmlMessage = $"Please confirm your account by <a href='{link}'>clicking here</a>.";
-            await _emailSender.SendEmailAsync(email, subject, htmlMessage);
+            var sbMessage = new ServiceBusMessage(htmlMessage)
+            {
+                ReplyTo = From,
+                Subject = "Confirm your email",
+                To = email
+            };
+            await _serviceBusSender.SendMessageAsync(sbMessage, HttpContext.RequestAborted);
         }
 
         if (_userManager.Options.SignIn.RequireConfirmedAccount)

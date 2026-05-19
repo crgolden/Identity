@@ -1,20 +1,15 @@
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account.Manage;
-using Identity.Tests.Infrastructure;
+using Infrastructure;
 
 using Duende.IdentityServer.Models;
 using Duende.IdentityServer.Validation;
 using Identity.Pages.Account.Manage;
 
-/// <summary>Unit tests for <see cref="ConsentPageModelBase"/> static factory methods and nested types.</summary>
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class ConsentPageModelBaseTests
 {
-    /// <summary>
-    /// Verifies CreateScopeViewModel returns correct values when ParsedParameter is empty.
-    /// Expected: DisplayName equals apiScope.DisplayName, other fields mapped from scope.
-    /// </summary>
     [Fact]
     public void CreateScopeViewModel_ApiScope_NoParsedParameter_MapsFieldsCorrectly()
     {
@@ -40,10 +35,6 @@ public class ConsentPageModelBaseTests
         Assert.False(vm.Checked);
     }
 
-    /// <summary>
-    /// Verifies CreateScopeViewModel appends ParsedParameter to DisplayName when present.
-    /// Expected: DisplayName becomes "displayName:parsedParam".
-    /// </summary>
     [Fact]
     public void CreateScopeViewModel_ApiScope_WithParsedParameter_AppendsToDisplayName()
     {
@@ -63,10 +54,6 @@ public class ConsentPageModelBaseTests
         Assert.True(vm.Checked);
     }
 
-    /// <summary>
-    /// Verifies CreateOfflineAccessScope returns a ScopeViewModel with the offline_access value.
-    /// Expected: Value matches OfflineAccess constant, Emphasize is true.
-    /// </summary>
     [Fact]
     public void CreateOfflineAccessScope_ReturnsCorrectViewModel()
     {
@@ -79,9 +66,6 @@ public class ConsentPageModelBaseTests
         Assert.True(vm.Checked);
     }
 
-    /// <summary>
-    /// Verifies ResourceViewModel properties can be set and retrieved.
-    /// </summary>
     [Fact]
     public void ResourceViewModel_PropertiesRoundTrip()
     {

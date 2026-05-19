@@ -1,7 +1,7 @@
 #pragma warning disable CS8604
 #pragma warning disable CS8625
 namespace Identity.Tests.Pages;
-using Identity.Tests.Infrastructure;
+using Infrastructure;
 
 using Identity.Pages;
 using Microsoft.AspNetCore.Http;
@@ -10,16 +10,10 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Routing;
 using Moq;
 
-/// <summary>Unit tests for <see cref="Identity.Pages.RedirectModel"/>.</summary>
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class RedirectIndexModelTests
 {
-    /// <summary>
-    /// Verifies that RedirectModel can be constructed without parameters and does not throw.
-    /// Inputs: no constructor arguments.
-    /// Expected: no exception is thrown and the constructed instance is not null.
-    /// </summary>
     [Fact]
     public void Constructor_NoParameters_DoesNotThrow()
     {
@@ -33,11 +27,6 @@ public class RedirectIndexModelTests
         Assert.IsType<PageModel>(model, exactMatch: false);
     }
 
-    /// <summary>
-    /// Verifies that OnGet redirects to the error page when the redirect URI is not a local URL.
-    /// Inputs: redirectUri = "https://external.com", Url.IsLocalUrl returns false.
-    /// Expected: result is RedirectToPageResult with page "/Error".
-    /// </summary>
     [Fact]
     public void OnGet_NonLocalUrl_RedirectsToError()
     {
@@ -58,11 +47,6 @@ public class RedirectIndexModelTests
         Assert.Equal("/Error", redirect.PageName);
     }
 
-    /// <summary>
-    /// Verifies that OnGet sets RedirectUri and returns PageResult when the URI is a local URL.
-    /// Inputs: redirectUri = "/local/path", Url.IsLocalUrl returns true.
-    /// Expected: result is PageResult and model.RedirectUri equals "/local/path".
-    /// </summary>
     [Fact]
     public void OnGet_LocalUrl_SetsRedirectUriAndReturnsPage()
     {

@@ -1,6 +1,6 @@
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account.Manage;
-using Identity.Tests.Infrastructure;
+using Infrastructure;
 
 using System.Security.Claims;
 using Identity.Pages.Account.Manage;
@@ -14,9 +14,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 
-/// <summary>
-/// Tests for Identity.Pages.Account.Manage.IndexModel OnGetAsync behavior.
-/// </summary>
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class ManageIndexModelTests
@@ -60,15 +57,6 @@ public class ManageIndexModelTests
         { null, string.Empty, false, false, true, "Your profile has been updated" },
     };
 
-    /// <summary>
-    /// Tests that OnGetAsync returns NotFoundObjectResult when no user is found.
-    /// Input conditions:
-    /// - UserManager.GetUserAsync returns null.
-    /// - UserManager.GetUserId returns a known id.
-    /// Expected result:
-    /// - Method returns NotFoundObjectResult with the exact expected message containing the id.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGetAsync_UserNotFound_ReturnsNotFoundObjectResult()
     {
@@ -92,18 +80,6 @@ public class ManageIndexModelTests
         Assert.Equal(expectedMessage, notFound.Value);
     }
 
-    /// <summary>
-    /// Tests that OnGetAsync successfully loads user data and returns PageResult.
-    /// Input conditions:
-    /// - UserManager.GetUserAsync returns a valid user.
-    /// - UserManager.GetUserNameAsync and GetPhoneNumberAsync return the provided values (username, phoneNumber).
-    /// Expected result:
-    /// - Method returns PageResult.
-    /// - IndexModel.Username equals returned username.
-    /// - IndexModel.Input is not null and Input.PhoneNumber equals returned phoneNumber.
-    /// This test is parameterized to exercise various string edge-cases for username and phone number.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [MemberData(nameof(ValidUserData))]
     public async Task OnGetAsync_UserExists_LoadsUsernameAndPhoneAndReturnsPage(string? returnedUserName, string? returnedPhoneNumber)
@@ -137,13 +113,6 @@ public class ManageIndexModelTests
         userManagerMock.Verify(u => u.GetPhoneNumberAsync(user), Times.Once);
     }
 
-    /// <summary>
-    /// Verifies that when no user is returned from UserManager.GetUserAsync the handler returns NotFound
-    /// and the returned message contains the user id returned by UserManager.GetUserId.
-    /// Input conditions: UserManager.GetUserAsync returns null and GetUserId returns a known id.
-    /// Expected result: NotFoundObjectResult with message containing the id.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_UserNotFound_ReturnsNotFoundWithUserIdMessage()
     {
@@ -168,12 +137,6 @@ public class ManageIndexModelTests
         userManagerMock.Verify(u => u.SetPhoneNumberAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>()), Times.Never);
     }
 
-    /// <summary>
-    /// Verifies that when ModelState is invalid the handler returns Page().
-    /// Input conditions: valid user returned but ModelState contains an error.
-    /// Expected result: PageResult returned and no phone update or refresh is attempted.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_ModelStateInvalid_ReturnsPageAndDoesNotChangePhoneOrSignIn()
     {
@@ -207,10 +170,6 @@ public class ManageIndexModelTests
         signInManagerMock.Verify(s => s.RefreshSignInAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
     }
 
-    /// <summary>
-    /// Verifies phone update behavior in OnPostAsync based on existing vs input phone number.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [MemberData(nameof(PhoneUpdateCases))]
     public async Task OnPostAsync_PhoneUpdateScenarios(string? existingPhone, string? inputPhone, bool setSucceeds, bool expectSetCall, bool expectRefreshCall, string expectedStatusMessage)
@@ -261,12 +220,6 @@ public class ManageIndexModelTests
         }
     }
 
-    /// <summary>
-    /// Verifies the IndexModel constructor can be invoked with valid UserManager and SignInManager
-    /// instances and that an IndexModel instance is produced without throwing.
-    /// Input conditions: valid, non-null instances of UserManager&lt;IdentityUser&lt;Guid&gt; &gt; and SignInManager&lt;IdentityUser&lt;Guid&gt; &gt;.
-    /// Expected result: constructor returns a non-null IndexModel instance and does not throw.
-    /// </summary>
     [Fact]
     public void Constructor_ValidDependencies_DoesNotThrow()
     {

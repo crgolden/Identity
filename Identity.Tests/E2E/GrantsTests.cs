@@ -6,8 +6,6 @@ using Infrastructure;
 [Collection(E2ECollection.Name)]
 public sealed class GrantsTests(PlaywrightFixture fixture)
 {
-    /// <summary>Verifies that the grants page loads for an authenticated user with no existing grants.</summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task Grants_AuthenticatedUser_PageLoads()
     {

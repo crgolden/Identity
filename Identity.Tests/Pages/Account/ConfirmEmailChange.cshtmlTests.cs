@@ -1,6 +1,6 @@
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account;
-using Identity.Tests.Infrastructure;
+using Infrastructure;
 
 using System.Text;
 using Identity.Pages.Account;
@@ -13,23 +13,10 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 using Moq;
 
-/// <summary>
-/// Tests for ConfirmEmailChangeModel constructor behavior.
-/// Note: The production constructor depends on framework types (UserManager and SignInManager)
-/// which are not trivial to instantiate without DI and backing stores. The symbol metadata
-/// indicates these cannot be straightforwardly mocked here. As such the tests below are
-/// provided as skipped, guided templates to complete in an environment where those dependencies
-/// can be provided or properly mocked.
-/// </summary>
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class ConfirmEmailChangeModelTests
 {
-    /// <summary>
-    /// Ensures that the constructor succeeds when provided valid UserManager and SignInManager instances.
-    /// Input conditions: non-null userManager and signInManager instances.
-    /// Expected result: constructor does not throw and an instance of ConfirmEmailChangeModel is created.
-    /// </summary>
     [Fact]
     public void Constructor_WithValidDependencies_DoesNotThrow()
     {
@@ -67,12 +54,6 @@ public class ConfirmEmailChangeModelTests
         // Additional behavioral assertions may be added once dependencies can be provided.
     }
 
-    /// <summary>
-    /// Verifies constructor behavior when null dependencies are supplied.
-    /// Input conditions: userManager is null or signInManager is null.
-    /// Expected result: If the production constructor guards against null inputs, an ArgumentNullException should be thrown.
-    /// If it does not, the test should be adapted to assert that the constructed instance handles nulls appropriately.
-    /// </summary>
     [Fact]
     public void Constructor_NullParameters_ThrowsIfValidated()
     {
@@ -111,13 +92,6 @@ public class ConfirmEmailChangeModelTests
         }
     }
 
-    /// <summary>
-    /// Tests that when any of the route parameters (userId, email, code) is null,
-    /// the handler redirects to the Index page.
-    /// Input conditions: one of the parameters is null (tested via InlineData).
-    /// Expected result: RedirectToPageResult with PageName '/Index'.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [InlineData(null, "user@example.com", "code")]
     [InlineData("userId", null, "code")]
@@ -138,13 +112,6 @@ public class ConfirmEmailChangeModelTests
         Assert.Equal("/Index", redirect.PageName);
     }
 
-    /// <summary>
-    /// Tests that when the user cannot be found by the provided userId,
-    /// the handler returns a NotFoundObjectResult containing the expected message.
-    /// Input conditions: valid non-null parameters but FindByIdAsync returns null.
-    /// Expected result: NotFoundObjectResult with message containing the supplied userId.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGetAsync_UserNotFound_ReturnsNotFound()
     {
@@ -167,13 +134,6 @@ public class ConfirmEmailChangeModelTests
         Assert.Equal($"Unable to load user with ID '{userId}'.", notFound.Value);
     }
 
-    /// <summary>
-    /// Tests that when ChangeEmailAsync fails, the handler returns the PageResult
-    /// and sets StatusMessage to indicate an email change error.
-    /// Input conditions: user exists; ChangeEmailAsync returns a failed IdentityResult.
-    /// Expected result: PageResult and StatusMessage == "Error changing email.".
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGetAsync_ChangeEmailFails_ReturnsPageAndSetsStatusMessage()
     {
@@ -201,13 +161,6 @@ public class ConfirmEmailChangeModelTests
         Assert.Equal("Error changing email.", model.StatusMessage);
     }
 
-    /// <summary>
-    /// Tests that when ChangeEmailAsync succeeds but SetUserNameAsync fails,
-    /// the handler returns the PageResult and sets StatusMessage to indicate a user name change error.
-    /// Input conditions: user exists; ChangeEmailAsync returns Success; SetUserNameAsync returns Failed.
-    /// Expected result: PageResult and StatusMessage == "Error changing user name.".
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGetAsync_SetUserNameFails_ReturnsPageAndSetsStatusMessage()
     {
@@ -236,13 +189,6 @@ public class ConfirmEmailChangeModelTests
         Assert.Equal("Error changing user name.", model.StatusMessage);
     }
 
-    /// <summary>
-    /// Tests the successful path where ChangeEmailAsync and SetUserNameAsync both succeed,
-    /// ensuring RefreshSignInAsync is called and StatusMessage is set to the success message.
-    /// Input conditions: user exists; ChangeEmailAsync returns Success; SetUserNameAsync returns Success.
-    /// Expected result: PageResult and StatusMessage == "Thank you for confirming your email change.".
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGetAsync_AllOperationsSucceed_RefreshesSignInAndSetsSuccessMessage()
     {
@@ -273,12 +219,6 @@ public class ConfirmEmailChangeModelTests
         signInManagerMock.Verify(s => s.RefreshSignInAsync(It.Is<IdentityUser<Guid>>(u => u == user)), Times.Once);
     }
 
-    /// <summary>
-    /// Tests that empty or whitespace email inputs redirect to /Index because the source guards
-    /// against null/whitespace values for userId, email, and code.
-    /// Expected result: RedirectToPageResult to "/Index".
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
@@ -301,12 +241,6 @@ public class ConfirmEmailChangeModelTests
         Assert.Equal("/Index", redirect.PageName);
     }
 
-    /// <summary>
-    /// Tests that a non-null, non-whitespace email proceeds through the handler successfully.
-    /// Input conditions: user exists; ChangeEmailAsync and SetUserNameAsync return Success.
-    /// Expected result: PageResult and StatusMessage success.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGetAsync_SpecialCharacterEmail_ProceedsAndReturnSuccess()
     {

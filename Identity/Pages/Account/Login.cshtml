@@ -54,7 +54,7 @@
         </section>
     </div>
     <div class="col-md-6 col-md-offset-2">
-        <partial name="_ExternalProviders" model="Model.ExternalLogins" view-data='@(new Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary(ViewData) { ["ReturnUrl"] = Model.ReturnUrl, ["ActionVerb"] = "log in" })' />
+        <partial name="_ExternalProviders" model="Model.ExternalLogins" view-data='@(new ViewDataDictionary(ViewData) { ["ReturnUrl"] = Model.ReturnUrl, ["ActionVerb"] = "log in" })' />
     </div>
 </div>
 

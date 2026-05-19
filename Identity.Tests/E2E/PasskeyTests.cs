@@ -6,11 +6,6 @@ using Infrastructure;
 [Collection(E2ECollection.Name)]
 public sealed class PasskeyTests(PlaywrightFixture fixture)
 {
-    /// <summary>
-    /// Verifies that <c>PasskeySubmitTagHelper</c> runs and renders a real submit button on the Passkeys
-    /// management page. Without <c>@addTagHelper *, Identity.Api</c> in <c>_ViewImports.cshtml</c> the
-    /// tag helper is silently ignored and the element is a non-interactive generic element, not a button.
-    /// </summary>
     [Fact]
     public async Task PasskeyManagePage_RendersSubmitButton_NotGenericElement()
     {
@@ -39,11 +34,6 @@ public sealed class PasskeyTests(PlaywrightFixture fixture)
         }
     }
 
-    /// <summary>
-    /// Verifies that <c>PasskeySubmitTagHelper</c> runs and renders a real submit button on the Login page.
-    /// The Login page also uses <c>&lt;passkey-submit operation="Request"&gt;</c> so both pages are affected
-    /// if the tag helper registration in <c>_ViewImports.cshtml</c> is missing.
-    /// </summary>
     [Fact]
     public async Task LoginPage_RendersPasskeySubmitButton_NotGenericElement()
     {

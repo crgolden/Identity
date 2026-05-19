@@ -1,6 +1,6 @@
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account.Manage;
-using Identity.Tests.Infrastructure;
+using Infrastructure;
 
 using Identity.Pages.Account.Manage;
 using Microsoft.AspNetCore.Http;
@@ -13,9 +13,6 @@ using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Routing;
 using Moq;
 
-/// <summary>
-/// Tests for ManageNavPages static members.
-/// </summary>
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class ManageNavPagesTests
@@ -82,14 +79,6 @@ public class ManageNavPagesTests
         };
     }
 
-    /// <summary>
-    /// Provides test cases covering:
-    /// - ViewData['ActivePage'] as matching string (exact and case-different)
-    /// - ViewData['ActivePage'] as non-matching string
-    /// - ViewData['ActivePage'] missing or non-string causing fallback to ActionDescriptor.DisplayName
-    /// - Both ViewData['ActivePage'] and DisplayName null
-    /// </summary>
-    /// <returns></returns>
     public static TheoryData<object?, string?, string?> EmailNavClassCases() => new()
     {
         // When ViewData contains a matching page name (exact)
@@ -130,16 +119,6 @@ public class ManageNavPagesTests
         { null, null, null }, // both sources null -> no active
     };
 
-    /// <summary>
-    /// Provides test cases for PersonalDataNavClass.
-    /// Contains cases that exercise:
-    /// - Direct ActivePage match (exact and different case)
-    /// - Null ActivePage falling back to ActionDescriptor.DisplayName filename
-    /// - Empty or whitespace ActivePage which prevents fallback and should not match
-    /// - Very long and special-character ActivePage values that should not match
-    /// - DisplayName values that do and do not produce the expected filename
-    /// </summary>
-    /// <returns></returns>
     public static TheoryData<string?, string?, string?> GetPersonalDataNavCases() => new()
     {
         // ActivePage exactly matches -> active
@@ -176,11 +155,6 @@ public class ManageNavPagesTests
         { null, "Pages/Account/Manage/some.PersonalData.cshtml", null },
     };
 
-    /// <summary>
-    /// Verifies that the Index property returns the expected page name.
-    /// Input: none (static property access).
-    /// Expected: returns non-null, non-empty string equal to "Index".
-    /// </summary>
     [Theory]
     [InlineData("Index")]
     public void Index_Property_ReturnsExpected(string expected)
@@ -197,11 +171,6 @@ public class ManageNavPagesTests
         Assert.NotEmpty(result);
     }
 
-    /// <summary>
-    /// Verifies that ManageNavPages.ExternalLogins returns the expected literal value.
-    /// Input conditions: no inputs (static property access).
-    /// Expected result: the property returns the exact string "ExternalLogins", is not null, and is not whitespace.
-    /// </summary>
     [Theory]
     [InlineData("ExternalLogins")]
     public void ExternalLogins_Property_ReturnsExpected(string expected)
@@ -218,12 +187,6 @@ public class ManageNavPagesTests
         Assert.Equal(expected, actual); // exact match expected
     }
 
-    /// <summary>
-    /// Test that when ViewData["ActivePage"] contains the page name (any casing),
-    /// IndexNavClass returns "active".
-    /// Inputs: ActivePage set to "Index" in various casings.
-    /// Expected: method returns "active".
-    /// </summary>
     [Theory]
     [InlineData("Index")]
     [InlineData("index")]
@@ -252,12 +215,6 @@ public class ManageNavPagesTests
         Assert.Equal("active", result);
     }
 
-    /// <summary>
-    /// Test that when ViewData["ActivePage"] is null and ActionDescriptor.DisplayName
-    /// resolves (via Path.GetFileNameWithoutExtension) to the page name, IndexNavClass returns "active".
-    /// Inputs: DisplayName values that should yield "Index" after filename extraction.
-    /// Expected: method returns "active".
-    /// </summary>
     [Theory]
     [InlineData("Index.cshtml")]
     [InlineData("index.cshtml")]
@@ -285,12 +242,6 @@ public class ManageNavPagesTests
         Assert.Equal("active", result);
     }
 
-    /// <summary>
-    /// Test that when neither ActivePage nor DisplayName indicate the Index page,
-    /// IndexNavClass returns null.
-    /// Inputs: ActivePage explicitly different and DisplayName null.
-    /// Expected: method returns null.
-    /// </summary>
     [Theory]
     [InlineData("Email", "/Pages/Account/Manage/Email.cshtml")]
     [InlineData(null, null)]
@@ -321,11 +272,6 @@ public class ManageNavPagesTests
         Assert.Null(result);
     }
 
-    /// <summary>
-    /// Test that when ViewData["ActivePage"] contains a non-string value, it is ignored (falls back to DisplayName).
-    /// Inputs: ActivePage set to an integer object; DisplayName resolves to Index.
-    /// Expected: method returns "active".
-    /// </summary>
     [Fact]
     public void IndexNavClass_NonStringActivePage_FallsBackToDisplayName()
     {
@@ -351,16 +297,6 @@ public class ManageNavPagesTests
         Assert.Equal("active", result);
     }
 
-    /// <summary>
-    /// The test verifies DeletePersonalDataNavClass returns the expected navigation class ("active" or null)
-    /// for various combinations of ViewData["ActivePage"] values and ActionDescriptor.DisplayName values.
-    /// Cases included:
-    /// - ActivePage matches the DeletePersonalData page (case-insensitive) => "active".
-    /// - ActivePage present but different => null (unless fallback file name matches).
-    /// - ActivePage missing or not a string => fallback to file name derived from DisplayName.
-    /// - DisplayName pointing to a file named DeletePersonalData.cshtml => "active" via fallback.
-    /// - DisplayName null and no ActivePage => null.
-    /// </summary>
 #pragma warning disable xUnit1045
     [Theory]
     [MemberData(nameof(DeletePersonalDataCases))]
@@ -394,11 +330,6 @@ public class ManageNavPagesTests
     }
 #pragma warning restore xUnit1045
 
-    /// <summary>
-    /// Verifies that passing a null ViewContext to DeletePersonalDataNavClass results in a NullReferenceException.
-    /// Input: viewContext = null.
-    /// Expected: NullReferenceException is thrown.
-    /// </summary>
     [Fact]
     public void DeletePersonalDataNavClass_NullViewContext_ThrowsNullReferenceException()
     {
@@ -409,17 +340,6 @@ public class ManageNavPagesTests
         Assert.Throws<NullReferenceException>(() => ManageNavPages.DeletePersonalDataNavClass(viewContext!));
     }
 
-    /// <summary>
-    /// Verifies PageNavClass returns "active" only when the resolved active page (from ViewData["ActivePage"] as string
-    /// or the file name without extension of ActionDescriptor.DisplayName) equals the provided page string,
-    /// using an ordinal, case-insensitive comparison. Various combinations of ActivePage (string, non-string, null)
-    /// and DisplayName (path with extension, null) are exercised.
-    /// </summary>
-    /// <remarks>
-    /// Arrange: build a ViewContext with ViewData["ActivePage"] set to the given activePage object and ActionDescriptor.DisplayName set.
-    /// Act: call ManageNavPages.PageNavClass(viewContext, page).
-    /// Assert: result equals expected (\"active\" or null).
-    /// </remarks>
 #pragma warning disable xUnit1045
     [Theory]
     [MemberData(nameof(PageNavTestData))]
@@ -444,11 +364,6 @@ public class ManageNavPagesTests
     }
 #pragma warning restore xUnit1045
 
-    /// <summary>
-    /// Verifies that the DownloadPersonalData property returns the exact expected page name.
-    /// Input condition: accessing the static DownloadPersonalData property.
-    /// Expected result: returns the non-null, non-empty string literal "DownloadPersonalData".
-    /// </summary>
     [Theory]
     [InlineData("DownloadPersonalData")]
     public void DownloadPersonalData_Property_ReturnsExpected(string expected)
@@ -464,11 +379,6 @@ public class ManageNavPagesTests
         Assert.Equal(expected, result); // Exact literal match
     }
 
-    /// <summary>
-    /// Verifies that the PersonalData property returns the expected literal value and basic string invariants.
-    /// Input: no inputs (static property).
-    /// Expected: returns the exact string "PersonalData", is non-null/non-empty, has expected length, contains no space characters and no control characters.
-    /// </summary>
     [Theory]
     [InlineData("PersonalData", 12)]
     public void PersonalData_Property_ReturnsExpected(string expected, int expectedLength)
@@ -498,11 +408,6 @@ public class ManageNavPagesTests
         }
     }
 
-    /// <summary>
-    /// Ensures the PersonalData property is stable across multiple accesses.
-    /// Input: repeated accesses of the static property.
-    /// Expected: value remains identical and reference-equality is allowed for interned strings.
-    /// </summary>
     [Fact]
     public void PersonalData_Property_IsStableAcrossAccesses()
     {
@@ -524,15 +429,6 @@ public class ManageNavPagesTests
         Assert.True(ReferenceEquals(first, second));
     }
 
-    /// <summary>
-    /// Tests EmailNavClass behavior for various combinations of ViewData['ActivePage'] and ActionDescriptor.DisplayName.
-    /// Inputs:
-    /// - activePageValue: object placed into ViewData['ActivePage'] (may be string, non-string, or null).
-    /// - displayName: ActionDescriptor.DisplayName used when ViewData['ActivePage'] is not a string.
-    /// Expected:
-    /// - Returns "active" when the resolved active page (from ViewData or DisplayName filename) matches ManageNavPages.Email case-insensitively.
-    /// - Returns null otherwise.
-    /// </summary>
 #pragma warning disable xUnit1045
     [Theory]
     [MemberData(nameof(EmailNavClassCases))]
@@ -571,17 +467,6 @@ public class ManageNavPagesTests
     }
 #pragma warning restore xUnit1045
 
-    /// <summary>
-    /// Verifies ExternalLoginsNavClass returns "active" when the effective active page equals the ExternalLogins page name,
-    /// and returns null otherwise. Tests combinations where ViewData["ActivePage"] is present (including case variations and
-    /// empty/whitespace) and where it is absent so the ActionDescriptor.DisplayName file name is used.
-    /// Inputs:
-    /// - activePage: the value stored in viewContext.ViewData["ActivePage"] (nullable).
-    /// - displayName: the ActionDescriptor.DisplayName (nullable).
-    /// Expected:
-    /// - "active" when the effective active page (ViewData value if non-null-string, otherwise file name without extension)
-    ///   matches \"ExternalLogins\" ignoring case; otherwise null.
-    /// </summary>
     [Theory]
 
     // ActivePage matches exactly -> active
@@ -620,10 +505,6 @@ public class ManageNavPagesTests
         }
     }
 
-    /// <summary>
-    /// Verifies that passing a null ViewContext to ExternalLoginsNavClass results in a NullReferenceException.
-    /// The implementation accesses viewContext.ViewData and does not guard against null, so a NullReferenceException is expected.
-    /// </summary>
     [Fact]
     public void ExternalLoginsNavClass_NullViewContext_ThrowsNullReferenceException()
     {
@@ -634,12 +515,6 @@ public class ManageNavPagesTests
         Assert.Throws<NullReferenceException>(() => ManageNavPages.ExternalLoginsNavClass(viewContext!));
     }
 
-    /// <summary>
-    /// Verifies that the ChangePassword property returns the expected literal.
-    /// Input: the expected literal string "ChangePassword".
-    /// Expected: the static property returns a non-null, non-empty string exactly matching the expected value.
-    /// </summary>
-    /// <param name="expected">The expected literal value returned by the property.</param>
     [Theory]
     [InlineData("ChangePassword")]
     public void ChangePassword_Property_ReturnsExpected(string expected)
@@ -656,11 +531,6 @@ public class ManageNavPagesTests
         Assert.Equal(expected, actual);
     }
 
-    /// <summary>
-    /// Ensures that repeated accesses to the ChangePassword property return the same reference-equal string instance.
-    /// Input: none.
-    /// Expected: subsequent calls return equal strings (reference equality is not guaranteed by C#, but we still assert value equality and immutability).
-    /// </summary>
     [Fact]
     public void ChangePassword_Property_IsStableAcrossAccesses()
     {
@@ -675,11 +545,6 @@ public class ManageNavPagesTests
         Assert.NotEmpty(first);
     }
 
-    /// <summary>
-    /// Verifies that the TwoFactorAuthentication property returns the expected literal string value.
-    /// Input conditions: No inputs (static property).
-    /// Expected result: The property returns the exact string "TwoFactorAuthentication" and is not null, empty, or whitespace.
-    /// </summary>
     [Theory]
     [InlineData("TwoFactorAuthentication")]
     public void TwoFactorAuthentication_Property_ReturnsExpected(string expected)
@@ -695,17 +560,6 @@ public class ManageNavPagesTests
         Assert.False(string.IsNullOrWhiteSpace(result));
     }
 
-    /// <summary>
-    /// Tests that ChangePasswordNavClass returns "active" when either ViewData["ActivePage"]
-    /// equals the ChangePassword page name (case-insensitive) or when the ActionDescriptor.DisplayName
-    /// file name (without extension) equals the ChangePassword page name. Also verifies null is returned
-    /// when neither source identifies the active page.
-    /// Inputs:
-    ///  - activePage: value placed into viewContext.ViewData["ActivePage"] (may be null)
-    ///  - displayName: value assigned to ActionDescriptor.DisplayName (may be null)
-    /// Expected:
-    ///  - "active" or null according to the logic in PageNavClass.
-    /// </summary>
     [Theory]
     [MemberData(nameof(PageCases))]
     public void ChangePasswordNavClass_VariousActivePageAndDisplayName_ReturnsExpected(string? activePage, string? displayName, string? expected)
@@ -737,11 +591,6 @@ public class ManageNavPagesTests
         Assert.Equal(expected, result);
     }
 
-    /// <summary>
-    /// Verifies that when ViewData contains an ActivePage value that is whitespace-only,
-    /// it does not match the ChangePassword page name and therefore returns null.
-    /// This exercises a boundary/invalid string scenario for ActivePage.
-    /// </summary>
     [Fact]
     public void ChangePasswordNavClass_WhitespaceActivePage_ReturnsNull()
     {
@@ -766,12 +615,6 @@ public class ManageNavPagesTests
         Assert.Null(result);
     }
 
-    /// <summary>
-    /// Tests PersonalDataNavClass with a variety of ActivePage and ActionDescriptor.DisplayName inputs.
-    /// Verifies that when the active page (from ViewData["ActivePage"]) or the current action display name
-    /// (file name without extension) matches ManageNavPages.PersonalData (case-insensitive) the method
-    /// returns "active"; otherwise it returns null.
-    /// </summary>
     [Theory]
     [MemberData(nameof(GetPersonalDataNavCases))]
     public void PersonalDataNavClass_VariousActivePageAndDisplayName_ReturnsExpected(string? activePage, string? actionDisplayName, string? expected)
@@ -786,12 +629,6 @@ public class ManageNavPagesTests
         Assert.Equal(expected, result);
     }
 
-    /// <summary>
-    /// Ensures that when ViewData[\"ActivePage\"] equals the Passkeys page name (case-insensitive),
-    /// PasskeysNavClass returns "active".
-    /// Input conditions: viewContext.ViewData contains ActivePage values provided by InlineData.
-    /// Expected: "active" returned for matching values regardless of case.
-    /// </summary>
     [Theory]
     [InlineData("Passkeys")]
     [InlineData("passkeys")]
@@ -820,12 +657,6 @@ public class ManageNavPagesTests
         Assert.Equal("active", result);
     }
 
-    /// <summary>
-    /// Ensures that when ViewData does not contain ActivePage, the ActionDescriptor.DisplayName filename
-    /// (without extension) is used to determine active state. If it matches Passkeys, returns "active".
-    /// Input conditions: ViewData has no ActivePage key; DisplayName contains a filename with extension.
-    /// Expected: "active" when filename without extension equals Passkeys.
-    /// </summary>
     [Fact]
     public void PasskeysNavClass_NullActivePage_UsesDisplayNameFilename_ReturnsActive()
     {
@@ -850,12 +681,6 @@ public class ManageNavPagesTests
         Assert.Equal("active", result);
     }
 
-    /// <summary>
-    /// Ensures that when neither ViewData[\"ActivePage\"] nor the ActionDescriptor filename match Passkeys,
-    /// PasskeysNavClass returns null.
-    /// Input conditions: ActivePage set to a different value and DisplayName filename also different.
-    /// Expected: null returned.
-    /// </summary>
     [Fact]
     public void PasskeysNavClass_NoMatch_ReturnsNull()
     {
@@ -881,11 +706,6 @@ public class ManageNavPagesTests
         Assert.Null(result);
     }
 
-    /// <summary>
-    /// Ensures that calling PasskeysNavClass with a null ViewContext results in a NullReferenceException.
-    /// Input conditions: viewContext is null.
-    /// Expected: NullReferenceException thrown.
-    /// </summary>
     [Fact]
     public void PasskeysNavClass_NullViewContext_ThrowsNullReferenceException()
     {
@@ -896,11 +716,6 @@ public class ManageNavPagesTests
         Assert.Throws<NullReferenceException>(() => ManageNavPages.PasskeysNavClass(viewContext!));
     }
 
-    /// <summary>
-    /// Verifies that the Email property returns the expected literal value.
-    /// Input conditions: no inputs (static property access).
-    /// Expected result: returns non-null, non-empty string equal to "Email" and length matches the expected literal.
-    /// </summary>
     [Theory]
     [InlineData("Email")]
     public void Email_Property_ReturnsExpected(string expected)
@@ -918,13 +733,6 @@ public class ManageNavPagesTests
         Assert.Equal(expected.Length, result.Length);
     }
 
-    /// <summary>
-    /// Verifies that the DeletePersonalData property returns the expected constant value.
-    /// Input conditions: no inputs (static property).
-    /// Expected result: the property is non-null, non-whitespace, equals the literal "DeletePersonalData", and has the expected length.
-    /// </summary>
-    /// <param name="expected">Expected string value.</param>
-    /// <param name="expectedLength">Expected length of the returned string.</param>
     [Theory]
     [InlineData("DeletePersonalData", 18)]
     public void DeletePersonalData_Property_ReturnsExpected(string expected, int expectedLength)
@@ -942,11 +750,6 @@ public class ManageNavPagesTests
         Assert.Equal(expectedLength, actual.Length); // Length boundary check.
     }
 
-    /// <summary>
-    /// Verifies that the Passkeys property returns the expected literal value.
-    /// Input conditions: direct access to the static Passkeys property.
-    /// Expected result: returns the string "Passkeys" and is not null/whitespace.
-    /// </summary>
     [Fact]
     public void Passkeys_Property_ReturnsExpected()
     {
@@ -962,11 +765,6 @@ public class ManageNavPagesTests
         Assert.Equal("Passkeys", value);
     }
 
-    /// <summary>
-    /// Ensures repeated accesses to Passkeys produce the same value and are reference-consistent.
-    /// Input conditions: a variable number of repeated reads (provided by InlineData).
-    /// Expected result: every read equals "Passkeys" and is the same reference as the first read.
-    /// </summary>
     [Theory]
     [InlineData(1)]
     [InlineData(3)]
@@ -989,20 +787,6 @@ public class ManageNavPagesTests
         }
     }
 
-    /// <summary>
-    /// Verifies that DownloadPersonalDataNavClass returns "active" when the active page (from ViewData["ActivePage"])
-    /// or the action descriptor's file name (DisplayName) matches the DownloadPersonalData page name (case-insensitive).
-    /// Also verifies null is returned when neither value matches.
-    /// Test cases:
-    /// - activePage equals the page name (exact match) => "active"
-    /// - activePage equals the page name (different case) => "active"
-    /// - activePage is null and DisplayName contains the page file name => "active"
-    /// - activePage set to a different page while DisplayName contains the page file name => null (ActivePage takes precedence)
-    /// - both activePage and DisplayName are null => null
-    /// </summary>
-    /// <param name="activePage">Value to place into ViewData["ActivePage"] (may be null to force fallback).</param>
-    /// <param name="actionDisplayName">ActionDescriptor.DisplayName to use for fallback (may be null).</param>
-    /// <param name="expected">Expected result: "active" or null.</param>
     [Theory]
     [InlineData("DownloadPersonalData", null, "active")]
     [InlineData("downloadpersonaldata", null, "active")]
@@ -1046,12 +830,6 @@ public class ManageNavPagesTests
         }
     }
 
-    /// <summary>
-    /// Verifies that when ViewData["ActivePage"] matches (case-insensitive) the TwoFactorAuthentication page name,
-    /// the nav class returned is "active".
-    /// Input conditions: viewContext.ViewData["ActivePage"] is provided with varying casing.
-    /// Expected result: "active" is returned.
-    /// </summary>
     [Theory]
     [InlineData("TwoFactorAuthentication")]
     [InlineData("twofactorauthentication")]
@@ -1068,12 +846,6 @@ public class ManageNavPagesTests
         Assert.Equal("active", result);
     }
 
-    /// <summary>
-    /// Verifies that when ViewData lacks "ActivePage" (null or absent) and ActionDescriptor.DisplayName
-    /// corresponds to a file name matching TwoFactorAuthentication (with extension), the nav class returned is "active".
-    /// Input conditions: ViewData does not contain "ActivePage"; DisplayName ends with "TwoFactorAuthentication.cshtml".
-    /// Expected result: "active" is returned.
-    /// </summary>
     [Fact]
     public void TwoFactorAuthenticationNavClass_DisplayNameMatches_ReturnsActive()
     {
@@ -1087,12 +859,6 @@ public class ManageNavPagesTests
         Assert.Equal("active", result);
     }
 
-    /// <summary>
-    /// Verifies that when ViewData["ActivePage"] is a whitespace or empty string and DisplayName does not match,
-    /// the nav class returned is null.
-    /// Input conditions: ViewData["ActivePage"] is empty or whitespace; DisplayName is unrelated.
-    /// Expected result: null is returned.
-    /// </summary>
     [Theory]
     [InlineData("")]
     [InlineData(" ")]
@@ -1109,12 +875,6 @@ public class ManageNavPagesTests
         Assert.Null(result);
     }
 
-    /// <summary>
-    /// Verifies that when both ViewData["ActivePage"] is null and ActionDescriptor.DisplayName is null,
-    /// the nav class returned is null.
-    /// Input conditions: ViewData does not contain "ActivePage"; DisplayName is null.
-    /// Expected result: null is returned.
-    /// </summary>
     [Fact]
     public void TwoFactorAuthenticationNavClass_NullDisplayNameAndNoActivePage_ReturnsNull()
     {
@@ -1128,11 +888,6 @@ public class ManageNavPagesTests
         Assert.Null(result);
     }
 
-    /// <summary>
-    /// Verifies that passing a null ViewContext results in a NullReferenceException.
-    /// Input conditions: viewContext is null.
-    /// Expected result: NullReferenceException is thrown.
-    /// </summary>
     [Fact]
     public void TwoFactorAuthenticationNavClass_NullViewContext_ThrowsNullReferenceException()
     {

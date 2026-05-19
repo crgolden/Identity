@@ -1,7 +1,7 @@
 #pragma warning disable CS8604
 #pragma warning disable CS8625
 namespace Identity.Tests.Pages.Account.Manage;
-using Identity.Tests.Infrastructure;
+using Infrastructure;
 
 using Duende.IdentityServer.Models;
 using Duende.IdentityServer.Services;
@@ -13,17 +13,10 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
 using Moq;
 
-/// <summary>Unit tests for <see cref="Identity.Pages.Account.Manage.ConsentModel"/>.</summary>
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class ConsentIndexModelTests
 {
-    /// <summary>
-    /// Verifies that the ConsentModel constructor does not throw when any combination of
-    /// interaction, events, and logger are null.
-    /// Inputs: various combinations of null/non-null for each parameter.
-    /// Expected: no exception is thrown and the constructed instance is not null.
-    /// </summary>
     [Theory]
     [InlineData(true, true, true)]
     [InlineData(false, false, false)]
@@ -51,13 +44,6 @@ public class ConsentIndexModelTests
         Assert.IsType<PageModel>(model, exactMatch: false);
     }
 
-    /// <summary>
-    /// Verifies that OnGetAsync redirects to the error page when returnUrl is null,
-    /// because a null returnUrl cannot resolve an authorization context.
-    /// Inputs: returnUrl = null, interaction returns null.
-    /// Expected: result is RedirectToPageResult with page "/Error".
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGetAsync_NullReturnUrl_RedirectsToError()
     {
@@ -78,13 +64,6 @@ public class ConsentIndexModelTests
         Assert.Equal("/Error", redirect.PageName);
     }
 
-    /// <summary>
-    /// Verifies that OnGetAsync redirects to the error page when the authorization context
-    /// cannot be resolved for the provided returnUrl (interaction returns null).
-    /// Inputs: returnUrl = "https://example.com", interaction returns null.
-    /// Expected: result is RedirectToPageResult with page "/Error".
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGetAsync_ValidReturnUrl_InteractionReturnsNull_RedirectsToError()
     {
@@ -105,13 +84,6 @@ public class ConsentIndexModelTests
         Assert.Equal("/Error", redirect.PageName);
     }
 
-    /// <summary>
-    /// Verifies that OnPostAsync redirects to the error page when the authorization context
-    /// cannot be resolved (interaction returns null for the Input.ReturnUrl).
-    /// Inputs: Input.ReturnUrl = "https://example.com", interaction returns null.
-    /// Expected: result is RedirectToPageResult with page "/Error".
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_NullAuthorizationContext_RedirectsToError()
     {
@@ -133,13 +105,6 @@ public class ConsentIndexModelTests
         Assert.Equal("/Error", redirect.PageName);
     }
 
-    /// <summary>
-    /// Verifies that OnPostAsync adds a model error and returns PageResult when Button="yes"
-    /// and ScopesConsented is empty, because the user must choose at least one scope.
-    /// Inputs: Button = "yes", ScopesConsented empty, interaction returns null for second SetViewModelAsync call.
-    /// Expected: result is PageResult (re-shows the form with an error).
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_ButtonYes_NoScopesConsented_ReturnsPage()
     {

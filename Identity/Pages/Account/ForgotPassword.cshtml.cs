@@ -1,24 +1,26 @@
-﻿namespace Identity.Pages.Account;
+namespace Identity.Pages.Account;
 
 using System.ComponentModel.DataAnnotations;
 using System.Text.Encodings.Web;
+using Azure.Messaging.ServiceBus;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Azure;
 
 /// <summary>Page model for the Forgot Password page.</summary>
 [AllowAnonymous]
 public class ForgotPasswordModel : PageModel
 {
+    private const string From = "noreply@crgolden.com";
     private readonly UserManager<IdentityUser<Guid>> _userManager;
-    private readonly IEmailSender _emailSender;
+    private readonly ServiceBusSender _serviceBusSender;
 
-    public ForgotPasswordModel(UserManager<IdentityUser<Guid>> userManager, IEmailSender emailSender)
+    public ForgotPasswordModel(UserManager<IdentityUser<Guid>> userManager, IAzureClientFactory<ServiceBusSender> serviceBusSenderFactory)
     {
         _userManager = userManager;
-        _emailSender = emailSender;
+        _serviceBusSender = serviceBusSenderFactory.CreateClient("email");
     }
 
     [BindProperty]
@@ -50,10 +52,14 @@ public class ForgotPasswordModel : PageModel
 
         if (!IsNullOrWhiteSpace(callbackUrl))
         {
-            await _emailSender.SendEmailAsync(
-                Input.Email,
-                "Reset Password",
-                $"Please reset your password by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+            var htmlMessage = $"Please reset your password by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.";
+            var message = new ServiceBusMessage(htmlMessage)
+            {
+                ReplyTo = From,
+                Subject = "Reset Password",
+                To = Input.Email
+            };
+            await _serviceBusSender.SendMessageAsync(message, HttpContext.RequestAborted);
         }
 
         return RedirectToPage("./ForgotPasswordConfirmation");

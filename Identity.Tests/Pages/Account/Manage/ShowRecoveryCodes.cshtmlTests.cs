@@ -1,13 +1,10 @@
 namespace Identity.Tests.Pages.Account.Manage;
-using Identity.Tests.Infrastructure;
+using Infrastructure;
 
 using Identity.Pages.Account.Manage;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-/// <summary>
-/// Tests for ShowRecoveryCodesModel.OnGet method.
-/// </summary>
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class ShowRecoveryCodesModelTests
@@ -33,13 +30,6 @@ public class ShowRecoveryCodesModelTests
         CreateLargeArray(10000, "X"),
     };
 
-    /// <summary>
-    /// Verifies that when RecoveryCodes is null or an empty array the handler redirects to the TwoFactorAuthentication page.
-    /// Input conditions:
-    /// - recoveryCodes: null and empty array
-    /// Expected result:
-    /// - RedirectToPageResult with PageName "./TwoFactorAuthentication"
-    /// </summary>
     [Theory]
     [MemberData(nameof(InvalidRecoveryCodes))]
     public void OnGet_RecoveryCodesNullOrEmpty_RedirectsToTwoFactorAuthentication(string[]? recoveryCodes)
@@ -60,13 +50,6 @@ public class ShowRecoveryCodesModelTests
         Assert.Equal("./TwoFactorAuthentication", redirect.PageName);
     }
 
-    /// <summary>
-    /// Verifies that when RecoveryCodes contains at least one element the handler returns the Page result.
-    /// Input conditions:
-    /// - recoveryCodes: single item, duplicates, whitespace/empty items, and a large array
-    /// Expected result:
-    /// - PageResult (no redirect)
-    /// </summary>
     [Theory]
     [MemberData(nameof(ValidRecoveryCodes))]
     public void OnGet_RecoveryCodesHasItems_ReturnsPageResult(string[]? recoveryCodes)

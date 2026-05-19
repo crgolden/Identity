@@ -6,8 +6,6 @@ using Infrastructure;
 [Collection(E2ECollection.Name)]
 public sealed class ServerSideSessionsTests(PlaywrightFixture fixture)
 {
-    /// <summary>Verifies that after login the server-side sessions page loads without error.</summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task ServerSideSessions_AfterLogin_PageLoads()
     {

@@ -1,6 +1,6 @@
-﻿#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account.Manage;
-using Identity.Tests.Infrastructure;
+using Infrastructure;
 
 using System.Security.Claims;
 using Identity.Pages.Account.Manage;
@@ -16,10 +16,6 @@ using Moq;
 [Trait("Category", "Unit")]
 public class PersonalDataModelTests
 {
-    /// <summary>
-    /// Provides various user id values (including null, empty, whitespace, long, and special characters)
-    /// to validate the NotFound message formatting when the user cannot be loaded.
-    /// </summary>
     public static TheoryData<string?> UserIdValues => new()
     {
         null,
@@ -29,13 +25,6 @@ public class PersonalDataModelTests
         "special\n\t!@#\ufffd",
     };
 
-    /// <summary>
-    /// Verifies that the PersonalDataModel constructor accepts valid, non-null dependencies
-    /// and constructs an instance that derives from PageModel without throwing.
-    /// Inputs: a real UserManager{IdentityUser{Guid}} constructed from mocked dependencies
-    /// and a mocked ILogger{PersonalDataModel}.
-    /// Expected: instance is created and is assignable to PageModel.
-    /// </summary>
     [Fact]
     public void PersonalDataModel_WithValidDependencies_DoesNotThrowAndCreatesInstance()
     {
@@ -73,11 +62,6 @@ public class PersonalDataModelTests
         Assert.IsType<PageModel>(model, exactMatch: false);
     }
 
-    /// <summary>
-    /// Ensures that constructor consistently accepts different valid logger instances.
-    /// Inputs: same UserManager instance but two different ILogger{PersonalDataModel} mocks.
-    /// Expected: both constructions succeed and produce distinct PersonalDataModel instances.
-    /// </summary>
     [Fact]
     public void PersonalDataModel_WithDifferentLoggerInstances_CreatesDistinctInstances()
     {
@@ -113,15 +97,6 @@ public class PersonalDataModelTests
         Assert.NotSame(model1, model2);
     }
 
-    /// <summary>
-    /// The test verifies that when the user manager returns null for GetUserAsync,
-    /// PersonalDataModel.OnGet returns a NotFoundObjectResult containing the message:
-    /// "Unable to load user with ID '{userId}'."
-    /// The test exercises multiple user id edge values including null, empty, whitespace,
-    /// a very long string, and special characters.
-    /// </summary>
-    /// <param name="userId">The value GetUserId will return (may be null).</param>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [MemberData(nameof(UserIdValues))]
     public async Task OnGet_UserNotFound_ReturnsNotFoundWithMessage(string? userId)
@@ -160,11 +135,6 @@ public class PersonalDataModelTests
         userManagerMock.Verify(m => m.GetUserId(It.IsAny<ClaimsPrincipal>()), Times.Once);
     }
 
-    /// <summary>
-    /// Verifies that when the user manager returns an existing user,
-    /// PersonalDataModel.OnGet returns a PageResult and does not call GetUserId.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGet_UserFound_ReturnsPageResult()
     {
@@ -202,12 +172,6 @@ public class PersonalDataModelTests
         userManagerMock.Verify(m => m.GetUserId(It.IsAny<ClaimsPrincipal>()), Times.Never);
     }
 
-    /// <summary>
-    /// Verifies that exceptions thrown by GetUserAsync propagate from OnGet.
-    /// Input condition: GetUserAsync throws InvalidOperationException.
-    /// Expected: the same InvalidOperationException is thrown by OnGet.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGet_GetUserAsyncThrows_PropagatesException()
     {

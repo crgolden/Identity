@@ -1,6 +1,6 @@
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Extensions;
-using Identity.Tests.Infrastructure;
+using Infrastructure;
 
 using System.Net;
 using System.Security.Claims;
@@ -13,17 +13,10 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 
-/// <summary>
-/// Tests for EndpointRouteBuilderExtensions.
-/// </summary>
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class EndpointRouteBuilderExtensionsTests
 {
-    /// <summary>
-    /// Verifies that MapAdditionalIdentityEndpoints throws an ArgumentNullException
-    /// when the endpoints parameter is null.
-    /// </summary>
     [Fact]
     public void MapAdditionalIdentityEndpoints_NullEndpoints_ThrowsArgumentNullException()
     {

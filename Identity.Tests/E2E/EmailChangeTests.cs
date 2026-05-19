@@ -38,7 +38,7 @@ public sealed class EmailChangeTests(PlaywrightFixture fixture)
 
         // Capture and follow the confirmation link sent to the new email address
         var confirmEmail = await fixture.Email.WaitForEmailAsync(newEmail);
-        var confirmLink = EmailCaptureService.ExtractLink(confirmEmail.HtmlBody, "http");
+        var confirmLink = EmailCaptureSender.ExtractLink(confirmEmail.HtmlBody, "http");
 
         var (ctx2, page2) = await fixture.NewPageAsync();
         await using (ctx2)

@@ -2,27 +2,13 @@ namespace Identity.Tests.Infrastructure;
 
 using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
+using Azure.Messaging.ServiceBus;
 
-/// <summary>
-/// Test double for <see cref="IEmailSender"/> and <see cref="IEmailSender{TUser}"/> that
-/// captures sent emails in memory so E2E tests can extract confirmation/reset links.
-/// Registered as Singleton so the same instance is shared between the app and test code.
-/// Emails are keyed per recipient address and dequeued on consumption so that successive
-/// calls to <see cref="WaitForEmailAsync"/> for the same address each return the next
-/// unread email rather than the same first one.
-/// </summary>
-public sealed class EmailCaptureService : IEmailSender, IEmailSender<IdentityUser<Guid>>
+public sealed class EmailCaptureSender : ServiceBusSender
 {
-    private readonly ConcurrentDictionary<string, ConcurrentQueue<CapturedEmail>> _emailsByAddress =
+    private readonly ConcurrentDictionary<string, ConcurrentQueue<ServiceBusMessage>> _messagesByAddress =
         new(StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>
-    /// Extracts the first URL from an HTML body whose value matches <paramref name="urlPattern"/>.
-    /// HTML entities in the href are decoded before the URL is returned.
-    /// </summary>
-    /// <returns></returns>
     public static string ExtractLink(string htmlBody, string urlPattern)
     {
         var matches = Regex.Matches(htmlBody, $@"href=['""]({urlPattern}[^'""]*)['""]");
@@ -34,40 +20,22 @@ public sealed class EmailCaptureService : IEmailSender, IEmailSender<IdentityUse
         return System.Net.WebUtility.HtmlDecode(matches[0].Groups[1].Value);
     }
 
-    /// <inheritdoc/>
-    public Task SendEmailAsync(string email, string subject, string htmlMessage)
+    public override Task SendMessageAsync(ServiceBusMessage message, CancellationToken cancellationToken = default)
     {
-        var queue = _emailsByAddress.GetOrAdd(email, _ => new ConcurrentQueue<CapturedEmail>());
-        queue.Enqueue(new CapturedEmail(email, subject, htmlMessage));
+        var queue = _messagesByAddress.GetOrAdd(message.To, _ => new ConcurrentQueue<ServiceBusMessage>());
+        queue.Enqueue(message);
         return Task.CompletedTask;
     }
 
-    /// <inheritdoc/>
-    public Task SendConfirmationLinkAsync(IdentityUser<Guid> user, string email, string confirmationLink) =>
-        SendEmailAsync(email, "Confirm your email", $"<a href='{confirmationLink}'>Confirm</a>");
-
-    /// <inheritdoc/>
-    public Task SendPasswordResetLinkAsync(IdentityUser<Guid> user, string email, string resetLink) =>
-        SendEmailAsync(email, "Reset your password", $"<a href='{resetLink}'>Reset</a>");
-
-    /// <inheritdoc/>
-    public Task SendPasswordResetCodeAsync(IdentityUser<Guid> user, string email, string resetCode) =>
-        SendEmailAsync(email, "Reset your password", $"Your code: {resetCode}");
-
-    /// <summary>
-    /// Waits until an email is received for <paramref name="toAddress"/>, dequeues and returns it.
-    /// Throws <see cref="TimeoutException"/> if no email arrives within the timeout.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     public async Task<CapturedEmail> WaitForEmailAsync(string toAddress, TimeSpan? timeout = null)
     {
         var deadline = DateTime.UtcNow + (timeout ?? TimeSpan.FromSeconds(10));
-        var queue = _emailsByAddress.GetOrAdd(toAddress, _ => new ConcurrentQueue<CapturedEmail>());
+        var queue = _messagesByAddress.GetOrAdd(toAddress, _ => new ConcurrentQueue<ServiceBusMessage>());
         while (DateTime.UtcNow < deadline)
         {
-            if (queue.TryDequeue(out var email))
+            if (queue.TryDequeue(out var msg))
             {
-                return email;
+                return new CapturedEmail(msg.To, msg.Subject, msg.Body.ToString());
             }
 
             await Task.Delay(100);
@@ -76,9 +44,7 @@ public sealed class EmailCaptureService : IEmailSender, IEmailSender<IdentityUse
         throw new TimeoutException($"No email received for '{toAddress}' within {timeout ?? TimeSpan.FromSeconds(10)}.");
     }
 
-    /// <summary>Clears all captured emails.</summary>
-    public void Clear() => _emailsByAddress.Clear();
+    public void Clear() => _messagesByAddress.Clear();
 }
 
-/// <summary>Represents an email captured by <see cref="EmailCaptureService"/> during testing.</summary>
 public sealed record CapturedEmail(string To, string Subject, string HtmlBody);

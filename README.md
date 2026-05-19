@@ -22,7 +22,7 @@ Identity is the **authorization server** for a five-app system. It issues all ac
 ## Features
 
 - **OIDC/OAuth2** authorization server via Duende IdentityServer 7
-- **Local accounts** with email confirmation (via [Resend](https://resend.com))
+- **Local accounts** with email confirmation (via Azure Service Bus)
 - **Google** external login (OpenID Connect)
 - **Passkeys / WebAuthn** (ASP.NET Core Identity built-in support)
 - **TOTP two-factor authentication** with recovery codes
@@ -47,8 +47,8 @@ Identity is the **authorization server** for a five-app system. It issues all ac
 | Identity | ASP.NET Core Identity (`IdentityUser<Guid>`) |
 | Database | SQL Server via EF Core 10 |
 | Schema deployment | SQL Database Project (dacpac) |
-| Email | Resend |
-| Avatars | Gravatar API |
+| Email | Azure Service Bus |
+| Pictures | Gravatar API |
 | Observability | Azure Monitor, OpenTelemetry, Serilog, Elasticsearch |
 | Hosting | Azure App Service |
 | Secrets | Azure Key Vault |
@@ -59,7 +59,7 @@ Identity is the **authorization server** for a five-app system. It issues all ac
 - SQL Server instance
 - Azure subscription (Key Vault, Blob Storage, App Service)
 - Elasticsearch cluster
-- Resend API token
+- Azure Service Bus namespace (production) or connection string (non-production)
 - Google OAuth 2.0 credentials
 
 ## Getting Started
@@ -87,7 +87,7 @@ The following secrets must be present in Azure Key Vault (fetched at startup via
 | `SqlServerPassword` | SQL Server login password |
 | `GoogleClientId` | Google OAuth client ID |
 | `GoogleClientSecret` | Google OAuth client secret |
-| `ResendApiToken` | Resend API token |
+| `ServiceBusNamespace` | Azure Service Bus fully-qualified namespace (production) |
 
 ### 2. Set Up the Database
 

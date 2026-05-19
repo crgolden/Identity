@@ -1,7 +1,7 @@
-﻿#pragma warning disable CS8604 // Possible null reference argument.
+#pragma warning disable CS8604 // Possible null reference argument.
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account.Manage;
-using Identity.Tests.Infrastructure;
+using Infrastructure;
 
 using System.Security.Claims;
 using System.Text.Encodings.Web;
@@ -18,13 +18,6 @@ using Moq;
 [Trait("Category", "Unit")]
 public partial class EnableAuthenticatorModelTests
 {
-    /// <summary>
-    /// Ensures that attempting to test constructor behavior with null arguments is left as a skipped/inconclusive test.
-    /// Input: intention to pass null for one or more non-nullable constructor parameters.
-    /// Expected: either the constructor accepts nulls (no exception) or it throws an ArgumentNullException.
-    /// This test is skipped because the constructor parameters are non-nullable reference types and
-    /// the project constraints prohibit assigning null to non-nullable parameters in generated tests.
-    /// </summary>
     [Fact]
     public void Constructor_NullDependency_ExpectedBehavior()
     {
@@ -59,12 +52,6 @@ public partial class EnableAuthenticatorModelTests
         Assert.NotNull(model);
     }
 
-    /// <summary>
-    /// Test that when no user is found OnPostAsync returns NotFoundObjectResult containing the user id from GetUserId.
-    /// Input conditions: UserManager.GetUserAsync returns null and GetUserId returns a known id.
-    /// Expected result: NotFoundObjectResult with the same id embedded in the message.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_UserNotFound_ReturnsNotFoundObjectResult()
     {
@@ -92,12 +79,6 @@ public partial class EnableAuthenticatorModelTests
         Assert.Contains(expectedId, message);
     }
 
-    /// <summary>
-    /// Test that when ModelState is invalid OnPostAsync returns PageResult.
-    /// Input conditions: Valid user is returned but ModelState contains an error.
-    /// Expected result: PageResult is returned (and no exception is thrown).
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_ModelStateInvalid_ReturnsPageResult()
     {
@@ -139,12 +120,6 @@ public partial class EnableAuthenticatorModelTests
         Assert.IsType<PageResult>(result);
     }
 
-    /// <summary>
-    /// Test that when the verification token is invalid OnPostAsync adds model error and returns PageResult.
-    /// Input conditions: user exists, Input.Code contains spaces and hyphens which should be stripped and VerifyTwoFactorTokenAsync returns false.
-    /// Expected result: ModelState contains error for "Input.Code" and PageResult is returned.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_InvalidVerificationCode_AddsModelErrorAndReturnsPage()
     {
@@ -193,14 +168,6 @@ public partial class EnableAuthenticatorModelTests
         Assert.Equal("Verification code is invalid.", error!.ErrorMessage);
     }
 
-    /// <summary>
-    /// Parameterized test for successful verification that covers both recovery-code-generation and not.
-    /// Input conditions: user exists, VerifyTwoFactorTokenAsync returns true, SetTwoFactorEnabledAsync succeeds.
-    /// - When CountRecoveryCodesAsync returns 0: GenerateNewTwoFactorRecoveryCodesAsync returns codes and redirect is to ShowRecoveryCodes with RecoveryCodes populated.
-    /// - When CountRecoveryCodesAsync returns >0: redirect is to TwoFactorAuthentication and RecoveryCodes remains null.
-    /// Expected result: Appropriate RedirectToPageResult and StatusMessage set.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [InlineData(0, "./ShowRecoveryCodes")]
     [InlineData(5, "./TwoFactorAuthentication")]
@@ -267,14 +234,6 @@ public partial class EnableAuthenticatorModelTests
         userManagerMock.Verify(um => um.SetTwoFactorEnabledAsync(It.IsAny<IdentityUser<Guid>>(), true), Times.Once);
     }
 
-    /// <summary>
-    /// Tests that when the user cannot be loaded (UserManager.GetUserAsync returns null),
-    /// the OnGetAsync method returns a NotFoundObjectResult containing the user id
-    /// returned by UserManager.GetUserId.
-    /// Input conditions: GetUserAsync => null, GetUserId => provided id string.
-    /// Expected result: NotFoundObjectResult with message "Unable to load user with ID '{id}'."
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGetAsync_UserNotFound_ReturnsNotFoundWithMessage()
     {

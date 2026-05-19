@@ -1,6 +1,6 @@
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account.Manage;
-using Identity.Tests.Infrastructure;
+using Infrastructure;
 
 using System.Security.Claims;
 using Identity.Pages.Account.Manage;
@@ -13,10 +13,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 
-/// <summary>
-/// Tests for ChangePasswordModel.OnGetAsync behavior.
-/// Covers branches where user is null, user exists with/without password, and propagation of exceptions.
-/// </summary>
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class ChangePasswordModelTests
@@ -34,12 +30,6 @@ public class ChangePasswordModelTests
         ];
     }
 
-    /// <summary>
-    /// Arrange: ModelState contains an error (invalid model).
-    /// Act: Call OnPostAsync.
-    /// Assert: A PageResult is returned and no call to GetUserAsync is made.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_ModelStateInvalid_ReturnsPage()
     {
@@ -72,12 +62,6 @@ public class ChangePasswordModelTests
         userManagerMock.Verify(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()), Times.Never);
     }
 
-    /// <summary>
-    /// Arrange: UserManager.GetUserAsync returns null and GetUserId returns a specific id.
-    /// Act: Call OnPostAsync.
-    /// Assert: NotFoundObjectResult is returned with the expected message containing the user id.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_UserNotFound_ReturnsNotFoundWithUserId()
     {
@@ -114,22 +98,6 @@ public class ChangePasswordModelTests
         Assert.Equal($"Unable to load user with ID '{expectedId}'.", notFound.Value);
     }
 
-    /// <summary>
-    /// Verifies that constructing ChangePasswordModel with valid (non-null) dependencies does not throw.
-    /// Input conditions: valid instances for userManager, signInManager and logger must be provided.
-    /// Expected result: constructor completes without throwing and the resulting object is not null.
-    ///
-    /// NOTE (Skipped): Creating UserManager<IdentityUser<Guid>> and SignInManager<IdentityUser<Guid>>
-    /// requires providing concrete implementations of many ASP.NET Core Identity services (IUserStore,
-    /// IOptions, IPasswordHasher, validators, ILookupNormalizer, IdentityErrorDescriber, IServiceProvider, etc.)
-    /// and/or using advanced Moq constructions with explicit constructor arguments. Because such setup is
-    /// environment-specific and beyond the scope of this generated test, this test is marked as skipped and
-    /// documents how to implement it:
-    /// - Create a concrete UserStore/IUserStore<IdentityUser<Guid>> (or mock one) and provide all required
-    ///   constructor arguments to the UserManager constructor, then pass the instance into ChangePasswordModel.
-    /// - Alternatively, construct mocks for UserManager and SignInManager by supplying the required constructor
-    ///   arguments to Mock<T>'s constructor (see Moq documentation) and then call mock.Object.
-    /// </summary>
     [Fact]
     public void Constructor_WithValidDependencies_DoesNotThrow()
     {
@@ -159,15 +127,6 @@ public class ChangePasswordModelTests
         Assert.NotNull(model);
     }
 
-    /// <summary>
-    /// Partial test template for null-parameter behavior.
-    /// Input conditions: one or more constructor parameters are null.
-    /// Expected result: If the implementation adds null checks, an ArgumentNullException should be thrown.
-    ///
-    /// NOTE (Skipped): The current ChangePasswordModel constructor in the provided source file does simple assignments
-    /// and does not perform null checks. This test is provided as a template and skipped. If you add null validation
-    /// to the constructor, remove Skip and implement the arrange/act/assert commented code below.
-    /// </summary>
     [Fact]
     public void Constructor_NullParameters_DoesNotThrow()
     {
@@ -183,12 +142,6 @@ public class ChangePasswordModelTests
         Assert.Null(exception);
     }
 
-    /// <summary>
-    /// Verifies that OnGetAsync returns NotFoundObjectResult containing the user ID when GetUserAsync returns null.
-    /// Input: GetUserAsync returns null; GetUserId returns "some-user-id".
-    /// Expected: NotFoundObjectResult with value containing the user ID string.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGetAsync_UserNotFound_ReturnsNotFound()
     {
@@ -207,12 +160,6 @@ public class ChangePasswordModelTests
         Assert.Contains("some-user-id", notFound.Value?.ToString() ?? string.Empty, StringComparison.Ordinal);
     }
 
-    /// <summary>
-    /// Verifies that OnGetAsync redirects to the SetPassword page when the user has no password set.
-    /// Input: GetUserAsync returns a user; HasPasswordAsync returns false.
-    /// Expected: RedirectToPageResult with page name "./SetPassword".
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGetAsync_UserHasNoPassword_RedirectsToSetPassword()
     {
@@ -232,12 +179,6 @@ public class ChangePasswordModelTests
         Assert.Equal("./SetPassword", redirect.PageName);
     }
 
-    /// <summary>
-    /// Verifies that OnGetAsync returns PageResult when the user exists and has a password set.
-    /// Input: GetUserAsync returns a user; HasPasswordAsync returns true.
-    /// Expected: PageResult.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGetAsync_UserHasPassword_ReturnsPage()
     {
@@ -256,12 +197,6 @@ public class ChangePasswordModelTests
         Assert.IsType<PageResult>(result);
     }
 
-    /// <summary>
-    /// Verifies that OnPostAsync returns PageResult without calling GetUserAsync when OldPassword is null.
-    /// Input: Input.OldPassword = null, Input.NewPassword = "NewP@ss1!".
-    /// Expected: PageResult returned; GetUserAsync is never called.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_NullOldPassword_ReturnsPageWithoutCallingGetUser()
     {
@@ -278,12 +213,6 @@ public class ChangePasswordModelTests
         userManagerMock.Verify(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()), Times.Never);
     }
 
-    /// <summary>
-    /// Verifies that OnPostAsync returns PageResult and populates ModelState errors when ChangePasswordAsync fails.
-    /// Input: valid user returned, ChangePasswordAsync returns a failed IdentityResult with error descriptions.
-    /// Expected: PageResult; ModelState contains the error descriptions from IdentityResult.Errors.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_ChangePasswordFails_ReturnsPageWithModelErrors()
     {
@@ -308,12 +237,6 @@ public class ChangePasswordModelTests
         Assert.Contains(model.ModelState.Values.SelectMany(v => v.Errors), e => e.ErrorMessage == "Password too weak.");
     }
 
-    /// <summary>
-    /// Verifies that OnPostAsync refreshes the sign-in, sets StatusMessage, and redirects on successful password change.
-    /// Input: valid user, ChangePasswordAsync returns IdentityResult.Success.
-    /// Expected: RefreshSignInAsync is called once; StatusMessage is set; RedirectToPageResult is returned.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_ChangePasswordSucceeds_SetsStatusMessageAndRedirects()
     {

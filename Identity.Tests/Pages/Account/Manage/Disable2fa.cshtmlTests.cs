@@ -1,6 +1,6 @@
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account.Manage;
-using Identity.Tests.Infrastructure;
+using Infrastructure;
 
 using System.Security.Claims;
 using Identity.Pages.Account.Manage;
@@ -15,13 +15,6 @@ using Moq;
 [Trait("Category", "Unit")]
 public class Disable2faModelTests
 {
-    /// <summary>
-    /// Verifies that when the user cannot be loaded (UserManager.GetUserAsync returns null),
-    /// OnGet returns a NotFoundObjectResult whose message includes the UserManager.GetUserId(User) value.
-    /// Input: User principal present, GetUserAsync -> null, GetUserId -> predefined id.
-    /// Expected: NotFoundObjectResult with the expected formatted message.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGet_UserIsNull_ReturnsNotFoundWithUserIdInMessage()
     {
@@ -61,14 +54,6 @@ public class Disable2faModelTests
         Assert.Equal($"Unable to load user with ID '{expectedId}'.", message);
     }
 
-    /// <summary>
-    /// Tests OnGet behavior for users that exist with different two-factor enabled states.
-    /// Inputs:
-    ///  - twoFactorEnabled = true  -> expect PageResult.
-    ///  - twoFactorEnabled = false -> expect InvalidOperationException.
-    /// This parameterized test covers both the happy path and the invalid state.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
@@ -115,13 +100,6 @@ public class Disable2faModelTests
         }
     }
 
-    /// <summary>
-    /// Verifies that when the user manager cannot find a user for the current principal,
-    /// OnPostAsync returns a NotFoundObjectResult with the expected message that includes the user id returned by UserManager.GetUserId.
-    /// Input: GetUserAsync returns null, GetUserId returns a non-null id string.
-    /// Expected: NotFoundObjectResult with message containing the id.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_UserNotFound_ReturnsNotFoundObjectResult()
     {
@@ -155,12 +133,6 @@ public class Disable2faModelTests
         Assert.Null(model.StatusMessage);
     }
 
-    /// <summary>
-    /// Verifies that when disabling 2FA fails (IdentityResult.Failed), OnPostAsync throws InvalidOperationException.
-    /// Input: GetUserAsync returns a valid user, SetTwoFactorEnabledAsync returns a failed IdentityResult.
-    /// Expected: InvalidOperationException with the defined message.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_DisableFails_ThrowsInvalidOperationException()
     {
@@ -191,12 +163,6 @@ public class Disable2faModelTests
         Assert.Equal("Unexpected error occurred disabling 2FA.", ex.Message);
     }
 
-    /// <summary>
-    /// Verifies that when disabling 2FA succeeds, OnPostAsync logs the event, sets StatusMessage, and redirects to TwoFactorAuthentication page.
-    /// Input: GetUserAsync returns a valid user, SetTwoFactorEnabledAsync returns IdentityResult.Success, GetUserId returns a user id string.
-    /// Expected: RedirectToPageResult to ./TwoFactorAuthentication, StatusMessage set to expected string, logger invoked with information level.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_Succeeds_RedirectsAndSetsStatusMessageAndLogs()
     {

@@ -1,14 +1,10 @@
 namespace Identity.Tests.PropertyBased;
-using Identity.Tests.Infrastructure;
+using Infrastructure;
 
 using System.Security.Cryptography;
 using System.Text;
 using CsCheck;
 
-/// <summary>
-/// Property-based tests for input handling: Gravatar hash computation,
-/// URL safety classification, and email normalization.
-/// </summary>
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public sealed class InputSanitizationTests
@@ -123,9 +119,6 @@ public sealed class InputSanitizationTests
         return Convert.ToHexString(bytes).ToLowerInvariant();
     }
 
-    /// <summary>
-    /// Mirrors the ASP.NET Core UrlHelper.IsLocalUrl logic used by LocalRedirect.
-    /// </summary>
     private static bool IsLocalUrl(string url)
     {
         if (string.IsNullOrEmpty(url))

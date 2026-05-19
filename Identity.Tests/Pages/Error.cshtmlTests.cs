@@ -1,5 +1,5 @@
 namespace Identity.Tests.Pages;
-using Identity.Tests.Infrastructure;
+using Infrastructure;
 
 using System.Diagnostics;
 using Duende.IdentityServer.Models;
@@ -10,15 +10,10 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
 using Moq;
 
-/// <summary>Unit tests for <see cref="Identity.Pages.ErrorModel"/>.</summary>
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class ErrorModelTests
 {
-    /// <summary>
-    /// Provides MockBehavior values to exercise constructor under different mock configurations.
-    /// </summary>
-    /// <returns></returns>
     public static TheoryData<MockBehavior> GetMockBehaviors() => new()
     {
         MockBehavior.Loose,
@@ -84,13 +79,6 @@ public class ErrorModelTests
         { "\u00A9\u00AE\u2122!@#$%^&*()", true },
     };
 
-    /// <summary>
-    /// Verifies that the constructor accepts a valid IIdentityServerInteractionService and
-    /// produces a usable ErrorModel instance without throwing. This uses different mock
-    /// behaviors to ensure the constructor is resilient to the mock's configuration.
-    /// Input conditions: a non-null mocked IIdentityServerInteractionService with the provided MockBehavior.
-    /// Expected result: ErrorModel instance is created successfully, RequestId is null, and ShowRequestId is false.
-    /// </summary>
     [Theory]
     [MemberData(nameof(GetMockBehaviors))]
     public void Constructor_ValidInteractionService_InitializesDefaults(MockBehavior mockBehavior)
@@ -114,13 +102,6 @@ public class ErrorModelTests
         Assert.False(model?.ShowRequestId);
     }
 
-    /// <summary>
-    /// Tests that when errorId is null, empty, or whitespace the interaction service is NOT called,
-    /// and the RequestId is taken from Activity.Current.Id when present, otherwise from HttpContext.TraceIdentifier.
-    /// Inputs tested: null, empty string, whitespace-only string; with Activity.Current present and absent.
-    /// Expected: no call to GetErrorContextAsync and RequestId equals the activity id (if set) or trace identifier.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [MemberData(nameof(NoErrorIdCases))]
     public async Task OnGetAsync_NullOrWhitespaceErrorId_SkipsInteractionService(string? errorId, bool setActivity)
@@ -179,14 +160,6 @@ public class ErrorModelTests
         }
     }
 
-    /// <summary>
-    /// Tests that when a non-empty errorId is provided, the interaction service is called exactly once with that id,
-    /// and RequestId is set from Activity.Current.Id if present or from HttpContext.TraceIdentifier otherwise.
-    /// Inputs tested: normal id, very long id, id with special/control characters; with Activity.Current present and absent.
-    /// Expected: GetErrorContextAsync invoked once with the exact id, no exception thrown even if service returns null,
-    /// and RequestId set appropriately. Also ShowRequestId is true when RequestId is not null/empty.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [MemberData(nameof(NonEmptyErrorIdCases))]
     public async Task OnGetAsync_ValidErrorId_CallsInteractionService(string errorId, bool setActivity)
@@ -245,11 +218,6 @@ public class ErrorModelTests
         }
     }
 
-    /// <summary>
-    /// Verifies ShowRequestId returns expected boolean depending on various RequestId inputs.
-    /// Tests null, empty, whitespace-only, typical non-empty, very long, and control-character strings.
-    /// Expected: false for null and empty; true for any non-empty value (including whitespace and control chars).
-    /// </summary>
     [Theory]
     [MemberData(nameof(RequestIdTestCases))]
     public void ShowRequestId_VariousValues_ReturnsExpected(string? requestId, bool expected)
@@ -269,13 +237,6 @@ public class ErrorModelTests
         Assert.Equal(expected, actual);
     }
 
-    /// <summary>
-    /// Verifies that when a non-empty errorId is provided and the interaction service returns an ErrorMessage,
-    /// the logger's LogError method is invoked with that error message.
-    /// Input: a valid errorId and a non-null ErrorMessage returned by the service.
-    /// Expected: ILogger.Log called exactly once at LogLevel.Error.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGetAsync_ValidErrorId_WithErrorMessage_LogsError()
     {

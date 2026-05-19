@@ -7,8 +7,6 @@ using Microsoft.Playwright;
 [Collection(E2ECollection.Name)]
 public sealed class DiagnosticsTests(PlaywrightFixture fixture)
 {
-    /// <summary>Verifies that an authenticated user can access the diagnostics page and sees claims.</summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task Diagnostics_AuthenticatedUser_ShowsClaims()
     {

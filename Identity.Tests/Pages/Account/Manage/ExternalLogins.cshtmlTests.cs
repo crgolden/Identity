@@ -1,7 +1,7 @@
 #pragma warning disable CS8604 // Possible null reference argument.
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account.Manage;
-using Identity.Tests.Infrastructure;
+using Infrastructure;
 
 using System.Security.Claims;
 using Identity.Pages.Account.Manage;
@@ -37,13 +37,6 @@ public class ExternalLoginsModelTests
         { 2, null, true },           // multiple external logins -> can remove
     };
 
-    /// <summary>
-    /// Verifies that the ExternalLoginsModel constructor succeeds (does not throw) and that
-    /// public properties remain at their default values when constructed with null or a mocked IUserStore.
-    /// Tests two input conditions for the userStore parameter: null and non-null (mocked).
-    /// Expected result: instance is created; CurrentLogins and OtherLogins are null; ShowRemoveButton is false; StatusMessage is null.
-    /// </summary>
-    /// <param name="userStoreIsNull">If true, pass null for userStore; otherwise pass a mocked IUserStore instance.</param>
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
@@ -75,11 +68,6 @@ public class ExternalLoginsModelTests
         Assert.Null(model.StatusMessage);
     }
 
-    /// <summary>
-    /// Verifies that the ExternalLoginsModel constructor allows all three parameters to be null and does not throw.
-    /// Input conditions: all dependencies null.
-    /// Expected result: instance is created successfully.
-    /// </summary>
     [Fact]
     public void ExternalLoginsModel_Constructor_AllParametersNull_DoesNotThrowCreatesInstance()
     {
@@ -93,11 +81,6 @@ public class ExternalLoginsModelTests
         Assert.Null(exception);
     }
 
-    /// <summary>
-    /// The test verifies that when the current user cannot be loaded, the handler returns NotFoundObjectResult
-    /// containing the user id retrieved from UserManager.GetUserId(ClaimsPrincipal).
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGetLinkLoginCallbackAsync_UserNotFound_ReturnsNotFoundObjectResult()
     {
@@ -134,16 +117,6 @@ public class ExternalLoginsModelTests
         Assert.Equal(expectedMessage, notFound.Value);
     }
 
-    /// <summary>
-    /// The test verifies that when external login info cannot be loaded for an existing user,
-    /// the handler throws InvalidOperationException.
-    /// Input conditions:
-    /// - A valid user exists.
-    /// - SignInManager.GetExternalLoginInfoAsync returns null for that user id.
-    /// Expected:
-    /// - InvalidOperationException is thrown.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGetLinkLoginCallbackAsync_NoExternalLoginInfo_ThrowsInvalidOperationException()
     {
@@ -181,17 +154,6 @@ public class ExternalLoginsModelTests
         await Assert.ThrowsAsync<InvalidOperationException>(() => model.OnGetLinkLoginCallbackAsync());
     }
 
-    /// <summary>
-    /// Parameterized test covering both AddLoginAsync failure and success cases.
-    /// Conditions:
-    /// - A valid user exists.
-    /// - ExternalLoginInfo is available.
-    /// - AddLoginAsync returns success or failure based on the parameter.
-    /// Expected:
-    /// - For success: StatusMessage set to success text and RedirectToPageResult returned.
-    /// - For failure: StatusMessage set to failure text and RedirectToPageResult returned.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
@@ -264,13 +226,6 @@ public class ExternalLoginsModelTests
         }
     }
 
-    /// <summary>
-    /// Tests that when the current user cannot be loaded (UserManager.GetUserAsync returns null),
-    /// OnPostRemoveLoginAsync returns a NotFoundObjectResult containing the user id returned by UserManager.GetUserId.
-    /// Input conditions: UserManager.GetUserAsync returns null and UserManager.GetUserId returns a known id.
-    /// Expected: NotFoundObjectResult with message including the id, and no call to RemoveLoginAsync or RefreshSignInAsync.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostRemoveLoginAsync_UserNotFound_ReturnsNotFound()
     {
@@ -321,13 +276,6 @@ public class ExternalLoginsModelTests
         signInManagerMock.Verify(s => s.RefreshSignInAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
     }
 
-    /// <summary>
-    /// Tests that when RemoveLoginAsync fails, the method sets StatusMessage accordingly and returns a RedirectToPageResult.
-    /// Input conditions: UserManager.GetUserAsync returns a valid user; RemoveLoginAsync returns a failed IdentityResult.
-    /// Expected: StatusMessage == "The external login was not removed.", RedirectToPageResult returned, and RefreshSignInAsync not called.
-    /// This test is parameterized to cover several string edge cases for loginProvider and providerKey (empty, whitespace, long).
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [InlineData("", "key")]
     [InlineData("   ", " ")]
@@ -391,13 +339,6 @@ public class ExternalLoginsModelTests
         signInManagerMock.Verify(s => s.RefreshSignInAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
     }
 
-    /// <summary>
-    /// Tests that when RemoveLoginAsync succeeds, the method refreshes the sign-in, sets a success StatusMessage, and redirects.
-    /// Input conditions: UserManager.GetUserAsync returns a valid user; RemoveLoginAsync returns IdentityResult.Success.
-    /// Expected: RefreshSignInAsync called once with the user; StatusMessage == "The external login was removed."; RedirectToPageResult returned.
-    /// This test is parameterized to exercise different provider/providerKey inputs.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [InlineData("Google", "google-key")]
     [InlineData("LocalProvider", "local-key")]
@@ -453,14 +394,6 @@ public class ExternalLoginsModelTests
         signInManagerMock.Verify(s => s.RefreshSignInAsync(It.Is<IdentityUser<Guid>>(x => x == user)), Times.Once);
     }
 
-    /// <summary>
-    /// Verifies that OnPostLinkLoginAsync signs out the external cookie, configures external authentication properties,
-    /// and returns a ChallengeResult with the same provider and the configured AuthenticationProperties.
-    /// Input conditions: various provider string values (including empty and special characters).
-    /// Expected result: SignOutAsync called once with IdentityConstants.ExternalScheme; ConfigureExternalAuthenticationProperties invoked;
-    /// returned IActionResult is ChallengeResult with expected provider and properties.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [MemberData(nameof(Providers))]
     public async Task OnPostLinkLoginAsync_Provider_ReturnsChallengeAndSignsOut(string? provider)

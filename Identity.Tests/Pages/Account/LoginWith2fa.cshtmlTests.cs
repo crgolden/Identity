@@ -1,6 +1,6 @@
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account;
-using Identity.Tests.Infrastructure;
+using Infrastructure;
 
 using Identity.Pages.Account;
 using Microsoft.AspNetCore.Authentication;
@@ -12,18 +12,10 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 
-/// <summary>
-/// Tests for Identity.Pages.Account.LoginWith2faModel.OnPostAsync
-/// </summary>
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class LoginWith2faModelTests
 {
-    /// <summary>
-    /// Provides combination of rememberMe and returnUrl values to exercise edge cases for strings.
-    /// Includes null, empty, whitespace-only, and a long string.
-    /// </summary>
-    /// <returns></returns>
     public static TheoryData<bool, string?> ValidUserCases() => new()
     {
         { false, null },
@@ -34,12 +26,6 @@ public class LoginWith2faModelTests
         { true, "special-chars-!@#$%^&*()\t\n" },
     };
 
-    /// <summary>
-    /// The purpose of this test is to ensure that when ModelState is invalid the handler returns the Page result without calling external dependencies.
-    /// Input conditions: ModelState contains an error, any rememberMe and returnUrl values.
-    /// Expected result: PageResult is returned.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_ModelStateInvalid_ReturnsPage()
     {
@@ -78,12 +64,6 @@ public class LoginWith2faModelTests
         signInManagerMock.Verify(s => s.TwoFactorAuthenticatorSignInAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>()), Times.Never);
     }
 
-    /// <summary>
-    /// The purpose of this test is to verify that an InvalidOperationException is thrown when no two-factor authentication user is available.
-    /// Input conditions: GetTwoFactorAuthenticationUserAsync returns null.
-    /// Expected result: InvalidOperationException with a specific message is thrown.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_NoTwoFactorUser_ThrowsInvalidOperationException()
     {
@@ -118,12 +98,6 @@ public class LoginWith2faModelTests
         Assert.Equal("Unable to load two-factor authentication user.", ex.Message);
     }
 
-    /// <summary>
-    /// Verifies that when no two-factor authentication user is available the method throws InvalidOperationException.
-    /// Input: SignInManager.GetTwoFactorAuthenticationUserAsync returns null.
-    /// Expected: InvalidOperationException with specific message.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnGetAsync_UserIsNull_ThrowsInvalidOperationException()
     {
@@ -143,12 +117,6 @@ public class LoginWith2faModelTests
         Assert.Equal("Unable to load two-factor authentication user.", ex.Message);
     }
 
-    /// <summary>
-    /// Verifies that when a two-factor authentication user is available the method sets ReturnUrl and RememberMe and returns a PageResult.
-    /// Input conditions: Various combinations of rememberMe and returnUrl (including null, empty, whitespace, and long strings).
-    /// Expected: Model properties set accordingly and PageResult returned.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Theory]
     [MemberData(nameof(ValidUserCases))]
     public async Task OnGetAsync_ValidUser_SetsPropertiesAndReturnsPageResult(bool rememberMe, string? returnUrl)
@@ -172,15 +140,6 @@ public class LoginWith2faModelTests
         Assert.Equal(rememberMe, model.RememberMe);
     }
 
-    /// <summary>
-    /// Verifies that the LoginWith2faModel constructor accepts valid dependency instances and
-    /// does not throw. Also asserts the default values of public properties after construction.
-    /// Input conditions:
-    /// - All constructor dependencies are provided as mock instances.
-    /// Expected result:
-    /// - No exception is thrown.
-    /// - Input is null, RememberMe is false, ReturnUrl is null.
-    /// </summary>
     [Fact]
     public void Constructor_ValidDependencies_DoesNotThrowAndInitializesDefaults()
     {
@@ -201,15 +160,6 @@ public class LoginWith2faModelTests
         Assert.Null(model.ReturnUrl);
     }
 
-    /// <summary>
-    /// Parameterized test that constructs multiple instances of LoginWith2faModel to ensure
-    /// constructor remains stable across repeated creations with different mock instances.
-    /// Input conditions:
-    /// - 'instances' indicates how many separate instances to construct (1 or 3).
-    /// Expected result:
-    /// - No exception is thrown for any construction.
-    /// - Each created instance has default values: Input == null, RememberMe == false, ReturnUrl == null.
-    /// </summary>
     [Theory]
     [InlineData(1)]
     [InlineData(3)]
@@ -238,12 +188,6 @@ public class LoginWith2faModelTests
         }
     }
 
-    /// <summary>
-    /// Verifies that OnPostAsync redirects to the Lockout page when the account is locked out.
-    /// Input conditions: valid code, TwoFactorAuthenticatorSignInAsync returns IsLockedOut = true.
-    /// Expected result: RedirectToPageResult to "./Lockout".
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_LockedOut_RedirectsToLockoutPage()
     {
@@ -273,12 +217,6 @@ public class LoginWith2faModelTests
         Assert.Equal("./Lockout", redirect.PageName);
     }
 
-    /// <summary>
-    /// Verifies that OnPostAsync adds a model error and returns Page when the 2FA code is invalid.
-    /// Input conditions: valid code, TwoFactorAuthenticatorSignInAsync returns not Succeeded and not LockedOut.
-    /// Expected result: PageResult with invalid ModelState.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the asynchronous unit test.</returns>
     [Fact]
     public async Task OnPostAsync_InvalidCode_AddsModelErrorAndReturnsPage()
     {
