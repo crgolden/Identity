@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -200,11 +201,11 @@ public class ExternalLoginsModelTests
             .Setup(um => um.AddLoginAsync(user, info))
             .ReturnsAsync(result);
 
-        var mockAuthService = new Mock<IAuthenticationService>();
+        var mockAuthService = new Mock<IAuthenticationService>(MockBehavior.Strict);
         mockAuthService
             .Setup(a => a.SignOutAsync(It.IsAny<HttpContext>(), IdentityConstants.ExternalScheme, It.IsAny<AuthenticationProperties>()))
             .Returns(Task.CompletedTask);
-        var services = new Mock<IServiceProvider>();
+        var services = new Mock<IServiceProvider>(MockBehavior.Loose);
         services.Setup(s => s.GetService(typeof(IAuthenticationService))).Returns(mockAuthService.Object);
 
         var model = new ExternalLoginsModel(userManagerMock.Object, signInManagerMock.Object, userStore);
@@ -431,7 +432,7 @@ public class ExternalLoginsModelTests
 
         // We'll set the UrlHelper to return this redirect
         const string expectedRedirect = "/ExternalLogins?handler=LinkLoginCallback";
-        var mockUrlHelper = new Mock<IUrlHelper>();
+        var mockUrlHelper = new Mock<IUrlHelper>(MockBehavior.Strict);
 
         // ActionContext must be non-null because UrlHelperExtensions.Page always accesses it
         var urlRouteData = new RouteData();
@@ -439,8 +440,7 @@ public class ExternalLoginsModelTests
         mockUrlHelper.SetupGet(u => u.ActionContext).Returns(
             new ActionContext(new DefaultHttpContext(), urlRouteData, new ActionDescriptor()));
 
-        // SetReturnsDefault covers all string?-returning methods including RouteUrl called by Url.Page
-        mockUrlHelper.SetReturnsDefault<string?>(expectedRedirect);
+        mockUrlHelper.Setup(u => u.RouteUrl(It.IsAny<UrlRouteContext>())).Returns(expectedRedirect);
 
         // Configure SignInManager to return expected properties when called with the given inputs
         mockSignInManager
@@ -454,13 +454,13 @@ public class ExternalLoginsModelTests
         var mockUserStore = new Mock<IUserStore<IdentityUser<Guid>>>();
 
         // Prepare IAuthenticationService mock and service provider so HttpContext.SignOutAsync resolves to it
-        var mockAuthService = new Mock<IAuthenticationService>();
+        var mockAuthService = new Mock<IAuthenticationService>(MockBehavior.Strict);
         mockAuthService
             .Setup(a => a.SignOutAsync(It.IsAny<HttpContext>(), IdentityConstants.ExternalScheme, It.IsAny<AuthenticationProperties>()))
             .Returns(Task.CompletedTask)
             .Verifiable();
 
-        var services = new Mock<IServiceProvider>();
+        var services = new Mock<IServiceProvider>(MockBehavior.Loose);
         services
             .Setup(s => s.GetService(typeof(IAuthenticationService)))
             .Returns(mockAuthService.Object);

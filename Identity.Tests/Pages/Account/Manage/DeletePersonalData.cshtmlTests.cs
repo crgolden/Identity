@@ -22,13 +22,14 @@ public class DeletePersonalDataModelTests
         // Arrange
         // Create required mocks and helper objects for UserManager dependencies.
         var userStoreMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var optionsMock = new Mock<IOptions<IdentityOptions>>();
+        var optionsMock = new Mock<IOptions<IdentityOptions>>(MockBehavior.Strict);
+        optionsMock.Setup(o => o.Value).Returns(new IdentityOptions());
         var passwordHasherMock = new Mock<IPasswordHasher<IdentityUser<Guid>>>();
         var userValidators = new List<IUserValidator<IdentityUser<Guid>>>();
         var passwordValidators = new List<IPasswordValidator<IdentityUser<Guid>>>();
-        var lookupNormalizerMock = new Mock<ILookupNormalizer>();
+        var lookupNormalizerMock = new Mock<ILookupNormalizer>(MockBehavior.Strict);
         var identityErrorDescriber = new IdentityErrorDescriber();
-        var serviceProviderMock = new Mock<IServiceProvider>();
+        var serviceProviderMock = new Mock<IServiceProvider>(MockBehavior.Loose);
         var userManagerLoggerMock = new Mock<ILogger<UserManager<IdentityUser<Guid>>>>();
 
         // Create a concrete UserManager instance using mocked dependencies.
@@ -44,10 +45,10 @@ public class DeletePersonalDataModelTests
             userManagerLoggerMock.Object);
 
         // Arrange SignInManager dependencies.
-        var httpContextAccessorMock = new Mock<IHttpContextAccessor>();
+        var httpContextAccessorMock = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
         var userClaimsFactoryMock = new Mock<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>();
         var signInManagerLoggerMock = new Mock<ILogger<SignInManager<IdentityUser<Guid>>>>();
-        var schemesMock = new Mock<IAuthenticationSchemeProvider>();
+        var schemesMock = new Mock<IAuthenticationSchemeProvider>(MockBehavior.Strict);
         var userConfirmationMock = new Mock<IUserConfirmation<IdentityUser<Guid>>>();
 
         var signInManager = new SignInManager<IdentityUser<Guid>>(

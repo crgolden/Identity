@@ -58,27 +58,20 @@ public sealed class PasswordHashingTests
             });
     }
 
-    [Fact]
-    public void HashPassword_UnicodePasswords_RoundTrip()
+    [Theory]
+    [InlineData("Ünïcödé@123!")]
+    [InlineData("日本語パスワード1!")]
+    [InlineData("العربية123!")]
+    [InlineData("Ελληνικά123!")]
+    [InlineData("한국어비밀번호1!")]
+    [InlineData("Ру́сский123!")]
+    [InlineData("中文密码123!")]
+    [InlineData("🔐password1!")]
+    public void HashPassword_UnicodePassword_RoundTrips(string password)
     {
-        var unicodePasswords = new[]
-        {
-            "Ünïcödé@123!",
-            "日本語パスワード1!",
-            "العربية123!",
-            "Ελληνικά123!",
-            "한국어비밀번호1!",
-            "Ру́сский123!",
-            "中文密码123!",
-            "🔐password1!"
-        };
-
-        foreach (var password in unicodePasswords)
-        {
-            var user = new IdentityUser<Guid>();
-            var hash = _hasher.HashPassword(user, password);
-            var result = _hasher.VerifyHashedPassword(user, hash, password);
-            Assert.Equal(PasswordVerificationResult.Success, result);
-        }
+        var user = new IdentityUser<Guid>();
+        var hash = _hasher.HashPassword(user, password);
+        var result = _hasher.VerifyHashedPassword(user, hash, password);
+        Assert.Equal(PasswordVerificationResult.Success, result);
     }
 }

@@ -114,7 +114,7 @@ public class ReCAPTCHAServiceTests
     {
         var json = $$"""{"success":{{(success ? "true" : "false")}},"score":{{responseScore}}}""";
 
-        var handlerMock = new Mock<HttpMessageHandler>();
+        var handlerMock = new Mock<HttpMessageHandler>(MockBehavior.Strict);
         handlerMock.Protected()
             .Setup<Task<HttpResponseMessage>>(
                 "SendAsync",
@@ -130,7 +130,7 @@ public class ReCAPTCHAServiceTests
         {
             BaseAddress = new UriBuilder("https", "recaptcha.test").Uri
         };
-        var optionsMock = new Mock<IOptions<ReCAPTCHAOptions>>();
+        var optionsMock = new Mock<IOptions<ReCAPTCHAOptions>>(MockBehavior.Strict);
         optionsMock.Setup(o => o.Value).Returns(new ReCAPTCHAOptions { SecretKey = secretKey, AdminEmail = adminEmail, TestEmail = testEmail });
         return new ReCAPTCHAService(httpClient, optionsMock.Object, NullLogger<ReCAPTCHAService>.Instance);
     }

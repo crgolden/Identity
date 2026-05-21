@@ -204,7 +204,7 @@ public class ManageNavPagesTests
             ["ActivePage"] = activePage
         };
 
-        var mockView = new Mock<IView>();
+        var mockView = new Mock<IView>(MockBehavior.Strict);
         var tempData = new TempDataDictionary(httpContext, Mock.Of<ITempDataProvider>());
         var viewContext = new ViewContext(actionContext, mockView.Object, viewData, tempData, TextWriter.Null, new HtmlHelperOptions());
 
@@ -231,7 +231,7 @@ public class ManageNavPagesTests
         var viewData = new ViewDataDictionary(metadataProvider, new ModelStateDictionary());
 
         // ActivePage intentionally not set (null)
-        var mockView = new Mock<IView>();
+        var mockView = new Mock<IView>(MockBehavior.Strict);
         var tempData = new TempDataDictionary(httpContext, Mock.Of<ITempDataProvider>());
         var viewContext = new ViewContext(actionContext, mockView.Object, viewData, tempData, TextWriter.Null, new HtmlHelperOptions());
 
@@ -261,7 +261,7 @@ public class ManageNavPagesTests
             viewData["ActivePage"] = activePage;
         }
 
-        var mockView = new Mock<IView>();
+        var mockView = new Mock<IView>(MockBehavior.Strict);
         var tempData = new TempDataDictionary(httpContext, Mock.Of<ITempDataProvider>());
         var viewContext = new ViewContext(actionContext, mockView.Object, viewData, tempData, TextWriter.Null, new HtmlHelperOptions());
 
@@ -286,7 +286,7 @@ public class ManageNavPagesTests
             ["ActivePage"] = 123 // non-string value; 'as string' should yield null
         };
 
-        var mockView = new Mock<IView>();
+        var mockView = new Mock<IView>(MockBehavior.Strict);
         var tempData = new TempDataDictionary(httpContext, Mock.Of<ITempDataProvider>());
         var viewContext = new ViewContext(actionContext, mockView.Object, viewData, tempData, TextWriter.Null, new HtmlHelperOptions());
 
@@ -577,7 +577,7 @@ public class ManageNavPagesTests
         }
 
         var tempData = new TempDataDictionary(httpContext, Mock.Of<ITempDataProvider>());
-        var viewMock = new Mock<IView>();
+        var viewMock = new Mock<IView>(MockBehavior.Strict);
         var view = viewMock.Object;
         var writer = new StringWriter();
         var htmlHelperOptions = new HtmlHelperOptions();
@@ -605,7 +605,7 @@ public class ManageNavPagesTests
         };
 
         var tempData = new TempDataDictionary(httpContext, Mock.Of<ITempDataProvider>());
-        var view = new Mock<IView>().Object;
+        var view = new Mock<IView>(MockBehavior.Strict).Object;
         var viewContext = new ViewContext(actionContext, view, viewData, tempData, new StringWriter(), new HtmlHelperOptions());
 
         // Act
@@ -639,7 +639,7 @@ public class ManageNavPagesTests
         var actionDescriptor = new ActionDescriptor { DisplayName = "/Areas/Identity/Pages/Account/Manage/Other.cshtml" };
         var actionContext = new ActionContext(new DefaultHttpContext(), new RouteData(), actionDescriptor);
 
-        var mockView = new Mock<IView>();
+        var mockView = new Mock<IView>(MockBehavior.Strict);
         var view = mockView.Object;
 
         var viewData = new ViewDataDictionary(new EmptyModelMetadataProvider(), new ModelStateDictionary())
@@ -647,7 +647,7 @@ public class ManageNavPagesTests
             ["ActivePage"] = activePage
         };
 
-        var tempData = new TempDataDictionary(actionContext.HttpContext, new Mock<ITempDataProvider>().Object);
+        var tempData = new TempDataDictionary(actionContext.HttpContext, new Mock<ITempDataProvider>(MockBehavior.Strict).Object);
         var viewContext = new ViewContext(actionContext, view, viewData, tempData, TextWriter.Null, new HtmlHelperOptions());
 
         // Act
@@ -665,13 +665,13 @@ public class ManageNavPagesTests
         var actionDescriptor = new ActionDescriptor { DisplayName = displayName };
         var actionContext = new ActionContext(new DefaultHttpContext(), new RouteData(), actionDescriptor);
 
-        var mockView = new Mock<IView>();
+        var mockView = new Mock<IView>(MockBehavior.Strict);
         var view = mockView.Object;
 
         var viewData = new ViewDataDictionary(new EmptyModelMetadataProvider(), new ModelStateDictionary());
 
         // Note: Do not set ViewData["ActivePage"] to force fallback to ActionDescriptor.DisplayName
-        var tempData = new TempDataDictionary(actionContext.HttpContext, new Mock<ITempDataProvider>().Object);
+        var tempData = new TempDataDictionary(actionContext.HttpContext, new Mock<ITempDataProvider>(MockBehavior.Strict).Object);
         var viewContext = new ViewContext(actionContext, view, viewData, tempData, TextWriter.Null, new HtmlHelperOptions());
 
         // Act
@@ -688,7 +688,7 @@ public class ManageNavPagesTests
         var actionDescriptor = new ActionDescriptor { DisplayName = "/Areas/Identity/Pages/Account/Manage/OtherPage.cshtml" };
         var actionContext = new ActionContext(new DefaultHttpContext(), new RouteData(), actionDescriptor);
 
-        var mockView = new Mock<IView>();
+        var mockView = new Mock<IView>(MockBehavior.Strict);
         var view = mockView.Object;
 
         var viewData = new ViewDataDictionary(new EmptyModelMetadataProvider(), new ModelStateDictionary())
@@ -696,7 +696,7 @@ public class ManageNavPagesTests
             ["ActivePage"] = "DifferentPage"
         };
 
-        var tempData = new TempDataDictionary(actionContext.HttpContext, new Mock<ITempDataProvider>().Object);
+        var tempData = new TempDataDictionary(actionContext.HttpContext, new Mock<ITempDataProvider>(MockBehavior.Strict).Object);
         var viewContext = new ViewContext(actionContext, view, viewData, tempData, TextWriter.Null, new HtmlHelperOptions());
 
         // Act
@@ -916,11 +916,11 @@ public class ManageNavPagesTests
         }
 
         // TempData: a TempDataDictionary requires an ITempDataProvider
-        var tempDataProviderMock = new Mock<ITempDataProvider>();
+        var tempDataProviderMock = new Mock<ITempDataProvider>(MockBehavior.Strict);
         var tempData = new TempDataDictionary(httpContext, tempDataProviderMock.Object);
 
         // IView can be mocked; its instance is not used by the method under test
-        var viewMock = new Mock<IView>();
+        var viewMock = new Mock<IView>(MockBehavior.Strict);
 
         // Writer and HtmlHelperOptions for the ViewContext constructor
         var writer = new StringWriter();

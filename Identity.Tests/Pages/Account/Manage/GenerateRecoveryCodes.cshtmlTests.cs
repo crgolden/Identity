@@ -24,8 +24,8 @@ public class GenerateRecoveryCodesModelTests
         var passwordHasherMock = new Mock<IPasswordHasher<IdentityUser<Guid>>>();
         var userValidators = new List<IUserValidator<IdentityUser<Guid>>>();
         var passwordValidators = new List<IPasswordValidator<IdentityUser<Guid>>>();
-        var keyNormalizerMock = new Mock<ILookupNormalizer>();
-        var services = new Mock<IServiceProvider>();
+        var keyNormalizerMock = new Mock<ILookupNormalizer>(MockBehavior.Strict);
+        var services = new Mock<IServiceProvider>(MockBehavior.Loose);
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
             userStoreMock.Object,
             options,

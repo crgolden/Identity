@@ -256,7 +256,7 @@ public class EndpointRouteBuilderExtensionsTests
             null,
             null);
 
-        var antiforgeryMock = new Mock<IAntiforgery>();
+        var antiforgeryMock = new Mock<IAntiforgery>(MockBehavior.Strict);
         antiforgeryMock
             .Setup(a => a.ValidateRequestAsync(It.IsAny<HttpContext>()))
             .Returns(Task.CompletedTask);

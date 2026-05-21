@@ -64,13 +64,13 @@ public class DownloadPersonalDataModelTests
     {
         // Arrange
         var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var optionsMock = new Mock<Microsoft.Extensions.Options.IOptions<IdentityOptions>>();
+        var optionsMock = new Mock<Microsoft.Extensions.Options.IOptions<IdentityOptions>>(MockBehavior.Strict);
         optionsMock.Setup(o => o.Value).Returns(new IdentityOptions());
         var passwordHasherMock = new Mock<IPasswordHasher<IdentityUser<Guid>>>();
         var userValidators = Enumerable.Empty<IUserValidator<IdentityUser<Guid>>>();
         var passwordValidators = Enumerable.Empty<IPasswordValidator<IdentityUser<Guid>>>();
-        var lookupNormalizerMock = new Mock<ILookupNormalizer>();
-        var serviceProviderMock = new Mock<IServiceProvider>();
+        var lookupNormalizerMock = new Mock<ILookupNormalizer>(MockBehavior.Strict);
+        var serviceProviderMock = new Mock<IServiceProvider>(MockBehavior.Loose);
         var userManagerLoggerMock = new Mock<ILogger<UserManager<IdentityUser<Guid>>>>();
 
         var userManager = new UserManager<IdentityUser<Guid>>(

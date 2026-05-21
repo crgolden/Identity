@@ -34,9 +34,9 @@ public class PersonalDataModelTests
         var passwordHasherMock = new Mock<IPasswordHasher<IdentityUser<Guid>>>();
         var userValidators = new List<IUserValidator<IdentityUser<Guid>>>();
         var passwordValidators = new List<IPasswordValidator<IdentityUser<Guid>>>();
-        var lookupNormalizerMock = new Mock<ILookupNormalizer>();
+        var lookupNormalizerMock = new Mock<ILookupNormalizer>(MockBehavior.Strict);
         var errorDescriber = new IdentityErrorDescriber();
-        var servicesMock = new Mock<IServiceProvider>();
+        var servicesMock = new Mock<IServiceProvider>(MockBehavior.Loose);
         var userManagerLoggerMock = new Mock<ILogger<UserManager<IdentityUser<Guid>>>>();
 
         // Construct a real UserManager using mocked dependencies (allowed per requirements)
@@ -71,9 +71,9 @@ public class PersonalDataModelTests
         var passwordHasherMock = new Mock<IPasswordHasher<IdentityUser<Guid>>>();
         var userValidators = new List<IUserValidator<IdentityUser<Guid>>>();
         var passwordValidators = new List<IPasswordValidator<IdentityUser<Guid>>>();
-        var lookupNormalizerMock = new Mock<ILookupNormalizer>();
+        var lookupNormalizerMock = new Mock<ILookupNormalizer>(MockBehavior.Strict);
         var errorDescriber = new IdentityErrorDescriber();
-        var servicesMock = new Mock<IServiceProvider>();
+        var servicesMock = new Mock<IServiceProvider>(MockBehavior.Loose);
         var userManagerLoggerMock = new Mock<ILogger<UserManager<IdentityUser<Guid>>>>();
 
         var userManager = new UserManager<IdentityUser<Guid>>(

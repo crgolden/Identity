@@ -68,49 +68,27 @@ public sealed class InputSanitizationTests
         Assert.Equal(ComputeGravatarHash(email), ComputeGravatarHash(trimmed));
     }
 
-    [Fact]
-    public void KnownExternalUrls_AreNotLocalUrls()
-    {
-        // Known attack vectors for open redirect — none of these should be
-        // treated as local by LocalRedirectResult/Url.IsLocalUrl().
-        var externalUrls = new[]
-        {
-            "https://evil.com",
-            "http://evil.com/path?query=1",
-            "//evil.com",
-            "//evil.com/path",
-            "javascript:alert(1)",
-            "data:text/html,<script>alert(1)</script>",
-            "https://evil.com/redirect?url=https://localhost",
-            "\thttps://evil.com",
-            " https://evil.com",
-        };
+    [Theory]
+    [InlineData("https://evil.com")]
+    [InlineData("http://evil.com/path?query=1")]
+    [InlineData("//evil.com")]
+    [InlineData("//evil.com/path")]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("data:text/html,<script>alert(1)</script>")]
+    [InlineData("https://evil.com/redirect?url=https://localhost")]
+    [InlineData("\thttps://evil.com")]
+    [InlineData(" https://evil.com")]
+    public void ExternalUrl_IsNotLocalUrl(string url) =>
+        Assert.False(IsLocalUrl(url), $"URL '{url}' was incorrectly classified as local.");
 
-        foreach (var url in externalUrls)
-        {
-            Assert.False(
-                IsLocalUrl(url),
-                $"URL '{url}' was incorrectly classified as local.");
-        }
-    }
-
-    [Fact]
-    public void KnownLocalUrls_AreLocalUrls()
-    {
-        var localUrls = new[]
-        {
-            "/",
-            "/Account/Login",
-            "/Account/Manage",
-            "/Account/Manage/ChangePassword",
-            "~/Account/Login"
-        };
-
-        foreach (var url in localUrls)
-        {
-            Assert.True(IsLocalUrl(url), $"URL '{url}' should be local.");
-        }
-    }
+    [Theory]
+    [InlineData("/")]
+    [InlineData("/Account/Login")]
+    [InlineData("/Account/Manage")]
+    [InlineData("/Account/Manage/ChangePassword")]
+    [InlineData("~/Account/Login")]
+    public void LocalUrl_IsLocalUrl(string url) =>
+        Assert.True(IsLocalUrl(url), $"URL '{url}' should be local.");
 
     // Mirrors the implementation in GravatarService to test it as a pure function.
     private static string ComputeGravatarHash(string identifier)

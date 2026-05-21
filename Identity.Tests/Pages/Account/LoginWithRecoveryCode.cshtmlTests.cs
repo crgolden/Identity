@@ -141,7 +141,7 @@ public class LoginWithRecoveryCodeModelTests
         signInManagerMock.Setup(s => s.TwoFactorRecoveryCodeSignInAsync("ABCD1234")).ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Success);
         var model = new LoginWithRecoveryCodeModel(signInManagerMock.Object);
         model.Input = new LoginWithRecoveryCodeModel.InputModel { RecoveryCode = "ABCD 1234" };
-        var mockUrl = new Mock<IUrlHelper>();
+        var mockUrl = new Mock<IUrlHelper>(MockBehavior.Strict);
         mockUrl.Setup(u => u.IsLocalUrl(It.IsAny<string?>())).Returns(false);
         model.Url = mockUrl.Object;
 

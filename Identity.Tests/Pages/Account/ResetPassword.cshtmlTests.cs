@@ -30,9 +30,9 @@ public class ResetPasswordModelTests
         var passwordHasherMock = new Mock<IPasswordHasher<IdentityUser<Guid>>>();
         var userValidators = new List<IUserValidator<IdentityUser<Guid>>>();
         var passwordValidators = new List<IPasswordValidator<IdentityUser<Guid>>>();
-        var lookupNormalizerMock = new Mock<ILookupNormalizer>();
+        var lookupNormalizerMock = new Mock<ILookupNormalizer>(MockBehavior.Strict);
         var errors = new IdentityErrorDescriber();
-        var services = new Mock<IServiceProvider>();
+        var services = new Mock<IServiceProvider>(MockBehavior.Loose);
         var logger = new Mock<Microsoft.Extensions.Logging.ILogger<UserManager<IdentityUser<Guid>>>>();
 
         var userManager = new UserManager<IdentityUser<Guid>>(

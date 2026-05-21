@@ -6,6 +6,10 @@ For the `.NET 10 SDK xUnit caveat` (why `dotnet test` doesn't work) and `ASPNETC
 
 ---
 
+Unit test coding standards (MockBehavior.Strict, argument verification, SetupSequence, no control-flow in tests, etc.) are in the workspace-level [Unit Test Standards](../TESTING.md#unit-test-standards).
+
+---
+
 ## Running Tests Locally
 
 User Secrets ID: `aspnet-Identity-149346d0-999f-4a74-8ff7-2a92d39790f2`
@@ -1393,15 +1397,15 @@ CI also publishes the same TRX outcomes to Azure DevOps and Azure Monitor:
 
 | Target | Configuration |
 |---|---|
-| Azure DevOps | `https://dev.azure.com/crgolden/`, project `crgolden`, via `scripts/Publish-PlaywrightResultsToAzureDevOps.ps1` |
-| Azure Monitor | Shared Application Insights `crgolden-playwright-ai`, via `scripts/Send-PlaywrightTelemetry.ps1` |
+| Azure DevOps | `https://dev.azure.com/crgolden/`, project `crgolden` — published inline by the CI workflow |
+| Azure Monitor | Shared Application Insights `crgolden` — `PlaywrightTestRun`/`PlaywrightTestCase` customEvents posted inline by the CI workflow |
 
-Required GitHub secrets are `AZURE_DEVOPS_EXT_PAT` and `PLAYWRIGHT_APPINSIGHTS_CONNECTION_STRING`. If either secret is absent, the corresponding script logs a warning and skips publishing.
+CI uses the `AZURE_DEVOPS_EXT_PAT` secret and the `PLAYWRIGHT_APPINSIGHTS_CONNECTION_STRING` variable (set both in the repo's Actions settings). The publish + telemetry logic is inline in the "Publish Playwright results" steps of `.github/workflows/main_crgolden-identity.yml` — there are no standalone scripts.
 
-Provision or repair the shared Azure Monitor resources with:
+Provision or repair the workbook (from the Tools workspace):
 
 ```powershell
-.\scripts\Ensure-PlaywrightMonitor.ps1
+pwsh -NoProfile -File Tools\Azure\Monitor\Ensure-PlaywrightMonitor.ps1
 ```
 
 ### Downloading CI artifacts locally

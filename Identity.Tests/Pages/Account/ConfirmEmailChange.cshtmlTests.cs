@@ -33,15 +33,15 @@ public class ConfirmEmailChangeModelTests
         var passwordHasher = new Mock<IPasswordHasher<IdentityUser<Guid>>>().Object;
         var userValidators = new List<IUserValidator<IdentityUser<Guid>>>();
         var pwdValidators = new List<IPasswordValidator<IdentityUser<Guid>>>();
-        var keyNormalizer = new Mock<ILookupNormalizer>().Object;
+        var keyNormalizer = new Mock<ILookupNormalizer>(MockBehavior.Strict).Object;
         var errors = new IdentityErrorDescriber();
-        var services = new Mock<IServiceProvider>().Object;
+        var services = new Mock<IServiceProvider>(MockBehavior.Loose).Object;
         var loggerUserManager = new Mock<ILogger<UserManager<IdentityUser<Guid>>>>().Object;
         var userManager = new UserManager<IdentityUser<Guid>>(storeMock.Object, options, passwordHasher, userValidators, pwdValidators, keyNormalizer, errors, services, loggerUserManager);
-        var httpContextAccessor = new Mock<IHttpContextAccessor>();
+        var httpContextAccessor = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
         var claimsFactory = new Mock<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>();
         var loggerSignIn = new Mock<ILogger<SignInManager<IdentityUser<Guid>>>>().Object;
-        var schemes = new Mock<IAuthenticationSchemeProvider>().Object;
+        var schemes = new Mock<IAuthenticationSchemeProvider>(MockBehavior.Strict).Object;
         var confirmation = new Mock<IUserConfirmation<IdentityUser<Guid>>>().Object;
         var signInManager = new SignInManager<IdentityUser<Guid>>(userManager, httpContextAccessor.Object, claimsFactory.Object, options, loggerSignIn, schemes, confirmation);
 

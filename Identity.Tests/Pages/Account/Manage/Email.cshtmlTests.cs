@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Logging;
@@ -118,7 +119,7 @@ public class EmailModelTests
             .ReturnsAsync("raw-token");
 
         const string fixedCallbackUrl = "https://example.test/Account/ConfirmEmail?userId=the-user-id&code=abc";
-        var urlHelperMock = new Mock<IUrlHelper>();
+        var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
 
         // ActionContext must be non-null because UrlHelperExtensions.Page always accesses it
         var urlRouteData = new RouteData();
@@ -126,16 +127,15 @@ public class EmailModelTests
         urlHelperMock.SetupGet(u => u.ActionContext).Returns(
             new ActionContext(new DefaultHttpContext(), urlRouteData, new ActionDescriptor()));
 
-        // SetReturnsDefault covers all string?-returning methods including RouteUrl called by Url.Page
-        urlHelperMock.SetReturnsDefault<string?>(fixedCallbackUrl);
+        urlHelperMock.Setup(u => u.RouteUrl(It.IsAny<UrlRouteContext>())).Returns(fixedCallbackUrl);
 
         ServiceBusMessage? capturedMessage = null;
-        var senderMock = new Mock<ServiceBusSender>();
+        var senderMock = new Mock<ServiceBusSender>(MockBehavior.Strict);
         senderMock
             .Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask)
             .Callback<ServiceBusMessage, CancellationToken>((msg, _) => capturedMessage = msg);
-        var factoryMock = new Mock<IAzureClientFactory<ServiceBusSender>>();
+        var factoryMock = new Mock<IAzureClientFactory<ServiceBusSender>>(MockBehavior.Strict);
         factoryMock.Setup(f => f.CreateClient("email")).Returns(senderMock.Object);
 
         var model = new EmailModel(userManagerMock.Object, factoryMock.Object)
@@ -223,10 +223,10 @@ public class EmailModelTests
     {
         // Arrange
         var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var optionsMock = new Mock<IOptions<IdentityOptions>>();
+        var optionsMock = new Mock<IOptions<IdentityOptions>>(MockBehavior.Strict);
         optionsMock.Setup(o => o.Value).Returns(new IdentityOptions());
         var hasherMock = new Mock<IPasswordHasher<IdentityUser<Guid>>>();
-        var lookupNormalizerMock = new Mock<ILookupNormalizer>();
+        var lookupNormalizerMock = new Mock<ILookupNormalizer>(MockBehavior.Strict);
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
                 storeMock.Object,
                 optionsMock.Object,
@@ -235,7 +235,7 @@ public class EmailModelTests
                 Array.Empty<IPasswordValidator<IdentityUser<Guid>>>(),
                 lookupNormalizerMock.Object,
                 new IdentityErrorDescriber(),
-                new Mock<IServiceProvider>().Object,
+                new Mock<IServiceProvider>(MockBehavior.Loose).Object,
                 new Mock<ILogger<UserManager<IdentityUser<Guid>>>>().Object)
         { CallBase = false };
 
@@ -266,20 +266,20 @@ public class EmailModelTests
     // Helper methods to create minimal mocks/instances needed for constructor invocation.
     private static IAzureClientFactory<ServiceBusSender> CreateSenderFactory()
     {
-        var senderMock = new Mock<ServiceBusSender>();
+        var senderMock = new Mock<ServiceBusSender>(MockBehavior.Strict);
         senderMock.Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-        var factoryMock = new Mock<IAzureClientFactory<ServiceBusSender>>();
+        var factoryMock = new Mock<IAzureClientFactory<ServiceBusSender>>(MockBehavior.Strict);
         factoryMock.Setup(f => f.CreateClient("email")).Returns(senderMock.Object);
         return factoryMock.Object;
     }
 
     private static (IAzureClientFactory<ServiceBusSender> factory, Mock<ServiceBusSender> senderMock) CreateSenderFactoryWithMock()
     {
-        var senderMock = new Mock<ServiceBusSender>();
+        var senderMock = new Mock<ServiceBusSender>(MockBehavior.Strict);
         senderMock.Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-        var factoryMock = new Mock<IAzureClientFactory<ServiceBusSender>>();
+        var factoryMock = new Mock<IAzureClientFactory<ServiceBusSender>>(MockBehavior.Strict);
         factoryMock.Setup(f => f.CreateClient("email")).Returns(senderMock.Object);
         return (factoryMock.Object, senderMock);
     }

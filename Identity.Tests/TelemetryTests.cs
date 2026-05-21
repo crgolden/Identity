@@ -94,26 +94,8 @@ public sealed class TelemetryTests
         // Arrange
         long grantedFired = 0;
         long deniedFired = 0;
-        using var listener = new MeterListener();
-        listener.InstrumentPublished = (instrument, l) =>
-        {
-            if (instrument.Meter.Name == nameof(Identity))
-            {
-                l.EnableMeasurementEvents(instrument);
-            }
-        };
-        listener.SetMeasurementEventCallback<long>((instrument, value, tags, _) =>
-        {
-            if (instrument.Name == "identity.consent.granted")
-            {
-                grantedFired += value;
-            }
-            else if (instrument.Name == "identity.consent.denied")
-            {
-                deniedFired += value;
-            }
-        });
-        listener.Start();
+        using var grantedListener = MakeListener("identity.consent.granted", (value, _) => grantedFired += value);
+        using var deniedListener = MakeListener("identity.consent.denied", (value, _) => deniedFired += value);
 
         // Act
         Telemetry.Metrics.ConsentGranted("client1", ["scope1"], remember: false);

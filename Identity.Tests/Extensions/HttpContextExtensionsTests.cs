@@ -176,14 +176,20 @@ public class HttpContextExtensionsTests
         out Mock<ILogger> loggerOut,
         out Mock<IProblemDetailsService> problemDetailsOut)
     {
-        var mockLogger = new Mock<ILogger>();
+        var mockLogger = new Mock<ILogger>(MockBehavior.Strict);
         mockLogger.Setup(l => l.IsEnabled(It.IsAny<LogLevel>())).Returns(true);
-        var mockLoggerFactory = new Mock<ILoggerFactory>();
+        mockLogger.Setup(l => l.Log(
+            It.IsAny<LogLevel>(),
+            It.IsAny<EventId>(),
+            It.IsAny<It.IsAnyType>(),
+            It.IsAny<Exception?>(),
+            It.IsAny<Func<It.IsAnyType, Exception?, string>>()));
+        var mockLoggerFactory = new Mock<ILoggerFactory>(MockBehavior.Strict);
         mockLoggerFactory
             .Setup(f => f.CreateLogger(It.IsAny<string>()))
             .Returns(mockLogger.Object);
 
-        var mockProblemDetails = new Mock<IProblemDetailsService>();
+        var mockProblemDetails = new Mock<IProblemDetailsService>(MockBehavior.Strict);
         mockProblemDetails
             .Setup(p => p.WriteAsync(It.IsAny<ProblemDetailsContext>()))
             .Returns(ValueTask.CompletedTask);

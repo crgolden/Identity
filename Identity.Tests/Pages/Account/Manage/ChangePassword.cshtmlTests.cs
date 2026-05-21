@@ -107,13 +107,13 @@ public class ChangePasswordModelTests
         var passwordValidators = Array.Empty<IPasswordValidator<IdentityUser<Guid>>>();
         var lookupNormalizer = new UpperInvariantLookupNormalizer();
         var errorDescriber = new IdentityErrorDescriber();
-        var serviceProvider = new Mock<IServiceProvider>().Object;
+        var serviceProvider = new Mock<IServiceProvider>(MockBehavior.Loose).Object;
         var userManagerLogger = new Mock<ILogger<UserManager<IdentityUser<Guid>>>>().Object;
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(userStoreMock.Object, identityOptions, passwordHasher, userValidators, passwordValidators, lookupNormalizer, errorDescriber, serviceProvider, userManagerLogger);
-        var httpContextAccessor = new Mock<IHttpContextAccessor>().Object;
+        var httpContextAccessor = new Mock<IHttpContextAccessor>(MockBehavior.Strict).Object;
         var claimsFactory = new Mock<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>().Object;
         var signInManagerLogger = new Mock<ILogger<SignInManager<IdentityUser<Guid>>>>().Object;
-        var schemes = new Mock<IAuthenticationSchemeProvider>().Object;
+        var schemes = new Mock<IAuthenticationSchemeProvider>(MockBehavior.Strict).Object;
         var confirmation = new Mock<IUserConfirmation<IdentityUser<Guid>>>().Object;
         var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(userManagerMock.Object, httpContextAccessor, claimsFactory, identityOptions, signInManagerLogger, schemes, confirmation);
 

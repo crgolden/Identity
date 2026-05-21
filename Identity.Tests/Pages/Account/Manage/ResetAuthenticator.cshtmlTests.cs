@@ -60,11 +60,11 @@ public class ResetAuthenticatorModelTests
             .Returns(expectedUserId);
 
         // Create a SignInManager instance with minimal mocked dependencies (not used by OnGet)
-        var httpContextAccessorMock = new Mock<IHttpContextAccessor>();
+        var httpContextAccessorMock = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
         var claimsFactoryMock = new Mock<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>();
         var options = Options.Create(new IdentityOptions());
         var loggerSignInMock = new Mock<ILogger<SignInManager<IdentityUser<Guid>>>>();
-        var schemesMock = new Mock<IAuthenticationSchemeProvider>();
+        var schemesMock = new Mock<IAuthenticationSchemeProvider>(MockBehavior.Strict);
         var confirmationMock = new Mock<IUserConfirmation<IdentityUser<Guid>>>();
 
         var signInManager = new SignInManager<IdentityUser<Guid>>(

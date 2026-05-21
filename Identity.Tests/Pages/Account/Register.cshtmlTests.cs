@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Logging;
@@ -157,7 +158,7 @@ public class RegisterModelTests
         ctx.Request.Scheme = "https";
         model.PageContext = new PageContext { HttpContext = ctx };
 
-        var urlHelperMock = new Mock<IUrlHelper>();
+        var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
         model.Url = urlHelperMock.Object;
 
@@ -186,7 +187,7 @@ public class RegisterModelTests
         // (Options property is non-virtual and cannot be set up via Moq)
         var identityOptions = new IdentityOptions();
         identityOptions.SignIn.RequireConfirmedAccount = requireConfirmed;
-        var identityOptionsMock = new Mock<Microsoft.Extensions.Options.IOptions<IdentityOptions>>();
+        var identityOptionsMock = new Mock<Microsoft.Extensions.Options.IOptions<IdentityOptions>>(MockBehavior.Strict);
         identityOptionsMock.Setup(o => o.Value).Returns(identityOptions);
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
             Mock.Of<IUserStore<IdentityUser<Guid>>>(), identityOptionsMock.Object, null, null, null, null, null, null, null);
@@ -237,7 +238,7 @@ public class RegisterModelTests
         ctx.Request.Scheme = "https";
         model.PageContext = new PageContext { HttpContext = ctx };
 
-        var urlHelperMock = new Mock<IUrlHelper>();
+        var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
 
         // ActionContext must be non-null because UrlHelperExtensions.Page always accesses it
         var urlRouteData = new RouteData();
@@ -245,10 +246,7 @@ public class RegisterModelTests
         urlHelperMock.SetupGet(u => u.ActionContext).Returns(
             new ActionContext(new DefaultHttpContext(), urlRouteData, new ActionDescriptor()));
 
-        // SetReturnsDefault covers all string?-returning methods including RouteUrl called by Url.Page
-        urlHelperMock.SetReturnsDefault<string?>("https://example/confirm");
-
-        // Url.Content explicit setup takes precedence over SetReturnsDefault
+        urlHelperMock.Setup(u => u.RouteUrl(It.IsAny<UrlRouteContext>())).Returns("https://example/confirm");
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
         model.Url = urlHelperMock.Object;
 
@@ -317,7 +315,7 @@ public class RegisterModelTests
         ctx.Request.Scheme = "https";
         model.PageContext = new PageContext { HttpContext = ctx };
 
-        var urlHelperMock = new Mock<IUrlHelper>();
+        var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
         model.Url = urlHelperMock.Object;
         model.Input = new RegisterModel.InputModel { Email = "user@example.com", Password = "P@ssw0rd!" };
@@ -370,12 +368,12 @@ public class RegisterModelTests
         ctx.Request.Scheme = "https";
         model.PageContext = new PageContext { HttpContext = ctx };
 
-        var urlHelperMock = new Mock<IUrlHelper>();
+        var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
         var urlRouteData = new RouteData();
         urlRouteData.Values["page"] = "/Account/Register";
         urlHelperMock.SetupGet(u => u.ActionContext).Returns(
             new ActionContext(new DefaultHttpContext(), urlRouteData, new ActionDescriptor()));
-        urlHelperMock.SetReturnsDefault<string?>("https://example/confirm");
+        urlHelperMock.Setup(u => u.RouteUrl(It.IsAny<UrlRouteContext>())).Returns("https://example/confirm");
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
         model.Url = urlHelperMock.Object;
         model.Input = new RegisterModel.InputModel { Email = "smoke@example.com", Password = "P@ssw0rd!" };
@@ -388,27 +386,27 @@ public class RegisterModelTests
 
     private static IAzureClientFactory<ServiceBusSender> CreateSenderFactory()
     {
-        var senderMock = new Mock<ServiceBusSender>();
+        var senderMock = new Mock<ServiceBusSender>(MockBehavior.Strict);
         senderMock.Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-        var factoryMock = new Mock<IAzureClientFactory<ServiceBusSender>>();
+        var factoryMock = new Mock<IAzureClientFactory<ServiceBusSender>>(MockBehavior.Strict);
         factoryMock.Setup(f => f.CreateClient("email")).Returns(senderMock.Object);
         return factoryMock.Object;
     }
 
     private static (IAzureClientFactory<ServiceBusSender> factory, Mock<ServiceBusSender> senderMock) CreateSenderFactoryWithMock()
     {
-        var senderMock = new Mock<ServiceBusSender>();
+        var senderMock = new Mock<ServiceBusSender>(MockBehavior.Strict);
         senderMock.Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-        var factoryMock = new Mock<IAzureClientFactory<ServiceBusSender>>();
+        var factoryMock = new Mock<IAzureClientFactory<ServiceBusSender>>(MockBehavior.Strict);
         factoryMock.Setup(f => f.CreateClient("email")).Returns(senderMock.Object);
         return (factoryMock.Object, senderMock);
     }
 
     private static Mock<ICAPTCHAService> CreateRecaptchaServiceMock(decimal score = 1.0m, decimal threshold = 0.5m)
     {
-        var mock = new Mock<ICAPTCHAService>();
+        var mock = new Mock<ICAPTCHAService>(MockBehavior.Strict);
         mock.Setup(s => s.SiteKey).Returns((string?)null);
         mock.Setup(s => s.ScoreThreshold).Returns(threshold);
         mock.Setup(s => s.VerifyAsync(It.IsAny<string?>(), It.IsAny<CancellationToken>()))

@@ -251,7 +251,7 @@ public class ErrorModelTests
     public void ShowRequestId_VariousValues_ReturnsExpected(string? requestId, bool expected)
     {
         // Arrange
-        var mockInteraction = new Mock<IIdentityServerInteractionService>();
+        var mockInteraction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
         var model = new ErrorModel(mockInteraction.Object)
         {
             RequestId = requestId

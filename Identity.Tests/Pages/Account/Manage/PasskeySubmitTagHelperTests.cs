@@ -75,10 +75,10 @@ public class PasskeySubmitTagHelperTests
         // Arrange
         var httpContext = new DefaultHttpContext();
 
-        var httpAccessorMock = new Mock<IHttpContextAccessor>();
+        var httpAccessorMock = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
         httpAccessorMock.Setup(a => a.HttpContext).Returns(httpContext);
 
-        var antiforgeryMock = new Mock<IAntiforgery>();
+        var antiforgeryMock = new Mock<IAntiforgery>(MockBehavior.Strict);
         antiforgeryMock
             .Setup(a => a.GetTokens(httpContext))
             .Returns(new AntiforgeryTokenSet(null, "cookie", "__RequestVerificationToken", null));

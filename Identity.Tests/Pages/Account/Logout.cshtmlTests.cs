@@ -69,7 +69,7 @@ public class LogoutModelTests
         var logoutRequest = new LogoutRequest(
             "https://signout.example.com/iframe",
             new LogoutMessage { PostLogoutRedirectUri = "https://client.example.com/signout-callback" });
-        var interaction = new Mock<IIdentityServerInteractionService>();
+        var interaction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
         interaction.Setup(s => s.GetLogoutContextAsync(logoutId)).ReturnsAsync(logoutRequest);
         var model = BuildModel(interaction.Object);
         model.PageContext = BuildAnonymousPageContext();
@@ -105,7 +105,7 @@ public class LogoutModelTests
         var logoutRequest = new LogoutRequest(
             "https://signout.example.com/iframe",
             new LogoutMessage { PostLogoutRedirectUri = "https://client.example.com/signout-callback" });
-        var interaction = new Mock<IIdentityServerInteractionService>();
+        var interaction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
         interaction.Setup(s => s.GetLogoutContextAsync(logoutId)).ReturnsAsync(logoutRequest);
         var model = BuildModel(interaction.Object);
         model.PageContext = BuildAnonymousPageContext();

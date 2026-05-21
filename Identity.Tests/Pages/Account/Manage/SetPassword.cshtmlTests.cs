@@ -47,7 +47,7 @@ public class SetPasswordModelTests
         var passwordValidators = new List<IPasswordValidator<IdentityUser<Guid>>>();
         var keyNormalizer = new UpperInvariantLookupNormalizer();
         var identityErrorDescriber = new IdentityErrorDescriber();
-        var services = new Mock<IServiceProvider>().Object;
+        var services = new Mock<IServiceProvider>(MockBehavior.Loose).Object;
         var userManagerLogger = new Mock<ILogger<UserManager<IdentityUser<Guid>>>>().Object;
 
         var userManager = new UserManager<IdentityUser<Guid>>(
@@ -61,10 +61,10 @@ public class SetPasswordModelTests
             services,
             userManagerLogger);
 
-        var httpContextAccessor = new Mock<IHttpContextAccessor>().Object;
+        var httpContextAccessor = new Mock<IHttpContextAccessor>(MockBehavior.Strict).Object;
         var claimsFactory = new Mock<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>().Object;
         var signInLogger = new Mock<ILogger<SignInManager<IdentityUser<Guid>>>>().Object;
-        var schemeProvider = new Mock<IAuthenticationSchemeProvider>().Object;
+        var schemeProvider = new Mock<IAuthenticationSchemeProvider>(MockBehavior.Strict).Object;
         var userConfirmation = new Mock<IUserConfirmation<IdentityUser<Guid>>>().Object;
 
         var signInManager = new SignInManager<IdentityUser<Guid>>(
@@ -175,11 +175,11 @@ public class SetPasswordModelTests
 
         var mockSignInManager = new Mock<SignInManager<IdentityUser<Guid>>>(
                 mockUserManager.Object,
-                new Mock<IHttpContextAccessor>().Object,
+                new Mock<IHttpContextAccessor>(MockBehavior.Strict).Object,
                 new Mock<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>().Object,
                 null,
                 null,
-                new Mock<IAuthenticationSchemeProvider>().Object,
+                new Mock<IAuthenticationSchemeProvider>(MockBehavior.Strict).Object,
                 new Mock<IUserConfirmation<IdentityUser<Guid>>>().Object)
         { CallBase = false };
 
@@ -233,11 +233,11 @@ public class SetPasswordModelTests
 
         var mockSignInManager = new Mock<SignInManager<IdentityUser<Guid>>>(
                 mockUserManager.Object,
-                new Mock<IHttpContextAccessor>().Object,
+                new Mock<IHttpContextAccessor>(MockBehavior.Strict).Object,
                 new Mock<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>().Object,
                 null,
                 null,
-                new Mock<IAuthenticationSchemeProvider>().Object,
+                new Mock<IAuthenticationSchemeProvider>(MockBehavior.Strict).Object,
                 new Mock<IUserConfirmation<IdentityUser<Guid>>>().Object)
         { CallBase = false };
 
@@ -328,7 +328,7 @@ public class SetPasswordModelTests
 
         var model = new SetPasswordModel(userManagerMock.Object, signInManagerMock.Object);
         model.Input = new SetPasswordModel.InputModel { NewPassword = "ValidP@ss1!" };
-        model.TempData = new Mock<ITempDataDictionary>().Object;
+        model.TempData = new Mock<ITempDataDictionary>(MockBehavior.Strict).Object;
 
         // Act
         var result = await model.OnPostAsync();

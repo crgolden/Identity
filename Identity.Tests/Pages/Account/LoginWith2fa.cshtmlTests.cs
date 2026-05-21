@@ -69,7 +69,7 @@ public class LoginWith2faModelTests
             }
         };
 
-        var urlHelperMock = new Mock<IUrlHelper>();
+        var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
         model.Url = urlHelperMock.Object;
 
@@ -176,7 +176,7 @@ public class LoginWith2faModelTests
         {
             Input = new LoginWith2faModel.InputModel { TwoFactorCode = "123456", RememberMachine = false }
         };
-        var urlHelperMock = new Mock<IUrlHelper>();
+        var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
         model.Url = urlHelperMock.Object;
 
@@ -203,7 +203,7 @@ public class LoginWith2faModelTests
         {
             Input = new LoginWith2faModel.InputModel { TwoFactorCode = "000000", RememberMachine = false }
         };
-        var urlHelperMock = new Mock<IUrlHelper>();
+        var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
         model.Url = urlHelperMock.Object;
 

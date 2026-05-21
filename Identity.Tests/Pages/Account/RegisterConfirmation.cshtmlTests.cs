@@ -23,9 +23,9 @@ public class RegisterConfirmationModelTests
         var passwordHasher = new Mock<IPasswordHasher<IdentityUser<Guid>>>().Object;
         var userValidators = new List<IUserValidator<IdentityUser<Guid>>>();
         var passwordValidators = new List<IPasswordValidator<IdentityUser<Guid>>>();
-        var keyNormalizer = new Mock<ILookupNormalizer>().Object;
+        var keyNormalizer = new Mock<ILookupNormalizer>(MockBehavior.Strict).Object;
         var errors = new IdentityErrorDescriber();
-        var services = new Mock<IServiceProvider>().Object;
+        var services = new Mock<IServiceProvider>(MockBehavior.Loose).Object;
         var logger = new Mock<ILogger<UserManager<IdentityUser<Guid>>>>().Object;
         var userManager = new UserManager<IdentityUser<Guid>>(userStore, options, passwordHasher, userValidators, passwordValidators, keyNormalizer, errors, services, logger);
 
@@ -74,7 +74,7 @@ public class RegisterConfirmationModelTests
         var mockUserStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
         var mockUserManager = new Mock<UserManager<IdentityUser<Guid>>>(mockUserStore, null, null, null, null, null, null, null, null);
         mockUserManager.Setup(m => m.FindByEmailAsync(It.IsAny<string>())).ReturnsAsync((IdentityUser<Guid>?)null);
-        var mockUrl = new Mock<IUrlHelper>();
+        var mockUrl = new Mock<IUrlHelper>(MockBehavior.Strict);
         mockUrl.Setup(u => u.Content("~/")).Returns("/");
         var model = new RegisterConfirmationModel(mockUserManager.Object);
         model.Url = mockUrl.Object;

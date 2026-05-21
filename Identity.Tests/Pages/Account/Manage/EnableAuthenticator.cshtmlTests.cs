@@ -22,7 +22,7 @@ public partial class EnableAuthenticatorModelTests
     public void Constructor_NullDependency_ExpectedBehavior()
     {
         // Arrange
-        var urlEncoderMock = new Mock<UrlEncoder>();
+        var urlEncoderMock = new Mock<UrlEncoder>(MockBehavior.Strict);
 
         // Create a minimal UserManager required to construct the model.
         var store = new Mock<IUserStore<IdentityUser<Guid>>>().Object;
