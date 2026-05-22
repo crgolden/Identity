@@ -203,7 +203,7 @@ jobs:
           # manifest (github.com/Azure/azure-devops-cli-extension/issues/1012), so use Invoke-RestMethod
           # with explicit URLs instead.
           $adoHeaders = @{ Authorization = "Basic $([Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$env:AZURE_DEVOPS_EXT_PAT")))" }
-          $adoBase    = 'https://dev.azure.com/crgolden/crgolden/_apis/test'
+          $adoBase    = 'https://dev.azure.com/crgolden/Identity/_apis/test'
           $adoVer     = 'api-version=7.1'
 
           function Invoke-Ado {
@@ -435,7 +435,7 @@ jobs:
           $testsById  = @{}
           foreach ($t in @($xml.TestRun.TestDefinitions.UnitTest)) { $testsById[$t.id] = $t }
           $adoHeaders = @{ Authorization = "Basic $([Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$env:AZURE_DEVOPS_EXT_PAT")))" }
-          $adoBase    = 'https://dev.azure.com/crgolden/crgolden/_apis/test'
+          $adoBase    = 'https://dev.azure.com/crgolden/Identity/_apis/test'
           $adoVer     = 'api-version=7.1'
 
           function Invoke-Ado {
