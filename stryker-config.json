@@ -1,8 +1,8 @@
 {
   "stryker-config": {
-    "project": "Identity.Api/Identity.Api.csproj",
+    "project": "Identity.Api.csproj",
     "test-projects": [
-      "Identity.Tests/Identity.Tests.csproj"
+      "../Identity.Tests/Identity.Tests.csproj"
     ],
     "reporters": [
       "html",

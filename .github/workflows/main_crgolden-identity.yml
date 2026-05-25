@@ -260,6 +260,19 @@ jobs:
 
       - name: Run load tests
         if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+        env:
+          ASPNETCORE_ENVIRONMENT: CI
+          GoogleClientId: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GoogleClientSecret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GravatarApiSecretKey: ${{ secrets.GRAVATAR_API_SECRET_KEY }}
+          ReCAPTCHASiteKey: ${{ secrets.RECAPTCHA_SITE_KEY_E2E }}
+          ReCAPTCHASecretKey: ${{ secrets.RECAPTCHA_SECRET_KEY }}
+          SqlConnectionStringBuilder__DataSource: ${{ vars.DB_SERVER }}
+          SqlConnectionStringBuilder__InitialCatalog: ${{ vars.DB_NAME_E2E }}
+          SqlConnectionStringBuilder__IntegratedSecurity: false
+          SqlConnectionStringBuilder__UserID: ${{ secrets.DB_USERID }}
+          SqlConnectionStringBuilder__Password: ${{ secrets.DB_PASSWORD }}
+          ServiceBusConnectionString: ${{ secrets.SERVICE_BUS_CONNECTION_STRING }}
         run: |
           dotnet test --project Identity.Tests --no-build --configuration Release -- --filter-trait Category=Load
 
@@ -525,9 +538,10 @@ jobs:
         run: dotnet build --configuration Release
 
       - name: Run Stryker mutation tests
+        working-directory: Identity.Api
         env:
           STRYKER_DASHBOARD_API_KEY: ${{ secrets.STRYKER_DASHBOARD_API_KEY }}
-        run: dotnet stryker --config-file stryker-config.json
+        run: dotnet stryker --config-file ../stryker-config.json
 
       - name: Upload Stryker report
         uses: actions/upload-artifact@v7
