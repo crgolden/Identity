@@ -538,7 +538,7 @@ jobs:
         run: dotnet build --configuration Release
 
       - name: Run Stryker mutation tests
-        working-directory: Identity.Api
+        working-directory: Identity
         env:
           STRYKER_DASHBOARD_API_KEY: ${{ secrets.STRYKER_DASHBOARD_API_KEY }}
         run: dotnet stryker --config-file ../stryker-config.json
