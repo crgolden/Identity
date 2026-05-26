@@ -537,41 +537,11 @@ jobs:
       - name: Build solution
         run: dotnet build --configuration Release
 
-      - name: Get Playwright version
-        id: playwright-version
-        shell: pwsh
-        run: |
-          $version = (Select-Xml -Path Identity.Tests/Identity.Tests.csproj `
-            -XPath '//PackageReference[@Include="Microsoft.Playwright"]/@Version').Node.Value
-          echo "version=$version" >> $env:GITHUB_OUTPUT
-
-      - name: Cache Playwright browsers
-        id: cache-playwright
-        uses: actions/cache@v5
-        with:
-          path: ~\AppData\Local\ms-playwright
-          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
-
-      - name: Install Playwright browsers
-        if: steps.cache-playwright.outputs.cache-hit != 'true'
-        run: pwsh "${{ github.workspace }}\Identity.Tests\bin\Release\net10.0\playwright.ps1" install --with-deps chromium
-
       - name: Run Stryker mutation tests
         working-directory: Identity
         env:
           STRYKER_DASHBOARD_API_KEY: ${{ secrets.STRYKER_DASHBOARD_API_KEY }}
-          ASPNETCORE_ENVIRONMENT: CI
-          GoogleClientId: ${{ secrets.GOOGLE_CLIENT_ID }}
-          GoogleClientSecret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-          GravatarApiSecretKey: ${{ secrets.GRAVATAR_API_SECRET_KEY }}
-          ReCAPTCHASiteKey: ${{ secrets.RECAPTCHA_SITE_KEY_E2E }}
-          ReCAPTCHASecretKey: ${{ secrets.RECAPTCHA_SECRET_KEY }}
-          SqlConnectionStringBuilder__DataSource: ${{ vars.DB_SERVER }}
-          SqlConnectionStringBuilder__InitialCatalog: ${{ vars.DB_NAME_E2E }}
-          SqlConnectionStringBuilder__IntegratedSecurity: false
-          SqlConnectionStringBuilder__UserID: ${{ secrets.DB_USERID }}
-          SqlConnectionStringBuilder__Password: ${{ secrets.DB_PASSWORD }}
-          ServiceBusConnectionString: ${{ secrets.SERVICE_BUS_CONNECTION_STRING }}
+          STRYKER_MUTANT_FILE: stryker
         run: dotnet stryker --config-file ../stryker-config.json
 
       - name: Upload Stryker report
