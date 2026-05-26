@@ -541,7 +541,6 @@ jobs:
         working-directory: Identity
         env:
           STRYKER_DASHBOARD_API_KEY: ${{ secrets.STRYKER_DASHBOARD_API_KEY }}
-          STRYKER_MUTANT_FILE: stryker
         run: dotnet stryker --config-file ../stryker-config.json
 
       - name: Upload Stryker report

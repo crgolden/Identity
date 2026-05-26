@@ -20,6 +20,7 @@ public sealed class PlaywrightFixture : IAsyncLifetime
     private readonly IdentityWebApplicationFactory? _factory;
     private IPlaywright? _playwright;
     private IBrowser? _browser;
+    private bool _started;
 
     public PlaywrightFixture()
     {
@@ -107,6 +108,8 @@ public sealed class PlaywrightFixture : IAsyncLifetime
             throw new InvalidOperationException(
                 $"Failed to create shared test user: {Join(", ", createResult.Errors.Select(e => e.Description))}");
         }
+
+        _started = true;
     }
 
     public async Task<(string Email, string Password)> CreateConfirmedUserAsync()
@@ -224,7 +227,7 @@ public sealed class PlaywrightFixture : IAsyncLifetime
             return;
         }
 
-        if (CI && !StrykerActive)
+        if (CI && _started)
         {
             await CleanupDatabaseAsync();
         }
