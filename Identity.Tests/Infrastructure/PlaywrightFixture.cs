@@ -11,7 +11,7 @@ public sealed class PlaywrightFixture : IAsyncLifetime
 {
     private static readonly bool CI = bool.TryParse(Environment.GetEnvironmentVariable("CI"), out var isCi) && isCi;
     private static readonly bool Headless = !string.Equals(Environment.GetEnvironmentVariable("PLAYWRIGHT_HEADED"), "1", StringComparison.OrdinalIgnoreCase);
-    private static readonly bool StrykerActive = Environment.GetEnvironmentVariable("STRYKER_DASHBOARD_API_KEY") is not null;
+    private static readonly bool StrykerActive = Environment.GetEnvironmentVariable("STRYKER_MUTANT_FILE") is not null;
     private static readonly string? SmokeBaseUrl = Environment.GetEnvironmentVariable("SmokeBaseUrl");
     private static readonly string? DataSource = Environment.GetEnvironmentVariable("SmokeDataSource");
     private static readonly string? InitialCatalog = Environment.GetEnvironmentVariable("SqlConnectionStringBuilder__InitialCatalog");
@@ -20,7 +20,6 @@ public sealed class PlaywrightFixture : IAsyncLifetime
     private readonly IdentityWebApplicationFactory? _factory;
     private IPlaywright? _playwright;
     private IBrowser? _browser;
-    private bool _factoryStarted;
     private bool _started;
 
     public PlaywrightFixture()
@@ -63,7 +62,6 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         else
         {
             _factory!.CreateClient(); // Triggers server startup; populates Factory.ServerAddress.
-            _factoryStarted = true;
             BaseAddress = _factory.ServerAddress;
         }
 
@@ -229,15 +227,12 @@ public sealed class PlaywrightFixture : IAsyncLifetime
             return;
         }
 
-        if (_factoryStarted)
+        if (CI && _started)
         {
-            if (CI && _started)
-            {
-                await CleanupDatabaseAsync();
-            }
-
-            await _factory!.DisposeAsync();
+            await CleanupDatabaseAsync();
         }
+
+        await _factory!.DisposeAsync();
     }
 
     private static SqlConnection OpenSmokeConnection()
