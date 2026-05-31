@@ -24,8 +24,8 @@ public static class SecretClientExtensions
             var googleClientId = secretClient.GetSecret("GoogleClientId");
             var googleClientSecret = secretClient.GetSecret("GoogleClientSecret");
             var gravatarApiSecretKey = secretClient.GetSecret("GravatarApiSecretKey");
-            var sqlServerUserId = secretClient.GetSecret("SqlServerUserId");
-            var sqlServerPassword = secretClient.GetSecret("SqlServerPassword");
+            var sqlServerUserId = secretClient.GetSecret("IdentitySqlServerUserId");
+            var sqlServerPassword = secretClient.GetSecret("IdentitySqlServerPassword");
             var elasticsearchUsername = secretClient.GetSecret("ElasticsearchUsername");
             var elasticsearchPassword = secretClient.GetSecret("ElasticsearchPassword");
             var recaptchaSiteKey = secretClient.GetSecret("ReCAPTCHASiteKey");
