@@ -149,6 +149,11 @@ try
         reCAPTCHASiteKey = secrets.ReCAPTCHASiteKey;
         reCAPTCHASecretKey = secrets.ReCAPTCHASecretKey;
         builder.Services
+            .Configure<ReCAPTCHAOptions>(recaptchaOptions =>
+            {
+                recaptchaOptions.AdminEmail = secrets.AdminEmail;
+                recaptchaOptions.TestEmail = secrets.TestEmail;
+            })
             .AddSerilog((serviceProvider, loggerConfiguration) => loggerConfiguration
                 .ReadFrom.Configuration(builder.Configuration)
                 .ReadFrom.Services(serviceProvider)
