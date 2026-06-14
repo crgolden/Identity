@@ -68,7 +68,7 @@ public class RegisterModelTests
             userManagerMock.Object,
             signInManagerMock.Object,
             Channel.CreateUnbounded<string>().Writer,
-            CreateSenderFactory(),
+            CreateClientFactory(),
             CreateRecaptchaServiceMock().Object);
 
         // Act & Assert: ensure no exception and ReturnUrl set as expected
@@ -108,7 +108,7 @@ public class RegisterModelTests
             userManagerMock.Object,
             signInManagerMock.Object,
             Channel.CreateUnbounded<string>().Writer,
-            CreateSenderFactory(),
+            CreateClientFactory(),
             CreateRecaptchaServiceMock().Object);
 
         // Act
@@ -150,7 +150,7 @@ public class RegisterModelTests
             userManagerMock.Object,
             signInManagerMock.Object,
             Channel.CreateUnbounded<string>().Writer,
-            CreateSenderFactory(),
+            CreateClientFactory(),
             CreateRecaptchaServiceMock().Object);
 
         // Configure PageContext/Url/Request
@@ -308,7 +308,7 @@ public class RegisterModelTests
             userManagerMock.Object,
             signInManagerMock.Object,
             Channel.CreateUnbounded<string>().Writer,
-            CreateSenderFactory(),
+            CreateClientFactory(),
             recaptchaServiceMock.Object);
 
         var ctx = new DefaultHttpContext();
@@ -361,7 +361,7 @@ public class RegisterModelTests
             userManagerMock.Object,
             signInManagerMock.Object,
             Channel.CreateUnbounded<string>().Writer,
-            CreateSenderFactory(),
+            CreateClientFactory(),
             recaptchaServiceMock.Object);
 
         var ctx = new DefaultHttpContext();
@@ -384,23 +384,27 @@ public class RegisterModelTests
         recaptchaServiceMock.Verify(s => s.VerifyAsync(It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    private static IAzureClientFactory<ServiceBusSender> CreateSenderFactory()
+    private static IAzureClientFactory<ServiceBusClient> CreateClientFactory()
     {
         var senderMock = new Mock<ServiceBusSender>(MockBehavior.Strict);
         senderMock.Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-        var factoryMock = new Mock<IAzureClientFactory<ServiceBusSender>>(MockBehavior.Strict);
-        factoryMock.Setup(f => f.CreateClient("email")).Returns(senderMock.Object);
+        var clientMock = new Mock<ServiceBusClient>(MockBehavior.Strict);
+        clientMock.Setup(c => c.CreateSender("email")).Returns(senderMock.Object);
+        var factoryMock = new Mock<IAzureClientFactory<ServiceBusClient>>(MockBehavior.Strict);
+        factoryMock.Setup(f => f.CreateClient("crgolden")).Returns(clientMock.Object);
         return factoryMock.Object;
     }
 
-    private static (IAzureClientFactory<ServiceBusSender> factory, Mock<ServiceBusSender> senderMock) CreateSenderFactoryWithMock()
+    private static (IAzureClientFactory<ServiceBusClient> factory, Mock<ServiceBusSender> senderMock) CreateSenderFactoryWithMock()
     {
         var senderMock = new Mock<ServiceBusSender>(MockBehavior.Strict);
         senderMock.Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-        var factoryMock = new Mock<IAzureClientFactory<ServiceBusSender>>(MockBehavior.Strict);
-        factoryMock.Setup(f => f.CreateClient("email")).Returns(senderMock.Object);
+        var clientMock = new Mock<ServiceBusClient>(MockBehavior.Strict);
+        clientMock.Setup(c => c.CreateSender("email")).Returns(senderMock.Object);
+        var factoryMock = new Mock<IAzureClientFactory<ServiceBusClient>>(MockBehavior.Strict);
+        factoryMock.Setup(f => f.CreateClient("crgolden")).Returns(clientMock.Object);
         return (factoryMock.Object, senderMock);
     }
 

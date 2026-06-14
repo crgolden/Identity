@@ -11,13 +11,11 @@ public sealed class ReCAPTCHAService : ICAPTCHAService
 {
     private readonly HttpClient _httpClient;
     private readonly ReCAPTCHAOptions _options;
-    private readonly ILogger<ReCAPTCHAService> _logger;
 
-    public ReCAPTCHAService(HttpClient httpClient, IOptions<ReCAPTCHAOptions> options, ILogger<ReCAPTCHAService> logger)
+    public ReCAPTCHAService(HttpClient httpClient, IOptions<ReCAPTCHAOptions> options)
     {
         _httpClient = httpClient;
         _options = options.Value;
-        _logger = logger;
     }
 
     public string? SiteKey => _options.SiteKey;
@@ -46,18 +44,15 @@ public sealed class ReCAPTCHAService : ICAPTCHAService
 
         if (!response.IsSuccessStatusCode)
         {
-            _logger.LogWarning("reCAPTCHA siteverify returned {StatusCode}.", response.StatusCode);
             return 0m;
         }
 
         var result = await response.Content.ReadFromJsonAsync<RecaptchaResponse>(cancellationToken);
         if (result is null || !result.Success)
         {
-            _logger.LogWarning("reCAPTCHA verification failed.");
             return 0m;
         }
 
-        _logger.LogDebug("reCAPTCHA score: {Score}.", result.Score);
         return result.Score;
     }
 }

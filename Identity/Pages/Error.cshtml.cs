@@ -34,8 +34,8 @@ public class ErrorModel : PageModel
         RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
         if (!IsNullOrWhiteSpace(errorId))
         {
-            var errorMessage = await _interactionService.GetErrorContextAsync(errorId);
-            using var activity = Telemetry.ActivitySource.StartActivity("identity.error.oidc");
+            var errorMessage = await _interactionService.GetErrorContextAsync(errorId, HttpContext.RequestAborted);
+            using var activity = Telemetry.StartActivity("identity.error.oidc");
             activity?.SetTag("oidc.error_id", errorId);
             activity?.SetTag("oidc.error", errorMessage?.Error);
             activity?.SetTag("oidc.error_description", errorMessage?.ErrorDescription);

@@ -1,6 +1,5 @@
 namespace Identity.Tests.Extensions;
 
-using Identity.Extensions;
 using Infrastructure;
 
 [Collection(UnitCollection.Name)]

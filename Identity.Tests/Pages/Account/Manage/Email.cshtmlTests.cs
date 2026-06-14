@@ -135,8 +135,10 @@ public class EmailModelTests
             .Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask)
             .Callback<ServiceBusMessage, CancellationToken>((msg, _) => capturedMessage = msg);
-        var factoryMock = new Mock<IAzureClientFactory<ServiceBusSender>>(MockBehavior.Strict);
-        factoryMock.Setup(f => f.CreateClient("email")).Returns(senderMock.Object);
+        var clientMock = new Mock<ServiceBusClient>(MockBehavior.Strict);
+        clientMock.Setup(c => c.CreateSender("email")).Returns(senderMock.Object);
+        var factoryMock = new Mock<IAzureClientFactory<ServiceBusClient>>(MockBehavior.Strict);
+        factoryMock.Setup(f => f.CreateClient("crgolden")).Returns(clientMock.Object);
 
         var model = new EmailModel(userManagerMock.Object, factoryMock.Object)
         {
@@ -264,23 +266,27 @@ public class EmailModelTests
     }
 
     // Helper methods to create minimal mocks/instances needed for constructor invocation.
-    private static IAzureClientFactory<ServiceBusSender> CreateSenderFactory()
+    private static IAzureClientFactory<ServiceBusClient> CreateSenderFactory()
     {
         var senderMock = new Mock<ServiceBusSender>(MockBehavior.Strict);
         senderMock.Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-        var factoryMock = new Mock<IAzureClientFactory<ServiceBusSender>>(MockBehavior.Strict);
-        factoryMock.Setup(f => f.CreateClient("email")).Returns(senderMock.Object);
+        var clientMock = new Mock<ServiceBusClient>(MockBehavior.Strict);
+        clientMock.Setup(c => c.CreateSender("email")).Returns(senderMock.Object);
+        var factoryMock = new Mock<IAzureClientFactory<ServiceBusClient>>(MockBehavior.Strict);
+        factoryMock.Setup(f => f.CreateClient("crgolden")).Returns(clientMock.Object);
         return factoryMock.Object;
     }
 
-    private static (IAzureClientFactory<ServiceBusSender> factory, Mock<ServiceBusSender> senderMock) CreateSenderFactoryWithMock()
+    private static (IAzureClientFactory<ServiceBusClient> factory, Mock<ServiceBusSender> senderMock) CreateSenderFactoryWithMock()
     {
         var senderMock = new Mock<ServiceBusSender>(MockBehavior.Strict);
         senderMock.Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-        var factoryMock = new Mock<IAzureClientFactory<ServiceBusSender>>(MockBehavior.Strict);
-        factoryMock.Setup(f => f.CreateClient("email")).Returns(senderMock.Object);
+        var clientMock = new Mock<ServiceBusClient>(MockBehavior.Strict);
+        clientMock.Setup(c => c.CreateSender("email")).Returns(senderMock.Object);
+        var factoryMock = new Mock<IAzureClientFactory<ServiceBusClient>>(MockBehavior.Strict);
+        factoryMock.Setup(f => f.CreateClient("crgolden")).Returns(clientMock.Object);
         return (factoryMock.Object, senderMock);
     }
 

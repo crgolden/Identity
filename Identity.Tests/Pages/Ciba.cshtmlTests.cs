@@ -53,7 +53,7 @@ public class CibaIndexModelTests
         // Arrange
         var mockService = new Mock<IBackchannelAuthenticationInteractionService>(MockBehavior.Strict);
         mockService
-            .Setup(x => x.GetLoginRequestByInternalIdAsync("invalid-id"))
+            .Setup(x => x.GetLoginRequestByInternalIdAsync("invalid-id", It.IsAny<CancellationToken>()))
             .ReturnsAsync((BackchannelUserLoginRequest?)null);
 
         var model = CreateModel(mockService.Object);
@@ -73,7 +73,7 @@ public class CibaIndexModelTests
         var loginRequest = new BackchannelUserLoginRequest();
         var mockService = new Mock<IBackchannelAuthenticationInteractionService>(MockBehavior.Strict);
         mockService
-            .Setup(x => x.GetLoginRequestByInternalIdAsync("valid-id"))
+            .Setup(x => x.GetLoginRequestByInternalIdAsync("valid-id", It.IsAny<CancellationToken>()))
             .ReturnsAsync(loginRequest);
 
         var model = CreateModel(mockService.Object);

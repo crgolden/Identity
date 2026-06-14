@@ -70,7 +70,7 @@ public class LogoutModelTests
             "https://signout.example.com/iframe",
             new LogoutMessage { PostLogoutRedirectUri = "https://client.example.com/signout-callback" });
         var interaction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
-        interaction.Setup(s => s.GetLogoutContextAsync(logoutId)).ReturnsAsync(logoutRequest);
+        interaction.Setup(s => s.GetLogoutContextAsync(logoutId, It.IsAny<CancellationToken>())).ReturnsAsync(logoutRequest);
         var model = BuildModel(interaction.Object);
         model.PageContext = BuildAnonymousPageContext();
 
@@ -80,7 +80,7 @@ public class LogoutModelTests
         Assert.False(model.ShowLogoutPrompt);
         Assert.Equal("https://client.example.com/signout-callback", model.PostLogoutRedirectUri);
         Assert.Equal("https://signout.example.com/iframe", model.SignOutIFrameUrl);
-        interaction.Verify(s => s.GetLogoutContextAsync(logoutId), Times.Once);
+        interaction.Verify(s => s.GetLogoutContextAsync(logoutId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -106,7 +106,7 @@ public class LogoutModelTests
             "https://signout.example.com/iframe",
             new LogoutMessage { PostLogoutRedirectUri = "https://client.example.com/signout-callback" });
         var interaction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
-        interaction.Setup(s => s.GetLogoutContextAsync(logoutId)).ReturnsAsync(logoutRequest);
+        interaction.Setup(s => s.GetLogoutContextAsync(logoutId, It.IsAny<CancellationToken>())).ReturnsAsync(logoutRequest);
         var model = BuildModel(interaction.Object);
         model.PageContext = BuildAnonymousPageContext();
 
@@ -115,7 +115,7 @@ public class LogoutModelTests
         Assert.IsType<PageResult>(result);
         Assert.Equal("https://client.example.com/signout-callback", model.PostLogoutRedirectUri);
         Assert.Equal("https://signout.example.com/iframe", model.SignOutIFrameUrl);
-        interaction.Verify(s => s.GetLogoutContextAsync(logoutId), Times.Once);
+        interaction.Verify(s => s.GetLogoutContextAsync(logoutId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Theory]

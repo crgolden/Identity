@@ -16,12 +16,12 @@ public class EmailModel : PageModel
 {
     private const string From = "noreply@crgolden.com";
     private readonly UserManager<IdentityUser<Guid>> _userManager;
-    private readonly ServiceBusSender _serviceBusSender;
+    private readonly ServiceBusClient _serviceBusClient;
 
-    public EmailModel(UserManager<IdentityUser<Guid>> userManager, IAzureClientFactory<ServiceBusSender> serviceBusSenderFactory)
+    public EmailModel(UserManager<IdentityUser<Guid>> userManager, IAzureClientFactory<ServiceBusClient> serviceBusClientFactory)
     {
         _userManager = userManager;
-        _serviceBusSender = serviceBusSenderFactory.CreateClient("email");
+        _serviceBusClient = serviceBusClientFactory.CreateClient("crgolden");
     }
 
     public string? Email { get; set; }
@@ -78,7 +78,7 @@ public class EmailModel : PageModel
             return Page();
         }
 
-        if (!IsNullOrWhiteSpace(Input?.NewEmail) && !string.Equals(Input.NewEmail, email))
+        if (!IsNullOrWhiteSpace(Input.NewEmail) && !string.Equals(Input.NewEmail, email))
         {
             var userId = await _userManager.GetUserIdAsync(user);
             var code = await _userManager.GenerateChangeEmailTokenAsync(user, Input.NewEmail);
@@ -99,7 +99,8 @@ public class EmailModel : PageModel
                     Subject = "Confirm your email",
                     To = Input.NewEmail
                 };
-                await _serviceBusSender.SendMessageAsync(sbMessage, HttpContext.RequestAborted);
+                var serviceBusSender = _serviceBusClient.CreateSender("email");
+                await serviceBusSender.SendMessageAsync(sbMessage, HttpContext.RequestAborted);
             }
 
             StatusMessage = "Confirmation link to change email sent. Please check your email.";
@@ -152,7 +153,8 @@ public class EmailModel : PageModel
                 Subject = "Confirm your email",
                 To = email
             };
-            await _serviceBusSender.SendMessageAsync(sbMessage, HttpContext.RequestAborted);
+            var serviceBusSender = _serviceBusClient.CreateSender("email");
+            await serviceBusSender.SendMessageAsync(sbMessage, HttpContext.RequestAborted);
         }
 
         StatusMessage = "Verification email sent. Please check your email.";

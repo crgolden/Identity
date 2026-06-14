@@ -99,29 +99,33 @@ public class ResendEmailConfirmationModelTests
         var mockUserManager = new Mock<UserManager<IdentityUser<Guid>>>(mockStore, null, null, null, null, null, null, null, null);
 
         // Act
-        var exception = Record.Exception(() => new ResendEmailConfirmationModel(mockUserManager.Object, CreateSenderFactory()));
+        var exception = Record.Exception(() => new ResendEmailConfirmationModel(mockUserManager.Object, CreateClientFactory()));
 
         // Assert
         Assert.Null(exception);
     }
 
-    private static IAzureClientFactory<ServiceBusSender> CreateSenderFactory()
+    private static IAzureClientFactory<ServiceBusClient> CreateClientFactory()
     {
         var senderMock = new Mock<ServiceBusSender>(MockBehavior.Strict);
         senderMock.Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-        var factoryMock = new Mock<IAzureClientFactory<ServiceBusSender>>(MockBehavior.Strict);
-        factoryMock.Setup(f => f.CreateClient("email")).Returns(senderMock.Object);
+        var clientMock = new Mock<ServiceBusClient>(MockBehavior.Strict);
+        clientMock.Setup(c => c.CreateSender("email")).Returns(senderMock.Object);
+        var factoryMock = new Mock<IAzureClientFactory<ServiceBusClient>>(MockBehavior.Strict);
+        factoryMock.Setup(f => f.CreateClient("crgolden")).Returns(clientMock.Object);
         return factoryMock.Object;
     }
 
-    private static (IAzureClientFactory<ServiceBusSender> factory, Mock<ServiceBusSender> senderMock) CreateSenderFactoryWithMock()
+    private static (IAzureClientFactory<ServiceBusClient> factory, Mock<ServiceBusSender> senderMock) CreateSenderFactoryWithMock()
     {
         var senderMock = new Mock<ServiceBusSender>(MockBehavior.Strict);
         senderMock.Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-        var factoryMock = new Mock<IAzureClientFactory<ServiceBusSender>>(MockBehavior.Strict);
-        factoryMock.Setup(f => f.CreateClient("email")).Returns(senderMock.Object);
+        var clientMock = new Mock<ServiceBusClient>(MockBehavior.Strict);
+        clientMock.Setup(c => c.CreateSender("email")).Returns(senderMock.Object);
+        var factoryMock = new Mock<IAzureClientFactory<ServiceBusClient>>(MockBehavior.Strict);
+        factoryMock.Setup(f => f.CreateClient("crgolden")).Returns(clientMock.Object);
         return (factoryMock.Object, senderMock);
     }
 }

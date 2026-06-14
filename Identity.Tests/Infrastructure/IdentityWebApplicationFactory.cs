@@ -67,10 +67,10 @@ public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Progra
                 services.AddLogging(lb => lb.AddConsole());
             }
 
-            // Replace the real ServiceBusSender factory with the in-memory capture sender.
-            services.RemoveAll<IAzureClientFactory<ServiceBusSender>>();
+            // Replace the real ServiceBusClient factory with the in-memory capture sender.
+            services.RemoveAll<IAzureClientFactory<ServiceBusClient>>();
             services.AddSingleton(EmailCapture);
-            services.AddSingleton<IAzureClientFactory<ServiceBusSender>>(new TestServiceBusSenderFactory(EmailCapture));
+            services.AddSingleton<IAzureClientFactory<ServiceBusClient>>(new TestServiceBusClientFactory(EmailCapture));
 
             // Replace IAvatarService with a no-op stub to avoid real Gravatar HTTP calls in tests.
             services.RemoveAll<IAvatarService>();
@@ -116,11 +116,20 @@ internal sealed class AlwaysPassCAPTCHAService : ICAPTCHAService
         => Task.FromResult(1.0m);
 }
 
-internal sealed class TestServiceBusSenderFactory : IAzureClientFactory<ServiceBusSender>
+internal sealed class TestServiceBusClientFactory : IAzureClientFactory<ServiceBusClient>
+{
+    private readonly TestServiceBusClient _client;
+
+    public TestServiceBusClientFactory(ServiceBusSender sender) => _client = new TestServiceBusClient(sender);
+
+    public ServiceBusClient CreateClient(string name) => _client;
+}
+
+internal sealed class TestServiceBusClient : ServiceBusClient
 {
     private readonly ServiceBusSender _sender;
 
-    public TestServiceBusSenderFactory(ServiceBusSender sender) => _sender = sender;
+    public TestServiceBusClient(ServiceBusSender sender) => _sender = sender;
 
-    public ServiceBusSender CreateClient(string name) => _sender;
+    public override ServiceBusSender CreateSender(string queueOrTopicName) => _sender;
 }

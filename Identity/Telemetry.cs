@@ -16,6 +16,9 @@ public static class Telemetry
 
     private static readonly Meter Meter = new(nameof(Identity), "1.0.0");
 
+    public static Activity? StartActivity(string name) =>
+        ActivitySource.StartActivity(name, ActivityKind.Internal, parentContext: default);
+
     /// <summary>OpenTelemetry counter metrics emitted by IdentityServer UI pages.</summary>
     public static class Metrics
     {

@@ -55,7 +55,7 @@ public class DeviceModel : ConsentPageModelBase
         var userCode = Input.UserCode;
         ThrowIfNull(userCode);
 
-        var request = await _interaction.GetAuthorizationContextAsync(userCode);
+        var request = await _interaction.GetAuthorizationContextAsync(userCode, HttpContext.RequestAborted);
         if (request == null)
         {
             return RedirectToPage("/Error");
@@ -65,11 +65,13 @@ public class DeviceModel : ConsentPageModelBase
 
         if (Input.Button == "no")
         {
-            grantedConsent = new ConsentResponse { Error = AuthorizationError.AccessDenied };
-            await _events.RaiseAsync(new ConsentDeniedEvent(
-                User.GetSubjectId(),
-                request.Client.ClientId,
-                request.ValidatedResources.RawScopeValues));
+            grantedConsent = new ConsentResponse { Error = InteractionError.AccessDenied };
+            await _events.RaiseAsync(
+                new ConsentDeniedEvent(
+                    User.GetSubjectId(),
+                    request.Client.ClientId,
+                    request.ValidatedResources.RawScopeValues),
+                HttpContext.RequestAborted);
             Telemetry.Metrics.ConsentDenied(
                 request.Client.ClientId,
                 request.ValidatedResources.ParsedScopes.Select(s => s.ParsedName));
@@ -92,12 +94,14 @@ public class DeviceModel : ConsentPageModelBase
                     Description = Input.Description,
                 };
 
-                await _events.RaiseAsync(new ConsentGrantedEvent(
-                    User.GetSubjectId(),
-                    request.Client.ClientId,
-                    request.ValidatedResources.RawScopeValues,
-                    grantedConsent.ScopesValuesConsented,
-                    grantedConsent.RememberConsent));
+                await _events.RaiseAsync(
+                    new ConsentGrantedEvent(
+                        User.GetSubjectId(),
+                        request.Client.ClientId,
+                        request.ValidatedResources.RawScopeValues,
+                        grantedConsent.ScopesValuesConsented,
+                        grantedConsent.RememberConsent),
+                    HttpContext.RequestAborted);
                 Telemetry.Metrics.ConsentGranted(
                     request.Client.ClientId,
                     grantedConsent.ScopesValuesConsented,
@@ -119,7 +123,7 @@ public class DeviceModel : ConsentPageModelBase
 
         if (grantedConsent != null)
         {
-            await _interaction.HandleRequestAsync(userCode, grantedConsent);
+            await _interaction.HandleRequestAsync(userCode, grantedConsent, HttpContext.RequestAborted);
             return RedirectToPage("/Account/Manage/DeviceSuccess");
         }
 
@@ -133,7 +137,7 @@ public class DeviceModel : ConsentPageModelBase
 
     private async Task<bool> SetViewModelAsync(string userCode)
     {
-        var request = await _interaction.GetAuthorizationContextAsync(userCode);
+        var request = await _interaction.GetAuthorizationContextAsync(userCode, HttpContext.RequestAborted);
         if (request != null)
         {
             View = CreateConsentViewModel(request);

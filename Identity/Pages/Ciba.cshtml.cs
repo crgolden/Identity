@@ -32,7 +32,7 @@ public class CibaModel : PageModel
             return RedirectToPage("/Error");
         }
 
-        var result = await _backchannelInteraction.GetLoginRequestByInternalIdAsync(id);
+        var result = await _backchannelInteraction.GetLoginRequestByInternalIdAsync(id, HttpContext.RequestAborted);
         if (result == null)
         {
             return RedirectToPage("/Error");

@@ -52,6 +52,18 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser<Guid>, Identi
     public virtual DbSet<PushedAuthorizationRequest> PushedAuthorizationRequests { get; set; }
 
     /// <inheritdoc />
+    public virtual DbSet<SamlServiceProvider> SamlServiceProviders { get; set; }
+
+    /// <inheritdoc />
+    public virtual DbSet<SamlSigninState> SamlSigninStates { get; set; }
+
+    /// <inheritdoc />
+    public virtual DbSet<SamlLogoutSession> SamlLogoutSessions { get; set; }
+
+    /// <inheritdoc />
+    public virtual DbSet<SamlLogoutSessionRequestIndex> SamlLogoutSessionRequestIndices { get; set; }
+
+    /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder builder)
     {
         ThrowIfNull(builder);

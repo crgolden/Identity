@@ -62,7 +62,7 @@ public class LogoutModel : PageModel
             return;
         }
 
-        var context = await _interactionService.GetLogoutContextAsync(logoutId);
+        var context = await _interactionService.GetLogoutContextAsync(logoutId, HttpContext.RequestAborted);
         PostLogoutRedirectUri = context.PostLogoutRedirectUri;
         SignOutIFrameUrl = context.SignOutIFrameUrl;
     }

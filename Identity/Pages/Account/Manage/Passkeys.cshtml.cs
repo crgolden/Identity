@@ -100,7 +100,7 @@ public class PasskeysModel : PageModel
             return RedirectToPage();
         }
 
-        using var activity = Telemetry.ActivitySource.StartActivity("identity.passkey.register");
+        using var activity = Telemetry.StartActivity("identity.passkey.register");
         var attestationResult = await _signInManager.PerformPasskeyAttestationAsync(Input.Passkey.CredentialJson);
         if (!attestationResult.Succeeded)
         {
@@ -124,7 +124,7 @@ public class PasskeysModel : PageModel
 
     private async Task<IActionResult> DeletePasskey(IdentityUser<Guid> user, byte[] credentialId)
     {
-        using var activity = Telemetry.ActivitySource.StartActivity("identity.passkey.delete");
+        using var activity = Telemetry.StartActivity("identity.passkey.delete");
         var result = await _userManager.RemovePasskeyAsync(user, credentialId);
         if (!result.Succeeded)
         {

@@ -73,7 +73,7 @@ public class ServerSideSessionsIndexModelTests
         // Arrange
         var mockService = new Mock<ISessionManagementService>(MockBehavior.Strict);
         mockService
-            .Setup(x => x.RemoveSessionsAsync(It.IsAny<RemoveSessionsContext>()))
+            .Setup(x => x.RemoveSessionsAsync(It.IsAny<RemoveSessionsContext>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         var model = CreateModel(mockService.Object);
@@ -83,7 +83,7 @@ public class ServerSideSessionsIndexModelTests
         var result = await model.OnPostAsync();
 
         // Assert
-        mockService.Verify(x => x.RemoveSessionsAsync(It.IsAny<RemoveSessionsContext>()), Times.Once);
+        mockService.Verify(x => x.RemoveSessionsAsync(It.IsAny<RemoveSessionsContext>(), It.IsAny<CancellationToken>()), Times.Once);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("/Account/Manage/ServerSideSessions", redirect.PageName);
     }

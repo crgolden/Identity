@@ -21,7 +21,7 @@ Identity is the **authorization server** for a five-app system. It issues all ac
 
 ## Features
 
-- **OIDC/OAuth2** authorization server via Duende IdentityServer 7
+- **OIDC/OAuth2** authorization server via Duende IdentityServer 8
 - **Local accounts** with email confirmation (via Azure Service Bus)
 - **Google** external login (OpenID Connect)
 - **Passkeys / WebAuthn** (ASP.NET Core Identity built-in support)
@@ -43,7 +43,7 @@ Identity is the **authorization server** for a five-app system. It issues all ac
 | Layer | Technology |
 |---|---|
 | Framework | ASP.NET Core 10 (Razor Pages) |
-| Auth server | Duende IdentityServer 7 |
+| Auth server | Duende IdentityServer 8 |
 | Identity | ASP.NET Core Identity (`IdentityUser<Guid>`) |
 | Database | SQL Server via EF Core 10 |
 | Schema deployment | SQL Database Project (dacpac) |
@@ -67,7 +67,7 @@ Identity is the **authorization server** for a five-app system. It issues all ac
 ### 1. Configure User Secrets
 
 ```bash
-cd Identity.Api
+cd Identity
 dotnet user-secrets set "ElasticsearchNode" "<your-elasticsearch-node-uri>"
 dotnet user-secrets set "KeyVaultUri" "<your-key-vault-uri>"
 dotnet user-secrets set "BlobUri" "<your-blob-storage-uri>"
@@ -108,7 +108,7 @@ sqlpackage /Action:Publish /SourceFile:Identity.Data/bin/Release/Identity.Data.d
 ### 3. Run
 
 ```bash
-cd Identity.Api
+cd Identity
 dotnet run
 ```
 
@@ -117,7 +117,7 @@ App is available at `https://localhost:7261` (HTTPS) or `http://localhost:5021` 
 ## Project Structure
 
 ```
-Identity.Api/        # ASP.NET Core 10 Razor Pages web app and DbContext
+Identity/            # ASP.NET Core 10 Razor Pages web app and DbContext
 Identity.Data/       # SQL Server Database Project — schema source of truth, builds to .dacpac
 Identity.Tests/      # xUnit v3 test project: unit tests (Moq), E2E tests (Playwright/Chromium), load tests
 Identity.Benchmarks/ # BenchmarkDotNet microbenchmarks for authentication hot paths
@@ -162,7 +162,7 @@ dotnet run --project Identity.Benchmarks -c Release
 dotnet stryker --config-file stryker-config.json
 
 # Publish web app (-r win-x86 required: Azure App Service Free tier supports 32-bit only)
-dotnet publish Identity.Api -c Release -r win-x86 --self-contained false -o ./publish
+dotnet publish Identity -c Release -r win-x86 --self-contained false -o ./publish
 ```
 
 ## AI Assistant Integration (Claude Code)

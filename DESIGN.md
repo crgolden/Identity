@@ -5,7 +5,7 @@
 This application is a standalone **OpenID Connect Identity Provider** (IdP). Client applications redirect users here to authenticate, and this app issues tokens that clients use to verify identity. It does not host any application logic beyond authentication and account management.
 
 Built on:
-- **Duende IdentityServer 7** — authorization server (OIDC/OAuth2 token issuance)
+- **Duende IdentityServer 8** — authorization server (OIDC/OAuth2 token issuance)
 - **ASP.NET Core Identity** — user store, password hashing, 2FA, passkeys
 - **SQL Server** — persistence via EF Core (`ApplicationDbContext`)
 
@@ -15,7 +15,7 @@ Built on:
 
 | Project | Type | Role |
 |---|---|---|
-| `Identity.Api/` | ASP.NET Core 10 web app | The running application — Razor Pages, services, `Program.cs`, `ApplicationDbContext` |
+| `Identity/` | ASP.NET Core 10 web app | The running application — Razor Pages, services, `Program.cs`, `ApplicationDbContext` |
 | `Identity.Data/` | SQL Server Database Project (SSDT) | Authoritative schema source; builds to a `.dacpac` for production deployment |
 | `Identity.Tests/` | xUnit v3 test project | Unit, E2E (Playwright/Chromium), load, and property-based tests |
 | `Identity.Benchmarks/` | BenchmarkDotNet project | Microbenchmarks for password hashing and Gravatar SHA-256 computation |
@@ -210,7 +210,7 @@ EF Core migrations are not used. The `Identity.Data/` SQL Server Database Projec
 
 | Service | Purpose | Registration |
 |---|---|---|
-| **Azure Service Bus** | Transactional email (confirmation, password reset) | Pages inject `IAzureClientFactory<ServiceBusSender>` directly; namespace from Key Vault (production) or connection string (non-production) |
+| **Azure Service Bus** | Transactional email (confirmation, password reset) | Pages inject `IAzureClientFactory<ServiceBusClient>`; call `CreateClient("crgolden")` then `CreateSender("email")` per send; namespace from Key Vault (production) or connection string (non-production) |
 | **Gravatar** | User avatar images via SHA-256 email hash | `IAvatarService` → `GravatarService` (scoped); NSwag-generated `IGravatar` HTTP client with Bearer auth |
 | **Google APIs** | External OpenID Connect login | `AddGoogleOpenIdConnect`; Client ID/Secret from Key Vault |
 | **Azure Key Vault** | Runtime secrets (DB credentials, API keys, OAuth secrets) | `SecretClient`; 8 secrets fetched concurrently at startup via `Task.WhenAll` |
@@ -346,7 +346,7 @@ UseSerilogRequestLogging
 
 **`IdentityWebApplicationFactory`** — extends `WebApplicationFactory<Program>`:
 - Starts a real Kestrel HTTPS server on a random port for Playwright.
-- Replaces `IAzureClientFactory<ServiceBusSender>` with `TestServiceBusSenderFactory` backed by `EmailCaptureSender` (captures email messages instead of calling Azure Service Bus).
+- Replaces `IAzureClientFactory<ServiceBusClient>` with `TestServiceBusClientFactory` (wraps a `TestServiceBusClient` that returns `EmailCaptureSender` from `CreateSender`, capturing email messages instead of calling Azure Service Bus).
 - Replaces `IAvatarService` with `NullAvatarService` (avoids Gravatar HTTP calls).
 - In Development, replaces Serilog `ILoggerFactory` with a console logger (avoids Elasticsearch connection at startup).
 
@@ -379,7 +379,7 @@ Defined in `.github/workflows/main_crgolden-identity.yml`. Triggers: push to `ma
 1. Set up Java 17 (SonarCloud scanner), .NET 10, restore NuGet cache.
 2. Begin SonarCloud scan.
 3. `dotnet build --no-incremental --configuration Release` — builds all projects including the `.dacpac`.
-4. Run unit tests with `dotnet-coverage`; write `coverage.xml`.
+4. Run unit tests with `coverlet.console` (OpenCover); write `coverage.opencover.xml`.
 5. Azure OIDC login → deploy `.dacpac` to E2E test database.
 6. Run E2E tests (`ASPNETCORE_ENVIRONMENT=CI`); write `coverage-e2e.xml`.
 7. End SonarCloud scan (reads both coverage files).
