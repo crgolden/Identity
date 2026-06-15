@@ -1,4 +1,3 @@
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account;
 using Infrastructure;
 
@@ -27,9 +26,7 @@ public class ResendEmailConfirmationModelTests
     public async Task OnPostAsync_ModelStateInvalid_ReturnsPageWithoutCallingDependencies()
     {
         // Arrange
-        var mockUserStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var mockUserManager = new Mock<UserManager<IdentityUser<Guid>>>(
-            mockUserStore, null, null, null, null, null, null, null, null);
+        var mockUserManager = MockHelpers.MockUserManager();
 
         var (factory, senderMock) = CreateSenderFactoryWithMock();
 
@@ -57,9 +54,7 @@ public class ResendEmailConfirmationModelTests
     public async Task OnPostAsync_UserNotFound_AddsModelErrorAndReturnsPage(string email)
     {
         // Arrange
-        var mockUserStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var mockUserManager = new Mock<UserManager<IdentityUser<Guid>>>(
-            mockUserStore, null, null, null, null, null, null, null, null);
+        var mockUserManager = MockHelpers.MockUserManager();
 
         mockUserManager
             .Setup(m => m.FindByEmailAsync(It.IsAny<string>()))
@@ -89,32 +84,6 @@ public class ResendEmailConfirmationModelTests
 
         mockUserManager.Verify(m => m.FindByEmailAsync(It.Is<string>(s => s == email)), Times.Once);
         senderMock.Verify(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()), Times.Never);
-    }
-
-    [Fact]
-    public void Constructor_NullArguments_Notes()
-    {
-        // Arrange
-        var mockStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var mockUserManager = new Mock<UserManager<IdentityUser<Guid>>>(mockStore, null, null, null, null, null, null, null, null);
-
-        // Act
-        var exception = Record.Exception(() => new ResendEmailConfirmationModel(mockUserManager.Object, CreateClientFactory()));
-
-        // Assert
-        Assert.Null(exception);
-    }
-
-    private static IAzureClientFactory<ServiceBusClient> CreateClientFactory()
-    {
-        var senderMock = new Mock<ServiceBusSender>(MockBehavior.Strict);
-        senderMock.Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
-        var clientMock = new Mock<ServiceBusClient>(MockBehavior.Strict);
-        clientMock.Setup(c => c.CreateSender("email")).Returns(senderMock.Object);
-        var factoryMock = new Mock<IAzureClientFactory<ServiceBusClient>>(MockBehavior.Strict);
-        factoryMock.Setup(f => f.CreateClient("crgolden")).Returns(clientMock.Object);
-        return factoryMock.Object;
     }
 
     private static (IAzureClientFactory<ServiceBusClient> factory, Mock<ServiceBusSender> senderMock) CreateSenderFactoryWithMock()

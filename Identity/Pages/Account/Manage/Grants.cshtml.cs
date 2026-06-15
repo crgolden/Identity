@@ -30,6 +30,10 @@ public class GrantsModel : PageModel
         IResourceStore resources,
         IEventService events)
     {
+        ArgumentNullException.ThrowIfNull(interaction);
+        ArgumentNullException.ThrowIfNull(clients);
+        ArgumentNullException.ThrowIfNull(resources);
+        ArgumentNullException.ThrowIfNull(events);
         _interaction = interaction;
         _clients = clients;
         _resources = resources;

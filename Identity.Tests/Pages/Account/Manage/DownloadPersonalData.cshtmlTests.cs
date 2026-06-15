@@ -1,4 +1,3 @@
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account.Manage;
 using Infrastructure;
 
@@ -17,8 +16,8 @@ public class DownloadPersonalDataModelTests
     [Fact]
     public void OnGet_DefaultState_ReturnsNotFoundResult()
     {
-        // userManager is not used by OnGet; pass null with null-forgiving to satisfy compiler nullable analysis.
-        var model = new DownloadPersonalDataModel(null!);
+        // userManager is not used by OnGet, but the constructor guards against null, so pass a real mock.
+        var model = new DownloadPersonalDataModel(MockHelpers.MockUserManager().Object);
 
         // Act
         var result = model.OnGet();
@@ -33,8 +32,7 @@ public class DownloadPersonalDataModelTests
     {
         // Arrange
         var userId = "sentinel-user-id";
-        var userStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(userStore, null, null, null, null, null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
 
         userManagerMock
             .Setup(u => u.GetUserAsync(It.IsAny<System.Security.Claims.ClaimsPrincipal>()))
@@ -91,22 +89,5 @@ public class DownloadPersonalDataModelTests
         Assert.NotNull(model);
         var result = model.OnGet();
         Assert.IsType<NotFoundResult>(result);
-    }
-
-    [Fact]
-    public void Constructor_NullDependencies_DocumentationOnly()
-    {
-        // Arrange
-        // The source constructor simply assigns provided parameters to private readonly fields.
-        // It does not perform null checks in the provided source. Because of that:
-        // - We cannot safely assert that passing null should throw ArgumentNullException.
-        // - Tests that pass null would violate the requirement to avoid assigning null to non-nullable types.
-        //
-        // Guidance:
-        // If the desired behavior is to throw on null arguments, update the production constructor
-        // to validate arguments (e.g., throw new ArgumentNullException(nameof(userManager))).
-        // Once that validation exists, add explicit null-arg tests.
-        // For now, mark test as skipped to avoid making invalid assumptions.
-        Assert.True(true, "Skipped - null handling not defined in source; add explicit validation in production before asserting.");
     }
 }

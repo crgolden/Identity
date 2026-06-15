@@ -1,5 +1,3 @@
-#pragma warning disable CS8604
-#pragma warning disable CS8625
 namespace Identity.Tests.Pages.Account.Manage;
 using Infrastructure;
 
@@ -13,12 +11,10 @@ public class DeviceSuccessModelTests
     [Fact]
     public void Constructor_NoParameters_DoesNotThrow()
     {
-        // Arrange & Act
-        DeviceSuccessModel model = null!;
-        var ex = Record.Exception(() => model = new DeviceSuccessModel());
+        // Act
+        var model = new DeviceSuccessModel();
 
         // Assert
-        Assert.Null(ex);
         Assert.NotNull(model);
     }
 

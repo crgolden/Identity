@@ -1,5 +1,3 @@
-#pragma warning disable CS8604
-#pragma warning disable CS8625
 namespace Identity.Tests.Pages.Account.Manage;
 using Infrastructure;
 
@@ -19,25 +17,6 @@ using Moq;
 [Trait("Category", "Unit")]
 public class GrantsIndexModelTests
 {
-    [Fact]
-    public void Constructor_NullParameters_DoesNotThrow()
-    {
-        // Arrange
-        IIdentityServerInteractionService? interaction = null;
-        IClientStore? clients = null;
-        IResourceStore? resources = null;
-        IEventService? events = null;
-
-        // Act
-        GrantsModel model = null!;
-        var ex = Record.Exception(() => model = new GrantsModel(interaction, clients, resources, events));
-
-        // Assert
-        Assert.Null(ex);
-        Assert.NotNull(model);
-        Assert.IsType<PageModel>(model, exactMatch: false);
-    }
-
     [Fact]
     public async Task OnGetAsync_NoGrants_SetsEmptyViewModel()
     {
@@ -232,10 +211,10 @@ public class GrantsIndexModelTests
     }
 
     private static GrantsModel CreateModel(
-        IIdentityServerInteractionService? interaction = null,
-        IClientStore? clients = null,
-        IResourceStore? resources = null,
-        IEventService? events = null,
+        IIdentityServerInteractionService interaction,
+        IClientStore clients,
+        IResourceStore resources,
+        IEventService events,
         HttpContext? httpContext = null)
     {
         var model = new GrantsModel(interaction, clients, resources, events);

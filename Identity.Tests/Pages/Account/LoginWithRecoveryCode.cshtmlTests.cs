@@ -1,5 +1,3 @@
-#pragma warning disable CS8604 // Possible null reference argument.
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account;
 using Infrastructure;
 
@@ -20,7 +18,7 @@ public class LoginWithRecoveryCodeModelTests
     // MemberData providing a variety of string edge cases including null.
     public static TheoryData<string?> ReturnUrlValues() => new()
     {
-        null,
+        (string?)null,
         string.Empty,
         " ",
         "/account/manage?return=true",
@@ -102,23 +100,6 @@ public class LoginWithRecoveryCodeModelTests
     }
 
     [Fact]
-    public void LoginWithRecoveryCodeModel_Constructor_NullSignInManager_DoesNotThrowAndDefaults()
-    {
-        // Arrange
-        SignInManager<IdentityUser<Guid>>? signInManager = null;
-
-        // Act
-        var exception = Record.Exception(() => new LoginWithRecoveryCodeModel(signInManager));
-        var model = new LoginWithRecoveryCodeModel(signInManager);
-
-        // Assert
-        Assert.Null(exception);
-        Assert.NotNull(model);
-        Assert.NotNull(model.Input);
-        Assert.Null(model.ReturnUrl);
-    }
-
-    [Fact]
     public async Task OnGetAsync_NoTwoFactorUser_ThrowsInvalidOperationException()
     {
         // Arrange
@@ -193,15 +174,7 @@ public class LoginWithRecoveryCodeModelTests
 
     private static Mock<SignInManager<IdentityUser<Guid>>> CreateSignInManagerMock()
     {
-        var userStoreMock = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(userStoreMock, null, null, null, null, null, null, null, null);
-        return new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManagerMock.Object,
-            Mock.Of<IHttpContextAccessor>(),
-            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
-            Mock.Of<IOptions<IdentityOptions>>(),
-            Mock.Of<ILogger<SignInManager<IdentityUser<Guid>>>>(),
-            Mock.Of<IAuthenticationSchemeProvider>(),
-            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
+        var userManagerMock = MockHelpers.MockUserManager();
+        return MockHelpers.MockSignInManager(userManagerMock.Object);
     }
 }

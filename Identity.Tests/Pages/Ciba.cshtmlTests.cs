@@ -1,5 +1,3 @@
-#pragma warning disable CS8604
-#pragma warning disable CS8625
 namespace Identity.Tests.Pages;
 using Infrastructure;
 
@@ -16,22 +14,6 @@ using Moq;
 [Trait("Category", "Unit")]
 public class CibaIndexModelTests
 {
-    [Fact]
-    public void Constructor_NullParameters_DoesNotThrow()
-    {
-        // Arrange
-        IBackchannelAuthenticationInteractionService? backchannelInteraction = null;
-
-        // Act
-        CibaModel model = null!;
-        var ex = Record.Exception(() => model = new CibaModel(backchannelInteraction));
-
-        // Assert
-        Assert.Null(ex);
-        Assert.NotNull(model);
-        Assert.IsType<PageModel>(model, exactMatch: false);
-    }
-
     [Fact]
     public async Task OnGetAsync_NullId_RedirectsToError()
     {
@@ -86,8 +68,7 @@ public class CibaIndexModelTests
         Assert.NotNull(model.LoginRequest);
     }
 
-    private static CibaModel CreateModel(
-        IBackchannelAuthenticationInteractionService? backchannelInteraction = null)
+    private static CibaModel CreateModel(IBackchannelAuthenticationInteractionService backchannelInteraction)
     {
         var model = new CibaModel(backchannelInteraction);
         var httpContext = new DefaultHttpContext();

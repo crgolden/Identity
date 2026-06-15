@@ -16,6 +16,7 @@ public class CibaModel : PageModel
 
     public CibaModel(IBackchannelAuthenticationInteractionService backchannelInteraction)
     {
+        ArgumentNullException.ThrowIfNull(backchannelInteraction);
         _backchannelInteraction = backchannelInteraction;
     }
 

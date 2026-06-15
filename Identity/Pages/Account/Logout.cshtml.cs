@@ -17,6 +17,8 @@ public class LogoutModel : PageModel
         SignInManager<IdentityUser<Guid>> signInManager,
         IIdentityServerInteractionService interactionService)
     {
+        ArgumentNullException.ThrowIfNull(signInManager);
+        ArgumentNullException.ThrowIfNull(interactionService);
         _signInManager = signInManager;
         _interactionService = interactionService;
     }

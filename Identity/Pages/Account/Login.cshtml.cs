@@ -22,6 +22,9 @@ public class LoginModel : PageModel
         ChannelWriter<string> pictureClaimWriter,
         ICAPTCHAService captchaService)
     {
+        ArgumentNullException.ThrowIfNull(signInManager);
+        ArgumentNullException.ThrowIfNull(pictureClaimWriter);
+        ArgumentNullException.ThrowIfNull(captchaService);
         _signInManager = signInManager;
         _pictureClaimWriter = pictureClaimWriter;
         _captchaService = captchaService;

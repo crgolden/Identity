@@ -14,6 +14,8 @@ public class ConfirmEmailChangeModel : PageModel
 
     public ConfirmEmailChangeModel(UserManager<IdentityUser<Guid>> userManager, SignInManager<IdentityUser<Guid>> signInManager)
     {
+        ArgumentNullException.ThrowIfNull(userManager);
+        ArgumentNullException.ThrowIfNull(signInManager);
         _userManager = userManager;
         _signInManager = signInManager;
     }

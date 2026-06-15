@@ -14,7 +14,7 @@ Identity is the **authorization server** for a five-app system. It issues all ac
 
 | Repo | Role | How Identity interacts |
 |---|---|---|
-| [Experience](https://github.com/crgolden/Experience) | Angular SPA + ASP.NET Core BFF | OIDC client; the BFF holds the session and obtains scoped access tokens for `manuals` and `products` |
+| [Inventory](https://github.com/crgolden/Inventory) | Angular SPA + ASP.NET Core BFF | OIDC client; the BFF holds the session and obtains scoped access tokens for `manuals` and `products` |
 | [Manuals](https://github.com/crgolden/Manuals) | Azure OpenAI chat API | Resource server — validates JWTs issued by Identity (scope `manuals`) |
 | [Products](https://github.com/crgolden/Products) | OData v4 product catalog API | Resource server — validates JWTs issued by Identity (scope `products`) |
 | [Infrastructure](https://github.com/crgolden/Infrastructure) | Health monitoring dashboard | Polls Identity's `/health` endpoint |

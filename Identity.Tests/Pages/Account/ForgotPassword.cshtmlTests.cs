@@ -1,5 +1,3 @@
-#pragma warning disable CS8604 // Possible null reference argument.
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account;
 using Infrastructure;
 
@@ -16,21 +14,11 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ForgotPasswordModelTests
 {
-    public static TheoryData<bool, bool> ConstructorNullCombinations() => new()
-    {
-        { false, false }, // both provided
-        { true, false },  // userManager null
-        { false, true },  // factory with no sender setup
-        { true, true },   // userManager null and factory with no sender setup
-    };
-
     [Fact]
     public async Task OnPostAsync_ModelStateInvalid_ReturnsPage()
     {
         // Arrange
-        var store = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
-            store.Object, null, null, null, null, null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
 
         var (factory, senderMock) = CreateSenderFactoryWithMock();
 
@@ -59,9 +47,7 @@ public class ForgotPasswordModelTests
     public async Task OnPostAsync_UserNullOrUnconfirmed_RedirectsToConfirmation_DoesNotSendEmail(bool userExists, bool isConfirmed)
     {
         // Arrange
-        var store = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
-            store.Object, null, null, null, null, null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
 
         var (factory, senderMock) = CreateSenderFactoryWithMock();
 
@@ -99,68 +85,6 @@ public class ForgotPasswordModelTests
         senderMock.Verify(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()), Times.Never);
 
         userManagerMock.Verify();
-    }
-
-    [Theory]
-    [MemberData(nameof(ConstructorNullCombinations))]
-    public void ForgotPasswordModel_Constructor_DependencyNullAllowed_ShouldCreateInstance(bool userManagerNull, bool factoryMinimal)
-    {
-        // Arrange
-        UserManager<IdentityUser<Guid>>? userManager = null;
-
-        if (!userManagerNull)
-        {
-            // Provide a minimal IUserStore mock required by UserManager constructor.
-            var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-
-            // It's acceptable to pass null for many of the optional services in the UserManager ctor.
-            userManager = new UserManager<IdentityUser<Guid>>(
-                storeMock.Object,
-                optionsAccessor: null,
-                passwordHasher: null,
-                userValidators: null,
-                passwordValidators: null,
-                keyNormalizer: null,
-                errors: null,
-                services: null,
-                logger: null);
-        }
-
-        IAzureClientFactory<ServiceBusClient> factory;
-        if (!factoryMinimal)
-        {
-            factory = CreateClientFactory();
-        }
-        else
-        {
-            // Factory that returns null client — constructor won't throw but client is null.
-            factory = Mock.Of<IAzureClientFactory<ServiceBusClient>>();
-        }
-
-        // Act
-        var ex = Record.Exception(() => new ForgotPasswordModel(userManager, factory));
-        var model = new ForgotPasswordModel(userManager, factory);
-
-        // Assert
-        Assert.Null(ex);
-        Assert.NotNull(model);
-        Assert.IsType<ForgotPasswordModel>(model);
-        Assert.IsType<PageModel>(model, exactMatch: false);
-
-        // Constructor initializes Input with a default InputModel instance.
-        Assert.NotNull(model.Input);
-    }
-
-    private static IAzureClientFactory<ServiceBusClient> CreateClientFactory()
-    {
-        var senderMock = new Mock<ServiceBusSender>(MockBehavior.Strict);
-        senderMock.Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
-        var clientMock = new Mock<ServiceBusClient>(MockBehavior.Strict);
-        clientMock.Setup(c => c.CreateSender("email")).Returns(senderMock.Object);
-        var factoryMock = new Mock<IAzureClientFactory<ServiceBusClient>>(MockBehavior.Strict);
-        factoryMock.Setup(f => f.CreateClient("crgolden")).Returns(clientMock.Object);
-        return factoryMock.Object;
     }
 
     private static (IAzureClientFactory<ServiceBusClient> factory, Mock<ServiceBusSender> senderMock) CreateSenderFactoryWithMock()

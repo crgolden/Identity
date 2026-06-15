@@ -17,6 +17,9 @@ public class ExternalLoginsModel : PageModel
         SignInManager<IdentityUser<Guid>> signInManager,
         IUserStore<IdentityUser<Guid>> userStore)
     {
+        ArgumentNullException.ThrowIfNull(userManager);
+        ArgumentNullException.ThrowIfNull(signInManager);
+        ArgumentNullException.ThrowIfNull(userStore);
         _userManager = userManager;
         _signInManager = signInManager;
         _userStore = userStore;

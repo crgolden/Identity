@@ -1,5 +1,3 @@
-#pragma warning disable CS8604 // Possible null reference argument.
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account.Manage;
 using Infrastructure;
 
@@ -37,17 +35,7 @@ public class ResetAuthenticatorModelTests
     public async Task OnGet_UserExistence_ReturnsExpectedResult(bool userExists, string? expectedUserId, Type expectedResultType, string? expectedMessage)
     {
         // Arrange
-        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
-            storeMock.Object,
-            null, // IOptions<IdentityOptions>
-            null, // IPasswordHasher<TUser>
-            null, // IEnumerable<IUserValidator<TUser>>
-            null, // IEnumerable<IPasswordValidator<TUser>>
-            null, // ILookupNormalizer
-            null, // IdentityErrorDescriber
-            null, // IServiceProvider
-            null);  // ILogger<UserManager<TUser>>
+        var userManagerMock = MockHelpers.MockUserManager();
 
         // Setup GetUserAsync to return a user or null based on input
         userManagerMock
@@ -59,24 +47,9 @@ public class ResetAuthenticatorModelTests
             .Setup(u => u.GetUserId(It.IsAny<ClaimsPrincipal>()))
             .Returns(expectedUserId);
 
-        // Create a SignInManager instance with minimal mocked dependencies (not used by OnGet)
-        var httpContextAccessorMock = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
-        var claimsFactoryMock = new Mock<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>();
-        var options = Options.Create(new IdentityOptions());
-        var loggerSignInMock = new Mock<ILogger<SignInManager<IdentityUser<Guid>>>>();
-        var schemesMock = new Mock<IAuthenticationSchemeProvider>(MockBehavior.Strict);
-        var confirmationMock = new Mock<IUserConfirmation<IdentityUser<Guid>>>();
+        var signInManager = MockHelpers.MockSignInManager(userManagerMock.Object);
 
-        var signInManager = new SignInManager<IdentityUser<Guid>>(
-            userManagerMock.Object,
-            httpContextAccessorMock.Object,
-            claimsFactoryMock.Object,
-            options,
-            loggerSignInMock.Object,
-            schemesMock.Object,
-            confirmationMock.Object);
-
-        var model = new ResetAuthenticatorModel(userManagerMock.Object, signInManager);
+        var model = new ResetAuthenticatorModel(userManagerMock.Object, signInManager.Object);
 
         // Set up a minimal PageContext with a ClaimsPrincipal so PageModel.User is available
         var principal = new ClaimsPrincipal(new ClaimsIdentity(
@@ -117,17 +90,7 @@ public class ResetAuthenticatorModelTests
     {
         // Arrange
         var userIdString = "missing-user-id";
-        var userStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var mockUserManager = new Mock<UserManager<IdentityUser<Guid>>>(
-            userStore,
-            Mock.Of<IOptions<IdentityOptions>>(),
-            Mock.Of<IPasswordHasher<IdentityUser<Guid>>>(),
-            Enumerable.Empty<IUserValidator<IdentityUser<Guid>>>(),
-            Enumerable.Empty<IPasswordValidator<IdentityUser<Guid>>>(),
-            Mock.Of<ILookupNormalizer>(),
-            Mock.Of<IdentityErrorDescriber>(),
-            null,
-            Mock.Of<ILogger<UserManager<IdentityUser<Guid>>>>());
+        var mockUserManager = MockHelpers.MockUserManager();
 
         // GetUserAsync returns null to simulate missing user
         mockUserManager
@@ -139,14 +102,7 @@ public class ResetAuthenticatorModelTests
             .Setup(um => um.GetUserId(It.IsAny<ClaimsPrincipal>()))
             .Returns(userIdString);
 
-        var mockSignInManager = new Mock<SignInManager<IdentityUser<Guid>>>(
-            mockUserManager.Object,
-            Mock.Of<IHttpContextAccessor>(),
-            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
-            Mock.Of<IOptions<IdentityOptions>>(),
-            Mock.Of<ILogger<SignInManager<IdentityUser<Guid>>>>(),
-            Mock.Of<IAuthenticationSchemeProvider>(),
-            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
+        var mockSignInManager = MockHelpers.MockSignInManager(mockUserManager.Object);
 
         var model = new ResetAuthenticatorModel(mockUserManager.Object, mockSignInManager.Object);
 
@@ -175,17 +131,7 @@ public class ResetAuthenticatorModelTests
         // Arrange
         var user = new IdentityUser<Guid> { Id = Guid.NewGuid(), UserName = "tester" };
 
-        var userStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var mockUserManager = new Mock<UserManager<IdentityUser<Guid>>>(
-            userStore,
-            Mock.Of<IOptions<IdentityOptions>>(),
-            Mock.Of<IPasswordHasher<IdentityUser<Guid>>>(),
-            Enumerable.Empty<IUserValidator<IdentityUser<Guid>>>(),
-            Enumerable.Empty<IPasswordValidator<IdentityUser<Guid>>>(),
-            Mock.Of<ILookupNormalizer>(),
-            Mock.Of<IdentityErrorDescriber>(),
-            null,
-            Mock.Of<ILogger<UserManager<IdentityUser<Guid>>>>());
+        var mockUserManager = MockHelpers.MockUserManager();
 
         mockUserManager
             .Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
@@ -201,14 +147,7 @@ public class ResetAuthenticatorModelTests
             .Setup(um => um.ResetAuthenticatorKeyAsync(user))
             .ReturnsAsync(identityResult);
 
-        var mockSignInManager = new Mock<SignInManager<IdentityUser<Guid>>>(
-            mockUserManager.Object,
-            Mock.Of<IHttpContextAccessor>(),
-            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
-            Mock.Of<IOptions<IdentityOptions>>(),
-            Mock.Of<ILogger<SignInManager<IdentityUser<Guid>>>>(),
-            Mock.Of<IAuthenticationSchemeProvider>(),
-            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
+        var mockSignInManager = MockHelpers.MockSignInManager(mockUserManager.Object);
 
         mockSignInManager
             .Setup(sm => sm.RefreshSignInAsync(user))
@@ -229,40 +168,5 @@ public class ResetAuthenticatorModelTests
         mockUserManager.Verify(um => um.SetTwoFactorEnabledAsync(user, false), Times.Once);
         mockUserManager.Verify(um => um.ResetAuthenticatorKeyAsync(user), Times.Once);
         mockSignInManager.Verify(sm => sm.RefreshSignInAsync(user), Times.Once);
-    }
-
-    [Fact]
-    public void ResetAuthenticatorModel_Constructor_WithValidDependencies_DoesNotThrow()
-    {
-        // Arrange
-        // NOTE: The following shows intent. Concrete construction of UserManager and SignInManager
-        // is environment-specific and requires stores, options, context accessors, and factories.
-        // Do NOT implement fakes or custom test types here per project rules. Use DI-provided or
-        // helper-factory instances in real tests.
-
-        // Passing null managers because the constructor only stores the references and does not access them.
-        UserManager<IdentityUser<Guid>>? userManager = null;
-        SignInManager<IdentityUser<Guid>>? signInManager = null;
-
-        // Act
-        var model = new ResetAuthenticatorModel(userManager, signInManager);
-
-        // Assert
-        // If constructor completes, the test should verify no exception was thrown.
-        Assert.NotNull(model);
-    }
-
-    [Fact]
-    public void ResetAuthenticatorModel_Constructor_NullDependencies_BehaviorDocumented()
-    {
-        // Arrange
-        UserManager<IdentityUser<Guid>>? nullUserManager = null;
-        SignInManager<IdentityUser<Guid>>? nullSignInManager = null;
-
-        // Act
-        var model = new ResetAuthenticatorModel(nullUserManager, nullSignInManager);
-
-        // Assert
-        Assert.NotNull(model);
     }
 }

@@ -1,5 +1,3 @@
-#pragma warning disable CS8604
-#pragma warning disable CS8625
 namespace Identity.Tests.Pages.Account.Manage;
 using Infrastructure;
 
@@ -18,24 +16,20 @@ public class ServerSideSessionsIndexModelTests
     [Fact]
     public void Constructor_NullService_DoesNotThrow()
     {
-        // Arrange & Act
-        ServerSideSessionsModel model = null!;
-        var ex = Record.Exception(() => model = new ServerSideSessionsModel());
+        // Act
+        var model = new ServerSideSessionsModel();
 
         // Assert
-        Assert.Null(ex);
         Assert.NotNull(model);
     }
 
     [Fact]
     public void Constructor_NoService_DefaultConstructor_DoesNotThrow()
     {
-        // Arrange & Act
-        ServerSideSessionsModel model = null!;
-        var ex = Record.Exception(() => model = new ServerSideSessionsModel());
+        // Act
+        var model = new ServerSideSessionsModel();
 
         // Assert
-        Assert.Null(ex);
         Assert.NotNull(model);
         Assert.IsType<PageModel>(model, exactMatch: false);
     }

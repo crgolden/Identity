@@ -1,4 +1,3 @@
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account;
 using Infrastructure;
 
@@ -217,19 +216,7 @@ public class LoginWith2faModelTests
 
     private static Mock<SignInManager<IdentityUser<Guid>>> CreateSignInManagerMock()
     {
-        var userStoreMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
-            userStoreMock.Object, null, null, null, null, null, null, null, null);
-
-        var mock = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManagerMock.Object,
-            Mock.Of<IHttpContextAccessor>(),
-            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
-            Options.Create(new IdentityOptions()),
-            Mock.Of<ILogger<SignInManager<IdentityUser<Guid>>>>(),
-            Mock.Of<IAuthenticationSchemeProvider>(),
-            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
-
-        return mock;
+        var userManagerMock = MockHelpers.MockUserManager();
+        return MockHelpers.MockSignInManager(userManagerMock.Object);
     }
 }

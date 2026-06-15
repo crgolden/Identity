@@ -1,5 +1,3 @@
-#pragma warning disable CS8604 // Possible null reference argument.
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account.Manage;
 using Infrastructure;
 
@@ -19,22 +17,6 @@ using Moq;
 [Trait("Category", "Unit")]
 public class SetPasswordModelTests
 {
-    [Fact]
-    public void Constructor_BothDependenciesNull_DoesNotThrowAndCreatesInstance()
-    {
-        // Arrange
-        UserManager<IdentityUser<Guid>>? userManager = null;
-        SignInManager<IdentityUser<Guid>>? signInManager = null;
-
-        // Act
-        var exception = Record.Exception(() => new SetPasswordModel(userManager, signInManager));
-
-        // Assert
-        Assert.Null(exception);
-        var model = new SetPasswordModel(userManager, signInManager);
-        Assert.NotNull(model);
-    }
-
     [Fact]
     public void Constructor_WithNonNullDependencies_NotImplemented()
     {
@@ -89,16 +71,8 @@ public class SetPasswordModelTests
     public async Task OnPostAsync_ModelStateInvalid_ReturnsPage()
     {
         // Arrange
-        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock.Object, null, null, null, null, null, null, null, null);
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManagerMock.Object,
-            Mock.Of<IHttpContextAccessor>(),
-            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
-            Mock.Of<IOptions<IdentityOptions>>(),
-            Mock.Of<ILogger<SignInManager<IdentityUser<Guid>>>>(),
-            Mock.Of<IAuthenticationSchemeProvider>(),
-            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
+        var userManagerMock = MockHelpers.MockUserManager();
+        var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
 
         var pageModel = new SetPasswordModel(userManagerMock.Object, signInManagerMock.Object);
 
@@ -122,9 +96,7 @@ public class SetPasswordModelTests
     {
         // Arrange
         var expectedUserId = "user-123";
-        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
-            storeMock.Object, null, null, null, null, null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
         userManagerMock
             .Setup(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
             .ReturnsAsync((IdentityUser<Guid>?)null);
@@ -132,14 +104,7 @@ public class SetPasswordModelTests
             .Setup(u => u.GetUserId(It.IsAny<ClaimsPrincipal>()))
             .Returns(expectedUserId);
 
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManagerMock.Object,
-            Mock.Of<IHttpContextAccessor>(),
-            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
-            Mock.Of<IOptions<IdentityOptions>>(),
-            Mock.Of<ILogger<SignInManager<IdentityUser<Guid>>>>(),
-            Mock.Of<IAuthenticationSchemeProvider>(),
-            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
+        var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
 
         var pageModel = new SetPasswordModel(userManagerMock.Object, signInManagerMock.Object);
 
@@ -160,28 +125,9 @@ public class SetPasswordModelTests
     public async Task OnGetAsync_UserNotFound_ReturnsNotFoundWithUserIdInMessage()
     {
         // Arrange
-        var mockUserStore = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var mockUserManager = new Mock<UserManager<IdentityUser<Guid>>>(
-                mockUserStore.Object,
-                null, // IOptions<IdentityOptions>
-                null, // IPasswordHasher<IdentityUser<Guid>>
-                null, // IEnumerable<IUserValidator<IdentityUser<Guid>>>
-                null, // IEnumerable<IPasswordValidator<IdentityUser<Guid>>>
-                null, // ILookupNormalizer
-                null, // IdentityErrorDescriber
-                null, // IServiceProvider
-                null) // ILogger<UserManager<IdentityUser<Guid>>>
-        { CallBase = false };
+        var mockUserManager = MockHelpers.MockUserManager();
 
-        var mockSignInManager = new Mock<SignInManager<IdentityUser<Guid>>>(
-                mockUserManager.Object,
-                new Mock<IHttpContextAccessor>(MockBehavior.Strict).Object,
-                new Mock<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>().Object,
-                null,
-                null,
-                new Mock<IAuthenticationSchemeProvider>(MockBehavior.Strict).Object,
-                new Mock<IUserConfirmation<IdentityUser<Guid>>>().Object)
-        { CallBase = false };
+        var mockSignInManager = MockHelpers.MockSignInManager(mockUserManager.Object);
 
         const string expectedId = "expected-user-id";
         mockUserManager
@@ -218,28 +164,9 @@ public class SetPasswordModelTests
     public async Task OnGetAsync_ExistingUser_BehavesBasedOnHasPassword(bool hasPassword)
     {
         // Arrange
-        var mockUserStore = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var mockUserManager = new Mock<UserManager<IdentityUser<Guid>>>(
-                mockUserStore.Object,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null)
-        { CallBase = false };
+        var mockUserManager = MockHelpers.MockUserManager();
 
-        var mockSignInManager = new Mock<SignInManager<IdentityUser<Guid>>>(
-                mockUserManager.Object,
-                new Mock<IHttpContextAccessor>(MockBehavior.Strict).Object,
-                new Mock<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>().Object,
-                null,
-                null,
-                new Mock<IAuthenticationSchemeProvider>(MockBehavior.Strict).Object,
-                new Mock<IUserConfirmation<IdentityUser<Guid>>>().Object)
-        { CallBase = false };
+        var mockSignInManager = MockHelpers.MockSignInManager(mockUserManager.Object);
 
         var user = new IdentityUser<Guid>();
         mockUserManager
@@ -278,21 +205,13 @@ public class SetPasswordModelTests
     {
         // Arrange
         var user = new IdentityUser<Guid>();
-        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock.Object, null, null, null, null, null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
         userManagerMock.Setup(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
         userManagerMock
             .Setup(u => u.AddPasswordAsync(user, It.IsAny<string>()))
             .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "Password too weak." }));
 
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManagerMock.Object,
-            Mock.Of<IHttpContextAccessor>(),
-            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
-            Mock.Of<IOptions<IdentityOptions>>(),
-            Mock.Of<ILogger<SignInManager<IdentityUser<Guid>>>>(),
-            Mock.Of<IAuthenticationSchemeProvider>(),
-            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
+        var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
 
         var model = new SetPasswordModel(userManagerMock.Object, signInManagerMock.Object);
         model.Input = new SetPasswordModel.InputModel { NewPassword = "weak" };
@@ -311,19 +230,11 @@ public class SetPasswordModelTests
     {
         // Arrange
         var user = new IdentityUser<Guid>();
-        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock.Object, null, null, null, null, null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
         userManagerMock.Setup(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
         userManagerMock.Setup(u => u.AddPasswordAsync(user, It.IsAny<string>())).ReturnsAsync(IdentityResult.Success);
 
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManagerMock.Object,
-            Mock.Of<IHttpContextAccessor>(),
-            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
-            Mock.Of<IOptions<IdentityOptions>>(),
-            Mock.Of<ILogger<SignInManager<IdentityUser<Guid>>>>(),
-            Mock.Of<IAuthenticationSchemeProvider>(),
-            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
+        var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
         signInManagerMock.Setup(s => s.RefreshSignInAsync(user)).Returns(Task.CompletedTask);
 
         var model = new SetPasswordModel(userManagerMock.Object, signInManagerMock.Object);

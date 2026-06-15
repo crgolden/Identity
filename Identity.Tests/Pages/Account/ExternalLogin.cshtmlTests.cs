@@ -1,10 +1,9 @@
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account;
-using Infrastructure;
 
 using System.Security.Claims;
 using Azure.Messaging.ServiceBus;
 using Identity.Pages.Account;
+using Identity.Tests.Infrastructure;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -14,108 +13,22 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Azure;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
 
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
-public class ExternalLoginModelTests
+public sealed class ExternalLoginModelTests
 {
-    public static IEnumerable<object?[]> ConstructorTestData()
-    {
-        yield return [false, true, typeof(NotSupportedException)];
-        yield return [true, false, typeof(InvalidCastException)];
-        yield return [true, true, null];
-    }
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("/some/return")]
-    public async Task OnGetCallbackAsync_RemoteErrorProvided_SetsErrorMessageAndRedirectsToLogin(string? returnUrl)
-    {
-        // Arrange
-        var (model, signInManagerMock, _) = CreateModelWithMocks();
-        var remoteError = "provider failure";
-
-        // Act
-        var result = await model.OnGetCallbackAsync(returnUrl, remoteError);
-
-        // Assert
-        Assert.IsType<RedirectToPageResult>(result);
-        var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./Login", redirect.PageName);
-
-        // Check route values contains ReturnUrl as resolved by Url.Content when returnUrl is null, otherwise same string
-        var expectedReturn = returnUrl ?? "/";
-        Assert.NotNull(redirect.RouteValues);
-        Assert.True(redirect.RouteValues.ContainsKey("ReturnUrl"));
-        Assert.Equal(expectedReturn, redirect.RouteValues["ReturnUrl"]);
-        Assert.NotNull(model.ErrorMessage);
-        Assert.Contains(remoteError, model.ErrorMessage);
-
-        // Ensure no external login info was requested in this branch
-        signInManagerMock.Verify(s => s.GetExternalLoginInfoAsync(), Times.Never);
-    }
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("/return/here")]
-    public async Task OnGetCallbackAsync_InfoIsNull_SetsErrorMessageAndRedirectsToLogin(string? returnUrl)
-    {
-        // Arrange
-        var (model, signInManagerMock, _) = CreateModelWithMocks();
-        signInManagerMock.Setup(s => s.GetExternalLoginInfoAsync()).ReturnsAsync((ExternalLoginInfo?)null);
-
-        // Act
-        var result = await model.OnGetCallbackAsync(returnUrl, null);
-
-        // Assert
-        var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./Login", redirect.PageName);
-        var expectedReturn = returnUrl ?? "/";
-        Assert.True(redirect.RouteValues?.ContainsKey("ReturnUrl"));
-        Assert.Equal(expectedReturn, redirect.RouteValues!["ReturnUrl"]);
-        Assert.Equal("Error loading external login information.", model.ErrorMessage);
-        signInManagerMock.Verify(s => s.GetExternalLoginInfoAsync(), Times.Once);
-    }
-
     [Fact]
-    public void OnGet_NoParameters_ReturnsRedirectToLoginPage()
+    public void OnGet_RedirectsToLoginPage()
     {
         // Arrange
-        // Create an IUserEmailStore mock and pass it as the IUserStore to ensure any cast in GetEmailStore succeeds.
-        var userEmailStoreMock = new Mock<IUserEmailStore<IdentityUser<Guid>>>();
-        var userStoreAsUserStore = (IUserStore<IdentityUser<Guid>>)userEmailStoreMock.Object;
-
-        // UserManager requires an IUserStore and other constructor args; pass null for optional services.
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(userStoreAsUserStore, null, null, null, null, null, null, null, null);
-        userManagerMock.Setup(m => m.SupportsUserEmail).Returns(true);
-
-        // Create supporting mocks for SignInManager constructor arguments.
-        var httpContextAccessorMock = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
-        var claimsFactoryMock = new Mock<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>();
-        var loggerForSignInMock = new Mock<ILogger<SignInManager<IdentityUser<Guid>>>>();
-        var schemesMock = new Mock<IAuthenticationSchemeProvider>(MockBehavior.Strict);
-        var userConfirmationMock = new Mock<IUserConfirmation<IdentityUser<Guid>>>();
-
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManagerMock.Object,
-            httpContextAccessorMock.Object,
-            claimsFactoryMock.Object,
-            null,
-            loggerForSignInMock.Object,
-            schemesMock.Object,
-            userConfirmationMock.Object);
-
-        var model = new ExternalLoginModel(
-            signInManagerMock.Object,
-            userManagerMock.Object,
-            userStoreAsUserStore,
-            CreateClientFactory());
+        var harness = CreateModel();
 
         // Act
-        var result = model.OnGet();
+        var result = harness.Model.OnGet();
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
@@ -123,329 +36,369 @@ public class ExternalLoginModelTests
     }
 
     [Fact]
-    public async Task OnPostConfirmationAsync_InfoNull_ReturnsRedirectToLoginAndSetsErrorMessage()
+    public void OnPost_ReturnsChallengeResultForProvider()
     {
         // Arrange
-        var userStoreMock = new Mock<IUserEmailStore<IdentityUser<Guid>>>(MockBehavior.Strict);
-        var options = Options.Create(new IdentityOptions());
-        var pwdHasherMock = new Mock<IPasswordHasher<IdentityUser<Guid>>>();
-        var userValidators = Enumerable.Empty<IUserValidator<IdentityUser<Guid>>>();
-        var pwdValidators = Enumerable.Empty<IPasswordValidator<IdentityUser<Guid>>>();
-        var keyNormalizerMock = new Mock<ILookupNormalizer>(MockBehavior.Strict);
-        var errors = new IdentityErrorDescriber();
-        var serviceProviderMock = new Mock<IServiceProvider>(MockBehavior.Loose);
-        var loggerUserManagerMock = new Mock<ILogger<UserManager<IdentityUser<Guid>>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
-            userStoreMock.Object,
-            options,
-            pwdHasherMock.Object,
-            userValidators,
-            pwdValidators,
-            keyNormalizerMock.Object,
-            errors,
-            serviceProviderMock.Object,
-            loggerUserManagerMock.Object);
-
-        var httpContextAccessorMock = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
-        var claimsFactoryMock = new Mock<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>();
-        var loggerSignInMock = new Mock<ILogger<SignInManager<IdentityUser<Guid>>>>();
-        var authSchemeProviderMock = new Mock<IAuthenticationSchemeProvider>(MockBehavior.Strict);
-        var userConfirmationMock = new Mock<IUserConfirmation<IdentityUser<Guid>>>();
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManagerMock.Object,
-            httpContextAccessorMock.Object,
-            claimsFactoryMock.Object,
-            options,
-            loggerSignInMock.Object,
-            authSchemeProviderMock.Object,
-            userConfirmationMock.Object);
-
-        // Ensure GetExternalLoginInfoAsync returns null
-        signInManagerMock.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>()))
-            .ReturnsAsync((ExternalLoginInfo?)null);
-
-        userManagerMock.SetupGet(um => um.SupportsUserEmail).Returns(true);
-
-        var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
-        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
-
-        var model = new ExternalLoginModel(signInManagerMock.Object, userManagerMock.Object, userStoreMock.Object, CreateClientFactory())
-        {
-            Url = urlHelperMock.Object,
-            PageContext = new PageContext { HttpContext = new DefaultHttpContext() }
-        };
+        var harness = CreateModel();
+        harness.SignIn
+            .Setup(s => s.ConfigureExternalAuthenticationProperties("Google", It.IsAny<string?>(), null))
+            .Returns(new AuthenticationProperties());
 
         // Act
-        var result = await model.OnPostConfirmationAsync(returnUrl: null);
+        var result = harness.Model.OnPost("Google", "/return");
+
+        // Assert
+        var challenge = Assert.IsType<ChallengeResult>(result);
+        Assert.Contains("Google", challenge.AuthenticationSchemes);
+    }
+
+    [Fact]
+    public async Task OnGetCallbackAsync_RemoteError_RedirectsToLogin()
+    {
+        // Arrange
+        var harness = CreateModel();
+
+        // Act
+        var result = await harness.Model.OnGetCallbackAsync("/return", "provider failure");
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("./Login", redirect.PageName);
-        Assert.True(redirect.RouteValues?.ContainsKey("ReturnUrl"));
-        Assert.Equal("/", redirect.RouteValues!["ReturnUrl"]);
-        Assert.Equal("Error loading external login information during confirmation.", model.ErrorMessage);
+        Assert.Contains("provider failure", harness.Model.ErrorMessage, StringComparison.Ordinal);
+        harness.SignIn.Verify(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>()), Times.Never);
     }
 
     [Fact]
-    public async Task OnPostConfirmationAsync_ModelStateInvalid_ReturnsPageAndSetsProviderDisplayNameAndReturnUrl()
+    public async Task OnGetCallbackAsync_InfoNull_RedirectsToLogin()
     {
         // Arrange
-        var userStoreMock = new Mock<IUserEmailStore<IdentityUser<Guid>>>(MockBehavior.Strict);
-        var options = Options.Create(new IdentityOptions());
-        var pwdHasherMock = new Mock<IPasswordHasher<IdentityUser<Guid>>>();
-        var userValidators = Enumerable.Empty<IUserValidator<IdentityUser<Guid>>>();
-        var pwdValidators = Enumerable.Empty<IPasswordValidator<IdentityUser<Guid>>>();
-        var keyNormalizerMock = new Mock<ILookupNormalizer>(MockBehavior.Strict);
-        var errors = new IdentityErrorDescriber();
-        var serviceProviderMock = new Mock<IServiceProvider>(MockBehavior.Loose);
-        var loggerUserManagerMock = new Mock<ILogger<UserManager<IdentityUser<Guid>>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
-            userStoreMock.Object,
-            options,
-            pwdHasherMock.Object,
-            userValidators,
-            pwdValidators,
-            keyNormalizerMock.Object,
-            errors,
-            serviceProviderMock.Object,
-            loggerUserManagerMock.Object);
-
-        // Ensure the mocked UserManager reports that it supports email, so GetEmailStore() succeeds.
-        userManagerMock.Setup(u => u.SupportsUserEmail).Returns(true);
-
-        var httpContextAccessorMock = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
-        var claimsFactoryMock = new Mock<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>();
-        var loggerSignInMock = new Mock<ILogger<SignInManager<IdentityUser<Guid>>>>();
-        var authSchemeProviderMock = new Mock<IAuthenticationSchemeProvider>(MockBehavior.Strict);
-        var userConfirmationMock = new Mock<IUserConfirmation<IdentityUser<Guid>>>();
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManagerMock.Object,
-            httpContextAccessorMock.Object,
-            claimsFactoryMock.Object,
-            options,
-            loggerSignInMock.Object,
-            authSchemeProviderMock.Object,
-            userConfirmationMock.Object);
-
-        // Create an ExternalLoginInfo with a principal and provider display name
-        var claims = new[] { new Claim(ClaimTypes.Email, "x@y.com") };
-        var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
-        var info = new ExternalLoginInfo(principal, "TestProvider", "provkey", "TestProviderDisplay");
-
-        signInManagerMock.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>()))
-            .ReturnsAsync(info);
-
-        var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
-        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
-
-        var model = new ExternalLoginModel(signInManagerMock.Object, userManagerMock.Object, userStoreMock.Object, CreateClientFactory())
-        {
-            Url = urlHelperMock.Object,
-            PageContext = new PageContext { HttpContext = new DefaultHttpContext() }
-        };
-
-        // Make model state invalid
-        model.ModelState.AddModelError("Test", "error");
+        var harness = CreateModel();
+        harness.SignIn.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>())).ReturnsAsync((ExternalLoginInfo?)null);
 
         // Act
-        var result = await model.OnPostConfirmationAsync(returnUrl: "/return");
+        var result = await harness.Model.OnGetCallbackAsync("/return", null);
+
+        // Assert
+        var redirect = Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal("./Login", redirect.PageName);
+        Assert.Equal("Error loading external login information.", harness.Model.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task OnGetCallbackAsync_SignInSucceeds_LocalReturnUrl_LocalRedirects()
+    {
+        // Arrange
+        var harness = CreateModel();
+        harness.SignIn.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>())).ReturnsAsync(BuildLoginInfo());
+        harness.SignIn.Setup(s => s.ExternalLoginSignInAsync(It.IsAny<string>(), It.IsAny<string>(), false, true)).ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Success);
+
+        // Act
+        var result = await harness.Model.OnGetCallbackAsync("/local", null);
+
+        // Assert
+        var redirect = Assert.IsType<LocalRedirectResult>(result);
+        Assert.Equal("/local", redirect.Url);
+    }
+
+    [Fact]
+    public async Task OnGetCallbackAsync_SignInSucceeds_NonLocalReturnUrl_RedirectsToRoot()
+    {
+        // Arrange
+        var harness = CreateModel();
+        harness.SignIn.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>())).ReturnsAsync(BuildLoginInfo());
+        harness.SignIn.Setup(s => s.ExternalLoginSignInAsync(It.IsAny<string>(), It.IsAny<string>(), false, true)).ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Success);
+
+        // Act
+        var result = await harness.Model.OnGetCallbackAsync("http://evil.example", null);
+
+        // Assert
+        var redirect = Assert.IsType<LocalRedirectResult>(result);
+        Assert.Equal("~/", redirect.Url);
+    }
+
+    [Fact]
+    public async Task OnGetCallbackAsync_LockedOut_RedirectsToLockout()
+    {
+        // Arrange
+        var harness = CreateModel();
+        harness.SignIn.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>())).ReturnsAsync(BuildLoginInfo());
+        harness.SignIn.Setup(s => s.ExternalLoginSignInAsync(It.IsAny<string>(), It.IsAny<string>(), false, true)).ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.LockedOut);
+
+        // Act
+        var result = await harness.Model.OnGetCallbackAsync("/local", null);
+
+        // Assert
+        var redirect = Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal("./Lockout", redirect.PageName);
+    }
+
+    [Fact]
+    public async Task OnGetCallbackAsync_RequiresRegistration_WithEmailClaim_SetsInputAndReturnsPage()
+    {
+        // Arrange
+        var harness = CreateModel();
+        harness.SignIn.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>())).ReturnsAsync(BuildLoginInfo("found@example.com"));
+        harness.SignIn.Setup(s => s.ExternalLoginSignInAsync(It.IsAny<string>(), It.IsAny<string>(), false, true)).ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Failed);
+
+        // Act
+        var result = await harness.Model.OnGetCallbackAsync("/local", null);
 
         // Assert
         Assert.IsType<PageResult>(result);
-        Assert.Equal("TestProviderDisplay", model.ProviderDisplayName);
-        Assert.Equal("/return", model.ReturnUrl);
+        Assert.Equal("found@example.com", harness.Model.Input.Email);
+        Assert.Equal("Display", harness.Model.ProviderDisplayName);
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task OnPostConfirmationAsync_CreateAndAddLogin_Succeeds_ConditionalRedirect(bool requireConfirmedAccount)
+    [Fact]
+    public async Task OnGetCallbackAsync_RequiresRegistration_NoEmailClaim_ReturnsPageWithoutInputEmail()
     {
         // Arrange
-        var userStoreMock = new Mock<IUserEmailStore<IdentityUser<Guid>>>();
-        userStoreMock.Setup(u => u.SetUserNameAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
-        userStoreMock.Setup(u => u.SetEmailAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
+        var harness = CreateModel();
+        harness.SignIn.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>())).ReturnsAsync(BuildLoginInfo(email: null));
+        harness.SignIn.Setup(s => s.ExternalLoginSignInAsync(It.IsAny<string>(), It.IsAny<string>(), false, true)).ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Failed);
+
+        // Act
+        var result = await harness.Model.OnGetCallbackAsync("/local", null);
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        Assert.Null(harness.Model.Input.Email);
+    }
+
+    [Fact]
+    public async Task OnPostConfirmationAsync_InfoNull_RedirectsToLogin()
+    {
+        // Arrange
+        var harness = CreateModel();
+        harness.SignIn.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>())).ReturnsAsync((ExternalLoginInfo?)null);
+
+        // Act
+        var result = await harness.Model.OnPostConfirmationAsync(null);
+
+        // Assert
+        var redirect = Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal("./Login", redirect.PageName);
+        Assert.Equal("Error loading external login information during confirmation.", harness.Model.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task OnPostConfirmationAsync_ModelStateInvalid_ReturnsPage()
+    {
+        // Arrange
+        var harness = CreateModel();
+        harness.SignIn.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>())).ReturnsAsync(BuildLoginInfo());
+        harness.Model.ModelState.AddModelError("Test", "error");
+        harness.Model.Input = new ExternalLoginModel.InputModel { Email = "user@example.com" };
+
+        // Act
+        var result = await harness.Model.OnPostConfirmationAsync("/return");
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        Assert.Equal("Display", harness.Model.ProviderDisplayName);
+        Assert.Equal("/return", harness.Model.ReturnUrl);
+        harness.UserMgr.Verify(m => m.CreateAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task OnPostConfirmationAsync_EmailBlank_ReturnsPage()
+    {
+        // Arrange
+        var harness = CreateModel();
+        harness.SignIn.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>())).ReturnsAsync(BuildLoginInfo());
+        harness.Model.Input = new ExternalLoginModel.InputModel { Email = null };
+
+        // Act
+        var result = await harness.Model.OnPostConfirmationAsync("/return");
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        harness.UserMgr.Verify(m => m.CreateAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task OnPostConfirmationAsync_CreateFails_AddsErrorsAndReturnsPage()
+    {
+        // Arrange
+        var harness = CreateModel();
+        harness.SignIn.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>())).ReturnsAsync(BuildLoginInfo());
+        harness.UserMgr.Setup(m => m.CreateAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "create failed" }));
+        harness.Model.Input = new ExternalLoginModel.InputModel { Email = "user@example.com" };
+
+        // Act
+        var result = await harness.Model.OnPostConfirmationAsync("/return");
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        Assert.False(harness.Model.ModelState.IsValid);
+    }
+
+    [Fact]
+    public async Task OnPostConfirmationAsync_CreateSucceeds_AddLoginFails_ReturnsPage()
+    {
+        // Arrange
+        var harness = CreateModel();
+        harness.SignIn.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>())).ReturnsAsync(BuildLoginInfo());
+        harness.UserMgr.Setup(m => m.CreateAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync(IdentityResult.Success);
+        harness.UserMgr.Setup(m => m.AddLoginAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<ExternalLoginInfo>())).ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "add login failed" }));
+        harness.Model.Input = new ExternalLoginModel.InputModel { Email = "user@example.com" };
+
+        // Act
+        var result = await harness.Model.OnPostConfirmationAsync("/return");
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        harness.Sender.Verify(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task OnPostConfirmationAsync_CreateSucceeds_RequireConfirmed_SendsEmailAndRedirectsToRegisterConfirmation()
+    {
+        // Arrange
+        var harness = CreateModel(requireConfirmedAccount: true);
+        harness.SignIn.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>())).ReturnsAsync(BuildLoginInfo());
+        harness.UserMgr.Setup(m => m.CreateAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync(IdentityResult.Success);
+        harness.UserMgr.Setup(m => m.AddLoginAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<ExternalLoginInfo>())).ReturnsAsync(IdentityResult.Success);
+        harness.Model.Input = new ExternalLoginModel.InputModel { Email = "user@example.com" };
+
+        // Act
+        var result = await harness.Model.OnPostConfirmationAsync("/local");
+
+        // Assert
+        var redirect = Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal("./RegisterConfirmation", redirect.PageName);
+        Assert.Equal("user@example.com", redirect.RouteValues?["email"]);
+        harness.Sender.Verify(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()), Times.Once);
+        harness.SignIn.Verify(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<bool>(), It.IsAny<string?>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task OnPostConfirmationAsync_CreateSucceeds_NoConfirm_LocalReturn_SignsInAndLocalRedirects()
+    {
+        // Arrange
+        var harness = CreateModel(requireConfirmedAccount: false);
+        harness.SignIn.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>())).ReturnsAsync(BuildLoginInfo());
+        harness.SignIn.Setup(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<bool>(), It.IsAny<string?>())).Returns(Task.CompletedTask);
+        harness.UserMgr.Setup(m => m.CreateAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync(IdentityResult.Success);
+        harness.UserMgr.Setup(m => m.AddLoginAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<ExternalLoginInfo>())).ReturnsAsync(IdentityResult.Success);
+        harness.Model.Input = new ExternalLoginModel.InputModel { Email = "user@example.com" };
+
+        // Act
+        var result = await harness.Model.OnPostConfirmationAsync("/local");
+
+        // Assert
+        var redirect = Assert.IsType<LocalRedirectResult>(result);
+        Assert.Equal("/local", redirect.Url);
+        harness.SignIn.Verify(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), false, "Google"), Times.Once);
+    }
+
+    [Fact]
+    public async Task OnPostConfirmationAsync_CreateSucceeds_NoConfirm_NonLocalReturn_RedirectsToRoot()
+    {
+        // Arrange
+        var harness = CreateModel(requireConfirmedAccount: false);
+        harness.SignIn.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>())).ReturnsAsync(BuildLoginInfo());
+        harness.SignIn.Setup(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<bool>(), It.IsAny<string?>())).Returns(Task.CompletedTask);
+        harness.UserMgr.Setup(m => m.CreateAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync(IdentityResult.Success);
+        harness.UserMgr.Setup(m => m.AddLoginAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<ExternalLoginInfo>())).ReturnsAsync(IdentityResult.Success);
+        harness.Model.Input = new ExternalLoginModel.InputModel { Email = "user@example.com" };
+
+        // Act
+        var result = await harness.Model.OnPostConfirmationAsync("http://evil.example");
+
+        // Assert
+        var redirect = Assert.IsType<LocalRedirectResult>(result);
+        Assert.Equal("~/", redirect.Url);
+    }
+
+    [Fact]
+    public async Task OnPostConfirmationAsync_CreateSucceeds_CallbackUrlNull_SkipsEmailAndStillRedirects()
+    {
+        // Arrange
+        var harness = CreateModel(requireConfirmedAccount: true);
+        harness.Url.Setup(u => u.RouteUrl(It.IsAny<UrlRouteContext>())).Returns((string?)null);
+        harness.SignIn.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>())).ReturnsAsync(BuildLoginInfo());
+        harness.UserMgr.Setup(m => m.CreateAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync(IdentityResult.Success);
+        harness.UserMgr.Setup(m => m.AddLoginAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<ExternalLoginInfo>())).ReturnsAsync(IdentityResult.Success);
+        harness.Model.Input = new ExternalLoginModel.InputModel { Email = "user@example.com" };
+
+        // Act
+        var result = await harness.Model.OnPostConfirmationAsync("/local");
+
+        // Assert
+        var redirect = Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal("./RegisterConfirmation", redirect.PageName);
+        harness.Sender.Verify(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    private static ExternalLoginInfo BuildLoginInfo(string? email = "user@example.com")
+    {
+        var claims = email is null ? Array.Empty<Claim>() : [new Claim(ClaimTypes.Email, email)];
+        var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
+        return new ExternalLoginInfo(principal, "Google", "provider-key", "Display");
+    }
+
+    private static (IAzureClientFactory<ServiceBusClient> Factory, Mock<ServiceBusSender> Sender) CreateServiceBusFactory()
+    {
+        var sender = new Mock<ServiceBusSender>(MockBehavior.Strict);
+        sender.Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        var client = new Mock<ServiceBusClient>(MockBehavior.Strict);
+        client.Setup(c => c.CreateSender("email")).Returns(sender.Object);
+        var factory = new Mock<IAzureClientFactory<ServiceBusClient>>(MockBehavior.Strict);
+        factory.Setup(f => f.CreateClient("crgolden")).Returns(client.Object);
+        return (factory.Object, sender);
+    }
+
+    private static (ExternalLoginModel Model, Mock<SignInManager<IdentityUser<Guid>>> SignIn, Mock<UserManager<IdentityUser<Guid>>> UserMgr, Mock<ServiceBusSender> Sender, Mock<IUrlHelper> Url) CreateModel(bool requireConfirmedAccount = false)
+    {
+        var emailStore = new Mock<IUserEmailStore<IdentityUser<Guid>>>();
+        emailStore.Setup(s => s.SetUserNameAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string?>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        emailStore.Setup(s => s.SetEmailAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string?>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        var store = emailStore.As<IUserStore<IdentityUser<Guid>>>();
 
         var identityOptions = new IdentityOptions();
         identityOptions.SignIn.RequireConfirmedAccount = requireConfirmedAccount;
         var options = Options.Create(identityOptions);
 
-        var pwdHasherMock = new Mock<IPasswordHasher<IdentityUser<Guid>>>();
-        var userValidators = Enumerable.Empty<IUserValidator<IdentityUser<Guid>>>();
-        var pwdValidators = Enumerable.Empty<IPasswordValidator<IdentityUser<Guid>>>();
-        var keyNormalizerMock = new Mock<ILookupNormalizer>(MockBehavior.Strict);
-        var errors = new IdentityErrorDescriber();
-        var serviceProviderMock = new Mock<IServiceProvider>(MockBehavior.Loose);
-        var loggerUserManagerMock = new Mock<ILogger<UserManager<IdentityUser<Guid>>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
-            userStoreMock.Object,
+        var userManager = new Mock<UserManager<IdentityUser<Guid>>>(
+            store.Object,
             options,
-            pwdHasherMock.Object,
-            userValidators,
-            pwdValidators,
-            keyNormalizerMock.Object,
-            errors,
-            serviceProviderMock.Object,
-            loggerUserManagerMock.Object);
-
-        userManagerMock.SetupGet(um => um.SupportsUserEmail).Returns(true);
-
-        // Setup user manager behaviors for successful create/login flow
-        userManagerMock.Setup(u => u.CreateAsync(It.IsAny<IdentityUser<Guid>>()))
-            .ReturnsAsync(IdentityResult.Success);
-        userManagerMock.Setup(u => u.AddLoginAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<ExternalLoginInfo>()))
-            .ReturnsAsync(IdentityResult.Success);
-        userManagerMock.Setup(u => u.GetUserIdAsync(It.IsAny<IdentityUser<Guid>>()))
-            .ReturnsAsync("the-user-id");
-        userManagerMock.Setup(u => u.GenerateEmailConfirmationTokenAsync(It.IsAny<IdentityUser<Guid>>()))
-            .ReturnsAsync("email-token");
-
-        var httpContextAccessorMock = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
-        var claimsFactoryMock = new Mock<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>();
-        var loggerSignInMock = new Mock<ILogger<SignInManager<IdentityUser<Guid>>>>();
-        var authSchemeProviderMock = new Mock<IAuthenticationSchemeProvider>(MockBehavior.Strict);
-        var userConfirmationMock = new Mock<IUserConfirmation<IdentityUser<Guid>>>();
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManagerMock.Object,
-            httpContextAccessorMock.Object,
-            claimsFactoryMock.Object,
-            options,
-            loggerSignInMock.Object,
-            authSchemeProviderMock.Object,
-            userConfirmationMock.Object);
-
-        // Prepare ExternalLoginInfo with provider and principal
-        var claims = new[] { new Claim(ClaimTypes.Email, "user@example.com") };
-        var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
-        var info = new ExternalLoginInfo(principal, "TestProvider", "provkey", "Display");
-
-        signInManagerMock.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>()))
-            .ReturnsAsync(info);
-
-        // Mock SignInAsync to be verifiable
-        signInManagerMock.Setup(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<bool>(), It.IsAny<string?>()))
-            .Returns(Task.CompletedTask);
-
-        var (factory, senderMock) = CreateSenderFactoryWithMock();
-
-        var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
-        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
-        urlHelperMock.Setup(u => u.IsLocalUrl("/localReturn")).Returns(true);
-
-        // ActionContext must be non-null because UrlHelperExtensions.Page always accesses it
-        var urlRouteData = new RouteData();
-        urlRouteData.Values["page"] = "/Account/ExternalLogin";
-        urlHelperMock.SetupGet(u => u.ActionContext).Returns(
-            new ActionContext(new DefaultHttpContext(), urlRouteData, new ActionDescriptor()));
-        urlHelperMock.Setup(u => u.RouteUrl(It.IsAny<UrlRouteContext>())).Returns("https://example/confirm");
-
-        var model = new ExternalLoginModel(signInManagerMock.Object, userManagerMock.Object, userStoreMock.Object, factory)
-        {
-            Url = urlHelperMock.Object,
-            PageContext = new PageContext { HttpContext = new DefaultHttpContext() },
-            Input = new ExternalLoginModel.InputModel { Email = "user@example.com" }
-        };
-
-        var returnUrl = "/localReturn";
-
-        // Act
-        var result = await model.OnPostConfirmationAsync(returnUrl);
-
-        // Assert
-        if (requireConfirmedAccount)
-        {
-            var redirect = Assert.IsType<RedirectToPageResult>(result);
-            Assert.Equal("./RegisterConfirmation", redirect.PageName);
-            Assert.True(redirect.RouteValues?.ContainsKey("Email"));
-            Assert.Equal("user@example.com", redirect.RouteValues!["Email"]);
-
-            // SignIn should NOT be invoked when confirmation is required
-            signInManagerMock.Verify(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<bool>(), It.IsAny<string?>()), Times.Never);
-        }
-        else
-        {
-            var localRedirect = Assert.IsType<LocalRedirectResult>(result);
-            Assert.Equal(returnUrl, localRedirect.Url);
-
-            // SignIn should be invoked
-            signInManagerMock.Verify(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), false, info.LoginProvider), Times.Once);
-        }
-
-        // Email should be sent in both cases (the UI sends confirmation email)
-        senderMock.Verify(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    private static (ExternalLoginModel model, Mock<SignInManager<IdentityUser<Guid>>> signInManagerMock, Mock<UserManager<IdentityUser<Guid>>> userManagerMock) CreateModelWithMocks()
-    {
-        // IUserEmailStore needed as the constructor calls GetEmailStore which casts userStore to IUserEmailStore
-        var userEmailStoreMock = new Mock<IUserEmailStore<IdentityUser<Guid>>>();
-        var userStore = userEmailStoreMock.As<IUserStore<IdentityUser<Guid>>>();
-
-        // UserManager dependencies
-        var userValidators = new List<IUserValidator<IdentityUser<Guid>>>();
-        var pwdValidators = new List<IPasswordValidator<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
-            userStore.Object,
-            Options.Create(new IdentityOptions()),
             new Mock<IPasswordHasher<IdentityUser<Guid>>>().Object,
-            userValidators,
-            pwdValidators,
-            new Mock<ILookupNormalizer>(MockBehavior.Strict).Object,
+            Enumerable.Empty<IUserValidator<IdentityUser<Guid>>>(),
+            Enumerable.Empty<IPasswordValidator<IdentityUser<Guid>>>(),
+            new Mock<ILookupNormalizer>().Object,
             new IdentityErrorDescriber(),
-            new Mock<IServiceProvider>(MockBehavior.Loose).Object,
-            new Mock<ILogger<UserManager<IdentityUser<Guid>>>>().Object);
+            new Mock<IServiceProvider>().Object,
+            NullLogger<UserManager<IdentityUser<Guid>>>.Instance);
+        userManager.SetupGet(u => u.SupportsUserEmail).Returns(true);
+        userManager.Setup(u => u.GetUserIdAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync("the-user-id");
+        userManager.Setup(u => u.GenerateEmailConfirmationTokenAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync("email-token");
 
-        userManagerMock.SetupGet(um => um.SupportsUserEmail).Returns(true);
-
-        // SignInManager dependencies
-        var httpContextAccessor = new Mock<IHttpContextAccessor>(MockBehavior.Strict).Object;
-        var claimsFactory = new Mock<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>().Object;
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManagerMock.Object,
-            httpContextAccessor,
-            claimsFactory,
-            Options.Create(new IdentityOptions()),
-            new Mock<ILogger<SignInManager<IdentityUser<Guid>>>>().Object,
-            new Mock<IAuthenticationSchemeProvider>(MockBehavior.Strict).Object,
+        var signIn = new Mock<SignInManager<IdentityUser<Guid>>>(
+            userManager.Object,
+            new Mock<IHttpContextAccessor>().Object,
+            new Mock<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>().Object,
+            options,
+            NullLogger<SignInManager<IdentityUser<Guid>>>.Instance,
+            new Mock<IAuthenticationSchemeProvider>().Object,
             new Mock<IUserConfirmation<IdentityUser<Guid>>>().Object);
 
-        var model = new ExternalLoginModel(
-            signInManagerMock.Object,
-            userManagerMock.Object,
-            userStore.Object,
-            CreateClientFactory());
+        var (factory, sender) = CreateServiceBusFactory();
 
-        // Provide Url helper so Url.Content("~/") works
-        var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
-        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
-        model.Url = urlHelperMock.Object;
+        var url = new Mock<IUrlHelper>();
+        url.Setup(u => u.Content("~/")).Returns("/");
+        url.Setup(u => u.IsLocalUrl(It.IsAny<string?>())).Returns<string?>(u => u is not null && u.StartsWith('/') && !u.StartsWith("//", StringComparison.Ordinal));
+        var routeData = new RouteData();
+        routeData.Values["page"] = "/Account/ExternalLogin"; // needed so relative page paths (./ExternalLogin) resolve
+        url.SetupGet(u => u.ActionContext).Returns(new ActionContext(new DefaultHttpContext(), routeData, new ActionDescriptor()));
+        url.Setup(u => u.RouteUrl(It.IsAny<UrlRouteContext>())).Returns("https://example/confirm");
 
-        return (model, signInManagerMock, userManagerMock);
-    }
+        var model = new ExternalLoginModel(signIn.Object, userManager.Object, store.Object, factory)
+        {
+            Url = url.Object,
+            PageContext = new PageContext { HttpContext = new DefaultHttpContext() },
+        };
 
-    private static IAzureClientFactory<ServiceBusClient> CreateClientFactory()
-    {
-        var senderMock = new Mock<ServiceBusSender>(MockBehavior.Strict);
-        senderMock.Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
-        var clientMock = new Mock<ServiceBusClient>(MockBehavior.Strict);
-        clientMock.Setup(c => c.CreateSender("email")).Returns(senderMock.Object);
-        var factoryMock = new Mock<IAzureClientFactory<ServiceBusClient>>(MockBehavior.Strict);
-        factoryMock.Setup(f => f.CreateClient("crgolden")).Returns(clientMock.Object);
-        return factoryMock.Object;
-    }
-
-    private static (IAzureClientFactory<ServiceBusClient> factory, Mock<ServiceBusSender> senderMock) CreateSenderFactoryWithMock()
-    {
-        var senderMock = new Mock<ServiceBusSender>(MockBehavior.Strict);
-        senderMock.Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
-        var clientMock = new Mock<ServiceBusClient>(MockBehavior.Strict);
-        clientMock.Setup(c => c.CreateSender("email")).Returns(senderMock.Object);
-        var factoryMock = new Mock<IAzureClientFactory<ServiceBusClient>>(MockBehavior.Strict);
-        factoryMock.Setup(f => f.CreateClient("crgolden")).Returns(clientMock.Object);
-        return (factoryMock.Object, senderMock);
+        return (model, signIn, userManager, sender, url);
     }
 }

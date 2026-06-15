@@ -1,5 +1,3 @@
-#pragma warning disable CS8604 // Possible null reference argument.
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account;
 using Infrastructure;
 
@@ -8,7 +6,6 @@ using Duende.IdentityServer.Models;
 using Duende.IdentityServer.Services;
 using Identity.Pages.Account;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Moq;
 
@@ -16,20 +13,6 @@ using Moq;
 [Trait("Category", "Unit")]
 public class LogoutModelTests
 {
-    [Fact]
-    public void Constructor_NullSignInManager_DoesNotThrow()
-    {
-        SignInManager<IdentityUser<Guid>>? signInManager = null;
-
-        var exception = Record.Exception(() =>
-        {
-            var model = new LogoutModel(signInManager, Mock.Of<IIdentityServerInteractionService>());
-            Assert.NotNull(model);
-        });
-
-        Assert.Null(exception);
-    }
-
     [Fact]
     public async Task OnGetAsync_AuthenticatedUser_ShowsPromptWithoutCallingInteractionService()
     {
@@ -136,24 +119,8 @@ public class LogoutModelTests
 
     private static LogoutModel BuildModel(IIdentityServerInteractionService? interactionService = null)
     {
-        var userManager = new Mock<UserManager<IdentityUser<Guid>>>(
-            Mock.Of<IUserStore<IdentityUser<Guid>>>(),
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null);
-        var signInManager = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManager.Object,
-            Mock.Of<IHttpContextAccessor>(),
-            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
-            null,
-            null,
-            null,
-            null);
+        var userManager = MockHelpers.MockUserManager();
+        var signInManager = MockHelpers.MockSignInManager(userManager.Object);
         return new LogoutModel(
             signInManager.Object,
             interactionService ?? Mock.Of<IIdentityServerInteractionService>());

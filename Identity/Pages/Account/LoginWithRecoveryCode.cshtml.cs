@@ -14,6 +14,7 @@ public class LoginWithRecoveryCodeModel : PageModel
 
     public LoginWithRecoveryCodeModel(SignInManager<IdentityUser<Guid>> signInManager)
     {
+        ArgumentNullException.ThrowIfNull(signInManager);
         _signInManager = signInManager;
     }
 

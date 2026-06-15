@@ -1,5 +1,3 @@
-#pragma warning disable CS8604 // Possible null reference argument.
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account;
 using Infrastructure;
 
@@ -33,8 +31,7 @@ public partial class ConfirmEmailModelTests
     public async Task OnGetAsync_NullOrWhitespaceUserIdOrCode_RedirectsToIndex(string? userId, string? code)
     {
         // Arrange
-        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock.Object, null, null, null, null, null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
         var model = new ConfirmEmailModel(userManagerMock.Object);
 
         // Act
@@ -51,8 +48,7 @@ public partial class ConfirmEmailModelTests
         // Arrange
         const string userId = "missing-user-id";
         const string code = "unused-code";
-        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock.Object, null, null, null, null, null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
         userManagerMock
             .Setup(u => u.FindByIdAsync(userId))
             .ReturnsAsync((IdentityUser<Guid>?)null);
@@ -68,20 +64,6 @@ public partial class ConfirmEmailModelTests
     }
 
     [Fact]
-    public void ConfirmEmailModel_Constructor_UserManagerNull_DoesNotThrowAndStatusMessageIsNull()
-    {
-        // Arrange
-        UserManager<IdentityUser<Guid>>? userManager = null;
-
-        // Act
-        var model = new ConfirmEmailModel(userManager);
-
-        // Assert
-        Assert.NotNull(model);
-        Assert.Null(model.StatusMessage);
-    }
-
-    [Fact]
     public async Task OnGetAsync_ConfirmEmailSucceeds_ReturnsPageWithSuccessMessage()
     {
         // Arrange
@@ -89,8 +71,7 @@ public partial class ConfirmEmailModelTests
         const string token = "valid-token";
         var code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
         var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
-        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock.Object, null, null, null, null, null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
         userManagerMock.Setup(m => m.FindByIdAsync(userId)).ReturnsAsync(user);
         userManagerMock.Setup(m => m.ConfirmEmailAsync(user, token)).ReturnsAsync(IdentityResult.Success);
         var model = new ConfirmEmailModel(userManagerMock.Object);
@@ -111,8 +92,7 @@ public partial class ConfirmEmailModelTests
         const string token = "bad-token";
         var code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
         var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
-        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock.Object, null, null, null, null, null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
         userManagerMock.Setup(m => m.FindByIdAsync(userId)).ReturnsAsync(user);
         userManagerMock.Setup(m => m.ConfirmEmailAsync(user, token)).ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "Invalid token." }));
         var model = new ConfirmEmailModel(userManagerMock.Object);

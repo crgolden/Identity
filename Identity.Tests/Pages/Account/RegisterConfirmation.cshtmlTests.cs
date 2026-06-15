@@ -1,4 +1,3 @@
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account;
 using Infrastructure;
 
@@ -40,8 +39,7 @@ public class RegisterConfirmationModelTests
     public void Constructor_MissingUserManager_DescribeExpectedBehavior()
     {
         // Arrange
-        var mockUserStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var mockUserManager = new Mock<UserManager<IdentityUser<Guid>>>(mockUserStore, null, null, null, null, null, null, null, null);
+        var mockUserManager = MockHelpers.MockUserManager();
 
         // Act
         var model = new RegisterConfirmationModel(mockUserManager.Object);
@@ -54,8 +52,7 @@ public class RegisterConfirmationModelTests
     public async Task OnGetAsync_EmailIsNull_RedirectsToIndex()
     {
         // Arrange
-        var mockUserStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var mockUserManager = new Mock<UserManager<IdentityUser<Guid>>>(mockUserStore, null, null, null, null, null, null, null, null);
+        var mockUserManager = MockHelpers.MockUserManager();
         var model = new RegisterConfirmationModel(mockUserManager.Object);
 
         // Act
@@ -71,8 +68,7 @@ public class RegisterConfirmationModelTests
     public async Task OnGetAsync_UserNotFound_ReturnsNotFoundObjectResult_ForVariousEmails(string email)
     {
         // Arrange
-        var mockUserStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var mockUserManager = new Mock<UserManager<IdentityUser<Guid>>>(mockUserStore, null, null, null, null, null, null, null, null);
+        var mockUserManager = MockHelpers.MockUserManager();
         mockUserManager.Setup(m => m.FindByEmailAsync(It.IsAny<string>())).ReturnsAsync((IdentityUser<Guid>?)null);
         var mockUrl = new Mock<IUrlHelper>(MockBehavior.Strict);
         mockUrl.Setup(u => u.Content("~/")).Returns("/");
@@ -98,8 +94,7 @@ public class RegisterConfirmationModelTests
         // Arrange
         var testEmail = "found@example.com";
         var user = new IdentityUser<Guid>();
-        var mockUserStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var mockUserManager = new Mock<UserManager<IdentityUser<Guid>>>(mockUserStore, null, null, null, null, null, null, null, null);
+        var mockUserManager = MockHelpers.MockUserManager();
         mockUserManager.Setup(m => m.FindByEmailAsync(It.Is<string>(s => s == testEmail))).ReturnsAsync(user);
         var mockUrl = new Mock<IUrlHelper>(MockBehavior.Strict);
         mockUrl.Setup(u => u.Content(It.IsAny<string>())).Throws(new Exception("Url.Content should not be called"));

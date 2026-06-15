@@ -1,108 +1,60 @@
-#pragma warning disable CS8604 // Possible null reference argument.
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account.Manage;
-using Infrastructure;
 
 using System.Security.Claims;
 using Identity.Pages.Account.Manage;
-using Microsoft.AspNetCore.Http;
+using Identity.Tests.Infrastructure;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Moq;
 
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
-public class RenamePasskeyModelTests
+public sealed class RenamePasskeyModelTests
 {
-    public static TheoryData<ApplicationDbContext, UserManager<IdentityUser<Guid>>> ValidConstructorArguments()
+    private const string ValidCredentialId = "AQID"; // Base64Url of [1, 2, 3]
+
+    [Fact]
+    public void Constructor_ValidDependencies_InitializesInput()
     {
-        // Build a usable UserManager instance using lightweight mocked collaborators.
-        var store = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var identityOptions = Options.Create(new IdentityOptions());
-        var passwordHasher = Mock.Of<IPasswordHasher<IdentityUser<Guid>>>();
-        var userValidators = Enumerable.Empty<IUserValidator<IdentityUser<Guid>>>();
-        var passwordValidators = Enumerable.Empty<IPasswordValidator<IdentityUser<Guid>>>();
-        var lookupNormalizer = Mock.Of<ILookupNormalizer>();
-        var errorDescriber = new IdentityErrorDescriber();
-        var services = Mock.Of<IServiceProvider>();
-        var logger = Mock.Of<ILogger<UserManager<IdentityUser<Guid>>>>();
-        var userManager = new UserManager<IdentityUser<Guid>>(store, identityOptions, passwordHasher, userValidators, passwordValidators, lookupNormalizer, errorDescriber, services, logger);
+        // Arrange
+        var userManager = MockHelpers.MockUserManager();
+        var dbContext = new Mock<ApplicationDbContext>(new DbContextOptions<ApplicationDbContext>()).Object;
 
-        // Case 1: ApplicationDbContext with default options (no DB provider)
-        var mockedDbContext = new ApplicationDbContext(new DbContextOptions<ApplicationDbContext>());
+        // Act
+        var model = new RenamePasskeyModel(userManager.Object, dbContext);
 
-        // Case 2: concrete ApplicationDbContext with default options (no DB provider configured).
-        var realOptions = new DbContextOptions<ApplicationDbContext>();
-        var realDbContext = new ApplicationDbContext(realOptions);
-        return new TheoryData<ApplicationDbContext, UserManager<IdentityUser<Guid>>>
-        {
-            { mockedDbContext, userManager },
-            { realDbContext, userManager },
-        };
+        // Assert
+        Assert.NotNull(model.Input);
+        Assert.Null(model.StatusMessage);
     }
 
     [Fact]
-    public async Task OnGetAsync_UserNotFound_ReturnsNotFoundWithMessage()
+    public async Task OnGetAsync_UserNotFound_ReturnsNotFound()
     {
         // Arrange
-        var mockStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var mockUserManager = new Mock<UserManager<IdentityUser<Guid>>>(mockStore, null, null, null, null, null, null, null, null);
-        mockUserManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync((IdentityUser<Guid>?)null);
-        mockUserManager.Setup(m => m.GetUserId(It.IsAny<ClaimsPrincipal>())).Returns("expected-user-id");
-        var dbOptions = new DbContextOptionsBuilder<ApplicationDbContext>().Options;
-        var mockDb = new Mock<ApplicationDbContext>(dbOptions);
-        var model = new RenamePasskeyModel(mockUserManager.Object, mockDb.Object);
-
-        // Provide a ClaimsPrincipal so the methods receive a non-null principal
-        var principal = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "expected-user-id")
-        ]));
-        model.PageContext = new PageContext
-        {
-            HttpContext = new DefaultHttpContext
-            {
-                User = principal
-            }
-        };
+        var (userManager, model) = CreateModel();
+        userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync((IdentityUser<Guid>?)null);
+        userManager.Setup(m => m.GetUserId(It.IsAny<ClaimsPrincipal>())).Returns("missing-id");
 
         // Act
-        var result = await model.OnGetAsync("any-id");
+        var result = await model.OnGetAsync(ValidCredentialId);
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
-        var message = Assert.IsType<string>(notFound.Value);
-        Assert.Contains("Unable to load user with ID 'expected-user-id'.", message);
+        Assert.Contains("missing-id", notFound.Value as string, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task OnGetAsync_InvalidBase64Id_RedirectsToPasskeysAndSetsStatusMessage()
+    public async Task OnGetAsync_InvalidFormatId_RedirectsToPasskeys()
     {
         // Arrange
-        var mockStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var mockUserManager = new Mock<UserManager<IdentityUser<Guid>>>(mockStore, null, null, null, null, null, null, null, null);
-        var user = new IdentityUser<Guid>
-        {
-            Id = Guid.NewGuid()
-        };
-        mockUserManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
-        var dbOptions = new DbContextOptionsBuilder<ApplicationDbContext>().Options;
-        var mockDb = new Mock<ApplicationDbContext>(dbOptions);
-        var model = new RenamePasskeyModel(mockUserManager.Object, mockDb.Object);
-        var principal = new ClaimsPrincipal(new ClaimsIdentity());
-        model.PageContext = new PageContext
-        {
-            HttpContext = new DefaultHttpContext
-            {
-                User = principal
-            }
-        };
-        var invalidId = "!!!invalid-base64url$$$";
+        var (userManager, model) = CreateModel();
+        userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(MockHelpers.TestUser());
 
         // Act
-        var result = await model.OnGetAsync(invalidId);
+        var result = await model.OnGetAsync("@@@");
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
@@ -111,109 +63,130 @@ public class RenamePasskeyModelTests
     }
 
     [Fact]
-    public async Task OnGetAsync_PasskeyNotFound_ReturnsNotFoundWithMessage()
+    public async Task OnGetAsync_PasskeyNotFound_ReturnsNotFound()
     {
         // Arrange
-        var mockStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var mockUserManager = new Mock<UserManager<IdentityUser<Guid>>>(mockStore, null, null, null, null, null, null, null, null);
-        var user = new IdentityUser<Guid>
-        {
-            Id = Guid.NewGuid()
-        };
-        mockUserManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
-
-        // Ensure GetPasskeyAsync returns null
-        mockUserManager.Setup(m => m.GetPasskeyAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<byte[]>())).ReturnsAsync((UserPasskeyInfo?)null);
-
-        // Provide a predictable GetUserId return
-        mockUserManager.Setup(m => m.GetUserId(It.IsAny<ClaimsPrincipal>())).Returns("user-42");
-        var dbOptions = new DbContextOptionsBuilder<ApplicationDbContext>().Options;
-        var mockDb = new Mock<ApplicationDbContext>(dbOptions);
-        var model = new RenamePasskeyModel(mockUserManager.Object, mockDb.Object);
-        var principal = new ClaimsPrincipal(new ClaimsIdentity());
-        model.PageContext = new PageContext
-        {
-            HttpContext = new DefaultHttpContext
-            {
-                User = principal
-            }
-        };
-
-        // Create a valid Base64Url string for bytes [1,2,3] -> "AQID"
-        var validId = "AQID";
+        var (userManager, model) = CreateModel();
+        userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(MockHelpers.TestUser());
+        userManager.Setup(m => m.GetPasskeyAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<byte[]>())).ReturnsAsync((UserPasskeyInfo?)null);
+        userManager.Setup(m => m.GetUserId(It.IsAny<ClaimsPrincipal>())).Returns("user-42");
 
         // Act
-        var result = await model.OnGetAsync(validId);
+        var result = await model.OnGetAsync(ValidCredentialId);
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
-        var message = Assert.IsType<string>(notFound.Value);
-        Assert.Contains("Unable to load passkey ID 'user-42'.", message);
+        Assert.Contains("user-42", notFound.Value as string, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task OnPostAsync_UserNotFound_ReturnsNotFoundWithMessage()
+    public async Task OnGetAsync_PasskeyFound_PopulatesInputAndReturnsPage()
     {
         // Arrange
-        var store = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var mockUserManager = new Mock<UserManager<IdentityUser<Guid>>>(store, null, null, null, null, null, null, null, null);
-        mockUserManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync((IdentityUser<Guid>?)null);
-        mockUserManager.Setup(m => m.GetUserId(It.IsAny<ClaimsPrincipal>())).Returns("missing-user-id");
-        ApplicationDbContext? mockDb = null;
-        var model = new RenamePasskeyModel(mockUserManager.Object, mockDb);
+        var (userManager, model) = CreateModel();
+        userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(MockHelpers.TestUser());
+        userManager.Setup(m => m.GetPasskeyAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<byte[]>())).ReturnsAsync(BuildPasskey("Old name"));
 
-        // Provide a principal so PageModel.User is not null
-        model.PageContext = new PageContext
-        {
-            HttpContext = new DefaultHttpContext
-            {
-                User = new ClaimsPrincipal(new ClaimsIdentity())
-            }
-        };
+        // Act
+        var result = await model.OnGetAsync(ValidCredentialId);
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        Assert.Equal(ValidCredentialId, model.Input.CredentialId);
+        Assert.Equal("Old name", model.Input.Name);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_UserNotFound_ReturnsNotFound()
+    {
+        // Arrange
+        var (userManager, model) = CreateModel();
+        userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync((IdentityUser<Guid>?)null);
+        userManager.Setup(m => m.GetUserId(It.IsAny<ClaimsPrincipal>())).Returns("missing-id");
 
         // Act
         var result = await model.OnPostAsync();
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
-        Assert.Contains("missing-user-id", Convert.ToString(notFound.Value));
+        Assert.Contains("missing-id", notFound.Value as string, StringComparison.Ordinal);
     }
-
-#pragma warning disable xUnit1045
-    [Theory]
-    [MemberData(nameof(ValidConstructorArguments))]
-    public void Constructor_ValidDependencies_CreatesInstance(ApplicationDbContext dbContext, UserManager<IdentityUser<Guid>> userManager)
-    {
-        // Arrange is performed by MemberData.
-        // Act
-        var model = new RenamePasskeyModel(userManager, dbContext);
-
-        // Assert
-        Assert.NotNull(model);
-        Assert.IsType<RenamePasskeyModel>(model);
-
-        // The Input property is initialized with a default InputModel instance by the property initializer.
-        Assert.NotNull(model.Input);
-    }
-#pragma warning restore xUnit1045
 
     [Fact]
-    public void Constructor_MultipleInvocations_ReturnsDistinctInstances()
+    public async Task OnPostAsync_InvalidFormatCredentialId_RedirectsToPasskeys()
     {
         // Arrange
-        var store = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var identityOptions = Options.Create(new IdentityOptions());
-        var passwordHasher = Mock.Of<IPasswordHasher<IdentityUser<Guid>>>();
-        var userManager = new UserManager<IdentityUser<Guid>>(store, identityOptions, passwordHasher, [], [], Mock.Of<ILookupNormalizer>(), new IdentityErrorDescriber(), Mock.Of<IServiceProvider>(), Mock.Of<ILogger<UserManager<IdentityUser<Guid>>>>());
-        var dbContext = new ApplicationDbContext(new DbContextOptionsBuilder<ApplicationDbContext>().Options);
+        var (userManager, model) = CreateModel();
+        userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(MockHelpers.TestUser());
+        model.Input = new RenamePasskeyModel.InputModel { CredentialId = "@@@" };
 
         // Act
-        var first = new RenamePasskeyModel(userManager, dbContext);
-        var second = new RenamePasskeyModel(userManager, dbContext);
+        var result = await model.OnPostAsync();
 
         // Assert
-        Assert.NotSame(first, second);
-        Assert.NotNull(first);
-        Assert.NotNull(second);
+        var redirect = Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal("./Passkeys", redirect.PageName);
+        Assert.Equal("The specified passkey ID had an invalid format.", model.StatusMessage);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_PasskeyNotFound_ReturnsNotFound()
+    {
+        // Arrange
+        var (userManager, model) = CreateModel();
+        userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(MockHelpers.TestUser());
+        userManager.Setup(m => m.GetPasskeyAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<byte[]>())).ReturnsAsync((UserPasskeyInfo?)null);
+        userManager.Setup(m => m.GetUserId(It.IsAny<ClaimsPrincipal>())).Returns("user-7");
+        model.Input = new RenamePasskeyModel.InputModel { CredentialId = ValidCredentialId, Name = "x" };
+
+        // Act
+        var result = await model.OnPostAsync();
+
+        // Assert
+        var notFound = Assert.IsType<NotFoundObjectResult>(result);
+        Assert.Contains("user-7", notFound.Value as string, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_AddOrUpdateFails_Throws()
+    {
+        // Arrange
+        var (userManager, model) = CreateModel();
+        var user = MockHelpers.TestUser();
+        userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
+        userManager.Setup(m => m.GetPasskeyAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<byte[]>())).ReturnsAsync(BuildPasskey("Old name"));
+        userManager.Setup(m => m.AddOrUpdatePasskeyAsync(user, It.IsAny<UserPasskeyInfo>())).ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "fail" }));
+        userManager.Setup(m => m.GetUserIdAsync(user)).ReturnsAsync("uid-1");
+        model.Input = new RenamePasskeyModel.InputModel { CredentialId = ValidCredentialId, Name = "New name" };
+
+        // Act / Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(() => model.OnPostAsync());
+    }
+
+    private static UserPasskeyInfo BuildPasskey(string name) =>
+        new(
+            credentialId: [1, 2, 3],
+            publicKey: [4, 5, 6],
+            createdAt: DateTimeOffset.UnixEpoch,
+            signCount: 0,
+            transports: null,
+            isUserVerified: false,
+            isBackupEligible: false,
+            isBackedUp: false,
+            attestationObject: [7, 8, 9],
+            clientDataJson: [10, 11, 12])
+        {
+            Name = name,
+        };
+
+    private static (Mock<UserManager<IdentityUser<Guid>>> UserManager, RenamePasskeyModel Model) CreateModel()
+    {
+        var userManager = MockHelpers.MockUserManager();
+        var dbContext = new Mock<ApplicationDbContext>(new DbContextOptions<ApplicationDbContext>()).Object;
+        var model = new RenamePasskeyModel(userManager.Object, dbContext)
+        {
+            PageContext = MockHelpers.PageContext(),
+        };
+        return (userManager, model);
     }
 }

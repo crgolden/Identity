@@ -34,7 +34,7 @@ public class GravatarServiceTests
     public async Task GetAvatarUrlAsync_ProfileReturnsNullAvatarUrl_ReturnsNull()
     {
         // Arrange
-        var profile = new Profile { Avatar_url = null! };
+        var profile = new Profile(); // Avatar_url defaults to null
         var gravatarMock = new Mock<IGravatar>(MockBehavior.Strict);
         gravatarMock
             .Setup(g => g.GetProfileByIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -55,7 +55,7 @@ public class GravatarServiceTests
         var gravatarMock = new Mock<IGravatar>(MockBehavior.Strict);
         gravatarMock
             .Setup(g => g.GetProfileByIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new ApiException("Not Found", 404, string.Empty, new Dictionary<string, IEnumerable<string>>(), null!));
+            .ThrowsAsync(new ApiException("Not Found", 404, string.Empty, new Dictionary<string, IEnumerable<string>>(), null));
         var service = new GravatarService(gravatarMock.Object);
 
         // Act
@@ -72,7 +72,7 @@ public class GravatarServiceTests
         var gravatarMock = new Mock<IGravatar>(MockBehavior.Strict);
         gravatarMock
             .Setup(g => g.GetProfileByIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new ApiException("Internal Server Error", 500, string.Empty, new Dictionary<string, IEnumerable<string>>(), null!));
+            .ThrowsAsync(new ApiException("Internal Server Error", 500, string.Empty, new Dictionary<string, IEnumerable<string>>(), null));
         var service = new GravatarService(gravatarMock.Object);
 
         // Act & Assert

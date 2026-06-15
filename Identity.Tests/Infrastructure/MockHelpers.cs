@@ -12,10 +12,13 @@ using Moq;
 /// <summary>Shared builders for the ASP.NET Core Identity mocks the page-model unit tests depend on.</summary>
 internal static class MockHelpers
 {
-    public static Mock<UserManager<IdentityUser<Guid>>> MockUserManager()
+    public static Mock<UserManager<IdentityUser<Guid>>> MockUserManager() =>
+        MockUserManager(new IdentityOptions());
+
+    public static Mock<UserManager<IdentityUser<Guid>>> MockUserManager(IdentityOptions identityOptions)
     {
         var options = new Mock<IOptions<IdentityOptions>>();
-        options.Setup(o => o.Value).Returns(new IdentityOptions());
+        options.Setup(o => o.Value).Returns(identityOptions);
         return new Mock<UserManager<IdentityUser<Guid>>>(
             new Mock<IUserStore<IdentityUser<Guid>>>().Object,
             options.Object,

@@ -19,6 +19,8 @@ public class ForgotPasswordModel : PageModel
 
     public ForgotPasswordModel(UserManager<IdentityUser<Guid>> userManager, IAzureClientFactory<ServiceBusClient> serviceBusClientFactory)
     {
+        ArgumentNullException.ThrowIfNull(userManager);
+        ArgumentNullException.ThrowIfNull(serviceBusClientFactory);
         _userManager = userManager;
         _serviceBusClient = serviceBusClientFactory.CreateClient("crgolden");
     }

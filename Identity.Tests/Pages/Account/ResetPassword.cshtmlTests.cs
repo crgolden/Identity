@@ -1,4 +1,3 @@
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account;
 using Infrastructure;
 
@@ -59,8 +58,7 @@ public class ResetPasswordModelTests
     public void OnGet_CodeIsNull_ReturnsBadRequestWithMessage()
     {
         // Arrange
-        var userStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var mockUserManager = new Mock<UserManager<IdentityUser<Guid>>>(userStore, null, null, null, null, null, null, null, null);
+        var mockUserManager = MockHelpers.MockUserManager();
         var model = new ResetPasswordModel(mockUserManager.Object);
 
         // Act
@@ -76,8 +74,7 @@ public class ResetPasswordModelTests
     public void OnGet_ValidBase64UrlEncodedCode_SetsInputCodeAndReturnsPage(string original)
     {
         // Arrange
-        var userStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var mockUserManager = new Mock<UserManager<IdentityUser<Guid>>>(userStore, null, null, null, null, null, null, null, null);
+        var mockUserManager = MockHelpers.MockUserManager();
         var model = new ResetPasswordModel(mockUserManager.Object);
 
         var encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(original));
@@ -98,8 +95,7 @@ public class ResetPasswordModelTests
     public void OnGet_MalformedCode_ThrowsFormatException(string malformed)
     {
         // Arrange
-        var userStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var mockUserManager = new Mock<UserManager<IdentityUser<Guid>>>(userStore, null, null, null, null, null, null, null, null);
+        var mockUserManager = MockHelpers.MockUserManager();
         var model = new ResetPasswordModel(mockUserManager.Object);
 
         // Act & Assert
@@ -110,9 +106,7 @@ public class ResetPasswordModelTests
     public async Task OnPostAsync_ModelStateInvalid_ReturnsPage()
     {
         // Arrange
-        var userStoreMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
-            userStoreMock.Object, null, null, null, null, null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
 
         var model = new ResetPasswordModel(userManagerMock.Object);
 
@@ -145,9 +139,7 @@ public class ResetPasswordModelTests
     public async Task OnPostAsync_UserMissingOrResetSucceeds_RedirectsToConfirmation(bool userExists, bool resetSucceeds)
     {
         // Arrange
-        var userStoreMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
-            userStoreMock.Object, null, null, null, null, null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
 
         IdentityUser<Guid>? foundUser = null;
         if (userExists)
@@ -207,9 +199,7 @@ public class ResetPasswordModelTests
     public async Task OnPostAsync_ResetPasswordFails_AddsModelErrorsAndReturnsPage()
     {
         // Arrange
-        var userStoreMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
-            userStoreMock.Object, null, null, null, null, null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
 
         var foundUser = new IdentityUser<Guid> { Id = Guid.NewGuid(), Email = "user2@example.com", UserName = "user2" };
 
