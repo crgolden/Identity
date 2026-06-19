@@ -1,0 +1,32 @@
+@page
+@model PropertiesModel
+
+@{
+    ViewData["Title"] = "Client Properties";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Client Properties</h1>
+    <div>
+        <a id="btn-edit" asp-page="/Admin/Clients/Edit/Properties" asp-route-id="@Model.Client.Id" class="btn btn-primary">Edit</a>
+        <a id="btn-back" asp-page="./Index" asp-route-id="@Model.Client.Id" class="btn btn-outline-secondary ms-1">Back</a>
+    </div>
+</div>
+
+<table class="table table-bordered table-hover table-sm">
+    <thead class="table-light">
+        <tr>
+            <th>Key</th>
+            <th>Value</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var p in Model.Client.Properties ?? [])
+        {
+            <tr>
+                <td>@p.Key</td>
+                <td>@p.Value</td>
+            </tr>
+        }
+    </tbody>
+</table>

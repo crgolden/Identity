@@ -1,0 +1,14 @@
+@page
+@model Identity.Pages.Admin.DeviceFlowCodes.DeleteModel
+@{
+    ViewData["Title"] = "Delete Device Flow Code";
+}
+
+<h1>Delete Device Flow Code</h1>
+
+<div class="alert alert-danger">Are you sure you want to delete device flow code for client <strong>@Model.DeviceFlowCode.ClientId</strong>?</div>
+
+<form method="post">
+    <button id="delete-submit" type="submit" class="btn btn-danger">Delete</button>
+    <a asp-page="./Index" class="btn btn-outline-secondary">Cancel</a>
+</form>

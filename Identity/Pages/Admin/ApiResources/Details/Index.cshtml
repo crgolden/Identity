@@ -1,0 +1,35 @@
+@page "{id:int}"
+@model Identity.Pages.Admin.ApiResources.Details.IndexModel
+@{
+    ViewData["Title"] = "API Resource Details";
+}
+
+<h1>@Model.Resource.Name</h1>
+
+<dl class="row">
+    <dt class="col-sm-3">Name</dt>
+    <dd class="col-sm-9">@Model.Resource.Name</dd>
+    <dt class="col-sm-3">Display Name</dt>
+    <dd class="col-sm-9">@Model.Resource.DisplayName</dd>
+    <dt class="col-sm-3">Description</dt>
+    <dd class="col-sm-9">@Model.Resource.Description</dd>
+    <dt class="col-sm-3">Enabled</dt>
+    <dd class="col-sm-9">@Model.Resource.Enabled</dd>
+    <dt class="col-sm-3">Show In Discovery</dt>
+    <dd class="col-sm-9">@Model.Resource.ShowInDiscoveryDocument</dd>
+    <dt class="col-sm-3">Created</dt>
+    <dd class="col-sm-9">@Model.Resource.Created</dd>
+</dl>
+
+<div class="btn-group mb-3">
+    <a id="nav-claimtypes" asp-page="./ClaimTypes" asp-route-id="@Model.Resource.Id" class="btn btn-outline-secondary">Claim Types</a>
+    <a id="nav-scopes" asp-page="./Scopes" asp-route-id="@Model.Resource.Id" class="btn btn-outline-secondary">Scopes</a>
+    <a id="nav-secrets" asp-page="./Secrets" asp-route-id="@Model.Resource.Id" class="btn btn-outline-secondary">Secrets</a>
+    <a id="nav-properties" asp-page="./Properties" asp-route-id="@Model.Resource.Id" class="btn btn-outline-secondary">Properties</a>
+</div>
+
+<div>
+    <a id="btn-edit" asp-page="../Edit/Index" asp-route-id="@Model.Resource.Id" class="btn btn-primary">Edit</a>
+    <a id="btn-delete" asp-page="../Delete" asp-route-id="@Model.Resource.Id" class="btn btn-danger">Delete</a>
+    <a id="btn-back" asp-page="../Index" class="btn btn-outline-secondary">Back</a>
+</div>

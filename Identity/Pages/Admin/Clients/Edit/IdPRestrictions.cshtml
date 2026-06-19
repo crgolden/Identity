@@ -1,0 +1,56 @@
+@page
+@model IdPRestrictionsModel
+
+@{
+    ViewData["Title"] = "Edit Client IdP Restrictions";
+}
+
+<h1>Edit Client IdP Restrictions</h1>
+
+<form method="post">
+    <table class="table table-bordered table-sm" id="idp-table">
+        <thead class="table-light">
+            <tr>
+                <th>Provider</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (var i = 0; i < Model.IdPRestrictions.Count; i++)
+            {
+                <tr>
+                    <td>
+                        <input type="hidden" name="IdPRestrictions[@i].Id" value="@Model.IdPRestrictions[i].Id" />
+                        <input name="IdPRestrictions[@i].Provider" value="@Model.IdPRestrictions[i].Provider" class="form-control form-control-sm" />
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-danger remove-row">Remove</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <button id="btn-add-row" type="button" class="btn btn-sm btn-outline-secondary mb-3">Add</button>
+
+    <template id="row-template">
+        <tr>
+            <td>
+                <input type="hidden" name="IdPRestrictions[__index__].Id" value="0" />
+                <input name="IdPRestrictions[__index__].Provider" class="form-control form-control-sm" />
+            </td>
+            <td>
+                <button type="button" class="btn btn-sm btn-danger remove-row">Remove</button>
+            </td>
+        </tr>
+    </template>
+
+    <div>
+        <button id="save-submit" type="submit" asp-route-id="@Model.Client.Id" class="btn btn-primary">Save</button>
+        <a asp-page="/Admin/Clients/Details/IdPRestrictions" asp-route-id="@Model.Client.Id" class="btn btn-outline-secondary ms-1">Cancel</a>
+    </div>
+</form>
+
+@section Scripts {
+    <script src="~/js/admin-collection.js"></script>
+}

@@ -1,0 +1,27 @@
+@page
+@model Identity.Pages.Admin.PersistedGrants.Details.IndexModel
+@{
+    ViewData["Title"] = "Persisted Grant Details";
+}
+
+<h1>Persisted Grant Details</h1>
+
+<dl class="row">
+    <dt class="col-sm-3">Key</dt>
+    <dd class="col-sm-9">@Model.PersistedGrant.Key</dd>
+    <dt class="col-sm-3">Subject</dt>
+    <dd class="col-sm-9">@Model.PersistedGrant.SubjectId</dd>
+    <dt class="col-sm-3">Client</dt>
+    <dd class="col-sm-9">@Model.PersistedGrant.ClientId</dd>
+    <dt class="col-sm-3">Type</dt>
+    <dd class="col-sm-9">@Model.PersistedGrant.Type</dd>
+    <dt class="col-sm-3">Created</dt>
+    <dd class="col-sm-9">@Model.PersistedGrant.CreationTime</dd>
+    <dt class="col-sm-3">Expires</dt>
+    <dd class="col-sm-9">@Model.PersistedGrant.Expiration</dd>
+    <dt class="col-sm-3">Consumed</dt>
+    <dd class="col-sm-9">@Model.PersistedGrant.ConsumedTime</dd>
+</dl>
+
+<a id="btn-back" asp-page="../Index" class="btn btn-outline-secondary">Back</a>
+<a id="btn-delete" asp-page="../Delete" asp-route-key="@Model.PersistedGrant.Key" class="btn btn-danger">Delete</a>

@@ -1,0 +1,56 @@
+@page
+@model ScopesModel
+
+@{
+    ViewData["Title"] = "Edit Client Scopes";
+}
+
+<h1>Edit Client Scopes</h1>
+
+<form method="post">
+    <table class="table table-bordered table-sm" id="scopes-table">
+        <thead class="table-light">
+            <tr>
+                <th>Scope</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (var i = 0; i < Model.Scopes.Count; i++)
+            {
+                <tr>
+                    <td>
+                        <input type="hidden" name="Scopes[@i].Id" value="@Model.Scopes[i].Id" />
+                        <input name="Scopes[@i].Scope" value="@Model.Scopes[i].Scope" class="form-control form-control-sm" />
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-danger remove-row">Remove</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <button id="btn-add-row" type="button" class="btn btn-sm btn-outline-secondary mb-3">Add</button>
+
+    <template id="row-template">
+        <tr>
+            <td>
+                <input type="hidden" name="Scopes[__index__].Id" value="0" />
+                <input name="Scopes[__index__].Scope" class="form-control form-control-sm" />
+            </td>
+            <td>
+                <button type="button" class="btn btn-sm btn-danger remove-row">Remove</button>
+            </td>
+        </tr>
+    </template>
+
+    <div>
+        <button id="save-submit" type="submit" asp-route-id="@Model.Client.Id" class="btn btn-primary">Save</button>
+        <a asp-page="/Admin/Clients/Details/Scopes" asp-route-id="@Model.Client.Id" class="btn btn-outline-secondary ms-1">Cancel</a>
+    </div>
+</form>
+
+@section Scripts {
+    <script src="~/js/admin-collection.js"></script>
+}

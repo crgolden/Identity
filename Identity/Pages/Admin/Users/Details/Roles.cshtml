@@ -1,0 +1,35 @@
+@page "{id}"
+@model Identity.Pages.Admin.Users.Details.RolesModel
+@{
+    ViewData["Title"] = "User Roles";
+}
+
+<h1>@Model.AppUser.UserName — Roles</h1>
+
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+        <a class="nav-link" asp-page="./Index" asp-route-id="@Model.AppUser.Id">Details</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" asp-page="./Claims" asp-route-id="@Model.AppUser.Id">Claims</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link active" asp-page="./Roles" asp-route-id="@Model.AppUser.Id">Roles</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" asp-page="./Logins" asp-route-id="@Model.AppUser.Id">Logins</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" asp-page="./Passkeys" asp-route-id="@Model.AppUser.Id">Passkeys</a>
+    </li>
+</ul>
+
+<ul class="list-group mb-3">
+    @foreach (var role in Model.Roles)
+    {
+        <li class="list-group-item">@role</li>
+    }
+</ul>
+
+<a id="btn-edit" asp-page="../Edit/Roles" asp-route-id="@Model.AppUser.Id" class="btn btn-primary">Edit</a>
+<a id="btn-back" asp-page="../Index" class="btn btn-outline-secondary">Back</a>

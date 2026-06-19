@@ -1,0 +1,13 @@
+@page "{id:int}"
+@model Identity.Pages.Admin.ApiResources.DeleteModel
+@{
+    ViewData["Title"] = "Delete API Resource";
+}
+
+<h1>Delete API Resource</h1>
+<p class="text-danger">Are you sure you want to delete <strong>@Model.Resource.Name</strong>?</p>
+
+<form method="post">
+    <button id="delete-submit" type="submit" class="btn btn-danger">Delete</button>
+    <a asp-page="./Details/Index" asp-route-id="@Model.Resource.Id" class="btn btn-outline-secondary">Cancel</a>
+</form>

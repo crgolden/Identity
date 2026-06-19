@@ -1,0 +1,22 @@
+@page "{id:int}"
+@model Identity.Pages.Admin.IdentityResources.Details.PropertiesModel
+@{
+    ViewData["Title"] = "Identity Resource Properties";
+}
+
+<h1>Properties: @Model.Resource.Name</h1>
+
+<table class="table table-bordered table-hover table-sm">
+    <thead class="table-light">
+        <tr><th>Key</th><th>Value</th></tr>
+    </thead>
+    <tbody>
+        @foreach (var prop in Model.Resource.Properties ?? [])
+        {
+            <tr><td>@prop.Key</td><td>@prop.Value</td></tr>
+        }
+    </tbody>
+</table>
+
+<a id="btn-back" asp-page="./Index" asp-route-id="@Model.Resource.Id" class="btn btn-outline-secondary btn-sm">Back</a>
+<a id="btn-edit" asp-page="../Edit/Properties" asp-route-id="@Model.Resource.Id" class="btn btn-outline-secondary btn-sm">Edit</a>

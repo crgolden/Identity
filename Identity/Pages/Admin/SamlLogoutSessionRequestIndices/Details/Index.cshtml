@@ -1,0 +1,18 @@
+@page
+@model Identity.Pages.Admin.SamlLogoutSessionRequestIndices.Details.IndexModel
+@{
+    ViewData["Title"] = "SAML Logout Session Request Index Details";
+}
+
+<h1>SAML Logout Session Request Index Details</h1>
+
+<dl class="row">
+    <dt class="col-sm-3">Id</dt>
+    <dd class="col-sm-9">@Model.SamlLogoutSessionRequestIndex.Id</dd>
+    <dt class="col-sm-3">Request Id</dt>
+    <dd class="col-sm-9">@Model.SamlLogoutSessionRequestIndex.RequestId</dd>
+    <dt class="col-sm-3">Logout Session Id</dt>
+    <dd class="col-sm-9">@Model.SamlLogoutSessionRequestIndex.SamlLogoutSessionId</dd>
+</dl>
+
+<a id="btn-back" asp-page="../Index" class="btn btn-outline-secondary">Back</a>

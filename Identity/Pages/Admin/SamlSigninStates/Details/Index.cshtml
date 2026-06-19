@@ -1,0 +1,21 @@
+@page
+@model Identity.Pages.Admin.SamlSigninStates.Details.IndexModel
+@{
+    ViewData["Title"] = "SAML Sign-In State Details";
+}
+
+<h1>SAML Sign-In State Details</h1>
+
+<dl class="row">
+    <dt class="col-sm-3">Id</dt>
+    <dd class="col-sm-9">@Model.SamlSigninState.Id</dd>
+    <dt class="col-sm-3">State Id</dt>
+    <dd class="col-sm-9">@Model.SamlSigninState.StateId</dd>
+    <dt class="col-sm-3">Service Provider</dt>
+    <dd class="col-sm-9">@Model.SamlSigninState.ServiceProviderEntityId</dd>
+    <dt class="col-sm-3">Expires</dt>
+    <dd class="col-sm-9">@Model.SamlSigninState.ExpiresAtUtc</dd>
+</dl>
+
+<a id="btn-back" asp-page="../Index" class="btn btn-outline-secondary">Back</a>
+<a id="btn-delete" asp-page="../Delete" asp-route-id="@Model.SamlSigninState.Id" class="btn btn-danger">Delete</a>

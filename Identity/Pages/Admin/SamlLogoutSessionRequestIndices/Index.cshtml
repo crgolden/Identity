@@ -1,0 +1,33 @@
+@page
+@model Identity.Pages.Admin.SamlLogoutSessionRequestIndices.IndexModel
+@{
+    ViewData["Title"] = "SAML Logout Session Request Indices";
+}
+
+<h1>SAML Logout Session Request Indices</h1>
+
+<table class="table table-bordered table-hover table-sm">
+    <thead class="table-light">
+        <tr>
+            <th>Id</th>
+            <th>Request Id</th>
+            <th>Logout Session Id</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var index in Model.SamlLogoutSessionRequestIndices)
+        {
+            <tr>
+                <td>@index.Id</td>
+                <td>@index.RequestId</td>
+                <td>@index.SamlLogoutSessionId</td>
+                <td>
+                    <a id="details-@index.Id" asp-page="./Details/Index" asp-route-id="@index.Id" class="btn btn-sm btn-outline-secondary">Details</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<a id="btn-back" asp-page="/Admin/Index" class="btn btn-outline-secondary">Back</a>

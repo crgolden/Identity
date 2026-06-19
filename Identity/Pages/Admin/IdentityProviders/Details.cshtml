@@ -1,0 +1,41 @@
+@page
+@model DetailsModel
+
+@{
+    ViewData["Title"] = "Identity Provider Details";
+}
+
+<h1>Identity Provider Details</h1>
+
+<dl class="row">
+    <dt class="col-sm-3">Scheme</dt>
+    <dd class="col-sm-9">@Model.IdentityProvider.Scheme</dd>
+
+    <dt class="col-sm-3">Display Name</dt>
+    <dd class="col-sm-9">@Model.IdentityProvider.DisplayName</dd>
+
+    <dt class="col-sm-3">Type</dt>
+    <dd class="col-sm-9">@Model.IdentityProvider.Type</dd>
+
+    <dt class="col-sm-3">Enabled</dt>
+    <dd class="col-sm-9">@Model.IdentityProvider.Enabled</dd>
+
+    <dt class="col-sm-3">Non-Editable</dt>
+    <dd class="col-sm-9">@Model.IdentityProvider.NonEditable</dd>
+
+    <dt class="col-sm-3">Properties</dt>
+    <dd class="col-sm-9"><pre>@Model.IdentityProvider.Properties</pre></dd>
+
+    <dt class="col-sm-3">Created</dt>
+    <dd class="col-sm-9">@Model.IdentityProvider.Created</dd>
+
+    <dt class="col-sm-3">Updated</dt>
+    <dd class="col-sm-9">@Model.IdentityProvider.Updated</dd>
+
+    <dt class="col-sm-3">Last Accessed</dt>
+    <dd class="col-sm-9">@Model.IdentityProvider.LastAccessed</dd>
+</dl>
+
+<a id="btn-edit" asp-page="./Edit" asp-route-id="@Model.IdentityProvider.Id" class="btn btn-primary">Edit</a>
+<a id="btn-delete" asp-page="./Delete" asp-route-id="@Model.IdentityProvider.Id" class="btn btn-danger ms-1">Delete</a>
+<a id="btn-back" asp-page="./Index" class="btn btn-outline-secondary ms-1">Back</a>

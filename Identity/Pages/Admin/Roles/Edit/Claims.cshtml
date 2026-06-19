@@ -1,0 +1,36 @@
+@page "{id}"
+@model Identity.Pages.Admin.Roles.Edit.ClaimsModel
+
+@{
+    ViewData["Title"] = "Edit Role Claims";
+}
+
+<h1>Claims — @Model.RoleName</h1>
+
+<form method="post">
+    <div id="claims-collection">
+        @for (var i = 0; i < Model.Claims.Count; i++)
+        {
+            <div class="row mb-2 claim-row">
+                <div class="col">
+                    <input asp-for="Claims[i].Type" class="form-control" placeholder="Type" />
+                </div>
+                <div class="col">
+                    <input asp-for="Claims[i].Value" class="form-control" placeholder="Value" />
+                </div>
+                <div class="col-auto">
+                    <button type="button" class="btn btn-outline-danger btn-sm" data-remove-row>Remove</button>
+                </div>
+            </div>
+        }
+    </div>
+    <button id="btn-add-row" type="button" class="btn btn-outline-secondary btn-sm mb-3" data-add-for="claims-collection">Add Claim</button>
+    <div class="d-flex gap-2">
+        <button id="save-submit" type="submit" class="btn btn-primary">Save</button>
+        <a asp-page="/Admin/Roles/Details/Claims" asp-route-id="@HttpContext.Request.RouteValues["id"]" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+
+@section Scripts {
+    <script src="~/js/admin-collection.js"></script>
+}

@@ -1,0 +1,22 @@
+@page "{id:int}"
+@model Identity.Pages.Admin.ApiResources.Details.ClaimTypesModel
+@{
+    ViewData["Title"] = $"Claim Types – {Model.Resource.Name}";
+}
+
+<h1>@Model.Resource.Name — Claim Types</h1>
+
+<table class="table table-bordered table-hover table-sm">
+    <thead class="table-light">
+        <tr><th>Type</th></tr>
+    </thead>
+    <tbody>
+        @foreach (var claim in Model.ClaimTypes)
+        {
+            <tr><td>@claim.Type</td></tr>
+        }
+    </tbody>
+</table>
+
+<a id="btn-edit" asp-page="./Edit/ClaimTypes" asp-route-id="@Model.Resource.Id" class="btn btn-primary">Edit</a>
+<a id="btn-back" asp-page="./Index" asp-route-id="@Model.Resource.Id" class="btn btn-outline-secondary">Back</a>
