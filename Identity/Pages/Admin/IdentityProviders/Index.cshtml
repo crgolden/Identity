@@ -1,0 +1,37 @@
+@page
+@model IndexModel
+
+@{
+    ViewData["Title"] = "Identity Providers";
+}
+
+<h1>Identity Providers</h1>
+<a id="btn-create" asp-page="./Create" class="btn btn-primary mb-3">New</a>
+
+<table class="table table-bordered table-hover table-sm">
+    <thead class="table-light">
+        <tr>
+            <th>Scheme</th>
+            <th>Display Name</th>
+            <th>Type</th>
+            <th>Enabled</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var provider in Model.IdentityProviders)
+        {
+            <tr>
+                <td>@provider.Scheme</td>
+                <td>@provider.DisplayName</td>
+                <td>@provider.Type</td>
+                <td>@provider.Enabled</td>
+                <td>
+                    <a id="details-@provider.Id" asp-page="./Details" asp-route-id="@provider.Id">Details</a> |
+                    <a id="edit-@provider.Id" asp-page="./Edit" asp-route-id="@provider.Id">Edit</a> |
+                    <a id="delete-@provider.Id" asp-page="./Delete" asp-route-id="@provider.Id">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

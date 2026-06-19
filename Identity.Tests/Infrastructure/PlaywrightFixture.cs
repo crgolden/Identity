@@ -1,5 +1,6 @@
 namespace Identity.Tests.Infrastructure;
 
+using Duende.IdentityServer.EntityFramework.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -133,6 +134,72 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         }
 
         return (email, password);
+    }
+
+    public async Task<(string Email, string Password)> CreateAdminUserAsync()
+    {
+        const string password = "Test@Admin123!";
+        var email = $"e2e-admin-{Guid.NewGuid()}@test.invalid";
+
+        await using var scope = _factory!.Services.CreateAsyncScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser<Guid>>>();
+        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
+
+        if (!await roleManager.RoleExistsAsync("Admin"))
+        {
+            var roleResult = await roleManager.CreateAsync(new IdentityRole<Guid>("Admin"));
+            if (!roleResult.Succeeded)
+            {
+                throw new InvalidOperationException(
+                    Join(", ", roleResult.Errors.Select(e => e.Description)));
+            }
+        }
+
+        var user = new IdentityUser<Guid>
+        {
+            UserName = email,
+            Email = email,
+            EmailConfirmed = true
+        };
+        var createResult = await userManager.CreateAsync(user, password);
+        if (!createResult.Succeeded)
+        {
+            throw new InvalidOperationException(
+                Join(", ", createResult.Errors.Select(e => e.Description)));
+        }
+
+        var addRoleResult = await userManager.AddToRoleAsync(user, "Admin");
+        if (!addRoleResult.Succeeded)
+        {
+            throw new InvalidOperationException(
+                Join(", ", addRoleResult.Errors.Select(e => e.Description)));
+        }
+
+        return (email, password);
+    }
+
+    public async Task<int> SeedClientAsync(string clientId = "e2e-admin-client")
+    {
+        await using var scope = _factory!.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        var existing = await db.Clients.FirstOrDefaultAsync(c => c.ClientId == clientId);
+        if (existing is not null)
+        {
+            return existing.Id;
+        }
+
+        var client = new Client
+        {
+            ClientId = clientId,
+            ClientName = "E2E Admin Test Client",
+            ProtocolType = "oidc",
+            RequireClientSecret = false,
+            AllowOfflineAccess = false
+        };
+        db.Clients.Add(client);
+        await db.SaveChangesAsync();
+        return client.Id;
     }
 
     public async Task ConfirmUserEmailAsync(string email)

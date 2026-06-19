@@ -1,0 +1,14 @@
+@page
+@model Identity.Pages.Admin.ServerSideSessions.DeleteModel
+@{
+    ViewData["Title"] = "Delete Server-Side Session";
+}
+
+<h1>Delete Server-Side Session</h1>
+
+<div class="alert alert-danger">Are you sure you want to delete session for <strong>@Model.ServerSideSession.SubjectId</strong>?</div>
+
+<form method="post">
+    <button id="delete-submit" type="submit" class="btn btn-danger">Delete</button>
+    <a asp-page="./Index" class="btn btn-outline-secondary">Cancel</a>
+</form>

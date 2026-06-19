@@ -1,0 +1,38 @@
+@page
+@model Identity.Pages.Admin.ServerSideSessions.IndexModel
+@{
+    ViewData["Title"] = "Server-Side Sessions";
+}
+
+<h1>Server-Side Sessions</h1>
+
+<table class="table table-bordered table-hover table-sm">
+    <thead class="table-light">
+        <tr>
+            <th>Subject</th>
+            <th>Session</th>
+            <th>Display Name</th>
+            <th>Created</th>
+            <th>Expires</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var session in Model.ServerSideSessions)
+        {
+            <tr>
+                <td>@session.SubjectId</td>
+                <td>@session.SessionId</td>
+                <td>@session.DisplayName</td>
+                <td>@session.Created</td>
+                <td>@session.Expires</td>
+                <td>
+                    <a id="details-@session.Key" asp-page="./Details/Index" asp-route-key="@session.Key" class="btn btn-sm btn-outline-secondary">Details</a>
+                    <a id="delete-@session.Key" asp-page="./Delete" asp-route-key="@session.Key" class="btn btn-sm btn-danger">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<a id="btn-back" asp-page="/Admin/Index" class="btn btn-outline-secondary">Back</a>

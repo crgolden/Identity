@@ -1,0 +1,19 @@
+@page "{id}"
+@model Identity.Pages.Admin.Roles.Edit.IndexModel
+
+@{
+    ViewData["Title"] = "Edit Role";
+}
+
+<h1>Edit Role</h1>
+
+<form method="post">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="mb-3">
+        <label asp-for="AppRole.Name" class="form-label">Name</label>
+        <input asp-for="AppRole.Name" class="form-control" />
+        <span asp-validation-for="AppRole.Name" class="text-danger"></span>
+    </div>
+    <button id="save-submit" type="submit" class="btn btn-primary">Save</button>
+    <a asp-page="/Admin/Roles/Details/Index" asp-route-id="@Model.AppRole.Id" class="btn btn-secondary">Cancel</a>
+</form>

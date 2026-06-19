@@ -1,0 +1,26 @@
+@page
+@model PostLogoutRedirectUrisModel
+
+@{
+    ViewData["Title"] = "Client Post-Logout Redirect URIs";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Client Post-Logout Redirect URIs</h1>
+    <div>
+        <a id="btn-edit" asp-page="/Admin/Clients/Edit/PostLogoutRedirectUris" asp-route-id="@Model.Client.Id" class="btn btn-primary">Edit</a>
+        <a id="btn-back" asp-page="./Index" asp-route-id="@Model.Client.Id" class="btn btn-outline-secondary ms-1">Back</a>
+    </div>
+</div>
+
+<table class="table table-bordered table-hover table-sm">
+    <thead class="table-light">
+        <tr><th>Post-Logout Redirect URI</th></tr>
+    </thead>
+    <tbody>
+        @foreach (var u in Model.Client.PostLogoutRedirectUris ?? [])
+        {
+            <tr><td>@u.PostLogoutRedirectUri</td></tr>
+        }
+    </tbody>
+</table>

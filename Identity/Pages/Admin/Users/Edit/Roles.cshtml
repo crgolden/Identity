@@ -1,0 +1,52 @@
+@page "{id}"
+@model Identity.Pages.Admin.Users.Edit.RolesModel
+@{
+    ViewData["Title"] = "Edit User Roles";
+}
+
+<h1>@Model.AppUser.UserName — Edit Roles</h1>
+
+<form method="post" data-collection-form>
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <table class="table table-bordered table-sm" data-collection="Roles">
+        <thead class="table-light">
+            <tr>
+                <th>Role</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (var i = 0; i < Model.Roles.Count; i++)
+            {
+                <tr>
+                    <td>
+                        <input name="Roles[@i]" value="@Model.Roles[i]" class="form-control form-control-sm" />
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-outline-danger" data-remove-row>Remove</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <button id="btn-add-row" type="button" class="btn btn-outline-secondary btn-sm mb-3" data-add-for="Roles">Add Role</button>
+    <div>
+        <button id="save-submit" type="submit" class="btn btn-primary">Save</button>
+        <a asp-page="../Details/Roles" asp-route-id="@Model.AppUser.Id" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+</form>
+
+<template data-collection="Roles">
+    <tr>
+        <td>
+            <input name="Roles[-1]" class="form-control form-control-sm" />
+        </td>
+        <td>
+            <button type="button" class="btn btn-sm btn-outline-danger" data-remove-row>Remove</button>
+        </td>
+    </tr>
+</template>
+
+@section Scripts {
+    <script src="~/js/admin-collection.js"></script>
+}

@@ -1,0 +1,46 @@
+@page "{id}"
+@model Identity.Pages.Admin.Users.Details.PasskeysModel
+@{
+    ViewData["Title"] = "User Passkeys";
+}
+
+<h1>@Model.AppUser.UserName — Passkeys</h1>
+
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+        <a class="nav-link" asp-page="./Index" asp-route-id="@Model.AppUser.Id">Details</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" asp-page="./Claims" asp-route-id="@Model.AppUser.Id">Claims</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" asp-page="./Roles" asp-route-id="@Model.AppUser.Id">Roles</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" asp-page="./Logins" asp-route-id="@Model.AppUser.Id">Logins</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link active" asp-page="./Passkeys" asp-route-id="@Model.AppUser.Id">Passkeys</a>
+    </li>
+</ul>
+
+<table class="table table-bordered table-sm">
+    <thead class="table-light">
+        <tr>
+            <th>Name</th>
+            <th>Created</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var pk in Model.Passkeys)
+        {
+            <tr>
+                <td>@pk.Name</td>
+                <td>@pk.CreatedAt</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<a id="btn-edit" asp-page="../Edit/Passkeys" asp-route-id="@Model.AppUser.Id" class="btn btn-primary">Edit</a>
+<a id="btn-back" asp-page="../Index" class="btn btn-outline-secondary">Back</a>

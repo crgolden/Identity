@@ -1,0 +1,28 @@
+@page
+@model Identity.Pages.Admin.ApiScopes.CreateModel
+@{
+    ViewData["Title"] = "Create API Scope";
+}
+
+<h1>Create API Scope</h1>
+
+<form method="post">
+    <div class="mb-3">
+        <label class="form-label" asp-for="Scope.Name"></label>
+        <input class="form-control" asp-for="Scope.Name" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label" asp-for="Scope.DisplayName"></label>
+        <input class="form-control" asp-for="Scope.DisplayName" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label" asp-for="Scope.Description"></label>
+        <input class="form-control" asp-for="Scope.Description" />
+    </div>
+    <div class="mb-3 form-check">
+        <input class="form-check-input" asp-for="Scope.Enabled" />
+        <label class="form-check-label" asp-for="Scope.Enabled"></label>
+    </div>
+    <button id="create-submit" type="submit" class="btn btn-primary">Create</button>
+    <a asp-page="./Index" class="btn btn-outline-secondary">Cancel</a>
+</form>

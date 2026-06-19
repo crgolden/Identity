@@ -232,7 +232,14 @@ try
             forwardedHeadersOptions.KnownIPNetworks.Clear();
             forwardedHeadersOptions.KnownProxies.Clear();
         })
-        .AddRazorPages().Services
+        .AddAuthorization(authorizationOptions =>
+        {
+            authorizationOptions.AddPolicy("Admin", policy => policy.RequireRole("Admin"));
+        })
+        .AddRazorPages(razorPagesOptions =>
+        {
+            razorPagesOptions.Conventions.AuthorizeFolder("/Admin", "Admin");
+        }).Services
         .AddProblemDetails()
         .AddHealthChecks()
         .AddDbContextCheck<ApplicationDbContext>();

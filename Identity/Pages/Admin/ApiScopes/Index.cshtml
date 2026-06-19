@@ -1,0 +1,34 @@
+@page
+@model Identity.Pages.Admin.ApiScopes.IndexModel
+@{
+    ViewData["Title"] = "API Scopes";
+}
+
+<h1>API Scopes</h1>
+<a id="btn-create" asp-page="./Create" class="btn btn-primary mb-3">Create New</a>
+
+<table class="table table-bordered table-hover table-sm">
+    <thead class="table-light">
+        <tr>
+            <th>Name</th>
+            <th>Display Name</th>
+            <th>Enabled</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var scope in Model.ApiScopes)
+        {
+            <tr>
+                <td>@scope.Name</td>
+                <td>@scope.DisplayName</td>
+                <td>@scope.Enabled</td>
+                <td>
+                    <a id="details-@scope.Id" asp-page="./Details/Index" asp-route-id="@scope.Id" class="btn btn-sm btn-outline-secondary">Details</a>
+                    <a id="edit-@scope.Id" asp-page="./Edit/Index" asp-route-id="@scope.Id" class="btn btn-sm btn-outline-secondary">Edit</a>
+                    <a id="delete-@scope.Id" asp-page="./Delete" asp-route-id="@scope.Id" class="btn btn-sm btn-danger">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

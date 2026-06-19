@@ -1,0 +1,27 @@
+@page
+@model Identity.Pages.Admin.ServerSideSessions.Details.IndexModel
+@{
+    ViewData["Title"] = "Server-Side Session Details";
+}
+
+<h1>Server-Side Session Details</h1>
+
+<dl class="row">
+    <dt class="col-sm-3">Key</dt>
+    <dd class="col-sm-9">@Model.ServerSideSession.Key</dd>
+    <dt class="col-sm-3">Subject</dt>
+    <dd class="col-sm-9">@Model.ServerSideSession.SubjectId</dd>
+    <dt class="col-sm-3">Session ID</dt>
+    <dd class="col-sm-9">@Model.ServerSideSession.SessionId</dd>
+    <dt class="col-sm-3">Display Name</dt>
+    <dd class="col-sm-9">@Model.ServerSideSession.DisplayName</dd>
+    <dt class="col-sm-3">Created</dt>
+    <dd class="col-sm-9">@Model.ServerSideSession.Created</dd>
+    <dt class="col-sm-3">Renewed</dt>
+    <dd class="col-sm-9">@Model.ServerSideSession.Renewed</dd>
+    <dt class="col-sm-3">Expires</dt>
+    <dd class="col-sm-9">@Model.ServerSideSession.Expires</dd>
+</dl>
+
+<a id="btn-back" asp-page="../Index" class="btn btn-outline-secondary">Back</a>
+<a id="btn-delete" asp-page="../Delete" asp-route-key="@Model.ServerSideSession.Key" class="btn btn-danger">Delete</a>

@@ -1,0 +1,14 @@
+@page
+@model Identity.Pages.Admin.SamlSigninStates.DeleteModel
+@{
+    ViewData["Title"] = "Delete SAML Sign-In State";
+}
+
+<h1>Delete SAML Sign-In State</h1>
+
+<div class="alert alert-danger">Are you sure you want to delete SAML sign-in state <strong>@Model.SamlSigninState.Id</strong>?</div>
+
+<form method="post">
+    <button id="delete-submit" type="submit" class="btn btn-danger">Delete</button>
+    <a asp-page="./Index" class="btn btn-outline-secondary">Cancel</a>
+</form>

@@ -1,0 +1,28 @@
+@page
+@model Identity.Pages.Admin.IdentityResources.CreateModel
+@{
+    ViewData["Title"] = "Create Identity Resource";
+}
+
+<h1>Create Identity Resource</h1>
+
+<form method="post">
+    <div class="mb-3">
+        <label class="form-label" asp-for="Resource.Name"></label>
+        <input class="form-control" asp-for="Resource.Name" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label" asp-for="Resource.DisplayName"></label>
+        <input class="form-control" asp-for="Resource.DisplayName" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label" asp-for="Resource.Description"></label>
+        <input class="form-control" asp-for="Resource.Description" />
+    </div>
+    <div class="mb-3 form-check">
+        <input class="form-check-input" asp-for="Resource.Enabled" />
+        <label class="form-check-label" asp-for="Resource.Enabled"></label>
+    </div>
+    <button id="create-submit" type="submit" class="btn btn-primary">Create</button>
+    <a asp-page="./Index" class="btn btn-outline-secondary">Cancel</a>
+</form>

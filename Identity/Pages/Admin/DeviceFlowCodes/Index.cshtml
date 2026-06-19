@@ -1,0 +1,36 @@
+@page
+@model Identity.Pages.Admin.DeviceFlowCodes.IndexModel
+@{
+    ViewData["Title"] = "Device Flow Codes";
+}
+
+<h1>Device Flow Codes</h1>
+
+<table class="table table-bordered table-hover table-sm">
+    <thead class="table-light">
+        <tr>
+            <th>Client</th>
+            <th>Subject</th>
+            <th>Created</th>
+            <th>Expires</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var code in Model.DeviceFlowCodes)
+        {
+            <tr>
+                <td>@code.ClientId</td>
+                <td>@code.SubjectId</td>
+                <td>@code.CreationTime</td>
+                <td>@code.Expiration</td>
+                <td>
+                    <a id="details-@code.DeviceCode" asp-page="./Details/Index" asp-route-deviceCode="@code.DeviceCode" class="btn btn-sm btn-outline-secondary">Details</a>
+                    <a id="delete-@code.DeviceCode" asp-page="./Delete" asp-route-deviceCode="@code.DeviceCode" class="btn btn-sm btn-danger">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<a id="btn-back" asp-page="/Admin/Index" class="btn btn-outline-secondary">Back</a>

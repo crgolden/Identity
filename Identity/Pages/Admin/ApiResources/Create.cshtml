@@ -1,0 +1,30 @@
+@page
+@model Identity.Pages.Admin.ApiResources.CreateModel
+@{
+    ViewData["Title"] = "Create API Resource";
+}
+
+<h1>Create API Resource</h1>
+
+<form method="post">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="mb-3">
+        <label asp-for="Resource.Name" class="form-label"></label>
+        <input asp-for="Resource.Name" class="form-control" />
+        <span asp-validation-for="Resource.Name" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Resource.DisplayName" class="form-label"></label>
+        <input asp-for="Resource.DisplayName" class="form-control" />
+    </div>
+    <div class="mb-3">
+        <label asp-for="Resource.Description" class="form-label"></label>
+        <input asp-for="Resource.Description" class="form-control" />
+    </div>
+    <div class="mb-3 form-check">
+        <input asp-for="Resource.Enabled" class="form-check-input" />
+        <label asp-for="Resource.Enabled" class="form-check-label"></label>
+    </div>
+    <button id="create-submit" type="submit" class="btn btn-primary">Create</button>
+    <a asp-page="./Index" class="btn btn-outline-secondary">Cancel</a>
+</form>

@@ -1,0 +1,28 @@
+@page
+@model DeleteModel
+
+@{
+    ViewData["Title"] = "Delete Identity Provider";
+}
+
+<h1>Delete Identity Provider</h1>
+
+<div class="alert alert-warning">
+    Are you sure you want to delete <strong>@Model.IdentityProvider.Scheme</strong>?
+</div>
+
+<dl class="row">
+    <dt class="col-sm-3">Scheme</dt>
+    <dd class="col-sm-9">@Model.IdentityProvider.Scheme</dd>
+
+    <dt class="col-sm-3">Display Name</dt>
+    <dd class="col-sm-9">@Model.IdentityProvider.DisplayName</dd>
+
+    <dt class="col-sm-3">Type</dt>
+    <dd class="col-sm-9">@Model.IdentityProvider.Type</dd>
+</dl>
+
+<form method="post">
+    <button id="delete-submit" type="submit" asp-route-id="@Model.IdentityProvider.Id" class="btn btn-danger">Delete</button>
+    <a asp-page="./Index" class="btn btn-outline-secondary ms-1">Cancel</a>
+</form>

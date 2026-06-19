@@ -1,0 +1,36 @@
+@page
+@model Identity.Pages.Admin.SamlServiceProviders.IndexModel
+@{
+    ViewData["Title"] = "SAML Service Providers";
+}
+
+<h1>SAML Service Providers</h1>
+<a id="btn-create" asp-page="./Create" class="btn btn-primary mb-3">Create New</a>
+
+<table class="table table-bordered table-hover table-sm">
+    <thead class="table-light">
+        <tr>
+            <th>Entity ID</th>
+            <th>Display Name</th>
+            <th>Enabled</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var sp in Model.SamlServiceProviders)
+        {
+            <tr>
+                <td>@sp.EntityId</td>
+                <td>@sp.DisplayName</td>
+                <td>@sp.Enabled</td>
+                <td>
+                    <a id="details-@sp.Id" asp-page="./Details" asp-route-id="@sp.Id" class="btn btn-sm btn-outline-secondary">Details</a>
+                    <a id="edit-@sp.Id" asp-page="./Edit" asp-route-id="@sp.Id" class="btn btn-sm btn-outline-secondary">Edit</a>
+                    <a id="delete-@sp.Id" asp-page="./Delete" asp-route-id="@sp.Id" class="btn btn-sm btn-danger">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<a id="btn-back" asp-page="/Admin/Index" class="btn btn-outline-secondary">Back</a>

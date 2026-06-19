@@ -1,0 +1,38 @@
+@page
+@model Identity.Pages.Admin.PersistedGrants.IndexModel
+@{
+    ViewData["Title"] = "Persisted Grants";
+}
+
+<h1>Persisted Grants</h1>
+
+<table class="table table-bordered table-hover table-sm">
+    <thead class="table-light">
+        <tr>
+            <th>Subject</th>
+            <th>Client</th>
+            <th>Type</th>
+            <th>Created</th>
+            <th>Expires</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var grant in Model.PersistedGrants)
+        {
+            <tr>
+                <td>@grant.SubjectId</td>
+                <td>@grant.ClientId</td>
+                <td>@grant.Type</td>
+                <td>@grant.CreationTime</td>
+                <td>@grant.Expiration</td>
+                <td>
+                    <a id="details-@grant.Key" asp-page="./Details/Index" asp-route-key="@grant.Key" class="btn btn-sm btn-outline-secondary">Details</a>
+                    <a id="delete-@grant.Key" asp-page="./Delete" asp-route-key="@grant.Key" class="btn btn-sm btn-danger">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<a id="btn-back" asp-page="/Admin/Index" class="btn btn-outline-secondary">Back</a>

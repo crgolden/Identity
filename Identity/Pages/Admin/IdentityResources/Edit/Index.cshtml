@@ -1,0 +1,41 @@
+@page "{id:int}"
+@model Identity.Pages.Admin.IdentityResources.Edit.IndexModel
+@{
+    ViewData["Title"] = $"Edit \"{Model.Resource.Name}\"";
+}
+
+<h1>Edit: @Model.Resource.Name</h1>
+
+<form method="post">
+    <input type="hidden" asp-for="Resource.Id" />
+    <div class="mb-3">
+        <label class="form-label" asp-for="Resource.Name"></label>
+        <input class="form-control" asp-for="Resource.Name" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label" asp-for="Resource.DisplayName"></label>
+        <input class="form-control" asp-for="Resource.DisplayName" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label" asp-for="Resource.Description"></label>
+        <input class="form-control" asp-for="Resource.Description" />
+    </div>
+    <div class="mb-3 form-check">
+        <input class="form-check-input" asp-for="Resource.Enabled" />
+        <label class="form-check-label" asp-for="Resource.Enabled"></label>
+    </div>
+    <div class="mb-3 form-check">
+        <input class="form-check-input" asp-for="Resource.Required" />
+        <label class="form-check-label" asp-for="Resource.Required"></label>
+    </div>
+    <div class="mb-3 form-check">
+        <input class="form-check-input" asp-for="Resource.Emphasize" />
+        <label class="form-check-label" asp-for="Resource.Emphasize"></label>
+    </div>
+    <div class="mb-3 form-check">
+        <input class="form-check-input" asp-for="Resource.ShowInDiscoveryDocument" />
+        <label class="form-check-label" asp-for="Resource.ShowInDiscoveryDocument"></label>
+    </div>
+    <button id="save-submit" type="submit" class="btn btn-primary">Save</button>
+    <a asp-page="../Details/Index" asp-route-id="@Model.Resource.Id" class="btn btn-outline-secondary">Cancel</a>
+</form>

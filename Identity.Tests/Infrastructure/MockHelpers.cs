@@ -51,6 +51,14 @@ internal static class MockHelpers
             HttpContext = new DefaultHttpContext { User = user ?? new ClaimsPrincipal(new ClaimsIdentity()) },
         };
 
+    public static Mock<RoleManager<IdentityRole<Guid>>> MockRoleManager() =>
+        new Mock<RoleManager<IdentityRole<Guid>>>(
+            new Mock<IRoleStore<IdentityRole<Guid>>>().Object,
+            new List<IRoleValidator<IdentityRole<Guid>>>(),
+            new Mock<ILookupNormalizer>().Object,
+            new IdentityErrorDescriber(),
+            NullLogger<RoleManager<IdentityRole<Guid>>>.Instance);
+
     public static IdentityUser<Guid> TestUser() =>
         new() { Id = Guid.NewGuid(), UserName = "test@example.com", Email = "test@example.com" };
 }

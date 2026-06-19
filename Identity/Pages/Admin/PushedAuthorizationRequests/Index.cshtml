@@ -1,0 +1,34 @@
+@page
+@model Identity.Pages.Admin.PushedAuthorizationRequests.IndexModel
+@{
+    ViewData["Title"] = "Pushed Authorization Requests";
+}
+
+<h1>Pushed Authorization Requests</h1>
+
+<table class="table table-bordered table-hover table-sm">
+    <thead class="table-light">
+        <tr>
+            <th>Id</th>
+            <th>Reference Hash</th>
+            <th>Expires</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var par in Model.PushedAuthorizationRequests)
+        {
+            <tr>
+                <td>@par.Id</td>
+                <td>@par.ReferenceValueHash</td>
+                <td>@par.ExpiresAtUtc</td>
+                <td>
+                    <a id="details-@par.Id" asp-page="./Details/Index" asp-route-id="@par.Id" class="btn btn-sm btn-outline-secondary">Details</a>
+                    <a id="delete-@par.Id" asp-page="./Delete" asp-route-id="@par.Id" class="btn btn-sm btn-danger">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<a id="btn-back" asp-page="/Admin/Index" class="btn btn-outline-secondary">Back</a>

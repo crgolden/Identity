@@ -1,0 +1,41 @@
+@page "{id:int}"
+@model Identity.Pages.Admin.ApiScopes.Edit.ClaimTypesModel
+@{
+    ViewData["Title"] = "Edit Claim Types";
+}
+
+<h1>Edit Claim Types</h1>
+
+<form method="post" data-collection-form>
+    <table class="table table-bordered table-sm" data-collection="ClaimTypes">
+        <thead class="table-light">
+            <tr><th>Type</th><th></th></tr>
+        </thead>
+        <tbody>
+            @for (var i = 0; i < Model.ClaimTypes.Count; i++)
+            {
+                <tr data-row>
+                    <input type="hidden" name="ClaimTypes[@i].Id" value="@Model.ClaimTypes[i].Id" />
+                    <td><input class="form-control form-control-sm" name="ClaimTypes[@i].Type" value="@Model.ClaimTypes[i].Type" /></td>
+                    <td><button class="btn btn-sm btn-danger" data-remove-row>Remove</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <template data-for="ClaimTypes">
+        <tr data-row>
+            <input type="hidden" name="ClaimTypes[-1].Id" value="0" />
+            <td><input class="form-control form-control-sm" name="ClaimTypes[-1].Type" /></td>
+            <td><button class="btn btn-sm btn-danger" data-remove-row>Remove</button></td>
+        </tr>
+    </template>
+    <button id="btn-add-row" type="button" class="btn btn-sm btn-outline-secondary mb-3" data-add-for="ClaimTypes">Add</button>
+    <div>
+        <button id="save-submit" type="submit" class="btn btn-primary">Save</button>
+        <a asp-page="../Details/ClaimTypes" asp-route-id="@Request.RouteValues["id"]" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+</form>
+
+@section Scripts {
+    <script src="~/js/admin-collection.js"></script>
+}

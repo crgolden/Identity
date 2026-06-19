@@ -1,0 +1,26 @@
+@page
+@model Identity.Pages.Admin.Keys.Details.IndexModel
+@{
+    ViewData["Title"] = "Key Details";
+}
+
+<h1>Key Details</h1>
+
+<dl class="row">
+    <dt class="col-sm-3">Id</dt>
+    <dd class="col-sm-9">@Model.Key.Id</dd>
+    <dt class="col-sm-3">Use</dt>
+    <dd class="col-sm-9">@Model.Key.Use</dd>
+    <dt class="col-sm-3">Algorithm</dt>
+    <dd class="col-sm-9">@Model.Key.Algorithm</dd>
+    <dt class="col-sm-3">X.509 Certificate</dt>
+    <dd class="col-sm-9">@Model.Key.IsX509Certificate</dd>
+    <dt class="col-sm-3">Data Protected</dt>
+    <dd class="col-sm-9">@Model.Key.DataProtected</dd>
+    <dt class="col-sm-3">Created</dt>
+    <dd class="col-sm-9">@Model.Key.Created</dd>
+    <dt class="col-sm-3">Version</dt>
+    <dd class="col-sm-9">@Model.Key.Version</dd>
+</dl>
+
+<a id="btn-back" asp-page="../Index" class="btn btn-outline-secondary">Back</a>

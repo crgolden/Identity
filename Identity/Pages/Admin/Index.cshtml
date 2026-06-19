@@ -1,0 +1,154 @@
+@page
+@model Identity.Pages.Admin.IndexModel
+@{
+    ViewData["Title"] = "Admin";
+}
+
+<h1>Admin</h1>
+
+<div class="row row-cols-1 row-cols-md-3 g-4 mt-1">
+    <div class="col">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Clients</h5>
+                <p class="card-text">Manage OIDC/OAuth2 client registrations.</p>
+                <a id="admin-card-clients" asp-page="/Admin/Clients/Index" class="btn btn-primary">Manage</a>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">API Resources</h5>
+                <p class="card-text">Manage protected API resources.</p>
+                <a id="admin-card-apiresources" asp-page="/Admin/ApiResources/Index" class="btn btn-primary">Manage</a>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">API Scopes</h5>
+                <p class="card-text">Manage API scopes.</p>
+                <a id="admin-card-apiscopes" asp-page="/Admin/ApiScopes/Index" class="btn btn-primary">Manage</a>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Identity Resources</h5>
+                <p class="card-text">Manage identity resources (scopes).</p>
+                <a id="admin-card-identityresources" asp-page="/Admin/IdentityResources/Index" class="btn btn-primary">Manage</a>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Identity Providers</h5>
+                <p class="card-text">Manage dynamic OIDC identity providers.</p>
+                <a id="admin-card-identityproviders" asp-page="/Admin/IdentityProviders/Index" class="btn btn-primary">Manage</a>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">SAML Service Providers</h5>
+                <p class="card-text">Manage SAML 2.0 service provider registrations.</p>
+                <a id="admin-card-samlserviceproviders" asp-page="/Admin/SamlServiceProviders/Index" class="btn btn-primary">Manage</a>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Persisted Grants</h5>
+                <p class="card-text">View and revoke persisted grants.</p>
+                <a id="admin-card-persistedgrants" asp-page="/Admin/PersistedGrants/Index" class="btn btn-primary">Manage</a>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Device Flow Codes</h5>
+                <p class="card-text">View and revoke device flow codes.</p>
+                <a id="admin-card-deviceflowcodes" asp-page="/Admin/DeviceFlowCodes/Index" class="btn btn-primary">Manage</a>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Server-Side Sessions</h5>
+                <p class="card-text">View and revoke server-side sessions.</p>
+                <a id="admin-card-serversidesessions" asp-page="/Admin/ServerSideSessions/Index" class="btn btn-primary">Manage</a>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Keys</h5>
+                <p class="card-text">View automatic key management keys.</p>
+                <a id="admin-card-keys" asp-page="/Admin/Keys/Index" class="btn btn-primary">Manage</a>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Pushed Authorization Requests</h5>
+                <p class="card-text">View and revoke pushed authorization requests.</p>
+                <a id="admin-card-pushedauthorizationrequests" asp-page="/Admin/PushedAuthorizationRequests/Index" class="btn btn-primary">Manage</a>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">SAML Sign-In States</h5>
+                <p class="card-text">View and revoke SAML sign-in states.</p>
+                <a id="admin-card-samlsigninstates" asp-page="/Admin/SamlSigninStates/Index" class="btn btn-primary">Manage</a>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">SAML Logout Sessions</h5>
+                <p class="card-text">View and revoke SAML logout sessions.</p>
+                <a id="admin-card-samllogoutsessions" asp-page="/Admin/SamlLogoutSessions/Index" class="btn btn-primary">Manage</a>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">SAML Logout Session Request Indices</h5>
+                <p class="card-text">View SAML logout session request indices.</p>
+                <a id="admin-card-samllogoutsessionrequestindices" asp-page="/Admin/SamlLogoutSessionRequestIndices/Index" class="btn btn-primary">Manage</a>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Users</h5>
+                <p class="card-text">Manage user accounts.</p>
+                <a id="admin-card-users" asp-page="/Admin/Users/Index" class="btn btn-primary">Manage</a>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Roles</h5>
+                <p class="card-text">Manage roles and role assignments.</p>
+                <a id="admin-card-roles" asp-page="/Admin/Roles/Index" class="btn btn-primary">Manage</a>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,37 @@
+@page "{id:int}"
+@model Identity.Pages.Admin.SamlServiceProviders.EditModel
+@{
+    ViewData["Title"] = "Edit SAML Service Provider";
+}
+
+<h1>Edit — @Model.SamlServiceProvider.EntityId</h1>
+
+<form method="post">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="mb-3">
+        <label asp-for="SamlServiceProvider.EntityId" class="form-label"></label>
+        <input asp-for="SamlServiceProvider.EntityId" class="form-control" />
+    </div>
+    <div class="mb-3">
+        <label asp-for="SamlServiceProvider.DisplayName" class="form-label"></label>
+        <input asp-for="SamlServiceProvider.DisplayName" class="form-control" />
+    </div>
+    <div class="mb-3">
+        <label asp-for="SamlServiceProvider.Description" class="form-label"></label>
+        <input asp-for="SamlServiceProvider.Description" class="form-control" />
+    </div>
+    <div class="mb-3 form-check">
+        <input asp-for="SamlServiceProvider.Enabled" class="form-check-input" />
+        <label asp-for="SamlServiceProvider.Enabled" class="form-check-label"></label>
+    </div>
+    <div class="mb-3 form-check">
+        <input asp-for="SamlServiceProvider.AllowIdpInitiated" class="form-check-input" />
+        <label asp-for="SamlServiceProvider.AllowIdpInitiated" class="form-check-label"></label>
+    </div>
+    <div class="mb-3">
+        <label asp-for="SamlServiceProvider.DefaultNameIdFormat" class="form-label"></label>
+        <input asp-for="SamlServiceProvider.DefaultNameIdFormat" class="form-control" />
+    </div>
+    <button id="save-submit" type="submit" class="btn btn-primary">Save</button>
+    <a asp-page="./Details" asp-route-id="@Model.SamlServiceProvider.Id" class="btn btn-outline-secondary">Cancel</a>
+</form>

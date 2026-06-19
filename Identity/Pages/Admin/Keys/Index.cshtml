@@ -1,0 +1,39 @@
+@page
+@model Identity.Pages.Admin.Keys.IndexModel
+@{
+    ViewData["Title"] = "Keys";
+}
+
+<h1>Keys</h1>
+
+<table class="table table-bordered table-hover table-sm">
+    <thead class="table-light">
+        <tr>
+            <th>Id</th>
+            <th>Use</th>
+            <th>Algorithm</th>
+            <th>X.509</th>
+            <th>Data Protected</th>
+            <th>Created</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var key in Model.Keys)
+        {
+            <tr>
+                <td>@key.Id</td>
+                <td>@key.Use</td>
+                <td>@key.Algorithm</td>
+                <td>@key.IsX509Certificate</td>
+                <td>@key.DataProtected</td>
+                <td>@key.Created</td>
+                <td>
+                    <a id="details-@key.Id" asp-page="./Details/Index" asp-route-id="@key.Id" class="btn btn-sm btn-outline-secondary">Details</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<a id="btn-back" asp-page="/Admin/Index" class="btn btn-outline-secondary">Back</a>

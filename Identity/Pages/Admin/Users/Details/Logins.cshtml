@@ -1,0 +1,48 @@
+@page "{id}"
+@model Identity.Pages.Admin.Users.Details.LoginsModel
+@{
+    ViewData["Title"] = "User Logins";
+}
+
+<h1>@Model.AppUser.UserName — Logins</h1>
+
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+        <a class="nav-link" asp-page="./Index" asp-route-id="@Model.AppUser.Id">Details</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" asp-page="./Claims" asp-route-id="@Model.AppUser.Id">Claims</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" asp-page="./Roles" asp-route-id="@Model.AppUser.Id">Roles</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link active" asp-page="./Logins" asp-route-id="@Model.AppUser.Id">Logins</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" asp-page="./Passkeys" asp-route-id="@Model.AppUser.Id">Passkeys</a>
+    </li>
+</ul>
+
+<table class="table table-bordered table-sm">
+    <thead class="table-light">
+        <tr>
+            <th>Provider</th>
+            <th>Display Name</th>
+            <th>Provider Key</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var login in Model.Logins)
+        {
+            <tr>
+                <td>@login.LoginProvider</td>
+                <td>@login.ProviderDisplayName</td>
+                <td>@login.ProviderKey</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<a id="btn-edit" asp-page="../Edit/Logins" asp-route-id="@Model.AppUser.Id" class="btn btn-primary">Edit</a>
+<a id="btn-back" asp-page="../Index" class="btn btn-outline-secondary">Back</a>

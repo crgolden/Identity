@@ -1,0 +1,66 @@
+namespace Identity.Tests.Pages.Admin.ApiResources;
+
+using Duende.IdentityServer.EntityFramework.Entities;
+using Duende.IdentityServer.EntityFramework.Interfaces;
+using Identity.Pages.Admin.ApiResources;
+using Identity.Tests.Infrastructure;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using Moq;
+
+[Collection(UnitCollection.Name)]
+[Trait("Category", "Unit")]
+public class DeletecshtmlTests
+{
+    [Fact]
+    public async Task OnGetAsync_ReturnsPage_WhenFound()
+    {
+        var resource = new ApiResource { Id = 1, Name = "my-api" };
+        var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
+
+        var model = new DeleteModel(ctx.Object);
+        var result = await model.OnGetAsync(1);
+
+        Assert.IsType<PageResult>(result);
+        Assert.Equal("my-api", model.Resource.Name);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_ReturnsNotFound_WhenMissing()
+    {
+        var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<ApiResource>());
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
+
+        Assert.IsType<NotFoundResult>(await new DeleteModel(ctx.Object).OnGetAsync(99));
+    }
+
+    [Fact]
+    public async Task OnPostAsync_Deletes_WhenFound()
+    {
+        var resource = new ApiResource { Id = 1, Name = "my-api" };
+        var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
+        ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
+
+        var model = new DeleteModel(ctx.Object);
+        var result = await model.OnPostAsync(1);
+
+        ctx.Verify(c => c.ApiResources.Remove(resource), Times.Once);
+        var redirect = Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal("./Index", redirect.PageName);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_ReturnsNotFound_WhenMissing()
+    {
+        var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<ApiResource>());
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
+
+        Assert.IsType<NotFoundResult>(await new DeleteModel(ctx.Object).OnPostAsync(99));
+    }
+}

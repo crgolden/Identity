@@ -1,0 +1,37 @@
+@page "{id}"
+@model Identity.Pages.Admin.Users.Edit.LoginsModel
+@{
+    ViewData["Title"] = "Edit User Logins";
+}
+
+<h1>@Model.AppUser.UserName — Edit Logins</h1>
+
+<table class="table table-bordered table-sm">
+    <thead class="table-light">
+        <tr>
+            <th>Provider</th>
+            <th>Display Name</th>
+            <th>Provider Key</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var login in Model.Logins)
+        {
+            <tr>
+                <td>@login.LoginProvider</td>
+                <td>@login.ProviderDisplayName</td>
+                <td>@login.ProviderKey</td>
+                <td>
+                    <form method="post" asp-page-handler="Remove">
+                        <input type="hidden" name="loginProvider" value="@login.LoginProvider" />
+                        <input type="hidden" name="providerKey" value="@login.ProviderKey" />
+                        <button type="submit" class="btn btn-sm btn-danger">Remove</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<a id="btn-back" asp-page="../Details/Logins" asp-route-id="@Model.AppUser.Id" class="btn btn-outline-secondary">Back</a>

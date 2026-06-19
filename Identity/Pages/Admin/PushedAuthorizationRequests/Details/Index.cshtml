@@ -1,0 +1,19 @@
+@page
+@model Identity.Pages.Admin.PushedAuthorizationRequests.Details.IndexModel
+@{
+    ViewData["Title"] = "Pushed Authorization Request Details";
+}
+
+<h1>Pushed Authorization Request Details</h1>
+
+<dl class="row">
+    <dt class="col-sm-3">Id</dt>
+    <dd class="col-sm-9">@Model.PushedAuthorizationRequest.Id</dd>
+    <dt class="col-sm-3">Reference Hash</dt>
+    <dd class="col-sm-9">@Model.PushedAuthorizationRequest.ReferenceValueHash</dd>
+    <dt class="col-sm-3">Expires</dt>
+    <dd class="col-sm-9">@Model.PushedAuthorizationRequest.ExpiresAtUtc</dd>
+</dl>
+
+<a id="btn-back" asp-page="../Index" class="btn btn-outline-secondary">Back</a>
+<a id="btn-delete" asp-page="../Delete" asp-route-id="@Model.PushedAuthorizationRequest.Id" class="btn btn-danger">Delete</a>

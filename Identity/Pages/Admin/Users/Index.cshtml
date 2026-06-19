@@ -1,0 +1,35 @@
+@page
+@model Identity.Pages.Admin.Users.IndexModel
+@{
+    ViewData["Title"] = "Users";
+}
+
+<h1>Users</h1>
+
+<table class="table table-bordered table-hover table-sm">
+    <thead class="table-light">
+        <tr>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Email Confirmed</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var user in Model.Users)
+        {
+            <tr>
+                <td>@user.UserName</td>
+                <td>@user.Email</td>
+                <td>@user.EmailConfirmed</td>
+                <td>
+                    <a id="details-@user.Id" asp-page="./Details/Index" asp-route-id="@user.Id" class="btn btn-sm btn-outline-secondary">Details</a>
+                    <a id="edit-@user.Id" asp-page="./Edit/Index" asp-route-id="@user.Id" class="btn btn-sm btn-outline-secondary">Edit</a>
+                    <a id="delete-@user.Id" asp-page="./Delete" asp-route-id="@user.Id" class="btn btn-sm btn-danger">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<a id="btn-back" asp-page="/Admin/Index" class="btn btn-outline-secondary">Back</a>

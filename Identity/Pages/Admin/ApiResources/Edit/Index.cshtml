@@ -1,0 +1,41 @@
+@page "{id:int}"
+@model Identity.Pages.Admin.ApiResources.Edit.IndexModel
+@{
+    ViewData["Title"] = "Edit API Resource";
+}
+
+<h1>Edit — @Model.Resource.Name</h1>
+
+<form method="post">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="mb-3">
+        <label asp-for="Resource.Name" class="form-label"></label>
+        <input asp-for="Resource.Name" class="form-control" />
+    </div>
+    <div class="mb-3">
+        <label asp-for="Resource.DisplayName" class="form-label"></label>
+        <input asp-for="Resource.DisplayName" class="form-control" />
+    </div>
+    <div class="mb-3">
+        <label asp-for="Resource.Description" class="form-label"></label>
+        <input asp-for="Resource.Description" class="form-control" />
+    </div>
+    <div class="mb-3 form-check">
+        <input asp-for="Resource.Enabled" class="form-check-input" />
+        <label asp-for="Resource.Enabled" class="form-check-label"></label>
+    </div>
+    <div class="mb-3 form-check">
+        <input asp-for="Resource.ShowInDiscoveryDocument" class="form-check-input" />
+        <label asp-for="Resource.ShowInDiscoveryDocument" class="form-check-label"></label>
+    </div>
+    <div class="mb-3 form-check">
+        <input asp-for="Resource.RequireResourceIndicator" class="form-check-input" />
+        <label asp-for="Resource.RequireResourceIndicator" class="form-check-label"></label>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Resource.AllowedAccessTokenSigningAlgorithms" class="form-label"></label>
+        <input asp-for="Resource.AllowedAccessTokenSigningAlgorithms" class="form-control" />
+    </div>
+    <button id="save-submit" type="submit" class="btn btn-primary">Save</button>
+    <a asp-page="../Details/Index" asp-route-id="@Model.Resource.Id" class="btn btn-outline-secondary">Cancel</a>
+</form>
