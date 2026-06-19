@@ -1,0 +1,12 @@
+@model IEnumerable<PropertyRow>
+<table class="table table-bordered table-hover table-sm">
+    <thead class="table-light">
+        <tr><th>Key</th><th>Value</th></tr>
+    </thead>
+    <tbody>
+        @foreach (var row in Model)
+        {
+            <tr><td>@row.Key</td><td>@row.Value</td></tr>
+        }
+    </tbody>
+</table>

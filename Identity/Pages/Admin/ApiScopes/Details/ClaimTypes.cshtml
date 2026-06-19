@@ -6,17 +6,8 @@
 
 <h1>Claim Types: @Model.Scope.Name</h1>
 
-<table class="table table-bordered table-hover table-sm">
-    <thead class="table-light">
-        <tr><th>Type</th></tr>
-    </thead>
-    <tbody>
-        @foreach (var claim in Model.Scope.UserClaims ?? [])
-        {
-            <tr><td>@claim.Type</td></tr>
-        }
-    </tbody>
-</table>
+@await Html.PartialAsync("~/Pages/Admin/Shared/_DetailsClaimTypesTable.cshtml",
+    (Model.Scope.UserClaims ?? []).Select(c => new ClaimTypeRow(c.Id, c.Type)))
 
 <a id="btn-back" asp-page="./Index" asp-route-id="@Model.Scope.Id" class="btn btn-outline-secondary btn-sm">Back</a>
 <a id="btn-edit" asp-page="../Edit/ClaimTypes" asp-route-id="@Model.Scope.Id" class="btn btn-outline-secondary btn-sm">Edit</a>

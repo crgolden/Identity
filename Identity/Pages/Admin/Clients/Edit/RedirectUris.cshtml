@@ -7,8 +7,8 @@
 
 <h1>Edit Client Redirect URIs</h1>
 
-<form method="post">
-    <table class="table table-bordered table-sm" id="ru-table">
+<form method="post" data-collection-form>
+    <table class="table table-bordered table-sm" data-collection="RedirectUris">
         <thead class="table-light">
             <tr>
                 <th>Redirect URI</th>
@@ -18,33 +18,22 @@
         <tbody>
             @for (var i = 0; i < Model.RedirectUris.Count; i++)
             {
-                <tr>
-                    <td>
-                        <input type="hidden" name="RedirectUris[@i].Id" value="@Model.RedirectUris[i].Id" />
-                        <input name="RedirectUris[@i].RedirectUri" value="@Model.RedirectUris[i].RedirectUri" class="form-control form-control-sm" />
-                    </td>
-                    <td>
-                        <button type="button" class="btn btn-sm btn-danger remove-row">Remove</button>
-                    </td>
+                <tr data-row>
+                    <input type="hidden" name="RedirectUris[@i].Id" value="@Model.RedirectUris[i].Id" />
+                    <td><input name="RedirectUris[@i].RedirectUri" value="@Model.RedirectUris[i].RedirectUri" class="form-control form-control-sm" aria-label="Redirect URI" /></td>
+                    <td><button type="button" class="btn btn-sm btn-danger" data-remove-row>Remove</button></td>
                 </tr>
             }
         </tbody>
     </table>
-
-    <button id="btn-add-row" type="button" class="btn btn-sm btn-outline-secondary mb-3">Add</button>
-
-    <template id="row-template">
-        <tr>
-            <td>
-                <input type="hidden" name="RedirectUris[__index__].Id" value="0" />
-                <input name="RedirectUris[__index__].RedirectUri" class="form-control form-control-sm" />
-            </td>
-            <td>
-                <button type="button" class="btn btn-sm btn-danger remove-row">Remove</button>
-            </td>
+    <template data-for="RedirectUris">
+        <tr data-row>
+            <input type="hidden" name="RedirectUris[-1].Id" value="0" />
+            <td><input name="RedirectUris[-1].RedirectUri" class="form-control form-control-sm" aria-label="Redirect URI" /></td>
+            <td><button type="button" class="btn btn-sm btn-danger" data-remove-row>Remove</button></td>
         </tr>
     </template>
-
+    <button id="btn-add-row" type="button" class="btn btn-sm btn-outline-secondary mb-3" data-add-for="RedirectUris">Add</button>
     <div>
         <button id="save-submit" type="submit" asp-route-id="@Model.Client.Id" class="btn btn-primary">Save</button>
         <a asp-page="/Admin/Clients/Details/RedirectUris" asp-route-id="@Model.Client.Id" class="btn btn-outline-secondary ms-1">Cancel</a>

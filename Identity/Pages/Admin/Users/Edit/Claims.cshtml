@@ -19,40 +19,27 @@
         <tbody>
             @for (var i = 0; i < Model.Claims.Count; i++)
             {
-                <tr>
-                    <td>
-                        <input asp-for="Claims[i].Type" class="form-control form-control-sm" />
-                    </td>
-                    <td>
-                        <input asp-for="Claims[i].Value" class="form-control form-control-sm" />
-                    </td>
-                    <td>
-                        <button type="button" class="btn btn-sm btn-outline-danger" data-remove-row>Remove</button>
-                    </td>
+                <tr data-row>
+                    <td><input name="Claims[@i].Type" value="@Model.Claims[i].Type" class="form-control form-control-sm" aria-label="Claim type" /></td>
+                    <td><input name="Claims[@i].Value" value="@Model.Claims[i].Value" class="form-control form-control-sm" aria-label="Claim value" /></td>
+                    <td><button type="button" class="btn btn-sm btn-outline-danger" data-remove-row>Remove</button></td>
                 </tr>
             }
         </tbody>
     </table>
+    <template data-for="Claims">
+        <tr data-row>
+            <td><input name="Claims[-1].Type" class="form-control form-control-sm" aria-label="Claim type" /></td>
+            <td><input name="Claims[-1].Value" class="form-control form-control-sm" aria-label="Claim value" /></td>
+            <td><button type="button" class="btn btn-sm btn-outline-danger" data-remove-row>Remove</button></td>
+        </tr>
+    </template>
     <button id="btn-add-row" type="button" class="btn btn-outline-secondary btn-sm mb-3" data-add-for="Claims">Add Claim</button>
     <div>
         <button id="save-submit" type="submit" class="btn btn-primary">Save</button>
         <a asp-page="../Details/Claims" asp-route-id="@Model.AppUser.Id" class="btn btn-outline-secondary">Cancel</a>
     </div>
 </form>
-
-<template data-collection="Claims">
-    <tr>
-        <td>
-            <input name="Claims[-1].Type" class="form-control form-control-sm" />
-        </td>
-        <td>
-            <input name="Claims[-1].Value" class="form-control form-control-sm" />
-        </td>
-        <td>
-            <button type="button" class="btn btn-sm btn-outline-danger" data-remove-row>Remove</button>
-        </td>
-    </tr>
-</template>
 
 @section Scripts {
     <script src="~/js/admin-collection.js"></script>

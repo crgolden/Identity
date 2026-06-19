@@ -7,8 +7,8 @@
 
 <h1>Edit Client Grant Types</h1>
 
-<form method="post">
-    <table class="table table-bordered table-sm" id="grants-table">
+<form method="post" data-collection-form>
+    <table class="table table-bordered table-sm" data-collection="GrantTypes">
         <thead class="table-light">
             <tr>
                 <th>Grant Type</th>
@@ -18,33 +18,22 @@
         <tbody>
             @for (var i = 0; i < Model.GrantTypes.Count; i++)
             {
-                <tr>
-                    <td>
-                        <input type="hidden" name="GrantTypes[@i].Id" value="@Model.GrantTypes[i].Id" />
-                        <input name="GrantTypes[@i].GrantType" value="@Model.GrantTypes[i].GrantType" class="form-control form-control-sm" />
-                    </td>
-                    <td>
-                        <button type="button" class="btn btn-sm btn-danger remove-row">Remove</button>
-                    </td>
+                <tr data-row>
+                    <input type="hidden" name="GrantTypes[@i].Id" value="@Model.GrantTypes[i].Id" />
+                    <td><input name="GrantTypes[@i].GrantType" value="@Model.GrantTypes[i].GrantType" class="form-control form-control-sm" aria-label="Grant type" /></td>
+                    <td><button type="button" class="btn btn-sm btn-danger" data-remove-row>Remove</button></td>
                 </tr>
             }
         </tbody>
     </table>
-
-    <button id="btn-add-row" type="button" class="btn btn-sm btn-outline-secondary mb-3">Add</button>
-
-    <template id="row-template">
-        <tr>
-            <td>
-                <input type="hidden" name="GrantTypes[__index__].Id" value="0" />
-                <input name="GrantTypes[__index__].GrantType" class="form-control form-control-sm" />
-            </td>
-            <td>
-                <button type="button" class="btn btn-sm btn-danger remove-row">Remove</button>
-            </td>
+    <template data-for="GrantTypes">
+        <tr data-row>
+            <input type="hidden" name="GrantTypes[-1].Id" value="0" />
+            <td><input name="GrantTypes[-1].GrantType" class="form-control form-control-sm" aria-label="Grant type" /></td>
+            <td><button type="button" class="btn btn-sm btn-danger" data-remove-row>Remove</button></td>
         </tr>
     </template>
-
+    <button id="btn-add-row" type="button" class="btn btn-sm btn-outline-secondary mb-3" data-add-for="GrantTypes">Add</button>
     <div>
         <button id="save-submit" type="submit" asp-route-id="@Model.Client.Id" class="btn btn-primary">Save</button>
         <a asp-page="/Admin/Clients/Details/GrantTypes" asp-route-id="@Model.Client.Id" class="btn btn-outline-secondary ms-1">Cancel</a>

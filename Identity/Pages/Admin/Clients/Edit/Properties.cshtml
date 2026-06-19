@@ -1,62 +1,15 @@
 @page
 @model PropertiesModel
-
 @{
     ViewData["Title"] = "Edit Client Properties";
+    var rows = (Model.Client.Properties ?? []).Select(p => new PropertyRow(p.Id, p.Key, p.Value)).ToList();
+    var cancelHref = Url.Page("/Admin/Clients/Details/Properties", new { id = Model.Client.Id });
 }
 
 <h1>Edit Client Properties</h1>
 
-<form method="post">
-    <table class="table table-bordered table-sm" id="props-table">
-        <thead class="table-light">
-            <tr>
-                <th>Key</th>
-                <th>Value</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            @for (var i = 0; i < Model.Properties.Count; i++)
-            {
-                <tr>
-                    <td>
-                        <input type="hidden" name="Properties[@i].Id" value="@Model.Properties[i].Id" />
-                        <input name="Properties[@i].Key" value="@Model.Properties[i].Key" class="form-control form-control-sm" />
-                    </td>
-                    <td>
-                        <input name="Properties[@i].Value" value="@Model.Properties[i].Value" class="form-control form-control-sm" />
-                    </td>
-                    <td>
-                        <button type="button" class="btn btn-sm btn-danger remove-row">Remove</button>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-
-    <button id="btn-add-row" type="button" class="btn btn-sm btn-outline-secondary mb-3">Add</button>
-
-    <template id="row-template">
-        <tr>
-            <td>
-                <input type="hidden" name="Properties[__index__].Id" value="0" />
-                <input name="Properties[__index__].Key" class="form-control form-control-sm" />
-            </td>
-            <td>
-                <input name="Properties[__index__].Value" class="form-control form-control-sm" />
-            </td>
-            <td>
-                <button type="button" class="btn btn-sm btn-danger remove-row">Remove</button>
-            </td>
-        </tr>
-    </template>
-
-    <div>
-        <button id="save-submit" type="submit" asp-route-id="@Model.Client.Id" class="btn btn-primary">Save</button>
-        <a asp-page="/Admin/Clients/Details/Properties" asp-route-id="@Model.Client.Id" class="btn btn-outline-secondary ms-1">Cancel</a>
-    </div>
-</form>
+@await Html.PartialAsync("~/Pages/Admin/Shared/_EditPropertiesForm.cshtml", rows,
+    new ViewDataDictionary(ViewData) { { "CancelHref", cancelHref } })
 
 @section Scripts {
     <script src="~/js/admin-collection.js"></script>

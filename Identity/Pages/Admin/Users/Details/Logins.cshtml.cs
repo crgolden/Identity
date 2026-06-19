@@ -1,19 +1,17 @@
 namespace Identity.Pages.Admin.Users.Details;
 
+using Identity.Pages.Admin.Users;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 
 /// <summary>Shows user external logins.</summary>
-public class LoginsModel : PageModel
+public class LoginsModel : UserSubPageModelBase
 {
-    private readonly UserManager<IdentityUser<Guid>> _userManager;
-
     /// <summary>Initializes a new instance of the <see cref="LoginsModel"/> class.</summary>
-    public LoginsModel(UserManager<IdentityUser<Guid>> userManager) => _userManager = userManager;
-
-    /// <summary>Gets the user.</summary>
-    public IdentityUser<Guid> AppUser { get; private set; } = new();
+    public LoginsModel(UserManager<IdentityUser<Guid>> userManager)
+        : base(userManager)
+    {
+    }
 
     /// <summary>Gets the user's external logins.</summary>
     public IList<UserLoginInfo> Logins { get; private set; } = [];
@@ -21,14 +19,12 @@ public class LoginsModel : PageModel
     /// <summary>Loads the user's external logins.</summary>
     public async Task<IActionResult> OnGetAsync(string id)
     {
-        var user = await _userManager.FindByIdAsync(id);
-        if (user is null)
+        if (!await TryLoadUserAsync(id))
         {
             return NotFound();
         }
 
-        AppUser = user;
-        Logins = await _userManager.GetLoginsAsync(user);
+        Logins = await UserManager.GetLoginsAsync(AppUser);
         return Page();
     }
 }

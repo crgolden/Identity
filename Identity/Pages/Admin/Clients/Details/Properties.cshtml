@@ -1,6 +1,5 @@
 @page
 @model PropertiesModel
-
 @{
     ViewData["Title"] = "Client Properties";
 }
@@ -13,20 +12,5 @@
     </div>
 </div>
 
-<table class="table table-bordered table-hover table-sm">
-    <thead class="table-light">
-        <tr>
-            <th>Key</th>
-            <th>Value</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var p in Model.Client.Properties ?? [])
-        {
-            <tr>
-                <td>@p.Key</td>
-                <td>@p.Value</td>
-            </tr>
-        }
-    </tbody>
-</table>
+@await Html.PartialAsync("~/Pages/Admin/Shared/_DetailsPropertiesTable.cshtml",
+    (Model.Client.Properties ?? []).Select(p => new PropertyRow(p.Id, p.Key, p.Value)))

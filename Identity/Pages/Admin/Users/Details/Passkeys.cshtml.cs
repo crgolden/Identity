@@ -1,19 +1,17 @@
 namespace Identity.Pages.Admin.Users.Details;
 
+using Identity.Pages.Admin.Users;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 
 /// <summary>Shows user passkeys.</summary>
-public class PasskeysModel : PageModel
+public class PasskeysModel : UserSubPageModelBase
 {
-    private readonly UserManager<IdentityUser<Guid>> _userManager;
-
     /// <summary>Initializes a new instance of the <see cref="PasskeysModel"/> class.</summary>
-    public PasskeysModel(UserManager<IdentityUser<Guid>> userManager) => _userManager = userManager;
-
-    /// <summary>Gets the user.</summary>
-    public IdentityUser<Guid> AppUser { get; private set; } = new();
+    public PasskeysModel(UserManager<IdentityUser<Guid>> userManager)
+        : base(userManager)
+    {
+    }
 
     /// <summary>Gets the user's passkeys.</summary>
     public IList<UserPasskeyInfo> Passkeys { get; private set; } = [];
@@ -21,14 +19,12 @@ public class PasskeysModel : PageModel
     /// <summary>Loads the user's passkeys.</summary>
     public async Task<IActionResult> OnGetAsync(string id)
     {
-        var user = await _userManager.FindByIdAsync(id);
-        if (user is null)
+        if (!await TryLoadUserAsync(id))
         {
             return NotFound();
         }
 
-        AppUser = user;
-        Passkeys = await _userManager.GetPasskeysAsync(user);
+        Passkeys = await UserManager.GetPasskeysAsync(AppUser);
         return Page();
     }
 }

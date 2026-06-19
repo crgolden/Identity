@@ -16,7 +16,7 @@
             {
                 <tr data-row>
                     <input type="hidden" name="Scopes[@i].Id" value="@Model.Scopes[i].Id" />
-                    <td><input name="Scopes[@i].Scope" value="@Model.Scopes[i].Scope" class="form-control form-control-sm" /></td>
+                    <td><input name="Scopes[@i].Scope" value="@Model.Scopes[i].Scope" class="form-control form-control-sm" aria-label="Scope" /></td>
                     <td><button data-remove-row class="btn btn-sm btn-danger">Remove</button></td>
                 </tr>
             }
@@ -25,7 +25,7 @@
     <template data-for="Scopes">
         <tr data-row>
             <input type="hidden" name="Scopes[-1].Id" value="0" />
-            <td><input name="Scopes[-1].Scope" class="form-control form-control-sm" /></td>
+            <td><input name="Scopes[-1].Scope" class="form-control form-control-sm" aria-label="Scope" /></td>
             <td><button data-remove-row class="btn btn-sm btn-danger">Remove</button></td>
         </tr>
     </template>
