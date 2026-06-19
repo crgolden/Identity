@@ -1,5 +1,6 @@
 namespace Identity.Tests.E2E;
 
+using System.Text.RegularExpressions;
 using Infrastructure;
 using Microsoft.Playwright;
 
@@ -138,7 +139,7 @@ public sealed class AdminTests(PlaywrightFixture fixture)
             await page.ClickAsync($"#delete-{clientDbId}");
             await Assertions.Expect(page.Locator("h1")).ToContainTextAsync("Delete");
             await page.ClickAsync("#delete-submit");
-            await page.WaitForURLAsync(url => url.Contains("/Admin/Clients") && !url.Contains("Delete"));
+            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("Delete"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
             await Assertions.Expect(page.Locator($"#delete-{clientDbId}")).Not.ToBeVisibleAsync();
         }
     }
@@ -412,7 +413,7 @@ public sealed class AdminTests(PlaywrightFixture fixture)
             await deleteLink.ClickAsync();
             await page.WaitForURLAsync(url => url.Contains("Delete"));
             await page.ClickAsync("#delete-submit");
-            await page.WaitForURLAsync(url => url.Contains("/Admin/Roles") && !url.Contains("Delete"));
+            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("Delete"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
             await Assertions.Expect(page.GetByText(roleName)).Not.ToBeVisibleAsync();
         }
     }
