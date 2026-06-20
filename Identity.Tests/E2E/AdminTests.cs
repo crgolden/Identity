@@ -103,7 +103,7 @@ public sealed class AdminTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Client.ClientId']", clientId);
             await page.FillAsync("input[name='Client.ClientName']", "E2E Created Client");
             await page.ClickAsync("#create-submit");
-            await page.WaitForURLAsync(url => url.Contains("/Admin/Clients/Details"));
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Clients/Details"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
             await Assertions.Expect(page.Locator("#btn-edit")).ToBeVisibleAsync();
         }
     }
@@ -367,7 +367,7 @@ public sealed class AdminTests(PlaywrightFixture fixture)
             await page.GotoAsync("/Admin/Users");
             var detailsLink = page.Locator("tr", new PageLocatorOptions { HasText = email }).Locator("[id^='details-']").First;
             await detailsLink.ClickAsync();
-            await page.WaitForURLAsync(url => url.Contains("/Admin/Users/Details"));
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Users/Details"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
             await Assertions.Expect(page.Locator("#nav-claims")).ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("#nav-roles")).ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("#nav-logins")).ToBeVisibleAsync();
@@ -404,14 +404,14 @@ public sealed class AdminTests(PlaywrightFixture fixture)
             await page.GotoAsync("/Admin/Roles/Create");
             await page.FillAsync("input[name='RoleName']", roleName);
             await page.ClickAsync("#create-submit");
-            await page.WaitForURLAsync(url => url.Contains("/Admin/Roles/Details"));
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Details"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
 
             await page.GotoAsync("/Admin/Roles");
             await Assertions.Expect(page.GetByText(roleName).First).ToBeVisibleAsync();
 
             var deleteLink = page.Locator("tr", new PageLocatorOptions { HasText = roleName }).Locator("[id^='delete-']").First;
             await deleteLink.ClickAsync();
-            await page.WaitForURLAsync(url => url.Contains("Delete"));
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("Delete"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
             await page.ClickAsync("#delete-submit");
             await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("Delete"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
             await Assertions.Expect(page.GetByText(roleName)).Not.ToBeVisibleAsync();
@@ -430,7 +430,7 @@ public sealed class AdminTests(PlaywrightFixture fixture)
             await page.GotoAsync("/Admin/Roles");
             var detailsLink = page.Locator("tr", new PageLocatorOptions { HasText = "Admin" }).Locator("[id^='details-']").First;
             await detailsLink.ClickAsync();
-            await page.WaitForURLAsync(url => url.Contains("/Admin/Roles/Details"));
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Details"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
             await Assertions.Expect(page.Locator("#nav-claims")).ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("#nav-users")).ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("#btn-edit")).ToBeVisibleAsync();
@@ -444,6 +444,6 @@ public sealed class AdminTests(PlaywrightFixture fixture)
         await page.FillAsync("input[name='Input.Email']", email);
         await page.FillAsync("input[name='Input.Password']", password);
         await page.ClickAsync("#login-submit");
-        await page.WaitForURLAsync(url => !url.Contains("/Account/Login"));
+        await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
     }
 }
