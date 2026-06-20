@@ -14,13 +14,13 @@ public class ShowRecoveryCodesModelTests
     private static readonly string[] EmptyWhitespaceCodes = [string.Empty, "   "];
 
     // MemberData for invalid cases: empty array
-    public static TheoryData<string[]?> InvalidRecoveryCodes() => new()
+    public static TheoryData<string[]> InvalidRecoveryCodes() => new()
     {
         Array.Empty<string>(),
     };
 
     // MemberData for valid cases: single, duplicates, empty/whitespace codes, and a large array
-    public static TheoryData<string[]?> ValidRecoveryCodes() => new()
+    public static TheoryData<string[]> ValidRecoveryCodes() => new()
     {
         SingleCode,
         DuplicateCodes,
@@ -32,14 +32,12 @@ public class ShowRecoveryCodesModelTests
 
     [Theory]
     [MemberData(nameof(InvalidRecoveryCodes))]
-    public void OnGet_RecoveryCodesNullOrEmpty_RedirectsToTwoFactorAuthentication(string[]? recoveryCodes)
+    public void OnGet_RecoveryCodesEmpty_RedirectsToTwoFactorAuthentication(string[] recoveryCodes)
     {
         // Arrange
         var model = new ShowRecoveryCodesModel
         {
-#pragma warning disable CS8601 // Possible null reference assignment.
-            RecoveryCodes = recoveryCodes
-#pragma warning restore CS8601 // Possible null reference assignment.
+            RecoveryCodes = recoveryCodes,
         };
 
         // Act
@@ -52,14 +50,12 @@ public class ShowRecoveryCodesModelTests
 
     [Theory]
     [MemberData(nameof(ValidRecoveryCodes))]
-    public void OnGet_RecoveryCodesHasItems_ReturnsPageResult(string[]? recoveryCodes)
+    public void OnGet_RecoveryCodesHasItems_ReturnsPageResult(string[] recoveryCodes)
     {
         // Arrange
         var model = new ShowRecoveryCodesModel
         {
-#pragma warning disable CS8601 // Possible null reference assignment.
-            RecoveryCodes = recoveryCodes
-#pragma warning restore CS8601 // Possible null reference assignment.
+            RecoveryCodes = recoveryCodes,
         };
 
         // Act

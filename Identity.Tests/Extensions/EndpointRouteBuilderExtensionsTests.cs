@@ -1,4 +1,3 @@
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Extensions;
 using Infrastructure;
 
@@ -17,18 +16,6 @@ using Moq;
 [Trait("Category", "Unit")]
 public class EndpointRouteBuilderExtensionsTests
 {
-    [Fact]
-    public void MapAdditionalIdentityEndpoints_NullEndpoints_ThrowsArgumentNullException()
-    {
-        // Arrange
-        IEndpointRouteBuilder? endpoints = null;
-
-        // Act & Assert
-        var ex = Assert.Throws<ArgumentNullException>(() => Identity.Extensions.EndpointRouteBuilderExtensions.MapAdditionalIdentityEndpoints(endpoints!));
-
-        Assert.Contains("endpoints", ex.ParamName ?? string.Empty, StringComparison.Ordinal);
-    }
-
     [Fact]
     public async Task PasskeyCreationOptions_UserNotFound_Returns404()
     {
@@ -243,18 +230,8 @@ public class EndpointRouteBuilderExtensionsTests
                     Mock<SignInManager<IdentityUser<Guid>>> signInManagerMock,
                     Mock<IAntiforgery> antiforgeryMock) CreateMocks()
     {
-        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
-            storeMock.Object, null, null, null, null, null, null, null, null);
-
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManagerMock.Object,
-            Mock.Of<IHttpContextAccessor>(),
-            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
-            null,
-            null,
-            null,
-            null);
+        var userManagerMock = MockHelpers.MockUserManager();
+        var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
 
         var antiforgeryMock = new Mock<IAntiforgery>(MockBehavior.Strict);
         antiforgeryMock

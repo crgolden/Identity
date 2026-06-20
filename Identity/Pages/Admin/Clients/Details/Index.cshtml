@@ -1,0 +1,75 @@
+@page
+@model IndexModel
+
+@{
+    ViewData["Title"] = "Client Details";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Client Details</h1>
+    <div>
+        <a id="btn-edit" asp-page="/Admin/Clients/Edit/Index" asp-route-id="@Model.Client.Id" class="btn btn-primary">Edit</a>
+        <a id="btn-delete" asp-page="/Admin/Clients/Delete" asp-route-id="@Model.Client.Id" class="btn btn-danger ms-1">Delete</a>
+        <a id="btn-back" asp-page="/Admin/Clients/Index" class="btn btn-outline-secondary ms-1">Back to List</a>
+    </div>
+</div>
+
+<dl class="row">
+    <dt class="col-sm-4">Client ID</dt>
+    <dd class="col-sm-8">@Model.Client.ClientId</dd>
+
+    <dt class="col-sm-4">Client Name</dt>
+    <dd class="col-sm-8">@Model.Client.ClientName</dd>
+
+    <dt class="col-sm-4">Description</dt>
+    <dd class="col-sm-8">@Model.Client.Description</dd>
+
+    <dt class="col-sm-4">Protocol Type</dt>
+    <dd class="col-sm-8">@Model.Client.ProtocolType</dd>
+
+    <dt class="col-sm-4">Enabled</dt>
+    <dd class="col-sm-8">@Model.Client.Enabled</dd>
+
+    <dt class="col-sm-4">Require Client Secret</dt>
+    <dd class="col-sm-8">@Model.Client.RequireClientSecret</dd>
+
+    <dt class="col-sm-4">Require PKCE</dt>
+    <dd class="col-sm-8">@Model.Client.RequirePkce</dd>
+
+    <dt class="col-sm-4">Require Consent</dt>
+    <dd class="col-sm-8">@Model.Client.RequireConsent</dd>
+
+    <dt class="col-sm-4">Allow Remember Consent</dt>
+    <dd class="col-sm-8">@Model.Client.AllowRememberConsent</dd>
+
+    <dt class="col-sm-4">Access Token Lifetime</dt>
+    <dd class="col-sm-8">@Model.Client.AccessTokenLifetime</dd>
+
+    <dt class="col-sm-4">Identity Token Lifetime</dt>
+    <dd class="col-sm-8">@Model.Client.IdentityTokenLifetime</dd>
+
+    <dt class="col-sm-4">Allow Offline Access</dt>
+    <dd class="col-sm-8">@Model.Client.AllowOfflineAccess</dd>
+
+    <dt class="col-sm-4">Enable Local Login</dt>
+    <dd class="col-sm-8">@Model.Client.EnableLocalLogin</dd>
+
+    <dt class="col-sm-4">Created</dt>
+    <dd class="col-sm-8">@Model.Client.Created.ToString("u")</dd>
+
+    <dt class="col-sm-4">Updated</dt>
+    <dd class="col-sm-8">@Model.Client.Updated?.ToString("u")</dd>
+</dl>
+
+<h2 class="mt-4">Collections</h2>
+<div class="d-flex flex-wrap gap-2">
+    <a id="nav-claims" asp-page="./Claims" asp-route-id="@Model.Client.Id" class="btn btn-outline-secondary">Claims</a>
+    <a id="nav-corsorigins" asp-page="./CorsOrigins" asp-route-id="@Model.Client.Id" class="btn btn-outline-secondary">CORS Origins</a>
+    <a id="nav-granttypes" asp-page="./GrantTypes" asp-route-id="@Model.Client.Id" class="btn btn-outline-secondary">Grant Types</a>
+    <a id="nav-idprestrictions" asp-page="./IdPRestrictions" asp-route-id="@Model.Client.Id" class="btn btn-outline-secondary">IdP Restrictions</a>
+    <a id="nav-postlogoutredirecturis" asp-page="./PostLogoutRedirectUris" asp-route-id="@Model.Client.Id" class="btn btn-outline-secondary">Post-Logout Redirect URIs</a>
+    <a id="nav-properties" asp-page="./Properties" asp-route-id="@Model.Client.Id" class="btn btn-outline-secondary">Properties</a>
+    <a id="nav-redirecturis" asp-page="./RedirectUris" asp-route-id="@Model.Client.Id" class="btn btn-outline-secondary">Redirect URIs</a>
+    <a id="nav-scopes" asp-page="./Scopes" asp-route-id="@Model.Client.Id" class="btn btn-outline-secondary">Scopes</a>
+    <a id="nav-secrets" asp-page="./Secrets" asp-route-id="@Model.Client.Id" class="btn btn-outline-secondary">Secrets</a>
+</div>

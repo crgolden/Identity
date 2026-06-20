@@ -1,0 +1,52 @@
+@page "{id}"
+@model Identity.Pages.Admin.Users.Details.IndexModel
+@{
+    ViewData["Title"] = "User Details";
+}
+
+<h1>@Model.AppUser.UserName</h1>
+
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+        <a class="nav-link active" asp-page="./Index" asp-route-id="@Model.AppUser.Id">Details</a>
+    </li>
+    <li class="nav-item">
+        <a id="nav-claims" class="nav-link" asp-page="./Claims" asp-route-id="@Model.AppUser.Id">Claims</a>
+    </li>
+    <li class="nav-item">
+        <a id="nav-roles" class="nav-link" asp-page="./Roles" asp-route-id="@Model.AppUser.Id">Roles</a>
+    </li>
+    <li class="nav-item">
+        <a id="nav-logins" class="nav-link" asp-page="./Logins" asp-route-id="@Model.AppUser.Id">Logins</a>
+    </li>
+    <li class="nav-item">
+        <a id="nav-passkeys" class="nav-link" asp-page="./Passkeys" asp-route-id="@Model.AppUser.Id">Passkeys</a>
+    </li>
+</ul>
+
+<dl class="row">
+    <dt class="col-sm-3">ID</dt>
+    <dd class="col-sm-9">@Model.AppUser.Id</dd>
+    <dt class="col-sm-3">Username</dt>
+    <dd class="col-sm-9">@Model.AppUser.UserName</dd>
+    <dt class="col-sm-3">Email</dt>
+    <dd class="col-sm-9">@Model.AppUser.Email</dd>
+    <dt class="col-sm-3">Email Confirmed</dt>
+    <dd class="col-sm-9">@Model.AppUser.EmailConfirmed</dd>
+    <dt class="col-sm-3">Phone Number</dt>
+    <dd class="col-sm-9">@Model.AppUser.PhoneNumber</dd>
+    <dt class="col-sm-3">Phone Confirmed</dt>
+    <dd class="col-sm-9">@Model.AppUser.PhoneNumberConfirmed</dd>
+    <dt class="col-sm-3">Two-Factor Enabled</dt>
+    <dd class="col-sm-9">@Model.AppUser.TwoFactorEnabled</dd>
+    <dt class="col-sm-3">Lockout Enabled</dt>
+    <dd class="col-sm-9">@Model.AppUser.LockoutEnabled</dd>
+    <dt class="col-sm-3">Lockout End</dt>
+    <dd class="col-sm-9">@Model.AppUser.LockoutEnd</dd>
+    <dt class="col-sm-3">Access Failed Count</dt>
+    <dd class="col-sm-9">@Model.AppUser.AccessFailedCount</dd>
+</dl>
+
+<a id="btn-edit" asp-page="../Edit/Index" asp-route-id="@Model.AppUser.Id" class="btn btn-primary">Edit</a>
+<a id="btn-delete" asp-page="../Delete" asp-route-id="@Model.AppUser.Id" class="btn btn-danger">Delete</a>
+<a id="btn-back" asp-page="../Index" class="btn btn-outline-secondary">Back</a>

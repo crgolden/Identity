@@ -1,0 +1,13 @@
+@page "{id:int}"
+@model Identity.Pages.Admin.SamlServiceProviders.DeleteModel
+@{
+    ViewData["Title"] = "Delete SAML Service Provider";
+}
+
+<h1>Delete SAML Service Provider</h1>
+<p class="text-danger">Are you sure you want to delete <strong>@Model.SamlServiceProvider.EntityId</strong>?</p>
+
+<form method="post">
+    <button id="delete-submit" type="submit" class="btn btn-danger">Delete</button>
+    <a asp-page="./Details" asp-route-id="@Model.SamlServiceProvider.Id" class="btn btn-outline-secondary">Cancel</a>
+</form>

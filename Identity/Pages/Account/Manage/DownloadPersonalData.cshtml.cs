@@ -15,6 +15,7 @@ public class DownloadPersonalDataModel : PageModel
 
     public DownloadPersonalDataModel(UserManager<IdentityUser<Guid>> userManager)
     {
+        ArgumentNullException.ThrowIfNull(userManager);
         _userManager = userManager;
     }
 

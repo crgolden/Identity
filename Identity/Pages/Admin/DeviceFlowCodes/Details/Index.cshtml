@@ -1,0 +1,25 @@
+@page
+@model Identity.Pages.Admin.DeviceFlowCodes.Details.IndexModel
+@{
+    ViewData["Title"] = "Device Flow Code Details";
+}
+
+<h1>Device Flow Code Details</h1>
+
+<dl class="row">
+    <dt class="col-sm-3">Device Code</dt>
+    <dd class="col-sm-9">@Model.DeviceFlowCode.DeviceCode</dd>
+    <dt class="col-sm-3">User Code</dt>
+    <dd class="col-sm-9">@Model.DeviceFlowCode.UserCode</dd>
+    <dt class="col-sm-3">Client</dt>
+    <dd class="col-sm-9">@Model.DeviceFlowCode.ClientId</dd>
+    <dt class="col-sm-3">Subject</dt>
+    <dd class="col-sm-9">@Model.DeviceFlowCode.SubjectId</dd>
+    <dt class="col-sm-3">Created</dt>
+    <dd class="col-sm-9">@Model.DeviceFlowCode.CreationTime</dd>
+    <dt class="col-sm-3">Expires</dt>
+    <dd class="col-sm-9">@Model.DeviceFlowCode.Expiration</dd>
+</dl>
+
+<a id="btn-back" asp-page="../Index" class="btn btn-outline-secondary">Back</a>
+<a id="btn-delete" asp-page="../Delete" asp-route-deviceCode="@Model.DeviceFlowCode.DeviceCode" class="btn btn-danger">Delete</a>

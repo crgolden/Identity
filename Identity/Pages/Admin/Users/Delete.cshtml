@@ -1,0 +1,13 @@
+@page "{id}"
+@model Identity.Pages.Admin.Users.DeleteModel
+@{
+    ViewData["Title"] = "Delete User";
+}
+
+<h1>Delete User</h1>
+<p class="text-danger">Are you sure you want to delete <strong>@Model.AppUser.UserName</strong>?</p>
+
+<form method="post">
+    <button id="delete-submit" type="submit" class="btn btn-danger">Delete</button>
+    <a asp-page="./Details/Index" asp-route-id="@Model.AppUser.Id" class="btn btn-outline-secondary">Cancel</a>
+</form>

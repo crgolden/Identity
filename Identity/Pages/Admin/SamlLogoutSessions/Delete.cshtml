@@ -1,0 +1,14 @@
+@page
+@model Identity.Pages.Admin.SamlLogoutSessions.DeleteModel
+@{
+    ViewData["Title"] = "Delete SAML Logout Session";
+}
+
+<h1>Delete SAML Logout Session</h1>
+
+<div class="alert alert-danger">Are you sure you want to delete SAML logout session <strong>@Model.SamlLogoutSession.Id</strong>?</div>
+
+<form method="post">
+    <button id="delete-submit" type="submit" class="btn btn-danger">Delete</button>
+    <a asp-page="./Index" class="btn btn-outline-secondary">Cancel</a>
+</form>

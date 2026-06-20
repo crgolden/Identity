@@ -1,0 +1,55 @@
+@page
+@model CreateModel
+
+@{
+    ViewData["Title"] = "New Client";
+}
+
+<h1>New Client</h1>
+
+<form method="post">
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+    <div class="mb-3">
+        <label asp-for="Client.ClientId" class="form-label">Client ID</label>
+        <input asp-for="Client.ClientId" class="form-control" required />
+        <span asp-validation-for="Client.ClientId" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Client.ClientName" class="form-label">Client Name</label>
+        <input asp-for="Client.ClientName" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Client.Description" class="form-label">Description</label>
+        <input asp-for="Client.Description" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Client.ProtocolType" class="form-label">Protocol Type</label>
+        <input asp-for="Client.ProtocolType" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+        <div class="form-check">
+            <input asp-for="Client.Enabled" class="form-check-input" type="checkbox" />
+            <label asp-for="Client.Enabled" class="form-check-label">Enabled</label>
+        </div>
+        <div class="form-check">
+            <input asp-for="Client.RequireClientSecret" class="form-check-input" type="checkbox" />
+            <label asp-for="Client.RequireClientSecret" class="form-check-label">Require Client Secret</label>
+        </div>
+        <div class="form-check">
+            <input asp-for="Client.RequirePkce" class="form-check-input" type="checkbox" />
+            <label asp-for="Client.RequirePkce" class="form-check-label">Require PKCE</label>
+        </div>
+        <div class="form-check">
+            <input asp-for="Client.RequireConsent" class="form-check-input" type="checkbox" />
+            <label asp-for="Client.RequireConsent" class="form-check-label">Require Consent</label>
+        </div>
+    </div>
+
+    <button id="create-submit" type="submit" class="btn btn-primary">Create</button>
+    <a asp-page="./Index" class="btn btn-outline-secondary ms-1">Cancel</a>
+</form>

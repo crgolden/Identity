@@ -1,0 +1,48 @@
+@page
+@model ClaimsModel
+
+@{
+    ViewData["Title"] = "Edit Client Claims";
+}
+
+<h1>Edit Client Claims</h1>
+
+<form method="post" data-collection-form>
+    <table class="table table-bordered table-sm" data-collection="Claims">
+        <thead class="table-light">
+            <tr>
+                <th>Type</th>
+                <th>Value</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (var i = 0; i < Model.Claims.Count; i++)
+            {
+                <tr data-row>
+                    <input type="hidden" name="Claims[@i].Id" value="@Model.Claims[i].Id" />
+                    <td><input name="Claims[@i].Type" value="@Model.Claims[i].Type" class="form-control form-control-sm" aria-label="Claim type" /></td>
+                    <td><input name="Claims[@i].Value" value="@Model.Claims[i].Value" class="form-control form-control-sm" aria-label="Claim value" /></td>
+                    <td><button type="button" class="btn btn-sm btn-danger" data-remove-row>Remove</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <template data-for="Claims">
+        <tr data-row>
+            <input type="hidden" name="Claims[-1].Id" value="0" />
+            <td><input name="Claims[-1].Type" class="form-control form-control-sm" aria-label="Claim type" /></td>
+            <td><input name="Claims[-1].Value" class="form-control form-control-sm" aria-label="Claim value" /></td>
+            <td><button type="button" class="btn btn-sm btn-danger" data-remove-row>Remove</button></td>
+        </tr>
+    </template>
+    <button id="btn-add-row" type="button" class="btn btn-sm btn-outline-secondary mb-3" data-add-for="Claims">Add</button>
+    <div>
+        <button id="save-submit" type="submit" asp-route-id="@Model.Client.Id" class="btn btn-primary">Save</button>
+        <a asp-page="/Admin/Clients/Details/Claims" asp-route-id="@Model.Client.Id" class="btn btn-outline-secondary ms-1">Cancel</a>
+    </div>
+</form>
+
+@section Scripts {
+    <script src="~/js/admin-collection.js"></script>
+}

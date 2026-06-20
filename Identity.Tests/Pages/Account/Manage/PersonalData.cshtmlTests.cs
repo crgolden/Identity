@@ -1,4 +1,3 @@
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account.Manage;
 using Infrastructure;
 
@@ -18,7 +17,7 @@ public class PersonalDataModelTests
 {
     public static TheoryData<string?> UserIdValues => new()
     {
-        null,
+        (string?)null,
         string.Empty,
         "   ",
         new string('a', 1024),
@@ -102,8 +101,7 @@ public class PersonalDataModelTests
     public async Task OnGet_UserNotFound_ReturnsNotFoundWithMessage(string? userId)
     {
         // Arrange
-        var store = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(store, null, null, null, null, null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
         userManagerMock
             .Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
             .ReturnsAsync((IdentityUser<Guid>?)null);
@@ -139,8 +137,7 @@ public class PersonalDataModelTests
     public async Task OnGet_UserFound_ReturnsPageResult()
     {
         // Arrange
-        var store = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(store, null, null, null, null, null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
 
         var existingUser = new IdentityUser<Guid>();
         userManagerMock
@@ -176,8 +173,7 @@ public class PersonalDataModelTests
     public async Task OnGet_GetUserAsyncThrows_PropagatesException()
     {
         // Arrange
-        var store = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(store, null, null, null, null, null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
 
         userManagerMock
             .Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>()))

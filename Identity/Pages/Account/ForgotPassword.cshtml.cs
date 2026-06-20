@@ -15,12 +15,14 @@ public class ForgotPasswordModel : PageModel
 {
     private const string From = "noreply@crgolden.com";
     private readonly UserManager<IdentityUser<Guid>> _userManager;
-    private readonly ServiceBusSender _serviceBusSender;
+    private readonly ServiceBusClient _serviceBusClient;
 
-    public ForgotPasswordModel(UserManager<IdentityUser<Guid>> userManager, IAzureClientFactory<ServiceBusSender> serviceBusSenderFactory)
+    public ForgotPasswordModel(UserManager<IdentityUser<Guid>> userManager, IAzureClientFactory<ServiceBusClient> serviceBusClientFactory)
     {
+        ArgumentNullException.ThrowIfNull(userManager);
+        ArgumentNullException.ThrowIfNull(serviceBusClientFactory);
         _userManager = userManager;
-        _serviceBusSender = serviceBusSenderFactory.CreateClient("email");
+        _serviceBusClient = serviceBusClientFactory.CreateClient("crgolden");
     }
 
     [BindProperty]
@@ -30,7 +32,7 @@ public class ForgotPasswordModel : PageModel
     /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnPostAsync()
     {
-        if (!ModelState.IsValid || IsNullOrWhiteSpace(Input?.Email))
+        if (!ModelState.IsValid || IsNullOrWhiteSpace(Input.Email))
         {
             return Page();
         }
@@ -59,7 +61,8 @@ public class ForgotPasswordModel : PageModel
                 Subject = "Reset Password",
                 To = Input.Email
             };
-            await _serviceBusSender.SendMessageAsync(message, HttpContext.RequestAborted);
+            var serviceBusSender = _serviceBusClient.CreateSender("email");
+            await serviceBusSender.SendMessageAsync(message, HttpContext.RequestAborted);
         }
 
         return RedirectToPage("./ForgotPasswordConfirmation");

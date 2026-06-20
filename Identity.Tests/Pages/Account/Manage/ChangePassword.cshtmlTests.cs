@@ -1,4 +1,3 @@
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account.Manage;
 using Infrastructure;
 
@@ -34,9 +33,8 @@ public class ChangePasswordModelTests
     public async Task OnPostAsync_ModelStateInvalid_ReturnsPage()
     {
         // Arrange
-        var userStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(userStore, null, null, null, null, null, null, null, null);
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(userManagerMock.Object, Mock.Of<IHttpContextAccessor>(), Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(), null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
+        var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
         var model = new ChangePasswordModel(userManagerMock.Object, signInManagerMock.Object);
 
         // Put a dummy principal on the PageContext (not strictly used because we expect early exit)
@@ -65,9 +63,8 @@ public class ChangePasswordModelTests
     public async Task OnPostAsync_UserNotFound_ReturnsNotFoundWithUserId()
     {
         // Arrange
-        var userStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(userStore, null, null, null, null, null, null, null, null);
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(userManagerMock.Object, Mock.Of<IHttpContextAccessor>(), Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(), null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
+        var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
         var model = new ChangePasswordModel(userManagerMock.Object, signInManagerMock.Object);
 
         // Prepare a principal and page context
@@ -122,20 +119,6 @@ public class ChangePasswordModelTests
 
         // Assert
         Assert.NotNull(model);
-    }
-
-    [Fact]
-    public void Constructor_NullParameters_DoesNotThrow()
-    {
-        // Arrange
-        // The current implementation of ChangePasswordModel does not validate constructor arguments.
-        // Verify that constructing with null managers does not throw (reflects current behavior).
-
-        // Act
-        var exception = Record.Exception(() => new ChangePasswordModel(null!, null!));
-
-        // Assert
-        Assert.Null(exception);
     }
 
     [Fact]
@@ -262,17 +245,8 @@ public class ChangePasswordModelTests
     private static (Mock<UserManager<IdentityUser<Guid>>> userManager,
                     Mock<SignInManager<IdentityUser<Guid>>> signInManager) CreateMocks()
     {
-        var userStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
-            userStore, null, null, null, null, null, null, null, null);
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManagerMock.Object,
-            Mock.Of<IHttpContextAccessor>(),
-            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
-            null,
-            null,
-            null,
-            null);
+        var userManagerMock = MockHelpers.MockUserManager();
+        var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
         return (userManagerMock, signInManagerMock);
     }
 

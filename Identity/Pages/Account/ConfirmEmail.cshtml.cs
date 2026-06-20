@@ -13,6 +13,7 @@ public class ConfirmEmailModel : PageModel
 
     public ConfirmEmailModel(UserManager<IdentityUser<Guid>> userManager)
     {
+        ArgumentNullException.ThrowIfNull(userManager);
         _userManager = userManager;
     }
 

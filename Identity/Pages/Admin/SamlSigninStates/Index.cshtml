@@ -1,0 +1,36 @@
+@page
+@model Identity.Pages.Admin.SamlSigninStates.IndexModel
+@{
+    ViewData["Title"] = "SAML Sign-In States";
+}
+
+<h1>SAML Sign-In States</h1>
+
+<table class="table table-bordered table-hover table-sm">
+    <thead class="table-light">
+        <tr>
+            <th>Id</th>
+            <th>State Id</th>
+            <th>Service Provider</th>
+            <th>Expires</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var state in Model.SamlSigninStates)
+        {
+            <tr>
+                <td>@state.Id</td>
+                <td>@state.StateId</td>
+                <td>@state.ServiceProviderEntityId</td>
+                <td>@state.ExpiresAtUtc</td>
+                <td>
+                    <a id="details-@state.Id" asp-page="./Details/Index" asp-route-id="@state.Id" class="btn btn-sm btn-outline-secondary">Details</a>
+                    <a id="delete-@state.Id" asp-page="./Delete" asp-route-id="@state.Id" class="btn btn-sm btn-danger">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<a id="btn-back" asp-page="/Admin/Index" class="btn btn-outline-secondary">Back</a>

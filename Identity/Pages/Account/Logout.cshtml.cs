@@ -17,6 +17,8 @@ public class LogoutModel : PageModel
         SignInManager<IdentityUser<Guid>> signInManager,
         IIdentityServerInteractionService interactionService)
     {
+        ArgumentNullException.ThrowIfNull(signInManager);
+        ArgumentNullException.ThrowIfNull(interactionService);
         _signInManager = signInManager;
         _interactionService = interactionService;
     }
@@ -62,7 +64,7 @@ public class LogoutModel : PageModel
             return;
         }
 
-        var context = await _interactionService.GetLogoutContextAsync(logoutId);
+        var context = await _interactionService.GetLogoutContextAsync(logoutId, HttpContext.RequestAborted);
         PostLogoutRedirectUri = context.PostLogoutRedirectUri;
         SignOutIFrameUrl = context.SignOutIFrameUrl;
     }

@@ -1,0 +1,15 @@
+@page
+@model Identity.Pages.Admin.PersistedGrants.DeleteModel
+@{
+    ViewData["Title"] = "Delete Persisted Grant";
+}
+
+<h1>Delete Persisted Grant</h1>
+
+<div class="alert alert-danger">Are you sure you want to delete grant <strong>@Model.PersistedGrant.Key</strong>?</div>
+
+<form method="post">
+    <input type="hidden" asp-for="PersistedGrant.Key" />
+    <button id="delete-submit" type="submit" class="btn btn-danger">Delete</button>
+    <a asp-page="./Index" class="btn btn-outline-secondary">Cancel</a>
+</form>

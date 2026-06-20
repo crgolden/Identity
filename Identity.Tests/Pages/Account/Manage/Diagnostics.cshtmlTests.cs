@@ -1,5 +1,3 @@
-#pragma warning disable CS8604
-#pragma warning disable CS8625
 namespace Identity.Tests.Pages.Account.Manage;
 using Infrastructure;
 
@@ -20,12 +18,10 @@ public class DiagnosticsIndexModelTests
     [Fact]
     public void Constructor_NoParameters_DoesNotThrow()
     {
-        // Arrange & Act
-        DiagnosticsModel model = null!;
-        var ex = Record.Exception(() => model = new DiagnosticsModel());
+        // Act
+        var model = new DiagnosticsModel();
 
         // Assert
-        Assert.Null(ex);
         Assert.NotNull(model);
         Assert.IsType<PageModel>(model, exactMatch: false);
     }

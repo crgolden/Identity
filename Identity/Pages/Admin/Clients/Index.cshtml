@@ -1,0 +1,36 @@
+@page
+@model IndexModel
+
+@{
+    ViewData["Title"] = "Clients";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Clients</h1>
+    <a id="btn-create" asp-page="./Create" class="btn btn-primary">New</a>
+</div>
+
+<table class="table table-bordered table-hover table-sm">
+    <thead class="table-light">
+        <tr>
+            <th>Client ID</th>
+            <th>Client Name</th>
+            <th>Enabled</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var c in Model.Clients)
+        {
+            <tr>
+                <td>@c.ClientId</td>
+                <td>@c.ClientName</td>
+                <td>@c.Enabled</td>
+                <td>
+                    <a id="details-@c.Id" asp-page="./Details/Index" asp-route-id="@c.Id" class="btn btn-sm btn-outline-secondary">Details</a>
+                    <a id="delete-@c.Id" asp-page="./Delete" asp-route-id="@c.Id" class="btn btn-sm btn-danger ms-1">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

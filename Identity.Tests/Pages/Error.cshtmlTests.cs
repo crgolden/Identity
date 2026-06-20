@@ -158,7 +158,7 @@ public class ErrorModelTests
 
             // Assert
             mockInteraction.Verify(
-                s => s.GetErrorContextAsync(It.IsAny<string?>()),
+                s => s.GetErrorContextAsync(It.IsAny<string?>(), It.IsAny<CancellationToken>()),
                 Times.Never,
                 "GetErrorContextAsync should not be called when errorId is null/empty/whitespace.");
 
@@ -193,7 +193,7 @@ public class ErrorModelTests
 
         // Return null from service to ensure code handles nullable returns without throwing.
         mockInteraction
-            .Setup(s => s.GetErrorContextAsync(It.Is<string>(id => id == errorId)))
+            .Setup(s => s.GetErrorContextAsync(It.Is<string>(id => id == errorId), It.IsAny<CancellationToken>()))
             .ReturnsAsync((ErrorMessage?)null)
             .Verifiable();
 
@@ -226,7 +226,7 @@ public class ErrorModelTests
             // Assert - no exception thrown
             Assert.Null(ex);
 
-            mockInteraction.Verify(s => s.GetErrorContextAsync(errorId), Times.Once);
+            mockInteraction.Verify(s => s.GetErrorContextAsync(errorId, It.IsAny<CancellationToken>()), Times.Once);
 
             Assert.Equal(expectedRequestId, model.RequestId);
             Assert.True(model.ShowRequestId, "ShowRequestId should be true when RequestId is set.");
@@ -276,7 +276,7 @@ public class ErrorModelTests
         var errorMessage = new ErrorMessage { Error = "access_denied", ErrorDescription = "User denied access." };
         var mockInteraction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
         mockInteraction
-            .Setup(s => s.GetErrorContextAsync("error-abc"))
+            .Setup(s => s.GetErrorContextAsync("error-abc", It.IsAny<CancellationToken>()))
             .ReturnsAsync(errorMessage);
 
         var model = new ErrorModel(mockInteraction.Object);

@@ -6,9 +6,7 @@ using System.Diagnostics.Metrics;
 using Identity.Extensions;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Moq;
 
 /// <summary>Unit tests for <see cref="HttpContextExtensions"/>.</summary>
@@ -27,7 +25,6 @@ public class HttpContextExtensionsTests
         var context = BuildContext(
             new InvalidOperationException("boom"),
             "text/html,application/xhtml+xml",
-            out _,
             out var mockProblemDetails);
 
         // Act
@@ -49,7 +46,6 @@ public class HttpContextExtensionsTests
         var context = BuildContext(
             new InvalidOperationException("boom"),
             "application/json",
-            out _,
             out var mockProblemDetails);
 
         // Act
@@ -59,34 +55,6 @@ public class HttpContextExtensionsTests
         Assert.Equal(StatusCodes.Status500InternalServerError, context.Response.StatusCode);
         mockProblemDetails.Verify(
             p => p.WriteAsync(It.Is<ProblemDetailsContext>(c => c.ProblemDetails.Status == StatusCodes.Status500InternalServerError)),
-            Times.Once);
-    }
-
-    /// <summary>
-    /// Verifies that the exception is logged at Error level via ILoggerFactory.
-    /// </summary>
-    [Fact]
-    public async Task HandleException_WithException_LogsError()
-    {
-        // Arrange
-        var ex = new InvalidOperationException("test-error");
-        var context = BuildContext(
-            ex,
-            "application/json",
-            out var mockLogger,
-            out _);
-
-        // Act
-        await context.HandleException();
-
-        // Assert
-        mockLogger.Verify(
-            l => l.Log(
-                LogLevel.Error,
-                It.IsAny<EventId>(),
-                It.IsAny<It.IsAnyType>(),
-                ex,
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
     }
 
@@ -101,7 +69,6 @@ public class HttpContextExtensionsTests
         var context = BuildContext(
             ex,
             "application/json",
-            out _,
             out _);
 
         using var source = new ActivitySource("test.source");
@@ -134,7 +101,6 @@ public class HttpContextExtensionsTests
         var context = BuildContext(
             ex,
             "application/json",
-            out _,
             out _);
 
         long capturedValue = 0;
@@ -173,29 +139,14 @@ public class HttpContextExtensionsTests
     private static DefaultHttpContext BuildContext(
         Exception? exception,
         string acceptHeader,
-        out Mock<ILogger> loggerOut,
         out Mock<IProblemDetailsService> problemDetailsOut)
     {
-        var mockLogger = new Mock<ILogger>(MockBehavior.Strict);
-        mockLogger.Setup(l => l.IsEnabled(It.IsAny<LogLevel>())).Returns(true);
-        mockLogger.Setup(l => l.Log(
-            It.IsAny<LogLevel>(),
-            It.IsAny<EventId>(),
-            It.IsAny<It.IsAnyType>(),
-            It.IsAny<Exception?>(),
-            It.IsAny<Func<It.IsAnyType, Exception?, string>>()));
-        var mockLoggerFactory = new Mock<ILoggerFactory>(MockBehavior.Strict);
-        mockLoggerFactory
-            .Setup(f => f.CreateLogger(It.IsAny<string>()))
-            .Returns(mockLogger.Object);
-
         var mockProblemDetails = new Mock<IProblemDetailsService>(MockBehavior.Strict);
         mockProblemDetails
             .Setup(p => p.WriteAsync(It.IsAny<ProblemDetailsContext>()))
             .Returns(ValueTask.CompletedTask);
 
         var services = new ServiceCollection();
-        services.AddSingleton(mockLoggerFactory.Object);
         services.AddSingleton(mockProblemDetails.Object);
 
         var context = new DefaultHttpContext();
@@ -208,7 +159,6 @@ public class HttpContextExtensionsTests
             context.Features.Set(feature);
         }
 
-        loggerOut = mockLogger;
         problemDetailsOut = mockProblemDetails;
         return context;
     }

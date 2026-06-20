@@ -1,0 +1,13 @@
+@page "{id:int}"
+@model Identity.Pages.Admin.ApiResources.Details.PropertiesModel
+@{
+    ViewData["Title"] = $"Properties – {Model.Resource.Name}";
+}
+
+<h1>@Model.Resource.Name — Properties</h1>
+
+@await Html.PartialAsync("~/Pages/Admin/Shared/_DetailsPropertiesTable.cshtml",
+    Model.Properties.Select(p => new PropertyRow(p.Id, p.Key, p.Value)))
+
+<a id="btn-edit" asp-page="../Edit/Properties" asp-route-id="@Model.Resource.Id" class="btn btn-primary">Edit</a>
+<a id="btn-back" asp-page="./Index" asp-route-id="@Model.Resource.Id" class="btn btn-outline-secondary">Back</a>

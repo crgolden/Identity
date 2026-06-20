@@ -1,5 +1,3 @@
-#pragma warning disable CS8604
-#pragma warning disable CS8625
 namespace Identity.Tests.Pages.Account.Manage;
 using Infrastructure;
 
@@ -20,31 +18,12 @@ using Moq;
 public class GrantsIndexModelTests
 {
     [Fact]
-    public void Constructor_NullParameters_DoesNotThrow()
-    {
-        // Arrange
-        IIdentityServerInteractionService? interaction = null;
-        IClientStore? clients = null;
-        IResourceStore? resources = null;
-        IEventService? events = null;
-
-        // Act
-        GrantsModel model = null!;
-        var ex = Record.Exception(() => model = new GrantsModel(interaction, clients, resources, events));
-
-        // Assert
-        Assert.Null(ex);
-        Assert.NotNull(model);
-        Assert.IsType<PageModel>(model, exactMatch: false);
-    }
-
-    [Fact]
     public async Task OnGetAsync_NoGrants_SetsEmptyViewModel()
     {
         // Arrange
         var mockInteraction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
         mockInteraction
-            .Setup(x => x.GetAllUserGrantsAsync())
+            .Setup(x => x.GetAllUserGrantsAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
 
         var mockClients = new Mock<IClientStore>(MockBehavior.Strict);
@@ -67,14 +46,14 @@ public class GrantsIndexModelTests
         // Arrange
         var mockInteraction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
         mockInteraction
-            .Setup(x => x.RevokeUserConsentAsync(It.IsAny<string>()))
+            .Setup(x => x.RevokeUserConsentAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         var mockClients = new Mock<IClientStore>(MockBehavior.Strict);
         var mockResources = new Mock<IResourceStore>(MockBehavior.Strict);
         var mockEvents = new Mock<IEventService>(MockBehavior.Strict);
         mockEvents
-            .Setup(x => x.RaiseAsync(It.IsAny<GrantsRevokedEvent>()))
+            .Setup(x => x.RaiseAsync(It.IsAny<GrantsRevokedEvent>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         var httpContext = new DefaultHttpContext();
@@ -106,21 +85,21 @@ public class GrantsIndexModelTests
         var client = new Client { ClientId = "c1", ClientName = "My App" };
 
         var mockInteraction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
-        mockInteraction.Setup(x => x.GetAllUserGrantsAsync()).ReturnsAsync([grant]);
+        mockInteraction.Setup(x => x.GetAllUserGrantsAsync(It.IsAny<CancellationToken>())).ReturnsAsync([grant]);
 
         var mockClients = new Mock<IClientStore>(MockBehavior.Strict);
-        mockClients.Setup(x => x.FindClientByIdAsync("c1")).ReturnsAsync(client);
+        mockClients.Setup(x => x.FindClientByIdAsync("c1", It.IsAny<CancellationToken>())).ReturnsAsync(client);
 
         // FindResourcesByScopeAsync is an extension method; mock the three underlying interface methods it calls.
         var mockResources = new Mock<IResourceStore>(MockBehavior.Strict);
         mockResources
-            .Setup(x => x.FindIdentityResourcesByScopeNameAsync(It.IsAny<IEnumerable<string>>()))
+            .Setup(x => x.FindIdentityResourcesByScopeNameAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyCollection<IdentityResource>)[new IdentityResource { Name = "openid", DisplayName = "Your user identifier" }]);
         mockResources
-            .Setup(x => x.FindApiResourcesByScopeNameAsync(It.IsAny<IEnumerable<string>>()))
+            .Setup(x => x.FindApiResourcesByScopeNameAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyCollection<ApiResource>)[]);
         mockResources
-            .Setup(x => x.FindApiScopesByNameAsync(It.IsAny<IEnumerable<string>>()))
+            .Setup(x => x.FindApiScopesByNameAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyCollection<ApiScope>)[new ApiScope { Name = "profile", DisplayName = "Profile" }]);
 
         var mockEvents = new Mock<IEventService>(MockBehavior.Strict);
@@ -145,10 +124,10 @@ public class GrantsIndexModelTests
         var grant = new Grant { ClientId = "missing-client", Scopes = ["openid"], CreationTime = DateTime.UtcNow };
 
         var mockInteraction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
-        mockInteraction.Setup(x => x.GetAllUserGrantsAsync()).ReturnsAsync([grant]);
+        mockInteraction.Setup(x => x.GetAllUserGrantsAsync(It.IsAny<CancellationToken>())).ReturnsAsync([grant]);
 
         var mockClients = new Mock<IClientStore>(MockBehavior.Strict);
-        mockClients.Setup(x => x.FindClientByIdAsync("missing-client"))
+        mockClients.Setup(x => x.FindClientByIdAsync("missing-client", It.IsAny<CancellationToken>()))
             .ReturnsAsync((Client?)null);
 
         var mockResources = new Mock<IResourceStore>(MockBehavior.Strict);
@@ -171,23 +150,23 @@ public class GrantsIndexModelTests
         var client1 = new Client { ClientId = "c1", ClientName = "Client One" };
 
         var mockInteraction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
-        mockInteraction.Setup(x => x.GetAllUserGrantsAsync()).ReturnsAsync([grant1, grant2]);
+        mockInteraction.Setup(x => x.GetAllUserGrantsAsync(It.IsAny<CancellationToken>())).ReturnsAsync([grant1, grant2]);
 
         var mockClients = new Mock<IClientStore>(MockBehavior.Strict);
-        mockClients.Setup(x => x.FindClientByIdAsync("c1")).ReturnsAsync(client1);
-        mockClients.Setup(x => x.FindClientByIdAsync("c2-missing"))
+        mockClients.Setup(x => x.FindClientByIdAsync("c1", It.IsAny<CancellationToken>())).ReturnsAsync(client1);
+        mockClients.Setup(x => x.FindClientByIdAsync("c2-missing", It.IsAny<CancellationToken>()))
             .ReturnsAsync((Client?)null);
 
         // FindResourcesByScopeAsync is an extension method; mock the three underlying interface methods it calls.
         var mockResources = new Mock<IResourceStore>(MockBehavior.Strict);
         mockResources
-            .Setup(x => x.FindIdentityResourcesByScopeNameAsync(It.IsAny<IEnumerable<string>>()))
+            .Setup(x => x.FindIdentityResourcesByScopeNameAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyCollection<IdentityResource>)[]);
         mockResources
-            .Setup(x => x.FindApiResourcesByScopeNameAsync(It.IsAny<IEnumerable<string>>()))
+            .Setup(x => x.FindApiResourcesByScopeNameAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyCollection<ApiResource>)[]);
         mockResources
-            .Setup(x => x.FindApiScopesByNameAsync(It.IsAny<IEnumerable<string>>()))
+            .Setup(x => x.FindApiScopesByNameAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyCollection<ApiScope>)[]);
 
         var mockEvents = new Mock<IEventService>(MockBehavior.Strict);
@@ -209,14 +188,14 @@ public class GrantsIndexModelTests
 
         var mockInteraction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
         mockInteraction
-            .Setup(x => x.RevokeUserConsentAsync(It.IsAny<string>()))
-            .Callback<string>(id => revokedClientId = id)
+            .Setup(x => x.RevokeUserConsentAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Callback<string, CancellationToken>((id, _) => revokedClientId = id)
             .Returns(Task.CompletedTask);
 
         var mockClients = new Mock<IClientStore>(MockBehavior.Strict);
         var mockResources = new Mock<IResourceStore>(MockBehavior.Strict);
         var mockEvents = new Mock<IEventService>(MockBehavior.Strict);
-        mockEvents.Setup(x => x.RaiseAsync(It.IsAny<GrantsRevokedEvent>())).Returns(Task.CompletedTask);
+        mockEvents.Setup(x => x.RaiseAsync(It.IsAny<GrantsRevokedEvent>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
         var httpContext = new DefaultHttpContext();
         httpContext.User = new ClaimsPrincipal(new ClaimsIdentity([new Claim("sub", "user1")], "test"));
@@ -232,10 +211,10 @@ public class GrantsIndexModelTests
     }
 
     private static GrantsModel CreateModel(
-        IIdentityServerInteractionService? interaction = null,
-        IClientStore? clients = null,
-        IResourceStore? resources = null,
-        IEventService? events = null,
+        IIdentityServerInteractionService interaction,
+        IClientStore clients,
+        IResourceStore resources,
+        IEventService events,
         HttpContext? httpContext = null)
     {
         var model = new GrantsModel(interaction, clients, resources, events);

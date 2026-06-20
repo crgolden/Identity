@@ -47,7 +47,7 @@ public class ConsentModel : ConsentPageModelBase
     /// <returns>A task resolving to a redirect after processing the consent decision.</returns>
     public async Task<IActionResult> OnPostAsync()
     {
-        var request = await _interaction.GetAuthorizationContextAsync(Input.ReturnUrl);
+        var request = await _interaction.GetAuthorizationContextAsync(Input.ReturnUrl, HttpContext.RequestAborted);
         if (request == null)
         {
             return RedirectToPage("/Error");
@@ -57,15 +57,17 @@ public class ConsentModel : ConsentPageModelBase
 
         if (Input.Button == "no")
         {
-            grantedConsent = new ConsentResponse { Error = AuthorizationError.AccessDenied };
-            await _events.RaiseAsync(new ConsentDeniedEvent(
-                User.GetSubjectId(),
-                request.Client.ClientId,
-                request.ValidatedResources.RawScopeValues));
+            grantedConsent = new ConsentResponse { Error = InteractionError.AccessDenied };
+            await _events.RaiseAsync(
+                new ConsentDeniedEvent(
+                    User.GetSubjectId(),
+                    request.Client.ClientId,
+                    request.ValidatedResources.RawScopeValues),
+                HttpContext.RequestAborted);
             Telemetry.Metrics.ConsentDenied(
                 request.Client.ClientId,
                 request.ValidatedResources.ParsedScopes.Select(s => s.ParsedName));
-            using var denyActivity = Telemetry.ActivitySource.StartActivity("identity.consent.deny");
+            using var denyActivity = Telemetry.StartActivity("identity.consent.deny");
             denyActivity?.SetTag("client_id", request.Client.ClientId);
         }
         else if (Input.Button == "yes")
@@ -86,12 +88,14 @@ public class ConsentModel : ConsentPageModelBase
                     Description = Input.Description,
                 };
 
-                await _events.RaiseAsync(new ConsentGrantedEvent(
-                    User.GetSubjectId(),
-                    request.Client.ClientId,
-                    request.ValidatedResources.RawScopeValues,
-                    grantedConsent.ScopesValuesConsented,
-                    grantedConsent.RememberConsent));
+                await _events.RaiseAsync(
+                    new ConsentGrantedEvent(
+                        User.GetSubjectId(),
+                        request.Client.ClientId,
+                        request.ValidatedResources.RawScopeValues,
+                        grantedConsent.ScopesValuesConsented,
+                        grantedConsent.RememberConsent),
+                    HttpContext.RequestAborted);
                 Telemetry.Metrics.ConsentGranted(
                     request.Client.ClientId,
                     grantedConsent.ScopesValuesConsented,
@@ -100,7 +104,7 @@ public class ConsentModel : ConsentPageModelBase
                     .Select(s => s.ParsedName)
                     .Except(grantedConsent.ScopesValuesConsented);
                 Telemetry.Metrics.ConsentDenied(request.Client.ClientId, denied);
-                using var grantActivity = Telemetry.ActivitySource.StartActivity("identity.consent.grant");
+                using var grantActivity = Telemetry.StartActivity("identity.consent.grant");
                 grantActivity?.SetTag("client_id", request.Client.ClientId);
                 grantActivity?.SetTag("scope_count", grantedConsent.ScopesValuesConsented.Count());
                 grantActivity?.SetTag("remember", grantedConsent.RememberConsent);
@@ -118,7 +122,7 @@ public class ConsentModel : ConsentPageModelBase
         if (grantedConsent != null)
         {
             ThrowIfNull(Input.ReturnUrl);
-            await _interaction.GrantConsentAsync(request, grantedConsent, User.GetSubjectId());
+            await _interaction.GrantConsentAsync(request, grantedConsent, HttpContext.RequestAborted, User.GetSubjectId());
             return Redirect(Input.ReturnUrl);
         }
 
@@ -137,7 +141,7 @@ public class ConsentModel : ConsentPageModelBase
             return false;
         }
 
-        var request = await _interaction.GetAuthorizationContextAsync(returnUrl);
+        var request = await _interaction.GetAuthorizationContextAsync(returnUrl, HttpContext.RequestAborted);
         if (request != null)
         {
             View = CreateConsentViewModel(request);

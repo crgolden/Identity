@@ -1,4 +1,3 @@
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account.Manage;
 using Infrastructure;
 
@@ -45,22 +44,10 @@ public class GenerateRecoveryCodesModelTests
     }
 
     [Fact]
-    public void Constructor_NullDependencies_ThrowsArgumentNullException()
-    {
-        // Arrange & Act
-        var exception = Record.Exception(() => new GenerateRecoveryCodesModel(null));
-
-        // Assert
-        Assert.Null(exception);
-    }
-
-    [Fact]
     public async Task OnPostAsync_UserNotFound_ReturnsNotFoundWithMessage()
     {
         // Arrange
-        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
-            storeMock.Object, null, null, null, null, null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
 
         var expectedUserId = "missing-user-id";
         userManagerMock
@@ -89,9 +76,7 @@ public class GenerateRecoveryCodesModelTests
     public async Task OnPostAsync_TwoFactorDisabled_ThrowsInvalidOperationException()
     {
         // Arrange
-        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
-            storeMock.Object, null, null, null, null, null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
 
         var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
         userManagerMock
@@ -118,9 +103,7 @@ public class GenerateRecoveryCodesModelTests
     public async Task OnPostAsync_TwoFactorEnabled_GeneratesCodesAndRedirects()
     {
         // Arrange
-        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
-            storeMock.Object, null, null, null, null, null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
 
         var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
         userManagerMock
@@ -161,9 +144,7 @@ public class GenerateRecoveryCodesModelTests
     public async Task OnGetAsync_UserNotFound_ReturnsNotFoundWithUserIdMessage()
     {
         // Arrange
-        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
-            storeMock.Object, null, null, null, null, null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
 
         // Simulate no user found
         userManagerMock
@@ -204,9 +185,7 @@ public class GenerateRecoveryCodesModelTests
     public async Task OnGetAsync_TwoFactorEnabledFlag_BehavesAsExpected(bool isTwoFactorEnabled)
     {
         // Arrange
-        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
-            storeMock.Object, null, null, null, null, null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
 
         var user = new IdentityUser<Guid>();
         userManagerMock

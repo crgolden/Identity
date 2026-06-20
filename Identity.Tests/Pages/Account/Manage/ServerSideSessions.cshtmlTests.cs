@@ -1,5 +1,3 @@
-#pragma warning disable CS8604
-#pragma warning disable CS8625
 namespace Identity.Tests.Pages.Account.Manage;
 using Infrastructure;
 
@@ -18,24 +16,20 @@ public class ServerSideSessionsIndexModelTests
     [Fact]
     public void Constructor_NullService_DoesNotThrow()
     {
-        // Arrange & Act
-        ServerSideSessionsModel model = null!;
-        var ex = Record.Exception(() => model = new ServerSideSessionsModel());
+        // Act
+        var model = new ServerSideSessionsModel();
 
         // Assert
-        Assert.Null(ex);
         Assert.NotNull(model);
     }
 
     [Fact]
     public void Constructor_NoService_DefaultConstructor_DoesNotThrow()
     {
-        // Arrange & Act
-        ServerSideSessionsModel model = null!;
-        var ex = Record.Exception(() => model = new ServerSideSessionsModel());
+        // Act
+        var model = new ServerSideSessionsModel();
 
         // Assert
-        Assert.Null(ex);
         Assert.NotNull(model);
         Assert.IsType<PageModel>(model, exactMatch: false);
     }
@@ -73,7 +67,7 @@ public class ServerSideSessionsIndexModelTests
         // Arrange
         var mockService = new Mock<ISessionManagementService>(MockBehavior.Strict);
         mockService
-            .Setup(x => x.RemoveSessionsAsync(It.IsAny<RemoveSessionsContext>()))
+            .Setup(x => x.RemoveSessionsAsync(It.IsAny<RemoveSessionsContext>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         var model = CreateModel(mockService.Object);
@@ -83,7 +77,7 @@ public class ServerSideSessionsIndexModelTests
         var result = await model.OnPostAsync();
 
         // Assert
-        mockService.Verify(x => x.RemoveSessionsAsync(It.IsAny<RemoveSessionsContext>()), Times.Once);
+        mockService.Verify(x => x.RemoveSessionsAsync(It.IsAny<RemoveSessionsContext>(), It.IsAny<CancellationToken>()), Times.Once);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("/Account/Manage/ServerSideSessions", redirect.PageName);
     }

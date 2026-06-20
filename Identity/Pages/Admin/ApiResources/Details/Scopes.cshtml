@@ -1,0 +1,22 @@
+@page "{id:int}"
+@model Identity.Pages.Admin.ApiResources.Details.ScopesModel
+@{
+    ViewData["Title"] = $"Scopes – {Model.Resource.Name}";
+}
+
+<h1>@Model.Resource.Name — Scopes</h1>
+
+<table class="table table-bordered table-hover table-sm">
+    <thead class="table-light">
+        <tr><th>Scope</th></tr>
+    </thead>
+    <tbody>
+        @foreach (var scope in Model.Scopes)
+        {
+            <tr><td>@scope.Scope</td></tr>
+        }
+    </tbody>
+</table>
+
+<a id="btn-edit" asp-page="../Edit/Scopes" asp-route-id="@Model.Resource.Id" class="btn btn-primary">Edit</a>
+<a id="btn-back" asp-page="./Index" asp-route-id="@Model.Resource.Id" class="btn btn-outline-secondary">Back</a>

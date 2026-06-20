@@ -3,9 +3,7 @@ using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Threading.Channels;
-using Azure.Core;
 using Azure.Identity;
-using Azure.Messaging.ServiceBus;
 using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Azure.Security.KeyVault.Secrets;
 using Duende.IdentityServer;
@@ -38,11 +36,6 @@ try
 {
     var builder = WebApplication.CreateBuilder(args);
     string googleClientId, googleClientSecret, gravatarApiSecretKey, reCAPTCHASiteKey, reCAPTCHASecretKey;
-    var serviceBusSenderFactory = (ServiceBusClientOptions _, TokenCredential _, IServiceProvider sp) =>
-    {
-        var serviceBusClient = sp.GetRequiredService<ServiceBusClient>();
-        return serviceBusClient.CreateSender("email");
-    };
     var sqlConnectionStringBuilderSection = builder.Configuration.GetRequiredSection(nameof(SqlConnectionStringBuilder));
     var sqlConnectionStringBuilder = sqlConnectionStringBuilderSection.Get<SqlConnectionStringBuilder>() ?? throw new InvalidOperationException($"Invalid '{nameof(SqlConnectionStringBuilder)}' section.");
     var corsPolicySection = builder.Configuration.GetRequiredSection(nameof(CorsPolicy));
@@ -107,7 +100,9 @@ try
             .WithMetrics(meterProviderBuilder => meterProviderBuilder
                 .AddMeter(Duende.IdentityServer.Telemetry.ServiceName)
                 .AddMeter(nameof(Identity))
-                .AddRuntimeInstrumentation())
+                .AddRuntimeInstrumentation()
+                .AddView(instrument =>
+                    instrument.Meter.Name == "System.Net.Http" ? MetricStreamConfiguration.Drop : null))
             .WithTracing(tracerProviderBuilder => tracerProviderBuilder
                 .SetSampler(new AlwaysOnSampler())
                 .AddSource(nameof(Identity))
@@ -125,8 +120,7 @@ try
             .AddAzureClients(azureClientFactoryBuilder =>
             {
                 azureClientFactoryBuilder.UseCredential(tokenCredential);
-                azureClientFactoryBuilder.AddServiceBusClientWithNamespace(serviceBusNamespace);
-                azureClientFactoryBuilder.AddClient(serviceBusSenderFactory).WithName("email");
+                azureClientFactoryBuilder.AddServiceBusClientWithNamespace(serviceBusNamespace).WithName("crgolden");
             });
     }
     else
@@ -149,6 +143,11 @@ try
         reCAPTCHASiteKey = secrets.ReCAPTCHASiteKey;
         reCAPTCHASecretKey = secrets.ReCAPTCHASecretKey;
         builder.Services
+            .Configure<ReCAPTCHAOptions>(recaptchaOptions =>
+            {
+                recaptchaOptions.AdminEmail = secrets.AdminEmail;
+                recaptchaOptions.TestEmail = secrets.TestEmail;
+            })
             .AddSerilog((serviceProvider, loggerConfiguration) => loggerConfiguration
                 .ReadFrom.Configuration(builder.Configuration)
                 .ReadFrom.Services(serviceProvider)
@@ -157,8 +156,7 @@ try
             .UseEphemeralDataProtectionProvider().Services
             .AddAzureClients(azureClientFactoryBuilder =>
             {
-                azureClientFactoryBuilder.AddServiceBusClient(secrets.ServiceBusConnectionString);
-                azureClientFactoryBuilder.AddClient(serviceBusSenderFactory).WithName("email");
+                azureClientFactoryBuilder.AddServiceBusClient(secrets.ServiceBusConnectionString).WithName("crgolden");
             });
     }
 
@@ -234,7 +232,14 @@ try
             forwardedHeadersOptions.KnownIPNetworks.Clear();
             forwardedHeadersOptions.KnownProxies.Clear();
         })
-        .AddRazorPages().Services
+        .AddAuthorization(authorizationOptions =>
+        {
+            authorizationOptions.AddPolicy("Admin", policy => policy.RequireRole("Admin"));
+        })
+        .AddRazorPages(razorPagesOptions =>
+        {
+            razorPagesOptions.Conventions.AuthorizeFolder("/Admin", "Admin");
+        }).Services
         .AddProblemDetails()
         .AddHealthChecks()
         .AddDbContextCheck<ApplicationDbContext>();

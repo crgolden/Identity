@@ -1,0 +1,45 @@
+@page
+@model CorsOriginsModel
+
+@{
+    ViewData["Title"] = "Edit Client CORS Origins";
+}
+
+<h1>Edit Client CORS Origins</h1>
+
+<form method="post" data-collection-form>
+    <table class="table table-bordered table-sm" data-collection="CorsOrigins">
+        <thead class="table-light">
+            <tr>
+                <th>Origin</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (var i = 0; i < Model.CorsOrigins.Count; i++)
+            {
+                <tr data-row>
+                    <input type="hidden" name="CorsOrigins[@i].Id" value="@Model.CorsOrigins[i].Id" />
+                    <td><input name="CorsOrigins[@i].Origin" value="@Model.CorsOrigins[i].Origin" class="form-control form-control-sm" aria-label="CORS origin" /></td>
+                    <td><button type="button" class="btn btn-sm btn-danger" data-remove-row>Remove</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <template data-for="CorsOrigins">
+        <tr data-row>
+            <input type="hidden" name="CorsOrigins[-1].Id" value="0" />
+            <td><input name="CorsOrigins[-1].Origin" class="form-control form-control-sm" aria-label="CORS origin" /></td>
+            <td><button type="button" class="btn btn-sm btn-danger" data-remove-row>Remove</button></td>
+        </tr>
+    </template>
+    <button id="btn-add-row" type="button" class="btn btn-sm btn-outline-secondary mb-3" data-add-for="CorsOrigins">Add</button>
+    <div>
+        <button id="save-submit" type="submit" asp-route-id="@Model.Client.Id" class="btn btn-primary">Save</button>
+        <a asp-page="/Admin/Clients/Details/CorsOrigins" asp-route-id="@Model.Client.Id" class="btn btn-outline-secondary ms-1">Cancel</a>
+    </div>
+</form>
+
+@section Scripts {
+    <script src="~/js/admin-collection.js"></script>
+}

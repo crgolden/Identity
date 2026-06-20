@@ -1,0 +1,14 @@
+@page
+@model Identity.Pages.Admin.PushedAuthorizationRequests.DeleteModel
+@{
+    ViewData["Title"] = "Delete Pushed Authorization Request";
+}
+
+<h1>Delete Pushed Authorization Request</h1>
+
+<div class="alert alert-danger">Are you sure you want to delete pushed authorization request <strong>@Model.PushedAuthorizationRequest.Id</strong>?</div>
+
+<form method="post">
+    <button id="delete-submit" type="submit" class="btn btn-danger">Delete</button>
+    <a asp-page="./Index" class="btn btn-outline-secondary">Cancel</a>
+</form>

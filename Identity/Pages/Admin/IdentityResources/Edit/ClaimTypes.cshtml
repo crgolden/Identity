@@ -1,0 +1,16 @@
+@page "{id:int}"
+@model Identity.Pages.Admin.IdentityResources.Edit.ClaimTypesModel
+@{
+    ViewData["Title"] = "Edit Claim Types";
+    var rows = Model.ClaimTypes.Select(c => new ClaimTypeRow(c.Id, c.Type)).ToList();
+    var cancelHref = Url.Page("/Admin/IdentityResources/Details/ClaimTypes", new { id = Request.RouteValues["id"] });
+}
+
+<h1>Edit Claim Types</h1>
+
+@await Html.PartialAsync("~/Pages/Admin/Shared/_EditClaimTypesForm.cshtml", rows,
+    new ViewDataDictionary(ViewData) { { "CancelHref", cancelHref } })
+
+@section Scripts {
+    <script src="~/js/admin-collection.js"></script>
+}

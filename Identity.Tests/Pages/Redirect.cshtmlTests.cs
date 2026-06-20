@@ -1,5 +1,3 @@
-#pragma warning disable CS8604
-#pragma warning disable CS8625
 namespace Identity.Tests.Pages;
 using Infrastructure;
 
@@ -17,12 +15,10 @@ public class RedirectIndexModelTests
     [Fact]
     public void Constructor_NoParameters_DoesNotThrow()
     {
-        // Arrange & Act
-        RedirectModel model = null!;
-        var ex = Record.Exception(() => model = new RedirectModel());
+        // Act
+        var model = new RedirectModel();
 
         // Assert
-        Assert.Null(ex);
         Assert.NotNull(model);
         Assert.IsType<PageModel>(model, exactMatch: false);
     }

@@ -1,0 +1,13 @@
+@page "{id:int}"
+@model Identity.Pages.Admin.ApiScopes.Details.PropertiesModel
+@{
+    ViewData["Title"] = "API Scope Properties";
+}
+
+<h1>Properties: @Model.Scope.Name</h1>
+
+@await Html.PartialAsync("~/Pages/Admin/Shared/_DetailsPropertiesTable.cshtml",
+    (Model.Scope.Properties ?? []).Select(p => new PropertyRow(p.Id, p.Key, p.Value)))
+
+<a id="btn-back" asp-page="./Index" asp-route-id="@Model.Scope.Id" class="btn btn-outline-secondary btn-sm">Back</a>
+<a id="btn-edit" asp-page="../Edit/Properties" asp-route-id="@Model.Scope.Id" class="btn btn-outline-secondary btn-sm">Edit</a>

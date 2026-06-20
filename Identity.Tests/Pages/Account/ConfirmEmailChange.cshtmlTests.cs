@@ -1,4 +1,3 @@
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account;
 using Infrastructure;
 
@@ -54,44 +53,6 @@ public class ConfirmEmailChangeModelTests
         // Additional behavioral assertions may be added once dependencies can be provided.
     }
 
-    [Fact]
-    public void Constructor_NullParameters_ThrowsIfValidated()
-    {
-        // Arrange
-        // Provide nulls for the dependencies to exercise null-argument behavior.
-        var targetType = typeof(ConfirmEmailChangeModel);
-
-        // Act & Assert
-        // We accept either:
-        //  - the constructor throws an ArgumentNullException for null arguments (defensive),
-        //  - or the constructor successfully constructs an instance (non-defensive).
-        // Any other exception type or missing constructor will fail the test.
-        var ctor = (System.Reflection.ConstructorInfo?)null;
-        foreach (var c in targetType.GetConstructors())
-        {
-            if (c.GetParameters().Length == 2)
-            {
-                ctor = c;
-                break;
-            }
-        }
-
-        if (ctor == null)
-        {
-            throw new InvalidOperationException("No constructor with two parameters was found on ConfirmEmailChangeModel.");
-        }
-
-        try
-        {
-            var instance = ctor.Invoke([null, null]);
-            Assert.NotNull(instance);
-        }
-        catch (System.Reflection.TargetInvocationException tie) when (tie.InnerException is ArgumentNullException)
-        {
-            // Expected defensive behavior: the constructor validated arguments and threw ArgumentNullException.
-        }
-    }
-
     [Theory]
     [InlineData(null, "user@example.com", "code")]
     [InlineData("userId", null, "code")]
@@ -99,9 +60,8 @@ public class ConfirmEmailChangeModelTests
     public async Task OnGetAsync_NullParameters_RedirectsToIndex(string? userId, string? email, string? code)
     {
         // Arrange
-        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock.Object, null, null, null, null, null, null, null, null);
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(userManagerMock.Object, Mock.Of<IHttpContextAccessor>(), Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(), null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
+        var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
         var model = new ConfirmEmailChangeModel(userManagerMock.Object, signInManagerMock.Object);
 
         // Act
@@ -120,10 +80,9 @@ public class ConfirmEmailChangeModelTests
         const string email = "user@example.com";
         const string token = "tok";
         var encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
-        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock.Object, null, null, null, null, null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
         userManagerMock.Setup(um => um.FindByIdAsync(It.Is<string>(s => s == userId))).ReturnsAsync((IdentityUser<Guid>?)null);
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(userManagerMock.Object, Mock.Of<IHttpContextAccessor>(), Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(), null, null, null, null);
+        var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
         var model = new ConfirmEmailChangeModel(userManagerMock.Object, signInManagerMock.Object);
 
         // Act
@@ -146,11 +105,10 @@ public class ConfirmEmailChangeModelTests
         {
             Id = Guid.NewGuid()
         };
-        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock.Object, null, null, null, null, null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
         userManagerMock.Setup(um => um.FindByIdAsync(It.Is<string>(s => s == userId))).ReturnsAsync(user);
         userManagerMock.Setup(um => um.ChangeEmailAsync(It.IsAny<IdentityUser<Guid>>(), It.Is<string>(s => s == email), It.Is<string>(s => s == token))).ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "invalid token" }));
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(userManagerMock.Object, Mock.Of<IHttpContextAccessor>(), Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(), null, null, null, null);
+        var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
         var model = new ConfirmEmailChangeModel(userManagerMock.Object, signInManagerMock.Object);
 
         // Act
@@ -173,12 +131,11 @@ public class ConfirmEmailChangeModelTests
         {
             Id = Guid.NewGuid()
         };
-        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock.Object, null, null, null, null, null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
         userManagerMock.Setup(um => um.FindByIdAsync(It.Is<string>(s => s == userId))).ReturnsAsync(user);
         userManagerMock.Setup(um => um.ChangeEmailAsync(It.IsAny<IdentityUser<Guid>>(), It.Is<string>(s => s == email), It.Is<string>(s => s == token))).ReturnsAsync(IdentityResult.Success);
         userManagerMock.Setup(um => um.SetUserNameAsync(It.IsAny<IdentityUser<Guid>>(), It.Is<string>(s => s == email))).ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "set user name failed" }));
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(userManagerMock.Object, Mock.Of<IHttpContextAccessor>(), Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(), null, null, null, null);
+        var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
         var model = new ConfirmEmailChangeModel(userManagerMock.Object, signInManagerMock.Object);
 
         // Act
@@ -201,12 +158,11 @@ public class ConfirmEmailChangeModelTests
         {
             Id = Guid.NewGuid()
         };
-        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock.Object, null, null, null, null, null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
         userManagerMock.Setup(um => um.FindByIdAsync(It.Is<string>(s => s == userId))).ReturnsAsync(user);
         userManagerMock.Setup(um => um.ChangeEmailAsync(It.IsAny<IdentityUser<Guid>>(), It.Is<string>(s => s == email), It.Is<string>(s => s == token))).ReturnsAsync(IdentityResult.Success);
         userManagerMock.Setup(um => um.SetUserNameAsync(It.IsAny<IdentityUser<Guid>>(), It.Is<string>(s => s == email))).ReturnsAsync(IdentityResult.Success);
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(userManagerMock.Object, Mock.Of<IHttpContextAccessor>(), Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(), null, null, null, null);
+        var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
         signInManagerMock.Setup(s => s.RefreshSignInAsync(It.IsAny<IdentityUser<Guid>>())).Returns(Task.CompletedTask).Verifiable();
         var model = new ConfirmEmailChangeModel(userManagerMock.Object, signInManagerMock.Object);
 
@@ -228,9 +184,8 @@ public class ConfirmEmailChangeModelTests
         const string userId = "user-4";
         const string token = "var-token";
         var encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
-        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock.Object, null, null, null, null, null, null, null, null);
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(userManagerMock.Object, Mock.Of<IHttpContextAccessor>(), Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(), null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
+        var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
         var model = new ConfirmEmailChangeModel(userManagerMock.Object, signInManagerMock.Object);
 
         // Act
@@ -253,12 +208,11 @@ public class ConfirmEmailChangeModelTests
         {
             Id = Guid.NewGuid()
         };
-        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock.Object, null, null, null, null, null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
         userManagerMock.Setup(um => um.FindByIdAsync(It.Is<string>(s => s == userId))).ReturnsAsync(user);
         userManagerMock.Setup(um => um.ChangeEmailAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(IdentityResult.Success);
         userManagerMock.Setup(um => um.SetUserNameAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>())).ReturnsAsync(IdentityResult.Success);
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(userManagerMock.Object, Mock.Of<IHttpContextAccessor>(), Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(), null, null, null, null);
+        var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
         signInManagerMock.Setup(s => s.RefreshSignInAsync(It.IsAny<IdentityUser<Guid>>())).Returns(Task.CompletedTask);
         var model = new ConfirmEmailChangeModel(userManagerMock.Object, signInManagerMock.Object);
 

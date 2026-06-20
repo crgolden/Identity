@@ -1,0 +1,30 @@
+@page "{id}"
+@model Identity.Pages.Admin.Roles.Edit.UsersModel
+
+@{
+    ViewData["Title"] = "Role Users";
+}
+
+<h1>Users in @Model.AppRole.Name</h1>
+
+<p class="text-muted">To add or remove a user from this role, edit the user's roles from the Users admin section.</p>
+
+<table class="table table-bordered table-hover table-sm">
+    <thead class="table-light">
+        <tr>
+            <th>Username</th>
+            <th>Email</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var user in Model.Users)
+        {
+            <tr>
+                <td>@user.UserName</td>
+                <td>@user.Email</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<a id="btn-back" asp-page="/Admin/Roles/Details/Index" asp-route-id="@Model.AppRole.Id" class="btn btn-outline-secondary">Back</a>

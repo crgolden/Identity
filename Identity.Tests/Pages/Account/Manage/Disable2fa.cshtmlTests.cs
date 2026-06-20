@@ -1,4 +1,3 @@
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account.Manage;
 using Infrastructure;
 
@@ -19,9 +18,7 @@ public class Disable2faModelTests
     {
         // Arrange
         var expectedId = "expected-user-id";
-        var userStoreMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
-            userStoreMock.Object, null, null, null, null, null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
 
         userManagerMock
             .Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
@@ -57,9 +54,7 @@ public class Disable2faModelTests
     public async Task OnGet_TwoFactorState_BehavesAsExpected(bool twoFactorEnabled)
     {
         // Arrange
-        var userStoreMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
-            userStoreMock.Object, null, null, null, null, null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
 
         var existingUser = new IdentityUser<Guid>();
 
@@ -100,8 +95,7 @@ public class Disable2faModelTests
     {
         // Arrange
         var userId = "missing-user-id";
-        var userStoreMock = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(userStoreMock, null, null, null, null, null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
         userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
             .ReturnsAsync((IdentityUser<Guid>?)null);
         userManagerMock.Setup(um => um.GetUserId(It.IsAny<ClaimsPrincipal>()))
@@ -131,8 +125,7 @@ public class Disable2faModelTests
     public async Task OnPostAsync_DisableFails_ThrowsInvalidOperationException()
     {
         // Arrange
-        var userStoreMock = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(userStoreMock, null, null, null, null, null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
 
         var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
         userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
@@ -161,8 +154,7 @@ public class Disable2faModelTests
     {
         // Arrange
         var userId = "user-123";
-        var userStoreMock = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(userStoreMock, null, null, null, null, null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
 
         var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
         userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))

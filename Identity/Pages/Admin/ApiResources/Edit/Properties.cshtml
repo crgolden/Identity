@@ -1,0 +1,16 @@
+@page "{id:int}"
+@model Identity.Pages.Admin.ApiResources.Edit.PropertiesModel
+@{
+    ViewData["Title"] = $"Edit Properties – {Model.ResourceName}";
+    var rows = Model.Properties.Select(p => new PropertyRow(p.Id, p.Key, p.Value)).ToList();
+    var cancelHref = Url.Page("/Admin/ApiResources/Details/Properties", new { id = Request.RouteValues["id"] });
+}
+
+<h1>@Model.ResourceName — Edit Properties</h1>
+
+@await Html.PartialAsync("~/Pages/Admin/Shared/_EditPropertiesForm.cshtml", rows,
+    new ViewDataDictionary(ViewData) { { "CancelHref", cancelHref } })
+
+@section Scripts {
+    <script src="~/js/admin-collection.js"></script>
+}

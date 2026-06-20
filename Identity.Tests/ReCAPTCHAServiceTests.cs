@@ -1,10 +1,8 @@
 namespace Identity.Tests;
 
 using System.Net;
-using System.Net.Http.Json;
 using Identity;
 using Infrastructure;
-using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
 using Moq.Protected;
@@ -132,6 +130,6 @@ public class ReCAPTCHAServiceTests
         };
         var optionsMock = new Mock<IOptions<ReCAPTCHAOptions>>(MockBehavior.Strict);
         optionsMock.Setup(o => o.Value).Returns(new ReCAPTCHAOptions { SecretKey = secretKey, AdminEmail = adminEmail, TestEmail = testEmail });
-        return new ReCAPTCHAService(httpClient, optionsMock.Object, NullLogger<ReCAPTCHAService>.Instance);
+        return new ReCAPTCHAService(httpClient, optionsMock.Object);
     }
 }

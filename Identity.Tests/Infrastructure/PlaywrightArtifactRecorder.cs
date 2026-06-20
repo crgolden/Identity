@@ -2,7 +2,6 @@ using System.Collections.Concurrent;
 using System.Reflection;
 using System.Text.Json;
 using Microsoft.Playwright;
-using Xunit;
 using Xunit.v3;
 
 [assembly: Identity.Tests.Infrastructure.PlaywrightArtifactFinalizer]

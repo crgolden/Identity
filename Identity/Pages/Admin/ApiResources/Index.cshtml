@@ -1,0 +1,36 @@
+@page
+@model Identity.Pages.Admin.ApiResources.IndexModel
+@{
+    ViewData["Title"] = "API Resources";
+}
+
+<h1>API Resources</h1>
+<a id="btn-create" asp-page="./Create" class="btn btn-primary mb-3">Create New</a>
+
+<table class="table table-bordered table-hover table-sm">
+    <thead class="table-light">
+        <tr>
+            <th>Name</th>
+            <th>Display Name</th>
+            <th>Enabled</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var resource in Model.ApiResources)
+        {
+            <tr>
+                <td>@resource.Name</td>
+                <td>@resource.DisplayName</td>
+                <td>@resource.Enabled</td>
+                <td>
+                    <a id="details-@resource.Id" asp-page="./Details/Index" asp-route-id="@resource.Id" class="btn btn-sm btn-outline-secondary">Details</a>
+                    <a id="edit-@resource.Id" asp-page="./Edit/Index" asp-route-id="@resource.Id" class="btn btn-sm btn-outline-secondary">Edit</a>
+                    <a id="delete-@resource.Id" asp-page="./Delete" asp-route-id="@resource.Id" class="btn btn-sm btn-danger">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<a id="btn-back" asp-page="/Admin/Index" class="btn btn-outline-secondary">Back</a>

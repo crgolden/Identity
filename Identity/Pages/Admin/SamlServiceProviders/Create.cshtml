@@ -1,0 +1,29 @@
+@page
+@model Identity.Pages.Admin.SamlServiceProviders.CreateModel
+@{
+    ViewData["Title"] = "Create SAML Service Provider";
+}
+
+<h1>Create SAML Service Provider</h1>
+
+<form method="post">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="mb-3">
+        <label asp-for="SamlServiceProvider.EntityId" class="form-label"></label>
+        <input asp-for="SamlServiceProvider.EntityId" class="form-control" />
+    </div>
+    <div class="mb-3">
+        <label asp-for="SamlServiceProvider.DisplayName" class="form-label"></label>
+        <input asp-for="SamlServiceProvider.DisplayName" class="form-control" />
+    </div>
+    <div class="mb-3">
+        <label asp-for="SamlServiceProvider.Description" class="form-label"></label>
+        <input asp-for="SamlServiceProvider.Description" class="form-control" />
+    </div>
+    <div class="mb-3 form-check">
+        <input asp-for="SamlServiceProvider.Enabled" class="form-check-input" />
+        <label asp-for="SamlServiceProvider.Enabled" class="form-check-label"></label>
+    </div>
+    <button id="create-submit" type="submit" class="btn btn-primary">Create</button>
+    <a asp-page="./Index" class="btn btn-outline-secondary">Cancel</a>
+</form>

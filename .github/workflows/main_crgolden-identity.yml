@@ -82,6 +82,9 @@ jobs:
       - name: Install dotnet-coverage
         run: dotnet tool install --global dotnet-coverage
 
+      - name: Restore local tools
+        run: dotnet tool restore
+
       - name: Begin Sonar analysis
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -94,8 +97,10 @@ jobs:
             /o:"$env:SONAR_ORGANIZATION" `
             /d:sonar.token="$env:SONAR_TOKEN" `
             /d:sonar.host.url="https://sonarcloud.io" `
-            /d:sonar.cs.vscoveragexml.reportsPaths="coverage.xml,coverage-e2e.xml" `
+            /d:sonar.cs.opencover.reportsPaths="coverage.opencover.xml" `
+            /d:sonar.cs.vscoveragexml.reportsPaths="coverage-e2e.xml" `
             /d:sonar.exclusions="**/bin/**,**/obj/**" `
+            /d:sonar.coverage.exclusions="**/Program.cs" `
             /d:sonar.scanner.skipJreProvisioning=true
 
       - name: Build with dotnet
@@ -103,9 +108,17 @@ jobs:
 
       - name: Run unit tests with coverage
         run: |
-          dotnet-coverage collect `
-            "dotnet test --project Identity.Tests --no-build --configuration Release -- --filter-trait Category=Unit --report-xunit-trx --report-xunit-trx-filename unit-tests.trx" `
-            -f xml -o "coverage.xml" -s "coverage.settings.xml"
+          dotnet coverlet Identity.Tests\bin\Release\net10.0 `
+            --target "dotnet" `
+            --targetargs "test --project Identity.Tests --no-build --configuration Release -- --filter-trait Category=Unit --report-xunit-trx --report-xunit-trx-filename unit-tests.trx" `
+            --format opencover --output "coverage.opencover.xml" `
+            --skipautoprops `
+            --exclude-by-attribute GeneratedCodeAttribute `
+            --exclude-by-file "**/obj/**" `
+            --exclude-by-file "**/Program.cs" `
+            --does-not-return-attribute DoesNotReturnAttribute `
+            --include "[Identity]*" `
+            --exclude "[Identity]*Pages_*"
 
       - name: Install SqlPackage
         run: dotnet tool install --global microsoft.sqlpackage

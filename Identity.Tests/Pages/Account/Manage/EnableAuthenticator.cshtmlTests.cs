@@ -1,5 +1,3 @@
-#pragma warning disable CS8604 // Possible null reference argument.
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account.Manage;
 using Infrastructure;
 
@@ -24,27 +22,7 @@ public partial class EnableAuthenticatorModelTests
         // Arrange
         var urlEncoderMock = new Mock<UrlEncoder>(MockBehavior.Strict);
 
-        // Create a minimal UserManager required to construct the model.
-        var store = new Mock<IUserStore<IdentityUser<Guid>>>().Object;
-        var options = Options.Create(new IdentityOptions());
-        var passwordHasher = new PasswordHasher<IdentityUser<Guid>>();
-        var userValidators = new List<IUserValidator<IdentityUser<Guid>>>();
-        var pwdValidators = new List<IPasswordValidator<IdentityUser<Guid>>>();
-        var keyNormalizer = new UpperInvariantLookupNormalizer();
-        var errors = new IdentityErrorDescriber();
-        IServiceProvider? services = null;
-        var umLogger = new Mock<ILogger<UserManager<IdentityUser<Guid>>>>().Object;
-
-        var userManager = new UserManager<IdentityUser<Guid>>(
-            store,
-            options,
-            passwordHasher,
-            userValidators,
-            pwdValidators,
-            keyNormalizer,
-            errors,
-            services,
-            umLogger);
+        var userManager = MockHelpers.MockUserManager().Object;
 
         // Act & Assert
         var model = new EnableAuthenticatorModel(userManager, urlEncoderMock.Object);
@@ -55,8 +33,7 @@ public partial class EnableAuthenticatorModelTests
     public async Task OnPostAsync_UserNotFound_ReturnsNotFoundObjectResult()
     {
         // Arrange
-        var storeMock = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock, null, null, null, null, null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
         var urlEncoder = UrlEncoder.Default;
 
         var expectedId = "missing-user-id";
@@ -81,17 +58,7 @@ public partial class EnableAuthenticatorModelTests
     public async Task OnPostAsync_ModelStateInvalid_ReturnsPageResult()
     {
         // Arrange
-        var storeMock = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
-            storeMock,
-            Options.Create(new IdentityOptions { Tokens = new TokenOptions { AuthenticatorTokenProvider = "Authenticator" } }),
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null);
+        var userManagerMock = MockHelpers.MockUserManager();
         var urlEncoder = UrlEncoder.Default;
 
         var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
@@ -121,9 +88,7 @@ public partial class EnableAuthenticatorModelTests
     public async Task OnPostAsync_InvalidVerificationCode_AddsModelErrorAndReturnsPage()
     {
         // Arrange
-        var storeMock = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var options = Options.Create(new IdentityOptions { Tokens = new TokenOptions { AuthenticatorTokenProvider = "Authenticator" } });
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock, options, null, null, null, null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
         var urlEncoder = UrlEncoder.Default;
 
         var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
@@ -170,8 +135,7 @@ public partial class EnableAuthenticatorModelTests
     public async Task OnPostAsync_ValidToken_RedirectsBasedOnRecoveryCodesCount(int existingRecoveryCount, string expectedPage)
     {
         // Arrange
-        var storeMock = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock, null, null, null, null, null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
         var urlEncoder = UrlEncoder.Default;
 
         var user = new IdentityUser<Guid> { Id = Guid.NewGuid(), UserName = "testuser", Email = "user@test.com" };
@@ -233,18 +197,7 @@ public partial class EnableAuthenticatorModelTests
     public async Task OnGetAsync_UserNotFound_ReturnsNotFoundWithMessage()
     {
         // Arrange
-        var userStoreMock = new Mock<IUserStore<IdentityUser<Guid>>>().Object;
-        var identityOptions = Options.Create(new IdentityOptions());
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
-            userStoreMock,
-            identityOptions,
-            Mock.Of<IPasswordHasher<IdentityUser<Guid>>>(),
-            Enumerable.Empty<IUserValidator<IdentityUser<Guid>>>(),
-            Enumerable.Empty<IPasswordValidator<IdentityUser<Guid>>>(),
-            Mock.Of<ILookupNormalizer>(),
-            new IdentityErrorDescriber(),
-            Mock.Of<IServiceProvider>(),
-            Mock.Of<ILogger<UserManager<IdentityUser<Guid>>>>());
+        var userManagerMock = MockHelpers.MockUserManager();
 
         var expectedId = "expected-id-123";
         userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))

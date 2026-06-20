@@ -1,0 +1,35 @@
+@page "{id}"
+@model Identity.Pages.Admin.Users.Edit.PasskeysModel
+@using static System.Buffers.Text.Base64Url
+@{
+    ViewData["Title"] = "Edit User Passkeys";
+}
+
+<h1>@Model.AppUser.UserName — Edit Passkeys</h1>
+
+<table class="table table-bordered table-sm">
+    <thead class="table-light">
+        <tr>
+            <th>Name</th>
+            <th>Created</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var pk in Model.Passkeys)
+        {
+            <tr>
+                <td>@pk.Name</td>
+                <td>@pk.CreatedAt</td>
+                <td>
+                    <form method="post" asp-page-handler="Remove">
+                        <input type="hidden" name="credentialId" value="@EncodeToString(pk.CredentialId)" />
+                        <button type="submit" class="btn btn-sm btn-danger">Remove</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<a id="btn-back" asp-page="../Details/Passkeys" asp-route-id="@Model.AppUser.Id" class="btn btn-outline-secondary">Back</a>

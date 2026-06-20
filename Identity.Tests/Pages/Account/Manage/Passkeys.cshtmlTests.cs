@@ -1,236 +1,322 @@
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account.Manage;
-using Infrastructure;
 
+using System.Buffers.Text;
 using System.Security.Claims;
 using Identity.Pages.Account.Manage;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Http;
+using Identity.Tests.Infrastructure;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Moq;
 
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
-public partial class PasskeysModelTests
+public sealed class PasskeysModelTests
 {
-    public static IEnumerable<object?[]> CredentialIdNullOrEmptyData()
-    {
-        // MemberData supports null values via object?[]
-        yield return [null];
-        yield return [string.Empty];
-    }
+    private const string ValidCredentialId = "AQID"; // Base64Url of [1, 2, 3]
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public void PasskeysModel_Ctor_ValidManagers_PropertiesInitializedToNull(bool useSingleValidator)
+    [Fact]
+    public void Constructor_ValidManagers_InitializesProperties()
     {
         // Arrange
-        // Prepare a minimal IUserStore required by UserManager constructor.
-        var userStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-
-        // Prepare optional dependencies for UserManager
-        var options = Mock.Of<IOptions<IdentityOptions>>();
-        var passwordHasher = Mock.Of<IPasswordHasher<IdentityUser<Guid>>>();
-        IEnumerable<IUserValidator<IdentityUser<Guid>>> userValidators = useSingleValidator
-            ? [Mock.Of<IUserValidator<IdentityUser<Guid>>>()]
-            : [];
-        IEnumerable<IPasswordValidator<IdentityUser<Guid>>> passwordValidators = [];
-        var lookupNormalizer = Mock.Of<ILookupNormalizer>();
-        var errorDescriber = new IdentityErrorDescriber();
-        var services = Mock.Of<IServiceProvider>();
-        var userManagerLogger = Mock.Of<ILogger<UserManager<IdentityUser<Guid>>>>();
-
-        // Create UserManager mock with required constructor arguments
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
-            userStore,
-            options,
-            passwordHasher,
-            userValidators,
-            passwordValidators,
-            lookupNormalizer,
-            errorDescriber,
-            services,
-            userManagerLogger);
-
-        // Prepare dependencies for SignInManager
-        var httpContextAccessor = Mock.Of<IHttpContextAccessor>();
-        var claimsFactory = Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>();
-        var signInOptions = Mock.Of<IOptions<IdentityOptions>>();
-        var signInLogger = Mock.Of<ILogger<SignInManager<IdentityUser<Guid>>>>();
-        var schemes = Mock.Of<IAuthenticationSchemeProvider>();
-        var userConfirmation = Mock.Of<IUserConfirmation<IdentityUser<Guid>>>();
-
-        // Create SignInManager mock with the UserManager instance
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManagerMock.Object,
-            httpContextAccessor,
-            claimsFactory,
-            signInOptions,
-            signInLogger,
-            schemes,
-            userConfirmation);
+        var userManager = MockHelpers.MockUserManager();
+        var signInManager = MockHelpers.MockSignInManager(userManager.Object);
 
         // Act
-        var model = new PasskeysModel(userManagerMock.Object, signInManagerMock.Object);
+        var model = new PasskeysModel(userManager.Object, signInManager.Object);
 
         // Assert
-        Assert.NotNull(model); // model constructed successfully
-        Assert.NotNull(model.CurrentPasskeys); // list initialized to empty by constructor
+        Assert.NotNull(model.CurrentPasskeys);
         Assert.Empty(model.CurrentPasskeys);
-        Assert.NotNull(model.Input); // Input property initialized with default InputModel by constructor
-        Assert.Null(model.StatusMessage); // StatusMessage default (not set) after construction
+        Assert.NotNull(model.Input);
+        Assert.Null(model.StatusMessage);
     }
 
     [Fact]
-    public async Task OnPostAddPasskeyAsync_UserNotFound_ReturnsNotFound()
+    public async Task OnGetAsync_UserNotFound_ReturnsNotFound()
     {
         // Arrange
-        var mockStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var mockUserManager = new Mock<UserManager<IdentityUser<Guid>>>(mockStore, null, null, null, null, null, null, null, null);
-        mockUserManager
-            .Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
-            .ReturnsAsync((IdentityUser<Guid>?)null);
-        mockUserManager
-            .Setup(m => m.GetUserId(It.IsAny<ClaimsPrincipal>()))
-            .Returns("the-user-id");
-
-        var mockSignInManager = new Mock<SignInManager<IdentityUser<Guid>>>(
-            mockUserManager.Object,
-            Mock.Of<IHttpContextAccessor>(),
-            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
-            null,
-            Mock.Of<ILogger<SignInManager<IdentityUser<Guid>>>>(),
-            null,
-            null);
-
-        var model = new PasskeysModel(mockUserManager.Object, mockSignInManager.Object);
-
-        // Act
-        var result = await model.OnPostAddPasskeyAsync();
-
-        // Assert
-        var notFound = Assert.IsType<NotFoundObjectResult>(result);
-        Assert.Contains("Unable to load user with ID 'the-user-id'", notFound.Value?.ToString() ?? string.Empty);
-    }
-
-#pragma warning disable S2699
-    [Fact]
-    public async Task OnPostAddPasskeyAsync_AttestationFails_RedirectsWithFailureMessage_Partial()
-    {
-        // Partial: see XML comment for guidance.
-        await Task.CompletedTask;
-    }
-#pragma warning restore S2699
-
-    [Fact]
-    public async Task OnPostAddPasskeyAsync_AddOrUpdateFails_RedirectsWithFailureMessage_Partial()
-    {
-        // Partial: see XML comment for guidance.
-        await Task.CompletedTask;
-        Assert.True(true);
-    }
-
-#pragma warning disable S2699
-    [Fact]
-    public async Task OnPostAddPasskeyAsync_Success_RedirectsToRenamePasskey_Partial()
-    {
-        // Partial: see XML comment for guidance.
-        await Task.CompletedTask;
-    }
-#pragma warning restore S2699
-
-    [Fact]
-    public async Task OnPostUpdatePasskeyAsync_UserNotFound_ReturnsNotFoundObjectResult()
-    {
-        // Arrange
-        var userStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(userStore, null, null, null, null, null, null, null, null);
-        userManagerMock
-            .Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
-            .ReturnsAsync((IdentityUser<Guid>?)null);
-        userManagerMock
-            .Setup(m => m.GetUserId(It.IsAny<ClaimsPrincipal>()))
-            .Returns("missing-user-id");
-
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManagerMock.Object,
-            Mock.Of<IHttpContextAccessor>(),
-            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
-            Mock.Of<IOptions<IdentityOptions>>(),
-            Mock.Of<ILogger<SignInManager<IdentityUser<Guid>>>>(),
-            Mock.Of<IAuthenticationSchemeProvider>(),
-            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
-
-        var model = new PasskeysModel(userManagerMock.Object, signInManagerMock.Object);
-
-        // ensure PageModel.User can be passed; not necessary because setups use It.IsAny<ClaimsPrincipal>()
-
-        // Act
-        var result = await model.OnPostUpdatePasskeyAsync();
-
-        // Assert
-        var notFound = Assert.IsType<NotFoundObjectResult>(result);
-        Assert.IsType<string>(notFound.Value);
-        Assert.Contains("missing-user-id", notFound.Value as string, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public async Task OnGetAsync_UserNotFound_ReturnsNotFoundWithUserIdMessage()
-    {
-        // Arrange
-        var userStoreMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userValidators = new List<IUserValidator<IdentityUser<Guid>>>();
-        var passwordValidators = new List<IPasswordValidator<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
-            userStoreMock.Object,
-            Options.Create(new IdentityOptions()),
-            Mock.Of<IPasswordHasher<IdentityUser<Guid>>>(),
-            userValidators,
-            passwordValidators,
-            Mock.Of<ILookupNormalizer>(),
-            new IdentityErrorDescriber(),
-            null,
-            Mock.Of<ILogger<UserManager<IdentityUser<Guid>>>>());
-
-        var signInManager = new SignInManager<IdentityUser<Guid>>(
-            userManagerMock.Object,
-            Mock.Of<IHttpContextAccessor>(),
-            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
-            Options.Create(new IdentityOptions()),
-            Mock.Of<ILogger<SignInManager<IdentityUser<Guid>>>>(),
-            Mock.Of<IAuthenticationSchemeProvider>(),
-            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
-
-        // Setup: GetUserAsync returns null and GetUserId returns known id
-        var expectedId = "missing-user-123";
-        userManagerMock
-            .Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
-            .ReturnsAsync((IdentityUser<Guid>?)null);
-        userManagerMock
-            .Setup(um => um.GetUserId(It.IsAny<ClaimsPrincipal>()))
-            .Returns(expectedId);
-
-        var model = new PasskeysModel(userManagerMock.Object, signInManager);
-
-        // Ensure PageContext and User are present
-        var httpContext = new DefaultHttpContext();
-        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, expectedId)]));
-        model.PageContext = new PageContext()
-        {
-            HttpContext = httpContext
-        };
+        var (userManager, _, model) = CreateModel();
+        userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync((IdentityUser<Guid>?)null);
+        userManager.Setup(m => m.GetUserId(It.IsAny<ClaimsPrincipal>())).Returns("missing-id");
 
         // Act
         var result = await model.OnGetAsync();
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
-        var expectedMessage = $"Unable to load user with ID '{expectedId}'.";
-        Assert.Equal(expectedMessage, notFound.Value as string);
+        Assert.Contains("missing-id", notFound.Value as string, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_UserFound_LoadsPasskeysAndReturnsPage()
+    {
+        // Arrange
+        var (userManager, _, model) = CreateModel();
+        var user = MockHelpers.TestUser();
+        var passkeys = new List<UserPasskeyInfo> { BuildPasskey() };
+        userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
+        userManager.Setup(m => m.GetPasskeysAsync(user)).ReturnsAsync(passkeys);
+
+        // Act
+        var result = await model.OnGetAsync();
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        Assert.Same(passkeys, model.CurrentPasskeys);
+    }
+
+    [Fact]
+    public async Task OnPostUpdatePasskeyAsync_UserNotFound_ReturnsNotFound()
+    {
+        // Arrange
+        var (userManager, _, model) = CreateModel();
+        userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync((IdentityUser<Guid>?)null);
+        userManager.Setup(m => m.GetUserId(It.IsAny<ClaimsPrincipal>())).Returns("missing-id");
+
+        // Act
+        var result = await model.OnPostUpdatePasskeyAsync();
+
+        // Assert
+        var notFound = Assert.IsType<NotFoundObjectResult>(result);
+        Assert.Contains("missing-id", notFound.Value as string, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task OnPostUpdatePasskeyAsync_BlankCredentialId_SetsStatusAndRedirects()
+    {
+        // Arrange
+        var (userManager, _, model) = CreateModel();
+        userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(MockHelpers.TestUser());
+        model.Input = new PasskeysModel.InputModel { CredentialId = null };
+
+        // Act
+        var result = await model.OnPostUpdatePasskeyAsync();
+
+        // Assert
+        Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal("Could not find the passkey.", model.StatusMessage);
+    }
+
+    [Fact]
+    public async Task OnPostUpdatePasskeyAsync_InvalidFormatCredentialId_SetsStatusAndRedirects()
+    {
+        // Arrange
+        var (userManager, _, model) = CreateModel();
+        userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(MockHelpers.TestUser());
+        model.Input = new PasskeysModel.InputModel { CredentialId = "@@@" };
+
+        // Act
+        var result = await model.OnPostUpdatePasskeyAsync();
+
+        // Assert
+        Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal("The specified passkey ID had an invalid format.", model.StatusMessage);
+    }
+
+    [Fact]
+    public async Task OnPostUpdatePasskeyAsync_ActionRename_RedirectsToRenamePasskey()
+    {
+        // Arrange
+        var (userManager, _, model) = CreateModel();
+        userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(MockHelpers.TestUser());
+        model.Input = new PasskeysModel.InputModel { CredentialId = ValidCredentialId, Action = "rename" };
+
+        // Act
+        var result = await model.OnPostUpdatePasskeyAsync();
+
+        // Assert
+        var redirect = Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal("./RenamePasskey", redirect.PageName);
+        Assert.Equal(ValidCredentialId, redirect.RouteValues?["id"]);
+    }
+
+    [Fact]
+    public async Task OnPostUpdatePasskeyAsync_ActionDelete_Success_RemovesAndRedirects()
+    {
+        // Arrange
+        var (userManager, _, model) = CreateModel();
+        var user = MockHelpers.TestUser();
+        userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
+        userManager.Setup(m => m.RemovePasskeyAsync(user, It.IsAny<byte[]>())).ReturnsAsync(IdentityResult.Success);
+        model.Input = new PasskeysModel.InputModel { CredentialId = ValidCredentialId, Action = "delete" };
+
+        // Act
+        var result = await model.OnPostUpdatePasskeyAsync();
+
+        // Assert
+        Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal("The passkey was removed.", model.StatusMessage);
+    }
+
+    [Fact]
+    public async Task OnPostUpdatePasskeyAsync_ActionDelete_RemoveFails_Throws()
+    {
+        // Arrange
+        var (userManager, _, model) = CreateModel();
+        var user = MockHelpers.TestUser();
+        userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
+        userManager.Setup(m => m.RemovePasskeyAsync(user, It.IsAny<byte[]>())).ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "nope" }));
+        userManager.Setup(m => m.GetUserIdAsync(user)).ReturnsAsync("uid-1");
+        model.Input = new PasskeysModel.InputModel { CredentialId = ValidCredentialId, Action = "delete" };
+
+        // Act / Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(() => model.OnPostUpdatePasskeyAsync());
+    }
+
+    [Fact]
+    public async Task OnPostUpdatePasskeyAsync_UnknownAction_SetsStatusAndRedirects()
+    {
+        // Arrange
+        var (userManager, _, model) = CreateModel();
+        userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(MockHelpers.TestUser());
+        model.Input = new PasskeysModel.InputModel { CredentialId = ValidCredentialId, Action = "frobnicate" };
+
+        // Act
+        var result = await model.OnPostUpdatePasskeyAsync();
+
+        // Assert
+        Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal("Unknown action.", model.StatusMessage);
+    }
+
+    [Fact]
+    public async Task OnPostAddPasskeyAsync_UserNotFound_ReturnsNotFound()
+    {
+        // Arrange
+        var (userManager, _, model) = CreateModel();
+        userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync((IdentityUser<Guid>?)null);
+        userManager.Setup(m => m.GetUserId(It.IsAny<ClaimsPrincipal>())).Returns("missing-id");
+
+        // Act
+        var result = await model.OnPostAddPasskeyAsync();
+
+        // Assert
+        var notFound = Assert.IsType<NotFoundObjectResult>(result);
+        Assert.Contains("missing-id", notFound.Value as string, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task OnPostAddPasskeyAsync_BrowserReportedError_SetsStatusAndRedirects()
+    {
+        // Arrange
+        var (userManager, _, model) = CreateModel();
+        userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(MockHelpers.TestUser());
+        model.Input = new PasskeysModel.InputModel { Passkey = new PasskeyInputModel { Error = "user cancelled" } };
+
+        // Act
+        var result = await model.OnPostAddPasskeyAsync();
+
+        // Assert
+        Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal("Could not add a passkey: user cancelled", model.StatusMessage);
+    }
+
+    [Fact]
+    public async Task OnPostAddPasskeyAsync_NoCredentialJson_SetsStatusAndRedirects()
+    {
+        // Arrange
+        var (userManager, _, model) = CreateModel();
+        userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(MockHelpers.TestUser());
+        model.Input = new PasskeysModel.InputModel { Passkey = new PasskeyInputModel { Error = null, CredentialJson = null } };
+
+        // Act
+        var result = await model.OnPostAddPasskeyAsync();
+
+        // Assert
+        Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal("The browser did not provide a passkey.", model.StatusMessage);
+    }
+
+    [Fact]
+    public async Task OnPostAddPasskeyAsync_AttestationFails_SetsStatusAndRedirects()
+    {
+        // Arrange
+        var (userManager, signInManager, model) = CreateModel();
+        userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(MockHelpers.TestUser());
+        signInManager.Setup(s => s.PerformPasskeyAttestationAsync(It.IsAny<string>()))
+            .ReturnsAsync(PasskeyAttestationResult.Fail(new PasskeyException("bad attestation")));
+        model.Input = new PasskeysModel.InputModel { Passkey = new PasskeyInputModel { CredentialJson = "{}" } };
+
+        // Act
+        var result = await model.OnPostAddPasskeyAsync();
+
+        // Assert
+        Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal("Could not add the passkey: bad attestation.", model.StatusMessage);
+    }
+
+    [Fact]
+    public async Task OnPostAddPasskeyAsync_AddOrUpdateFails_SetsStatusAndRedirects()
+    {
+        // Arrange
+        var (userManager, signInManager, model) = CreateModel();
+        var user = MockHelpers.TestUser();
+        userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
+        signInManager.Setup(s => s.PerformPasskeyAttestationAsync(It.IsAny<string>())).ReturnsAsync(BuildSuccessfulAttestation());
+        userManager.Setup(m => m.AddOrUpdatePasskeyAsync(user, It.IsAny<UserPasskeyInfo>()))
+            .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "store failure" }));
+        model.Input = new PasskeysModel.InputModel { Passkey = new PasskeyInputModel { CredentialJson = "{}" } };
+
+        // Act
+        var result = await model.OnPostAddPasskeyAsync();
+
+        // Assert
+        Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal("The passkey could not be added to your account.", model.StatusMessage);
+    }
+
+    [Fact]
+    public async Task OnPostAddPasskeyAsync_Success_RedirectsToRenamePasskey()
+    {
+        // Arrange
+        var (userManager, signInManager, model) = CreateModel();
+        var user = MockHelpers.TestUser();
+        userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
+        signInManager.Setup(s => s.PerformPasskeyAttestationAsync(It.IsAny<string>())).ReturnsAsync(BuildSuccessfulAttestation());
+        userManager.Setup(m => m.AddOrUpdatePasskeyAsync(user, It.IsAny<UserPasskeyInfo>())).ReturnsAsync(IdentityResult.Success);
+        model.Input = new PasskeysModel.InputModel { Passkey = new PasskeyInputModel { CredentialJson = "{}" } };
+
+        // Act
+        var result = await model.OnPostAddPasskeyAsync();
+
+        // Assert
+        var redirect = Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal("./RenamePasskey", redirect.PageName);
+        Assert.Equal(ValidCredentialId, redirect.RouteValues?["id"]);
+        Assert.Equal("The passkey was added to your account. You can now use it to sign in. Give it an easy to remember name.", model.StatusMessage);
+    }
+
+    private static UserPasskeyInfo BuildPasskey() =>
+        new(
+            credentialId: [1, 2, 3],
+            publicKey: [4, 5, 6],
+            createdAt: DateTimeOffset.UnixEpoch,
+            signCount: 0,
+            transports: null,
+            isUserVerified: false,
+            isBackupEligible: false,
+            isBackedUp: false,
+            attestationObject: [7, 8, 9],
+            clientDataJson: [10, 11, 12])
+        {
+            Name = "Test passkey",
+        };
+
+    private static PasskeyAttestationResult BuildSuccessfulAttestation()
+    {
+        var entity = new PasskeyUserEntity { Id = "user-1", Name = "user@example.com", DisplayName = "User" };
+        return PasskeyAttestationResult.Success(BuildPasskey(), entity);
+    }
+
+    private static (Mock<UserManager<IdentityUser<Guid>>> UserManager, Mock<SignInManager<IdentityUser<Guid>>> SignInManager, PasskeysModel Model) CreateModel()
+    {
+        var userManager = MockHelpers.MockUserManager();
+        var signInManager = MockHelpers.MockSignInManager(userManager.Object);
+        var model = new PasskeysModel(userManager.Object, signInManager.Object)
+        {
+            PageContext = MockHelpers.PageContext(),
+        };
+        return (userManager, signInManager, model);
     }
 }

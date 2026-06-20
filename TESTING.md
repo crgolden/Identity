@@ -46,7 +46,7 @@ cmd /c "Identity.Tests\bin\Debug\net10.0\Identity.Tests.exe -trait ""Category=E2
 ---
 
 **Test types**
-- **Unit** — xUnit page-model / service / API tests (`Category=Unit`) — 475 tests; includes property-based (`PropertyBased/`) and resilience (`Resilience/`) sub-folders
+- **Unit** — xUnit page-model / service / API tests (`Category=Unit`) — 865 tests; includes property-based (`PropertyBased/`) and resilience (`Resilience/`) sub-folders
 - **E2E** — Playwright browser tests (`Category=E2E`); includes OIDC discovery tests (`Oidc/`) and IdentityServer flow tests (`ConsentTests`, `GrantsTests`, `DiagnosticsTests`, `ServerSideSessionsTests`)
 - **Load** — throughput / failure-rate tests using `Parallel.ForEachAsync` + `HttpClient` (`Category=Load`); run separately (requires live server)
 
@@ -1357,9 +1357,9 @@ Stryker.NET is configured in `stryker-config.json` with `mutation-level: Advance
 
 | File | Why it's targeted |
 |---|---|
-| `Identity.Api/GravatarService.cs` | Hash computation and error handling |
-| `Identity.Api/Extensions/ConfigurationExtensions.cs` | Key Vault URI → `SecretClient` factory; startup config extraction |
-| `Identity.Api/Extensions/EndpointRouteBuilderExtensions.cs` | Passkey endpoint registration |
+| `Identity/GravatarService.cs` | Hash computation and error handling |
+| `Identity/Extensions/ConfigurationExtensions.cs` | Key Vault URI → `SecretClient` factory; startup config extraction |
+| `Identity/Extensions/EndpointRouteBuilderExtensions.cs` | Passkey endpoint registration |
 
 **Thresholds:** high=80, low=60, break=50 (CI fails if mutation score < 50).
 
@@ -1375,7 +1375,62 @@ The CI `mutation` job runs on schedule (Monday 02:00 UTC) and on manual dispatch
 
 ---
 
-## 21. Playwright Reporting
+## 21. Admin UI Pages
+
+All pages under `Identity/Pages/Admin/` are unit-tested. E2E tests (`Category=E2E`) are in `Identity.Tests/E2E/AdminTests.cs` and require the `PlaywrightFixture` with seeded IS configuration entities and an admin-role user.
+
+### ID convention
+
+Every interactive element on admin pages carries a unique `id` attribute so E2E tests can select by `#id` without fragile selectors. Pattern:
+
+| Element | `id` |
+|---|---|
+| Nav link to Admin section | `admin-nav` |
+| "New" / "Create" link on Index | `btn-create` |
+| Submit button on Create | `create-submit` |
+| Submit button on Delete | `delete-submit` |
+| Submit button on Edit | `save-submit` |
+| Per-row Details link | `details-{entityId}` |
+| Per-row Edit link | `edit-{entityId}` |
+| Per-row Delete link | `delete-{entityId}` |
+| Details page Edit button | `btn-edit` |
+| Details page Delete button | `btn-delete` |
+| Collection sub-page nav links | `nav-{collection}` (e.g. `nav-claims`, `nav-scopes`) |
+| Add row button (collection Edit) | `btn-add-row` |
+| Remove row button (collection Edit) | `btn-remove-{index}` |
+
+### Unit test coverage
+
+| Section | Interface | Page files | Unit tests |
+|---|---|---|---|
+| Clients | `IConfigurationDbContext` | 23 | 92 |
+| API Resources | `IConfigurationDbContext` | 13 | 52 |
+| API Scopes | `IConfigurationDbContext` | 9 | 36 |
+| Identity Resources | `IConfigurationDbContext` | 9 | 36 |
+| Identity Providers | `IConfigurationDbContext` | 5 | 20 |
+| SAML Service Providers | `IConfigurationDbContext` | 5 | 20 |
+| Persisted Grants | `IPersistedGrantDbContext` | 3 | 12 |
+| Device Flow Codes | `IPersistedGrantDbContext` | 3 | 12 |
+| Server-Side Sessions | `IPersistedGrantDbContext` | 3 | 12 |
+| Keys | `IPersistedGrantDbContext` | 2 | 8 |
+| Pushed Authorization Requests | `IPersistedGrantDbContext` | 3 | 12 |
+| SAML Sign-In States | `IPersistedGrantDbContext` | 3 | 12 |
+| SAML Logout Sessions | `IPersistedGrantDbContext` | 3 | 12 |
+| SAML Logout Session Request Indices | `IPersistedGrantDbContext` | 2 | 8 |
+| Users | `UserManager<IdentityUser<Guid>>` | 13 | 44 |
+| Roles | `RoleManager<IdentityRole<Guid>>` | 9 | 25 |
+| **Total** | | **108** | **413** |
+
+### E2E test coverage
+
+See `Identity/Admin-E2E-Guide.md` for full scenario list (~126 test methods). E2E tests require:
+- `PlaywrightFixture.CreateAdminUserAsync()` — creates a confirmed user and assigns the `Admin` role
+- `PlaywrightFixture.SeedIsConfigAsync()` — seeds one `Client`, `ApiResource`, `ApiScope`, `IdentityResource` via `IConfigurationDbContext`
+- `DisposeAsync` removes seeded IS config entities and the admin test user
+
+---
+
+## 22. Playwright Reporting
 
 `Identity.Tests` records Playwright diagnostics for every E2E browser context, then keeps them only when the xUnit test fails. Retained failure folders are written under:
 
@@ -1441,17 +1496,22 @@ Do not run Git commands when implementing or verifying Playwright reporting chan
 
 ## Local SonarCloud analysis
 
-Generate coverage files first (unit + E2E), then run from `Identity/`:
+Generate coverage first, then run from `Identity/`. Unit coverage is OpenCover (branch-bearing, via `coverlet.console`; see the workspace `TESTING.md` for the command); E2E coverage stays VS Coverage XML. SonarCloud unions both reports.
 
 ```powershell
 $env:SONAR_TOKEN = "<token>"
 & "$env:SystemDrive\sonar-scanner-8.0.1.6346-windows-x64\bin\sonar-scanner.bat" `
   "-Dsonar.projectKey=crgolden_Identity" `
   "-Dsonar.organization=crgolden" `
-  "-Dsonar.sources=Identity.Api,Identity.Benchmarks" `
+  "-Dsonar.sources=Identity,Identity.Benchmarks" `
   "-Dsonar.tests=Identity.Tests" `
   "-Dsonar.exclusions=**/bin/**,**/obj/**" `
-  "-Dsonar.cs.vscoveragexml.reportsPaths=coverage.xml,coverage-e2e.xml"
+  "-Dsonar.cs.opencover.reportsPaths=coverage.opencover.xml" `
+  "-Dsonar.cs.vscoveragexml.reportsPaths=coverage-e2e.xml"
 ```
 
-Required coverage files: `coverage.xml`, `coverage-e2e.xml`.
+Required coverage files: `coverage.opencover.xml` (unit, OpenCover), `coverage-e2e.xml` (E2E, VS Coverage).
+
+### When to build a truth table
+
+The coverage **score is read from SonarCloud, never hand-maintained** here. Build a per-method table in `COVERAGE-TRUTH-TABLES.md` only when SonarCloud flags a method with **cognitive complexity > 15 AND uncovered conditions > 0**: the table is escalation for the gnarly few, not a per-class deliverable. See `../DESIGN-LANGUAGE.md` (the unit, the three laws, the one legend) and `../TESTING-COVERAGE.md` (MC/DC row derivation).

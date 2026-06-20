@@ -1,5 +1,3 @@
-#pragma warning disable CS8604 // Possible null reference argument.
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account;
 using Infrastructure;
 
@@ -8,7 +6,6 @@ using Duende.IdentityServer.Models;
 using Duende.IdentityServer.Services;
 using Identity.Pages.Account;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Moq;
 
@@ -16,20 +13,6 @@ using Moq;
 [Trait("Category", "Unit")]
 public class LogoutModelTests
 {
-    [Fact]
-    public void Constructor_NullSignInManager_DoesNotThrow()
-    {
-        SignInManager<IdentityUser<Guid>>? signInManager = null;
-
-        var exception = Record.Exception(() =>
-        {
-            var model = new LogoutModel(signInManager, Mock.Of<IIdentityServerInteractionService>());
-            Assert.NotNull(model);
-        });
-
-        Assert.Null(exception);
-    }
-
     [Fact]
     public async Task OnGetAsync_AuthenticatedUser_ShowsPromptWithoutCallingInteractionService()
     {
@@ -70,7 +53,7 @@ public class LogoutModelTests
             "https://signout.example.com/iframe",
             new LogoutMessage { PostLogoutRedirectUri = "https://client.example.com/signout-callback" });
         var interaction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
-        interaction.Setup(s => s.GetLogoutContextAsync(logoutId)).ReturnsAsync(logoutRequest);
+        interaction.Setup(s => s.GetLogoutContextAsync(logoutId, It.IsAny<CancellationToken>())).ReturnsAsync(logoutRequest);
         var model = BuildModel(interaction.Object);
         model.PageContext = BuildAnonymousPageContext();
 
@@ -80,7 +63,7 @@ public class LogoutModelTests
         Assert.False(model.ShowLogoutPrompt);
         Assert.Equal("https://client.example.com/signout-callback", model.PostLogoutRedirectUri);
         Assert.Equal("https://signout.example.com/iframe", model.SignOutIFrameUrl);
-        interaction.Verify(s => s.GetLogoutContextAsync(logoutId), Times.Once);
+        interaction.Verify(s => s.GetLogoutContextAsync(logoutId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -106,7 +89,7 @@ public class LogoutModelTests
             "https://signout.example.com/iframe",
             new LogoutMessage { PostLogoutRedirectUri = "https://client.example.com/signout-callback" });
         var interaction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
-        interaction.Setup(s => s.GetLogoutContextAsync(logoutId)).ReturnsAsync(logoutRequest);
+        interaction.Setup(s => s.GetLogoutContextAsync(logoutId, It.IsAny<CancellationToken>())).ReturnsAsync(logoutRequest);
         var model = BuildModel(interaction.Object);
         model.PageContext = BuildAnonymousPageContext();
 
@@ -115,7 +98,7 @@ public class LogoutModelTests
         Assert.IsType<PageResult>(result);
         Assert.Equal("https://client.example.com/signout-callback", model.PostLogoutRedirectUri);
         Assert.Equal("https://signout.example.com/iframe", model.SignOutIFrameUrl);
-        interaction.Verify(s => s.GetLogoutContextAsync(logoutId), Times.Once);
+        interaction.Verify(s => s.GetLogoutContextAsync(logoutId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Theory]
@@ -136,24 +119,8 @@ public class LogoutModelTests
 
     private static LogoutModel BuildModel(IIdentityServerInteractionService? interactionService = null)
     {
-        var userManager = new Mock<UserManager<IdentityUser<Guid>>>(
-            Mock.Of<IUserStore<IdentityUser<Guid>>>(),
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null);
-        var signInManager = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManager.Object,
-            Mock.Of<IHttpContextAccessor>(),
-            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
-            null,
-            null,
-            null,
-            null);
+        var userManager = MockHelpers.MockUserManager();
+        var signInManager = MockHelpers.MockSignInManager(userManager.Object);
         return new LogoutModel(
             signInManager.Object,
             interactionService ?? Mock.Of<IIdentityServerInteractionService>());

@@ -1,4 +1,3 @@
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account.Manage;
 using Infrastructure;
 
@@ -61,9 +60,8 @@ public class ManageIndexModelTests
     public async Task OnGetAsync_UserNotFound_ReturnsNotFoundObjectResult()
     {
         // Arrange
-        var userStoreMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(userStoreMock.Object, null, null, null, null, null, null, null, null);
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(userManagerMock.Object, Mock.Of<IHttpContextAccessor>(), Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(), null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
+        var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
 
         // Configure to return null user and a known id for GetUserId
         const string expectedId = "expected-id-123";
@@ -85,9 +83,8 @@ public class ManageIndexModelTests
     public async Task OnGetAsync_UserExists_LoadsUsernameAndPhoneAndReturnsPage(string? returnedUserName, string? returnedPhoneNumber)
     {
         // Arrange
-        var userStoreMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(userStoreMock.Object, null, null, null, null, null, null, null, null);
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(userManagerMock.Object, Mock.Of<IHttpContextAccessor>(), Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(), null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
+        var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
         var user = new IdentityUser<Guid>
         {
             Id = Guid.NewGuid()
@@ -117,9 +114,8 @@ public class ManageIndexModelTests
     public async Task OnPostAsync_UserNotFound_ReturnsNotFoundWithUserIdMessage()
     {
         // Arrange
-        var userStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(userStore, null, null, null, null, null, null, null, null);
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(userManagerMock.Object, Mock.Of<IHttpContextAccessor>(), Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(), null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
+        var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
         var expectedUserId = "expected-user-id";
         userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync((IdentityUser<Guid>?)null);
         userManagerMock.Setup(um => um.GetUserId(It.IsAny<ClaimsPrincipal>())).Returns(expectedUserId);
@@ -141,9 +137,8 @@ public class ManageIndexModelTests
     public async Task OnPostAsync_ModelStateInvalid_ReturnsPageAndDoesNotChangePhoneOrSignIn()
     {
         // Arrange
-        var userStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(userStore, null, null, null, null, null, null, null, null);
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(userManagerMock.Object, Mock.Of<IHttpContextAccessor>(), Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(), null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
+        var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
         var user = new IdentityUser<Guid>
         {
             Id = Guid.NewGuid()
@@ -175,9 +170,8 @@ public class ManageIndexModelTests
     public async Task OnPostAsync_PhoneUpdateScenarios(string? existingPhone, string? inputPhone, bool setSucceeds, bool expectSetCall, bool expectRefreshCall, string expectedStatusMessage)
     {
         // Arrange
-        var userStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(userStore, null, null, null, null, null, null, null, null);
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(userManagerMock.Object, Mock.Of<IHttpContextAccessor>(), Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(), null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
+        var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
         var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
         userManagerMock.Setup(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
         userManagerMock.Setup(u => u.GetPhoneNumberAsync(user)).ReturnsAsync(existingPhone);

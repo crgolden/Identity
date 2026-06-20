@@ -56,12 +56,12 @@ else
                 {
                     <div class="card mb-3">
                         <div class="card-header"><strong>Personal Information</strong></div>
-                        <ul class="list-group list-group-flush">
+                        <div class="list-group list-group-flush">
                             @foreach (var scope in Model.View.IdentityScopes)
                             {
                                 <partial name="_ScopeListItem" model="scope" />
                             }
-                        </ul>
+                        </div>
                     </div>
                 }
 
@@ -69,12 +69,12 @@ else
                 {
                     <div class="card mb-3">
                         <div class="card-header"><strong>Application Access</strong></div>
-                        <ul class="list-group list-group-flush">
+                        <div class="list-group list-group-flush">
                             @foreach (var scope in Model.View.ApiScopes)
                             {
                                 <partial name="_ScopeListItem" model="scope" />
                             }
-                        </ul>
+                        </div>
                     </div>
                 }
 

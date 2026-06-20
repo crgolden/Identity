@@ -10,11 +10,6 @@ public static class HttpContextExtensions
     {
         var exception = context.Features.Get<IExceptionHandlerFeature>()?.Error;
 
-        var logger = context.RequestServices
-            .GetRequiredService<ILoggerFactory>()
-            .CreateLogger(nameof(HttpContextExtensions));
-        logger.LogError(exception, "Unhandled exception");
-
         var activity = Activity.Current;
         if (exception is not null && activity is not null)
         {

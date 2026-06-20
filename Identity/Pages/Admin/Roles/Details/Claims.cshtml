@@ -1,0 +1,31 @@
+@page "{id}"
+@model Identity.Pages.Admin.Roles.Details.ClaimsModel
+
+@{
+    ViewData["Title"] = "Role Claims";
+}
+
+<h1>Claims — @Model.AppRole.Name</h1>
+
+<table class="table table-bordered table-hover table-sm">
+    <thead class="table-light">
+        <tr>
+            <th>Type</th>
+            <th>Value</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var claim in Model.Claims)
+        {
+            <tr>
+                <td>@claim.Type</td>
+                <td>@claim.Value</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<div class="d-flex gap-2">
+    <a id="btn-edit" asp-page="/Admin/Roles/Edit/Claims" asp-route-id="@Model.AppRole.Id" class="btn btn-primary">Edit</a>
+    <a id="btn-back" asp-page="./Index" asp-route-id="@Model.AppRole.Id" class="btn btn-outline-secondary">Back</a>
+</div>

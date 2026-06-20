@@ -30,6 +30,10 @@ public class GrantsModel : PageModel
         IResourceStore resources,
         IEventService events)
     {
+        ArgumentNullException.ThrowIfNull(interaction);
+        ArgumentNullException.ThrowIfNull(clients);
+        ArgumentNullException.ThrowIfNull(resources);
+        ArgumentNullException.ThrowIfNull(events);
         _interaction = interaction;
         _clients = clients;
         _resources = resources;
@@ -47,15 +51,15 @@ public class GrantsModel : PageModel
     /// <returns>A task representing the asynchronous operation.</returns>
     public async Task OnGetAsync()
     {
-        var grants = await _interaction.GetAllUserGrantsAsync();
+        var grants = await _interaction.GetAllUserGrantsAsync(HttpContext.RequestAborted);
         var list = new List<GrantViewModel>();
 
         foreach (var grant in grants)
         {
-            var client = await _clients.FindClientByIdAsync(grant.ClientId);
+            var client = await _clients.FindClientByIdAsync(grant.ClientId, HttpContext.RequestAborted);
             if (client != null)
             {
-                var grantResources = await _resources.FindResourcesByScopeAsync(grant.Scopes);
+                var grantResources = await _resources.FindResourcesByScopeAsync(grant.Scopes, HttpContext.RequestAborted);
                 list.Add(new GrantViewModel
                 {
                     ClientId = client.ClientId,
@@ -82,10 +86,10 @@ public class GrantsModel : PageModel
     /// <returns>A task resolving to a redirect back to this page after revoking.</returns>
     public async Task<IActionResult> OnPostAsync()
     {
-        await _interaction.RevokeUserConsentAsync(ClientId);
-        await _events.RaiseAsync(new GrantsRevokedEvent(User.GetSubjectId(), ClientId));
+        await _interaction.RevokeUserConsentAsync(ClientId, HttpContext.RequestAborted);
+        await _events.RaiseAsync(new GrantsRevokedEvent(User.GetSubjectId(), ClientId), HttpContext.RequestAborted);
         Telemetry.Metrics.GrantsRevoked(ClientId);
-        using var activity = Telemetry.ActivitySource.StartActivity("identity.grants.revoke");
+        using var activity = Telemetry.StartActivity("identity.grants.revoke");
         activity?.SetTag("client_id", ClientId);
         return RedirectToPage("/Account/Manage/Grants");
     }

@@ -21,19 +21,19 @@ public class ExternalLoginModel : PageModel
     private readonly UserManager<IdentityUser<Guid>> _userManager;
     private readonly IUserStore<IdentityUser<Guid>> _userStore;
     private readonly IUserEmailStore<IdentityUser<Guid>> _emailStore;
-    private readonly ServiceBusSender _serviceBusSender;
+    private readonly ServiceBusClient _serviceBusClient;
 
     public ExternalLoginModel(
         SignInManager<IdentityUser<Guid>> signInManager,
         UserManager<IdentityUser<Guid>> userManager,
         IUserStore<IdentityUser<Guid>> userStore,
-        IAzureClientFactory<ServiceBusSender> serviceBusSenderFactory)
+        IAzureClientFactory<ServiceBusClient> serviceBusClientFactory)
     {
         _signInManager = signInManager;
         _userManager = userManager;
         _userStore = userStore;
         _emailStore = (IUserEmailStore<IdentityUser<Guid>>)_userStore;
-        _serviceBusSender = serviceBusSenderFactory.CreateClient("email");
+        _serviceBusClient = serviceBusClientFactory.CreateClient("crgolden");
     }
 
     [BindProperty]
@@ -118,7 +118,7 @@ public class ExternalLoginModel : PageModel
             return RedirectToPage(LoginPageName, new { ReturnUrl = returnUrl });
         }
 
-        if (ModelState.IsValid && !IsNullOrWhiteSpace(Input?.Email))
+        if (ModelState.IsValid && !IsNullOrWhiteSpace(Input.Email))
         {
             var user = new IdentityUser<Guid>();
             await _userStore.SetUserNameAsync(user, Input.Email, HttpContext.RequestAborted);
@@ -176,7 +176,8 @@ public class ExternalLoginModel : PageModel
                 Subject = "Confirm your email",
                 To = email
             };
-            await _serviceBusSender.SendMessageAsync(sbMessage, HttpContext.RequestAborted);
+            var serviceBusSender = _serviceBusClient.CreateSender("email");
+            await serviceBusSender.SendMessageAsync(sbMessage, HttpContext.RequestAborted);
         }
 
         if (_userManager.Options.SignIn.RequireConfirmedAccount)

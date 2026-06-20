@@ -53,14 +53,16 @@ public class ServerSideSessionsModel : PageModel
     {
         if (_sessionManagement != null)
         {
-            UserSessions = await _sessionManagement.QuerySessionsAsync(new SessionQuery
-            {
-                ResultsToken = Token,
-                RequestPriorResults = Prev == "true",
-                DisplayName = DisplayNameFilter,
-                SessionId = SessionIdFilter,
-                SubjectId = SubjectIdFilter,
-            });
+            UserSessions = await _sessionManagement.QuerySessionsAsync(
+                new SessionQuery
+                {
+                    ResultsToken = Token,
+                    RequestPriorResults = Prev == "true",
+                    DisplayName = DisplayNameFilter,
+                    SessionId = SessionIdFilter,
+                    SubjectId = SubjectIdFilter,
+                },
+                HttpContext.RequestAborted);
         }
     }
 
@@ -70,10 +72,12 @@ public class ServerSideSessionsModel : PageModel
     {
         if (_sessionManagement != null)
         {
-            await _sessionManagement.RemoveSessionsAsync(new RemoveSessionsContext
-            {
-                SessionId = SessionId,
-            });
+            await _sessionManagement.RemoveSessionsAsync(
+                new RemoveSessionsContext
+                {
+                    SessionId = SessionId,
+                },
+                HttpContext.RequestAborted);
         }
 
         return RedirectToPage("/Account/Manage/ServerSideSessions", new

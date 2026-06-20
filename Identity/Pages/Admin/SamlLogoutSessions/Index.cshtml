@@ -1,0 +1,34 @@
+@page
+@model Identity.Pages.Admin.SamlLogoutSessions.IndexModel
+@{
+    ViewData["Title"] = "SAML Logout Sessions";
+}
+
+<h1>SAML Logout Sessions</h1>
+
+<table class="table table-bordered table-hover table-sm">
+    <thead class="table-light">
+        <tr>
+            <th>Id</th>
+            <th>Logout Id</th>
+            <th>Expires</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var session in Model.SamlLogoutSessions)
+        {
+            <tr>
+                <td>@session.Id</td>
+                <td>@session.LogoutId</td>
+                <td>@session.ExpiresAtUtc</td>
+                <td>
+                    <a id="details-@session.Id" asp-page="./Details/Index" asp-route-id="@session.Id" class="btn btn-sm btn-outline-secondary">Details</a>
+                    <a id="delete-@session.Id" asp-page="./Delete" asp-route-id="@session.Id" class="btn btn-sm btn-danger">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<a id="btn-back" asp-page="/Admin/Index" class="btn btn-outline-secondary">Back</a>

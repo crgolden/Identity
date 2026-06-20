@@ -19,20 +19,20 @@ public class RegisterModel : PageModel
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
     private readonly UserManager<IdentityUser<Guid>> _userManager;
     private readonly ChannelWriter<string> _pictureClaimWriter;
-    private readonly ServiceBusSender _emailSender;
+    private readonly ServiceBusClient _serviceBusClient;
     private readonly ICAPTCHAService _captchaService;
 
     public RegisterModel(
         UserManager<IdentityUser<Guid>> userManager,
         SignInManager<IdentityUser<Guid>> signInManager,
         ChannelWriter<string> pictureClaimWriter,
-        IAzureClientFactory<ServiceBusSender> serviceBusSenderFactory,
+        IAzureClientFactory<ServiceBusClient> serviceBusClientFactory,
         ICAPTCHAService captchaService)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _pictureClaimWriter = pictureClaimWriter;
-        _emailSender = serviceBusSenderFactory.CreateClient("email");
+        _serviceBusClient = serviceBusClientFactory.CreateClient("crgolden");
         _captchaService = captchaService;
     }
 
@@ -80,7 +80,7 @@ public class RegisterModel : PageModel
         var user = new IdentityUser<Guid>();
         await _userManager.SetUserNameAsync(user, Input.Email);
         await _userManager.SetEmailAsync(user, Input.Email);
-        using var activity = Telemetry.ActivitySource.StartActivity("identity.register");
+        using var activity = Telemetry.StartActivity("identity.register");
         var result = await _userManager.CreateAsync(user, Input.Password);
         if (result.Succeeded)
         {
@@ -106,7 +106,8 @@ public class RegisterModel : PageModel
                     Subject = "Confirm your email",
                     To = Input.Email
                 };
-                await _emailSender.SendMessageAsync(sbMessage, HttpContext.RequestAborted);
+                var emailSender = _serviceBusClient.CreateSender("email");
+                await emailSender.SendMessageAsync(sbMessage, HttpContext.RequestAborted);
             }
 
             activity?.SetTag("email_confirmation_sent", emailConfirmationSent);

@@ -1,5 +1,3 @@
-#pragma warning disable CS8604 // Possible null reference argument.
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 namespace Identity.Tests.Pages.Account.Manage;
 using Infrastructure;
 
@@ -33,8 +31,7 @@ public class EmailModelTests
     public async Task OnPostSendVerificationEmailAsync_UserNotFound_ReturnsNotFoundWithUserId()
     {
         // Arrange
-        var storeMock = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock, null, null, null, null, null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
         var principal = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "ignored")]));
         userManagerMock
             .Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
@@ -64,8 +61,7 @@ public class EmailModelTests
     public async Task OnPostSendVerificationEmailAsync_InvalidModelState_ReturnsPage()
     {
         // Arrange
-        var storeMock = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock, null, null, null, null, null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
         var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
         var principal = new ClaimsPrincipal(new ClaimsIdentity());
 
@@ -100,8 +96,7 @@ public class EmailModelTests
     public async Task OnPostSendVerificationEmailAsync_ValidUser_SendsEmailAndRedirects(string? returnedEmail)
     {
         // Arrange
-        var storeMock = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(storeMock, null, null, null, null, null, null, null, null);
+        var userManagerMock = MockHelpers.MockUserManager();
         var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
         var principal = new ClaimsPrincipal(new ClaimsIdentity());
 
@@ -135,8 +130,10 @@ public class EmailModelTests
             .Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask)
             .Callback<ServiceBusMessage, CancellationToken>((msg, _) => capturedMessage = msg);
-        var factoryMock = new Mock<IAzureClientFactory<ServiceBusSender>>(MockBehavior.Strict);
-        factoryMock.Setup(f => f.CreateClient("email")).Returns(senderMock.Object);
+        var clientMock = new Mock<ServiceBusClient>(MockBehavior.Strict);
+        clientMock.Setup(c => c.CreateSender("email")).Returns(senderMock.Object);
+        var factoryMock = new Mock<IAzureClientFactory<ServiceBusClient>>(MockBehavior.Strict);
+        factoryMock.Setup(f => f.CreateClient("crgolden")).Returns(clientMock.Object);
 
         var model = new EmailModel(userManagerMock.Object, factoryMock.Object)
         {
@@ -222,22 +219,7 @@ public class EmailModelTests
     public async Task OnPostChangeEmailAsync_UserNotFound_ReturnsNotFound()
     {
         // Arrange
-        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-        var optionsMock = new Mock<IOptions<IdentityOptions>>(MockBehavior.Strict);
-        optionsMock.Setup(o => o.Value).Returns(new IdentityOptions());
-        var hasherMock = new Mock<IPasswordHasher<IdentityUser<Guid>>>();
-        var lookupNormalizerMock = new Mock<ILookupNormalizer>(MockBehavior.Strict);
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
-                storeMock.Object,
-                optionsMock.Object,
-                hasherMock.Object,
-                Array.Empty<IUserValidator<IdentityUser<Guid>>>(),
-                Array.Empty<IPasswordValidator<IdentityUser<Guid>>>(),
-                lookupNormalizerMock.Object,
-                new IdentityErrorDescriber(),
-                new Mock<IServiceProvider>(MockBehavior.Loose).Object,
-                new Mock<ILogger<UserManager<IdentityUser<Guid>>>>().Object)
-        { CallBase = false };
+        var userManagerMock = MockHelpers.MockUserManager();
 
         // Make GetUserAsync return null to simulate missing user.
         userManagerMock
@@ -264,53 +246,29 @@ public class EmailModelTests
     }
 
     // Helper methods to create minimal mocks/instances needed for constructor invocation.
-    private static IAzureClientFactory<ServiceBusSender> CreateSenderFactory()
+    private static IAzureClientFactory<ServiceBusClient> CreateSenderFactory()
     {
         var senderMock = new Mock<ServiceBusSender>(MockBehavior.Strict);
         senderMock.Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-        var factoryMock = new Mock<IAzureClientFactory<ServiceBusSender>>(MockBehavior.Strict);
-        factoryMock.Setup(f => f.CreateClient("email")).Returns(senderMock.Object);
+        var clientMock = new Mock<ServiceBusClient>(MockBehavior.Strict);
+        clientMock.Setup(c => c.CreateSender("email")).Returns(senderMock.Object);
+        var factoryMock = new Mock<IAzureClientFactory<ServiceBusClient>>(MockBehavior.Strict);
+        factoryMock.Setup(f => f.CreateClient("crgolden")).Returns(clientMock.Object);
         return factoryMock.Object;
     }
 
-    private static (IAzureClientFactory<ServiceBusSender> factory, Mock<ServiceBusSender> senderMock) CreateSenderFactoryWithMock()
+    private static (IAzureClientFactory<ServiceBusClient> factory, Mock<ServiceBusSender> senderMock) CreateSenderFactoryWithMock()
     {
         var senderMock = new Mock<ServiceBusSender>(MockBehavior.Strict);
         senderMock.Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-        var factoryMock = new Mock<IAzureClientFactory<ServiceBusSender>>(MockBehavior.Strict);
-        factoryMock.Setup(f => f.CreateClient("email")).Returns(senderMock.Object);
+        var clientMock = new Mock<ServiceBusClient>(MockBehavior.Strict);
+        clientMock.Setup(c => c.CreateSender("email")).Returns(senderMock.Object);
+        var factoryMock = new Mock<IAzureClientFactory<ServiceBusClient>>(MockBehavior.Strict);
+        factoryMock.Setup(f => f.CreateClient("crgolden")).Returns(clientMock.Object);
         return (factoryMock.Object, senderMock);
     }
 
-    private static UserManager<IdentityUser<Guid>> CreateUserManager()
-    {
-        // Minimal IUserStore needed for UserManager constructor
-        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
-
-        // Provide concrete/simple implementations for other parameters where feasible
-        var options = Options.Create(new IdentityOptions());
-        var passwordHasher = new PasswordHasher<IdentityUser<Guid>>();
-        var userValidators = new List<IUserValidator<IdentityUser<Guid>>>();
-        var passwordValidators = new List<IPasswordValidator<IdentityUser<Guid>>>();
-        var lookupNormalizer = Mock.Of<ILookupNormalizer>();
-        var errors = new IdentityErrorDescriber();
-        IServiceProvider? services = null;
-        var logger = Mock.Of<ILogger<UserManager<IdentityUser<Guid>>>>();
-
-        // Create a mock of UserManager using the required constructor arguments.
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
-            storeMock.Object,
-            options,
-            passwordHasher,
-            userValidators,
-            passwordValidators,
-            lookupNormalizer,
-            errors,
-            services,
-            logger);
-
-        return userManagerMock.Object;
-    }
+    private static UserManager<IdentityUser<Guid>> CreateUserManager() => MockHelpers.MockUserManager().Object;
 }

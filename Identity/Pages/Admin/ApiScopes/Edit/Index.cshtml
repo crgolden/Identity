@@ -1,0 +1,41 @@
+@page "{id:int}"
+@model Identity.Pages.Admin.ApiScopes.Edit.IndexModel
+@{
+    ViewData["Title"] = $"Edit \"{Model.Scope.Name}\"";
+}
+
+<h1>Edit: @Model.Scope.Name</h1>
+
+<form method="post">
+    <input type="hidden" asp-for="Scope.Id" />
+    <div class="mb-3">
+        <label class="form-label" asp-for="Scope.Name"></label>
+        <input class="form-control" asp-for="Scope.Name" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label" asp-for="Scope.DisplayName"></label>
+        <input class="form-control" asp-for="Scope.DisplayName" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label" asp-for="Scope.Description"></label>
+        <input class="form-control" asp-for="Scope.Description" />
+    </div>
+    <div class="mb-3 form-check">
+        <input class="form-check-input" asp-for="Scope.Enabled" />
+        <label class="form-check-label" asp-for="Scope.Enabled"></label>
+    </div>
+    <div class="mb-3 form-check">
+        <input class="form-check-input" asp-for="Scope.Required" />
+        <label class="form-check-label" asp-for="Scope.Required"></label>
+    </div>
+    <div class="mb-3 form-check">
+        <input class="form-check-input" asp-for="Scope.Emphasize" />
+        <label class="form-check-label" asp-for="Scope.Emphasize"></label>
+    </div>
+    <div class="mb-3 form-check">
+        <input class="form-check-input" asp-for="Scope.ShowInDiscoveryDocument" />
+        <label class="form-check-label" asp-for="Scope.ShowInDiscoveryDocument"></label>
+    </div>
+    <button id="save-submit" type="submit" class="btn btn-primary">Save</button>
+    <a asp-page="../Details/Index" asp-route-id="@Model.Scope.Id" class="btn btn-outline-secondary">Cancel</a>
+</form>
