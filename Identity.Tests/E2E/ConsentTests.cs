@@ -1,5 +1,6 @@
 namespace Identity.Tests.E2E;
 
+using System.Text.RegularExpressions;
 using Infrastructure;
 using Microsoft.Playwright;
 
@@ -128,6 +129,6 @@ public sealed class ConsentTests(PlaywrightFixture fixture)
         await page.FillAsync("input[name='Input.Email']", email);
         await page.FillAsync("input[name='Input.Password']", password);
         await page.ClickAsync("#login-submit");
-        await page.WaitForURLAsync(url => !url.Contains("/Account/Login"));
+        await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
     }
 }

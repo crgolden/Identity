@@ -1,6 +1,8 @@
 namespace Identity.Tests.E2E;
 
+using System.Text.RegularExpressions;
 using Infrastructure;
+using Microsoft.Playwright;
 
 [Trait("Category", "E2E")]
 [Collection(E2ECollection.Name)]
@@ -20,7 +22,7 @@ public sealed class EmailChangeTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Email']", originalEmail);
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("#login-submit");
-            await page.WaitForURLAsync(url => !url.Contains("/Account/Login"));
+            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
 
             // Navigate to email management page
             await page.GotoAsync("/Account/Manage/Email");
@@ -31,7 +33,7 @@ public sealed class EmailChangeTests(PlaywrightFixture fixture)
             await page.ClickAsync("#change-email-button");
 
             // Confirmation email sent
-            await page.WaitForURLAsync("**/Account/Manage/Email**");
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/Manage/Email"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
             var bodyText = await page.TextContentAsync("body");
             Assert.Contains("confirmation", bodyText, StringComparison.OrdinalIgnoreCase);
         }
@@ -57,7 +59,7 @@ public sealed class EmailChangeTests(PlaywrightFixture fixture)
             await page3.FillAsync("input[name='Input.Email']", newEmail);
             await page3.FillAsync("input[name='Input.Password']", password);
             await page3.ClickAsync("#login-submit");
-            await page3.WaitForURLAsync(url => !url.Contains("/Account/Login"));
+            await Assertions.Expect(page3).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
             Assert.DoesNotContain("/Account/Login", page3.Url);
         }
     }
@@ -75,7 +77,7 @@ public sealed class EmailChangeTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("#login-submit");
-            await page.WaitForURLAsync(url => !url.Contains("/Account/Login"));
+            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
 
             // Attempt to "change" to the same email
             await page.GotoAsync("/Account/Manage/Email");
@@ -83,7 +85,7 @@ public sealed class EmailChangeTests(PlaywrightFixture fixture)
             await page.ClickAsync("#change-email-button");
 
             // Should stay on the page without sending a confirmation
-            await page.WaitForURLAsync("**/Account/Manage/Email**");
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/Manage/Email"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
             var bodyText = await page.TextContentAsync("body");
 
             // The page should indicate no change is needed or simply stay current

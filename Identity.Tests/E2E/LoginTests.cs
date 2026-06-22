@@ -1,6 +1,8 @@
 namespace Identity.Tests.E2E;
 
+using System.Text.RegularExpressions;
 using Infrastructure;
+using Microsoft.Playwright;
 
 [Trait("Category", "E2E")]
 [Collection(E2ECollection.Name)]
@@ -19,7 +21,7 @@ public sealed class LoginTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("#login-submit");
 
-            await page.WaitForURLAsync(url => !url.Contains("/Account/Login"));
+            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
             Assert.DoesNotContain("/Account/Login", page.Url);
         }
     }
@@ -38,7 +40,7 @@ public sealed class LoginTests(PlaywrightFixture fixture)
             await page.ClickAsync("#login-submit");
 
             // Should stay on login page with a validation error
-            await page.WaitForURLAsync("**/Account/Login**");
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
             var errorText = await page.TextContentAsync("#validation-errors");
             Assert.NotNull(errorText);
         }

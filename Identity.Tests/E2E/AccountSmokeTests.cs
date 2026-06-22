@@ -1,6 +1,8 @@
 namespace Identity.Tests.E2E;
 
+using System.Text.RegularExpressions;
 using Infrastructure;
+using Microsoft.Playwright;
 
 [Collection(E2ECollection.Name)]
 [Trait("Category", "Smoke")]
@@ -24,7 +26,7 @@ public sealed class AccountSmokeTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Password']", password);
             await page.FillAsync("input[name='Input.ConfirmPassword']", password);
             await page.ClickAsync("#registerSubmit");
-            await page.WaitForURLAsync("**/Account/RegisterConfirmation**");
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/RegisterConfirmation"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
 
             // Confirm email directly in the database (no inbox required)
             await fixture.ConfirmUserEmailAsync(email);
@@ -34,14 +36,14 @@ public sealed class AccountSmokeTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("#login-submit");
-            await page.WaitForURLAsync(url => !url.Contains("/Account/Login"));
+            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
             Assert.DoesNotContain("/Account/Login", page.Url);
 
             // DELETE
             await page.GotoAsync("/Account/Manage/DeletePersonalData");
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("#delete-account-submit");
-            await page.WaitForURLAsync(url => !url.Contains("/Account/Manage"));
+            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Manage"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
         }
 
         // Verify deletion — login must now fail
@@ -52,7 +54,7 @@ public sealed class AccountSmokeTests(PlaywrightFixture fixture)
             await page2.FillAsync("input[name='Input.Email']", email);
             await page2.FillAsync("input[name='Input.Password']", password);
             await page2.ClickAsync("#login-submit");
-            await page2.WaitForURLAsync("**/Account/Login**");
+            await Assertions.Expect(page2).ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
             var error = await page2.TextContentAsync("#validation-errors");
             Assert.NotNull(error);
         }

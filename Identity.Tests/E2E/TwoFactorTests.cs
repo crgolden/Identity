@@ -103,11 +103,11 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
             await loginPage.ClickAsync("#login-submit");
 
             // Should be challenged for 2FA
-            await loginPage.WaitForURLAsync("**/Account/LoginWith2fa**");
+            await Assertions.Expect(loginPage).ToHaveURLAsync(new Regex("/Account/LoginWith2fa"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
 
             // Use recovery code path
             await loginPage.ClickAsync("#recovery-code-login");
-            await loginPage.WaitForURLAsync("**/Account/LoginWithRecoveryCode**");
+            await Assertions.Expect(loginPage).ToHaveURLAsync(new Regex("/Account/LoginWithRecoveryCode"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
             await loginPage.FillAsync("input[name='Input.RecoveryCode']", recoveryCode);
             await loginPage.ClickAsync("#recovery-code-submit");
 
@@ -147,7 +147,7 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
             // Reset authenticator key
             await page.GotoAsync("/Account/Manage/TwoFactorAuthentication");
             await page.ClickAsync("#reset-authenticator");
-            await page.WaitForURLAsync("**/Account/Manage/ResetAuthenticator**");
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/Manage/ResetAuthenticator"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
             await page.ClickAsync("#reset-authenticator-button");
 
             // Should redirect to EnableAuthenticator to set up a new key
