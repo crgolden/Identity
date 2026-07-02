@@ -29,7 +29,7 @@ new IdentityResource { Name = "e2e-profile", DisplayName = "E2E Profile" }
 
 Tests that exercise admin pages must run as a user with the `Admin` role. Options:
 1. Seed an admin-role user in `PlaywrightFixture` (separate from the smoke-test user).
-2. Assign the `Admin` role to the existing E2E test user (`SmokeTestEmail` from User Secrets) for the duration of the suite and remove it in `DisposeAsync`.
+2. Assign the `Admin` role to the existing E2E test user (`TestEmail` from User Secrets) for the duration of the suite and remove it in `DisposeAsync`.
 
 ### Page Object Model
 
@@ -73,7 +73,7 @@ Each admin section should have a Page Object class under `Identity.Tests/Pages/A
 | C8 | Edit/Scopes — update scope → persists | Change scope value on existing row; save; revisit; assert updated value | Tests update-existing diff path |
 | C9 | Edit/Secrets — add secret → persists | Add secret row (Value + Type); save; revisit Details/Secrets; assert row appears (Value is hashed, not shown) | |
 | C10 | Delete — removes client | Navigate to Delete; confirm; assert client no longer in Index | Cleanup test — should run last |
-| *Repeat C6–C8 for:* | Claims, CorsOrigins, GrantTypes, IdPRestrictions, PostLogoutRedirectUris, Properties, RedirectUris | Same pattern | 8 collection sub-properties × 3 scenarios = 24 additional tests |
+| *Repeat C6–C8 for:* | Claims, CorsOrigins, GrantTypes, IdPRestrictions, PostLogoutRedirectUris, Properties, RedirectUris | Same pattern | 7 collection sub-properties × 3 scenarios = 21 additional tests (Scopes + Secrets, covered above, bring the Client child-collection total to 9) |
 
 ---
 
@@ -184,7 +184,7 @@ For **Keys** and **SamlLogoutSessionRequestIndices** (read-only, no Delete): Ind
 |---|---|
 | Auth / Access Control | 4 |
 | Landing Page | 2 |
-| Clients (CRUD + 10 collections × 3) | ~35 |
+| Clients (CRUD + 9 collections × 3) | ~35 |
 | ApiResources | ~15 |
 | ApiScopes | ~8 |
 | IdentityResources | ~8 |

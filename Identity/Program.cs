@@ -4,7 +4,6 @@ using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Threading.Channels;
 using Azure.Identity;
-using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Azure.Security.KeyVault.Secrets;
 using Duende.IdentityServer;
 using Elastic.Ingest.Elasticsearch;
@@ -106,12 +105,14 @@ try
             .WithMetrics(meterProviderBuilder => meterProviderBuilder
                 .AddMeter(Duende.IdentityServer.Telemetry.ServiceName)
                 .AddMeter(nameof(Identity))
+                .AddMeter("Microsoft.AspNetCore.Hosting")
                 .AddRuntimeInstrumentation()
-                .AddView(instrument =>
-                    instrument.Meter.Name == "System.Net.Http" ? MetricStreamConfiguration.Drop : null)
                 .AddOtlpExporter(o => o.Endpoint = new Uri(builder.Configuration.GetRequired<string>("AlloyEndpoint"))))
             .WithTracing(tracerProviderBuilder => tracerProviderBuilder
                 .SetSampler(new AlwaysOnSampler())
+                .AddAspNetCoreInstrumentation()
+                .AddHttpClientInstrumentation()
+                .AddSqlClientInstrumentation()
                 .AddSource(nameof(Identity))
                 .AddSource(IdentityServerConstants.Tracing.Basic)
                 .AddSource(IdentityServerConstants.Tracing.Cache)
@@ -120,7 +121,7 @@ try
                 .AddSource(IdentityServerConstants.Tracing.Validation)
                 .AddEntityFrameworkCoreInstrumentation()
                 .AddOtlpExporter(o => o.Endpoint = new Uri(builder.Configuration.GetRequired<string>("AlloyEndpoint"))))
-            .UseAzureMonitor().Services
+            .Services
             .AddDataProtection()
             .SetApplicationName(applicationName)
             .PersistKeysToAzureBlobStorage(blobUri, tokenCredential)

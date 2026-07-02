@@ -76,18 +76,23 @@ dotnet user-secrets set "SqlConnectionStringBuilder:DataSource" "<your-sql-serve
 dotnet user-secrets set "APPLICATIONINSIGHTS_CONNECTION_STRING" "<your-app-insights-connection-string>"
 ```
 
-The following secrets must be present in Azure Key Vault (fetched at startup via `DefaultAzureCredential`):
+The following secrets must be present in Azure Key Vault. In production they are fetched at startup via `DefaultAzureCredential` (see `SecretClientExtensions.GetIdentitySecrets`):
 
 | Secret Name | Description |
 |---|---|
-| `GravatarApiSecretKey` | Gravatar API key |
-| `ElasticsearchUsername` | Elasticsearch username |
-| `ElasticsearchPassword` | Elasticsearch password |
-| `SqlServerUserId` | SQL Server login user |
-| `SqlServerPassword` | SQL Server login password |
 | `GoogleClientId` | Google OAuth client ID |
 | `GoogleClientSecret` | Google OAuth client secret |
-| `ServiceBusNamespace` | Azure Service Bus fully-qualified namespace (production) |
+| `GravatarApiSecretKey` | Gravatar API key |
+| `IdentitySqlServerUserId` | SQL Server login user |
+| `IdentitySqlServerPassword` | SQL Server login password |
+| `ElasticsearchUsername` | Elasticsearch username |
+| `ElasticsearchPassword` | Elasticsearch password |
+| `ReCAPTCHASiteKey` | Google reCAPTCHA v3 site key |
+| `ReCAPTCHASecretKey` | Google reCAPTCHA v3 secret key |
+| `AdminEmail` | Admin-role account email |
+| `TestEmail` | E2E/smoke test account email |
+
+The Azure Service Bus namespace is supplied as the `ServiceBusNamespace` **configuration** value (not fetched through `GetIdentitySecrets`).
 
 ### 2. Set Up the Database
 
@@ -112,7 +117,7 @@ cd Identity
 dotnet run
 ```
 
-App is available at `https://localhost:7261` (HTTPS) or `http://localhost:5021` (HTTP).
+App is available at `https://localhost:7261` (the only profile defined in `launchSettings.json`).
 
 ## Project Structure
 
@@ -158,7 +163,7 @@ sqlpackage /Action:Publish /SourceFile:Identity.Data/bin/Release/Identity.Data.d
 # Run benchmarks
 dotnet run --project Identity.Benchmarks -c Release
 
-# Run mutation tests (Stryker — slow, runs against 5 core source files)
+# Run mutation tests (Stryker — slow; see stryker-config.json for the mutated files)
 dotnet stryker --config-file stryker-config.json
 
 # Publish web app (-r win-x86 required: Azure App Service Free tier supports 32-bit only)
@@ -167,7 +172,7 @@ dotnet publish Identity -c Release -r win-x86 --self-contained false -o ./publis
 
 ## AI Assistant Integration (Claude Code)
 
-Five MCP servers are configured via `~/.claude.json`. `crgolden/.claude/settings.json` explicitly allows `github`, `playwright`, `azure`, and `sonarqube`. `chrome-devtools` connects but its tool calls require manual approval.
+Five MCP servers are configured in `.mcp.json` at the `crgolden/` workspace root (`github`, `azure`, `sonarqube`, `playwright`, `chrome-devtools`). `crgolden/.claude/settings.json` governs which are auto-allowed; `chrome-devtools` tool calls require manual approval.
 
 | Server | Source | Purpose |
 |---|---|---|
@@ -196,15 +201,19 @@ The workflow also runs on a **weekly schedule** (Monday 02:00 UTC).
 **Build job** — runs on every trigger:
 1. Builds the full solution (`dotnet build --no-incremental --configuration Release`), which also compiles `Identity.Data.sqlproj` and produces the `.dacpac`
 2. Runs unit tests with coverage
-3. Logs in to Azure via OIDC, deploys the E2E test database schema, then runs E2E tests with `ASPNETCORE_ENVIRONMENT=CI` — the `CI` environment loads `appsettings.CI.json` which enables only `AzureCliCredential`, so the in-process test server authenticates against Key Vault using the workflow's OIDC identity
-4. Runs load tests (on `schedule` or `workflow_dispatch` only)
-5. Runs SonarCloud analysis, publishes the web app, and uploads both artifacts
+3. Deploys the E2E test database schema (`SqlPackage`), then runs E2E tests with `ASPNETCORE_ENVIRONMENT=CI`. There is no `appsettings.CI.json` — the test server's secrets (Google, Gravatar, reCAPTCHA, SQL login, Service Bus) are injected as environment variables, and the production-only Key Vault fetch path is never reached under the `CI` environment
+4. Reports E2E results to Azure DevOps and Azure Monitor; uploads test results and Playwright failure artifacts
+5. Runs load tests (on `schedule` or `workflow_dispatch` only)
+6. Runs SonarCloud analysis, publishes the web app (`-r win-x86`), and uploads the app, `.dacpac`, and test binaries
 
-**Mutation job** — runs on `schedule` or `workflow_dispatch`:
-- Runs Stryker mutation testing against four core source files; uploads the HTML/JSON report as `stryker-report`
-
-**Deploy job** — runs after a successful build:
+**Deploy job** — runs after a successful build (skipped on `pull_request`):
 1. Deploys the `.dacpac` to the production SQL Server via `SqlPackage`
 2. Deploys the web app to **Azure App Service** `crgolden-identity` (Production slot) via Azure OIDC
 
 Database schema is always deployed before the app to ensure a valid schema is in place when the app starts.
+
+**Smoke job** — runs after deploy, only on `main`:
+- Downloads the test binaries and runs the `Category=Smoke` suite against the deployed site (`SMOKE_BASE_URL`); reports results to Azure DevOps and Azure Monitor
+
+**Mutation job** — runs on `schedule` or `workflow_dispatch`:
+- Runs Stryker mutation testing over the source files listed in `stryker-config.json` (`GravatarService.cs`, `ConfigurationExtensions.cs`, `EndpointRouteBuilderExtensions.cs`; the config also lists a stale `EmailSender.cs` that no longer exists), and uploads the HTML/JSON report as `stryker-report`

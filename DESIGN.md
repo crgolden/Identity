@@ -341,7 +341,7 @@ All pages under `/Admin` require the `"Admin"` role. Authorization is applied at
 | Section | URL prefix | Backing interface | Notes |
 |---|---|---|---|
 | Landing | `/Admin` | — | Card grid linking to all sections |
-| Clients | `/Admin/Clients` | `IConfigurationDbContext` | 10 collection sub-properties |
+| Clients | `/Admin/Clients` | `IConfigurationDbContext` | 9 collection sub-properties |
 | API Resources | `/Admin/ApiResources` | `IConfigurationDbContext` | 4 collection sub-properties |
 | API Scopes | `/Admin/ApiScopes` | `IConfigurationDbContext` | 2 collection sub-properties |
 | Identity Resources | `/Admin/IdentityResources` | `IConfigurationDbContext` | 2 collection sub-properties |
@@ -451,7 +451,7 @@ EF Core migrations are not used. The `Identity.Data/` SQL Server Database Projec
 | **Azure Service Bus** | Transactional email (confirmation, password reset) | Pages inject `IAzureClientFactory<ServiceBusClient>`; call `CreateClient("crgolden")` then `CreateSender("email")` per send; namespace from Key Vault (production) or connection string (non-production) |
 | **Gravatar** | User avatar images via SHA-256 email hash | `IAvatarService` → `GravatarService` (scoped); NSwag-generated `IGravatar` HTTP client with Bearer auth |
 | **Google APIs** | External OpenID Connect login | `AddGoogleOpenIdConnect`; Client ID/Secret from Key Vault |
-| **Azure Key Vault** | Runtime secrets (DB credentials, API keys, OAuth secrets) | `SecretClient`; 8 secrets fetched concurrently at startup via `Task.WhenAll` |
+| **Azure Key Vault** | Runtime secrets (DB credentials, API keys, OAuth secrets) | `SecretClient`; the 11 secrets in `SecretClientExtensions.GetIdentitySecrets()` are fetched at startup (production only) |
 | **Azure Blob Storage** | Data Protection key persistence | `PersistKeysToAzureBlobStorage` |
 | **Azure Key Vault** | Data Protection key encryption | `ProtectKeysWithAzureKeyVault` |
 
@@ -473,7 +473,7 @@ Options are sourced from `DefaultAzureCredentialOptions` in User Secrets (develo
 
 - Bootstrap logger writes to console before the host is built.
 - After build, a full Serilog pipeline is configured:
-  - **Production:** Elasticsearch sink to data stream `logs-dotnet-identity` (ECS format, basic auth, `BootstrapMethod.Failure` so a missing node does not crash startup) + OpenTelemetry sink.
+  - **Production:** Elasticsearch sink to data stream `logs-dotnet-Identity` (ECS format, basic auth, `BootstrapMethod.Failure` so a missing node does not crash startup) + OpenTelemetry sink.
   - **Non-production:** console sink only; Duende's `IdentityServer.Diagnostics.Summary` source filtered out.
 
 ### Distributed tracing and metrics — OpenTelemetry → Azure Monitor
@@ -532,7 +532,7 @@ Allowed origins are read from the `CorsPolicy:Origins` configuration array (supp
 ### Service registration order (`Program.cs`)
 
 1. User Secrets (Development only)
-2. Azure Key Vault secrets — fetched concurrently at startup
+2. Azure Key Vault secrets — fetched at startup (production only)
 3. OpenTelemetry (metrics + tracing) → Azure Monitor
 4. Serilog
 5. SQL connection string configuration → `DbContextPool<ApplicationDbContext>`
@@ -604,7 +604,7 @@ Test collections run serially (`parallelizeTestCollections: false` in `xunit.run
 
 ### Mutation testing
 
-Stryker targets three core files: `GravatarService.cs`, `ConfigurationExtensions.cs`, `EndpointRouteBuilderExtensions.cs`. Thresholds: high ≥ 80, low ≥ 60, break < 50.
+Stryker targets `GravatarService.cs`, `ConfigurationExtensions.cs`, and `EndpointRouteBuilderExtensions.cs` (the `stryker-config.json` `mutate` array also lists a stale `EmailSender.cs` that no longer exists in the codebase). Thresholds: high ≥ 80, low ≥ 60, break < 50.
 
 ---
 
@@ -621,7 +621,7 @@ Defined in `.github/workflows/main_crgolden-identity.yml`. Triggers: push to `ma
 5. Azure OIDC login → deploy `.dacpac` to E2E test database.
 6. Run E2E tests (`ASPNETCORE_ENVIRONMENT=CI`); write `coverage-e2e.xml`.
 7. End SonarCloud scan (reads both coverage files).
-8. Publish web app (`-r win-x64 --self-contained false`).
+8. Publish web app (`-r win-x86 --self-contained false`).
 9. Upload artifacts: published app, `.dacpac`, test results.
 
 ### Deploy job (`windows-latest`, after build)
@@ -632,12 +632,20 @@ Defined in `.github/workflows/main_crgolden-identity.yml`. Triggers: push to `ma
 
 The database is always deployed before the application to ensure schema readiness on startup.
 
+### Smoke job (`windows-latest`, after deploy, `main` only)
+
+Downloads the published test binaries and runs the `Category=Smoke` suite against the deployed site (`SMOKE_BASE_URL`), then reports results to Azure DevOps and Azure Monitor.
+
+### Mutation job (`windows-latest`, `schedule` or `workflow_dispatch`)
+
+Builds the solution and runs Stryker.NET (`stryker-config.json`), uploading the report as the `stryker-report` artifact.
+
 ### Environment differences
 
 | Setting | Development | CI | Production |
 |---|---|---|---|
 | Azure credentials | `AzureCliCredential`, `VisualStudioCredential` | `AzureCliCredential` | Full `DefaultAzureCredential` |
-| Config source | User Secrets | `appsettings.CI.json` + env vars | Azure App Configuration + env vars |
+| Config source | User Secrets | Environment variables (no `appsettings.CI.json`) | Key Vault + env vars |
 | Serilog | Console only | Elasticsearch (`BootstrapMethod.Failure`) | Elasticsearch + OpenTelemetry |
 | Passkey origin | Relaxed (`localhost:7261`) | Strict | Strict |
 | IdentityServer events | All (errors, info, failures, successes) | Default | Default |
