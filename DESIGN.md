@@ -476,9 +476,9 @@ Options are sourced from `DefaultAzureCredentialOptions` in User Secrets (develo
   - **Production:** Elasticsearch sink to data stream `logs-dotnet-Identity` (ECS format, basic auth, `BootstrapMethod.Failure` so a missing node does not crash startup) + OpenTelemetry sink.
   - **Non-production:** console sink only; Duende's `IdentityServer.Diagnostics.Summary` source filtered out.
 
-### Distributed tracing and metrics — OpenTelemetry → Azure Monitor
+### Distributed tracing and metrics — OpenTelemetry → Grafana Alloy
 
-`UseAzureMonitor()` exports all signals. Additional sources subscribed:
+`AddOtlpExporter()` (pointed at `AlloyEndpoint`) exports all signals — Azure Monitor/`UseAzureMonitor()` was removed. Additional sources subscribed:
 
 **Meters:**
 - `Duende.IdentityServer` — built-in token issuance, introspection, secret validation
@@ -533,7 +533,7 @@ Allowed origins are read from the `CorsPolicy:Origins` configuration array (supp
 
 1. User Secrets (Development only)
 2. Azure Key Vault secrets — fetched at startup (production only)
-3. OpenTelemetry (metrics + tracing) → Azure Monitor
+3. OpenTelemetry (metrics + tracing) → Grafana Alloy (OTLP)
 4. Serilog
 5. SQL connection string configuration → `DbContextPool<ApplicationDbContext>`
 6. ASP.NET Identity (`IdentityUser<Guid>`, `IdentityRole<Guid>`) + EF stores

@@ -34,7 +34,7 @@ Identity is the **authorization server** for a five-app system. It issues all ac
 - **Server-side session management** — view and remove active user sessions
 - **Redirect page** — loading page for native client redirects
 - **Diagnostics page** — current user claims and tokens (development only)
-- **Azure Monitor** (OpenTelemetry metrics & traces — including Duende IdentityServer built-in signals)
+- **OpenTelemetry** → Grafana Alloy (OTLP metrics & traces — including Duende IdentityServer built-in signals)
 - **Serilog** structured logging with Elasticsearch sink
 - **Data Protection** keys persisted to Azure Blob Storage, protected by Azure Key Vault
 
@@ -49,7 +49,7 @@ Identity is the **authorization server** for a five-app system. It issues all ac
 | Schema deployment | SQL Database Project (dacpac) |
 | Email | Azure Service Bus |
 | Pictures | Gravatar API |
-| Observability | Azure Monitor, OpenTelemetry, Serilog, Elasticsearch |
+| Observability | OpenTelemetry → Grafana Alloy (OTLP), Serilog → Elasticsearch |
 | Hosting | Azure App Service |
 | Secrets | Azure Key Vault |
 
@@ -73,7 +73,7 @@ dotnet user-secrets set "KeyVaultUri" "<your-key-vault-uri>"
 dotnet user-secrets set "BlobUri" "<your-blob-storage-uri>"
 dotnet user-secrets set "DataProtectionKeyIdentifier" "<your-key-vault-key-uri>"
 dotnet user-secrets set "SqlConnectionStringBuilder:DataSource" "<your-sql-server>"
-dotnet user-secrets set "APPLICATIONINSIGHTS_CONNECTION_STRING" "<your-app-insights-connection-string>"
+dotnet user-secrets set "AlloyEndpoint" "<your-grafana-alloy-otlp-endpoint>"
 ```
 
 The following secrets must be present in Azure Key Vault. In production they are fetched at startup via `DefaultAzureCredential` (see `SecretClientExtensions.GetIdentitySecrets`):
