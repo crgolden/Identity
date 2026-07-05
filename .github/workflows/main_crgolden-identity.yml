@@ -104,6 +104,8 @@ jobs:
             /d:sonar.scanner.skipJreProvisioning=true
 
       - name: Build with dotnet
+        env:
+          NuGetPackageSourceCredentials_GitHub: Username=${{ github.actor }};Password=${{ secrets.PACKAGES_READ_TOKEN }}
         run: dotnet build --no-incremental --configuration Release
 
       - name: Run unit tests with coverage
@@ -290,6 +292,8 @@ jobs:
           dotnet test --project Identity.Tests --no-build --configuration Release -- --filter-trait Category=Load
 
       - name: dotnet publish
+        env:
+          NuGetPackageSourceCredentials_GitHub: Username=${{ github.actor }};Password=${{ secrets.PACKAGES_READ_TOKEN }}
         run: >
           dotnet publish Identity/Identity.csproj
           -c Release
@@ -549,6 +553,8 @@ jobs:
         run: dotnet tool install --global dotnet-stryker
 
       - name: Build solution
+        env:
+          NuGetPackageSourceCredentials_GitHub: Username=${{ github.actor }};Password=${{ secrets.PACKAGES_READ_TOKEN }}
         run: dotnet build --configuration Release
 
       - name: Run Stryker mutation tests
