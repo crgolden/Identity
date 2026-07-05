@@ -132,9 +132,10 @@ public class GravatarServiceTests
         var expectedHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(profileIdentifier))).ToLowerInvariant();
         string? capturedOperationName = null;
         string? capturedHashTag = null;
+        const string activitySourceName = nameof(Identity);
         using var listener = new ActivityListener
         {
-            ShouldListenTo = source => source.Name == Telemetry.ActivitySource.Name,
+            ShouldListenTo = source => source.Name == activitySourceName,
             Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData,
             ActivityStopped = activity =>
             {
