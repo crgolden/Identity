@@ -24,7 +24,7 @@ $env:SqlConnectionStringBuilder__Password       = $secrets.SqlConnectionStringBu
 
 try
 {
-    & ".\Identity.Tests\bin\Debug\net10.0\Identity.Tests.exe" -trait "Category=Smoke" -showLiveOutput
+    & ".\Identity.Tests.E2E\bin\Debug\net10.0\Identity.Tests.E2E.exe" -trait "Category=Smoke" -showLiveOutput
 }
 finally
 {

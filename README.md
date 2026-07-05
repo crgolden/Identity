@@ -124,7 +124,8 @@ App is available at `https://localhost:7261` (the only profile defined in `launc
 ```
 Identity/            # ASP.NET Core 10 Razor Pages web app and DbContext
 Identity.Data/       # SQL Server Database Project — schema source of truth, builds to .dacpac
-Identity.Tests/      # xUnit v3 test project: unit tests (Moq), E2E tests (Playwright/Chromium), load tests
+Identity.Tests.Unit/ # xUnit v3 test project: unit tests (Moq)
+Identity.Tests.E2E/  # xUnit v3 test project: E2E tests (Playwright/Chromium), load tests, smoke tests
 Identity.Benchmarks/ # BenchmarkDotNet microbenchmarks for authentication hot paths
 ```
 
@@ -137,19 +138,16 @@ Identity.Benchmarks/ # BenchmarkDotNet microbenchmarks for authentication hot pa
 dotnet build
 
 # Unit tests only
-dotnet test --project Identity.Tests --configuration Release -- --filter-trait "Category=Unit"
+dotnet test --project Identity.Tests.Unit --configuration Release -- --filter-trait "Category=Unit"
 
 # Unit tests with TRX report (written to TestResults/unit-tests.trx)
-dotnet test --project Identity.Tests --configuration Release -- --filter-trait "Category=Unit" --report-trx --report-trx-filename unit-tests.trx
+dotnet test --project Identity.Tests.Unit --configuration Release -- --filter-trait "Category=Unit" --report-trx --report-trx-filename unit-tests.trx
 
 # E2E tests (local) — requires Development environment for User Secrets
-ASPNETCORE_ENVIRONMENT=Development SqlConnectionStringBuilder__InitialCatalog=IdentityTest dotnet test --project Identity.Tests --configuration Release -- --filter-trait "Category=E2E"
-
-# All tests (unit + E2E, local) — serialized; takes ~5-6 minutes
-ASPNETCORE_ENVIRONMENT=Development SqlConnectionStringBuilder__InitialCatalog=IdentityTest dotnet test --project Identity.Tests --configuration Release
+ASPNETCORE_ENVIRONMENT=Development SqlConnectionStringBuilder__InitialCatalog=IdentityTest dotnet test --project Identity.Tests.E2E --configuration Release -- --filter-trait "Category=E2E"
 
 # Load tests (requires E2E infrastructure — database + Key Vault)
-ASPNETCORE_ENVIRONMENT=Development SqlConnectionStringBuilder__InitialCatalog=IdentityTest dotnet test --project Identity.Tests --configuration Release -- --filter-trait "Category=Load"
+ASPNETCORE_ENVIRONMENT=Development SqlConnectionStringBuilder__InitialCatalog=IdentityTest dotnet test --project Identity.Tests.E2E --configuration Release -- --filter-trait "Category=Load"
 
 # Install sqlpackage once (if not already installed)
 dotnet tool install --global microsoft.sqlpackage

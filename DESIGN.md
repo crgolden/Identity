@@ -231,7 +231,8 @@ Built on:
 |---|---|---|
 | `Identity/` | ASP.NET Core 10 web app | The running application — Razor Pages, services, `Program.cs`, `ApplicationDbContext` |
 | `Identity.Data/` | SQL Server Database Project (SSDT) | Authoritative schema source; builds to a `.dacpac` for production deployment |
-| `Identity.Tests/` | xUnit v3 test project | Unit, E2E (Playwright/Chromium), load, and property-based tests |
+| `Identity.Tests.Unit/` | xUnit v3 test project | Unit and property-based tests |
+| `Identity.Tests.E2E/` | xUnit v3 test project | E2E (Playwright/Chromium), load, and smoke tests |
 | `Identity.Benchmarks/` | BenchmarkDotNet project | Microbenchmarks for password hashing and Gravatar SHA-256 computation |
 
 ---

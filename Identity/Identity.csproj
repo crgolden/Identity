@@ -56,7 +56,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="Identity.Tests" />
+    <InternalsVisibleTo Include="Identity.Tests.Unit" />
   </ItemGroup>
 
   <ItemGroup>

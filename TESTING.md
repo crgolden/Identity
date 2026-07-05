@@ -14,41 +14,43 @@ Unit test coding standards (MockBehavior.Strict, argument verification, SetupSeq
 
 User Secrets ID: `aspnet-Identity-149346d0-999f-4a74-8ff7-2a92d39790f2`
 
-### Unit Tests
+### Unit Tests (`Identity.Tests.Unit`)
 
-No Azure credentials required. All unit test classes must carry `[Collection(UnitCollection.Name)]` (required by Stryker MTP coverage capture).
+No Azure credentials required, no Playwright dependency. All unit test classes must carry `[Collection(UnitCollection.Name)]` (required by Stryker MTP coverage capture). Collections run in parallel (`parallelizeTestCollections: true`) since there's no longer a shared Kestrel/Playwright fixture to serialize around.
 
 ```powershell
-dotnet build Identity.Tests --configuration Debug
-.\Identity.Tests\bin\Debug\net10.0\Identity.Tests.exe -trait "Category=Unit" -showLiveOutput
+dotnet build Identity.Tests.Unit --configuration Debug
+.\Identity.Tests.Unit\bin\Debug\net10.0\Identity.Tests.Unit.exe -trait "Category=Unit" -showLiveOutput
 ```
 
-### E2E Tests (local)
+### E2E Tests (local, `Identity.Tests.E2E`)
 
 Require a running SQL Server with test database `IdentityTest` and configured User Secrets. No `az login` needed — Azure credentials are only constructed inside `IsProduction()` in `Program.cs`, which is never reached in Development.
 
 ```powershell
 $env:ASPNETCORE_ENVIRONMENT = "Development"
 $env:SqlConnectionStringBuilder__InitialCatalog = "IdentityTest"
-dotnet build Identity.Tests --configuration Debug
-.\Identity.Tests\bin\Debug\net10.0\Identity.Tests.exe -trait "Category=E2E" -showLiveOutput
+dotnet build Identity.Tests.E2E --configuration Debug
+.\Identity.Tests.E2E\bin\Debug\net10.0\Identity.Tests.E2E.exe -trait "Category=E2E" -showLiveOutput
 
 # Redirect output for in-flight inspection
-cmd /c "Identity.Tests\bin\Debug\net10.0\Identity.Tests.exe -trait ""Category=E2E"" -showLiveOutput > C:\temp\identity-e2e.txt 2>&1"
+cmd /c "Identity.Tests.E2E\bin\Debug\net10.0\Identity.Tests.E2E.exe -trait ""Category=E2E"" -showLiveOutput > C:\temp\identity-e2e.txt 2>&1"
 ```
 
 ### Single Test (by method name)
 
 ```powershell
-.\Identity.Tests\bin\Debug\net10.0\Identity.Tests.exe -method "*MethodName*" -showLiveOutput
+.\Identity.Tests.Unit\bin\Debug\net10.0\Identity.Tests.Unit.exe -method "*MethodName*" -showLiveOutput
+.\Identity.Tests.E2E\bin\Debug\net10.0\Identity.Tests.E2E.exe -method "*MethodName*" -showLiveOutput
 ```
 
 ---
 
-**Test types**
-- **Unit** — xUnit page-model / service / API tests (`Category=Unit`); includes property-based (`PropertyBased/`) and resilience (`Resilience/`) sub-folders
-- **E2E** — Playwright browser tests (`Category=E2E`); includes OIDC discovery tests (`Oidc/`) and IdentityServer flow tests (`ConsentTests`, `GrantsTests`, `DiagnosticsTests`, `ServerSideSessionsTests`)
-- **Load** — throughput / failure-rate tests using `Parallel.ForEachAsync` + `HttpClient` (`Category=Load`); run separately (requires live server)
+**Test types (two physical projects)**
+- **`Identity.Tests.Unit`** — xUnit page-model / service / API tests (`Category=Unit`); includes property-based (`PropertyBased/`) sub-folder. No Playwright/`Microsoft.AspNetCore.Mvc.Testing` dependency.
+- **`Identity.Tests.E2E`** — Playwright browser tests (`Category=E2E`); includes OIDC discovery tests (`Oidc/`) and IdentityServer flow tests (`ConsentTests`, `GrantsTests`, `DiagnosticsTests`, `ServerSideSessionsTests`), plus `Security/` (`AntiforgeryTests`, `ConcurrentLockoutTests`, `OpenRedirectTests`)
+- **`Identity.Tests.E2E` — Load** — throughput / failure-rate tests using `Parallel.ForEachAsync` + `HttpClient` (`Category=Load`, `Load/LoadTests.cs`); run separately (requires live server)
+- **`Identity.Tests.E2E` — Smoke** — post-deploy smoke tests (`Category=Smoke`, `AccountSmokeTests`) run against the live deployed site
 
 **Coverage legend**
 | Symbol | Meaning |
@@ -1198,7 +1200,7 @@ Custom `Identity` meter counters (`Telemetry.cs`) are verified with `MeterListen
 
 ## 17. Security Tests
 
-`Identity.Tests/Security/OpenRedirectTests.cs` — `[Trait("Category", "E2E")]`
+`Identity.Tests.E2E/Security/OpenRedirectTests.cs` — `[Trait("Category", "E2E")]`
 
 These tests use Playwright to verify that all login paths reject attacker-controlled `returnUrl` values and never issue redirects to external hosts.
 
@@ -1314,16 +1316,16 @@ The following paths have no meaningful behavioral test coverage and are candidat
 
 ## 19. Load, Property-Based & Resilience Tests
 
-### Load Tests (`Identity.Tests/Load/`)
+### Load Tests (`Identity.Tests.E2E/Load/`)
 
 ```bash
 # Debug is fine for local runs — no Angular build or other Release-only artifact involved.
-ASPNETCORE_ENVIRONMENT=Development SqlConnectionStringBuilder__InitialCatalog=IdentityTest dotnet test --project Identity.Tests --configuration Debug -- --filter-trait "Category=Load"
+ASPNETCORE_ENVIRONMENT=Development SqlConnectionStringBuilder__InitialCatalog=IdentityTest dotnet test --project Identity.Tests.E2E --configuration Debug -- --filter-trait "Category=Load"
 ```
 
 Load tests use `Parallel.ForEachAsync` + `HttpClient` (self-signed cert ignored) against the real Kestrel server started by `PlaywrightFixture`. They are excluded from normal CI runs and only execute on `schedule` or `workflow_dispatch`.
 
-> **Test parallelism note:** `xunit.runner.json` sets `parallelizeTestCollections: false`. This is required because `PlaywrightFixture` initializes `WebApplicationFactory<Program>`, whose startup makes concurrent external calls. When hundreds of unit tests run in parallel, thread pool saturation causes those async calls to time out and the factory throws "The entry point exited without ever building an IHost." Serializing collections eliminates the contention at the cost of a longer combined run (~5-6 min vs ~2.5 min). If you see this error, do not change the parallelism setting — diagnose the Azure credential or network path instead.
+> **Test parallelism note:** `Identity.Tests.E2E/xunit.runner.json` sets `parallelizeTestCollections: false`. This is required because `PlaywrightFixture` initializes `WebApplicationFactory<Program>`, whose startup makes concurrent external calls. When many E2E tests run in parallel, thread pool saturation causes those async calls to time out and the factory throws "The entry point exited without ever building an IHost." Serializing collections eliminates the contention at the cost of a longer combined run. If you see this error, do not change the parallelism setting — diagnose the Azure credential or network path instead. `Identity.Tests.Unit` has no such constraint and runs with `parallelizeTestCollections: true` since Playwright/`WebApplicationFactory` left with the E2E split.
 
 | Test | Endpoint | RPS | Pass Criterion |
 |---|---|---|---|
@@ -1332,7 +1334,7 @@ Load tests use `Parallel.ForEachAsync` + `HttpClient` (self-signed cert ignored)
 | `JwksEndpoint_Under100Rps_HasNegligibleFailures` | `/.well-known/openid-configuration/jwks` | ~100 | < 1% failure |
 | `HealthEndpoint_Under20Rps_AllSucceed` | `/Health` | ~20 | 0 failures |
 
-### Property-Based Tests (`Identity.Tests/PropertyBased/`)
+### Property-Based Tests (`Identity.Tests.Unit/PropertyBased/`)
 
 `[Trait("Category", "Unit")]` — run with the normal unit test suite.
 
@@ -1341,7 +1343,7 @@ Load tests use `Parallel.ForEachAsync` + `HttpClient` (self-signed cert ignored)
 | `PasswordHashingTests.cs` | Verifies `PasswordHasher<IdentityUser<Guid>>` round-trips any valid password (up to 72 bytes), rejects tampered hashes, and produces consistent results across instances |
 | `InputSanitizationTests.cs` | Verifies Gravatar hash is lowercase hex for arbitrary email strings; verifies email sender passes through arbitrary subjects/bodies unchanged |
 
-### Resilience Tests (`Identity.Tests/Resilience/`)
+### Resilience Tests (`Identity.Tests.Unit/Resilience/`)
 
 `[Trait("Category", "Unit")]` — run with the normal unit test suite.
 
@@ -1377,7 +1379,7 @@ The CI `mutation` job runs on schedule (Monday 02:00 UTC) and on manual dispatch
 
 ## 21. Admin UI Pages
 
-All pages under `Identity/Pages/Admin/` are unit-tested. E2E tests (`Category=E2E`) are in `Identity.Tests/E2E/AdminTests.cs` and require the `PlaywrightFixture` with seeded IS configuration entities and an admin-role user.
+All pages under `Identity/Pages/Admin/` are unit-tested. E2E tests (`Category=E2E`) are in `Identity.Tests.E2E/AdminTests.cs` and require the `PlaywrightFixture` with seeded IS configuration entities and an admin-role user.
 
 ### ID convention
 
@@ -1433,10 +1435,10 @@ See `Identity/Admin-E2E-Guide.md` for the full scenario list. E2E tests require:
 
 ## 22. Playwright Reporting
 
-`Identity.Tests` records Playwright diagnostics for every E2E browser context, then keeps them only when the xUnit test fails. Retained failure folders are written under:
+`Identity.Tests.E2E` records Playwright diagnostics for every E2E browser context, then keeps them only when the xUnit test fails. Retained failure folders are written under:
 
 ```text
-Identity.Tests/bin/<Configuration>/net10.0/TestResults/PlaywrightArtifacts/E2E/<test-name>/<context-id>/
+Identity.Tests.E2E/bin/<Configuration>/net10.0/TestResults/PlaywrightArtifacts/E2E/<test-name>/<context-id>/
 ```
 
 Each retained folder contains:
@@ -1487,8 +1489,8 @@ Do not add specific folder names to `.gitignore` for these artifacts; use the pa
 For local script validation against an existing TRX:
 
 ```powershell
-.\scripts\Publish-PlaywrightResultsToAzureDevOps.ps1 -AppName Identity -SuiteName E2E -TestResultsDirectory .\Identity.Tests\bin\Debug\net10.0\TestResults -DryRun
-.\scripts\Send-PlaywrightTelemetry.ps1 -AppName Identity -SuiteName E2E -TestResultsDirectory .\Identity.Tests\bin\Debug\net10.0\TestResults -ConnectionString "InstrumentationKey=00000000-0000-0000-0000-000000000000" -DryRun
+.\scripts\Publish-PlaywrightResultsToAzureDevOps.ps1 -AppName Identity -SuiteName E2E -TestResultsDirectory .\Identity.Tests.E2E\bin\Debug\net10.0\TestResults -DryRun
+.\scripts\Send-PlaywrightTelemetry.ps1 -AppName Identity -SuiteName E2E -TestResultsDirectory .\Identity.Tests.E2E\bin\Debug\net10.0\TestResults -ConnectionString "InstrumentationKey=00000000-0000-0000-0000-000000000000" -DryRun
 ```
 
 Do not run Git commands when implementing or verifying Playwright reporting changes.
@@ -1505,7 +1507,7 @@ $env:SONAR_TOKEN = "<token>"
   "-Dsonar.projectKey=crgolden_Identity" `
   "-Dsonar.organization=crgolden" `
   "-Dsonar.sources=Identity,Identity.Benchmarks" `
-  "-Dsonar.tests=Identity.Tests" `
+  "-Dsonar.tests=Identity.Tests.Unit,Identity.Tests.E2E" `
   "-Dsonar.exclusions=**/bin/**,**/obj/**" `
   "-Dsonar.cs.opencover.reportsPaths=coverage.opencover.xml" `
   "-Dsonar.cs.vscoveragexml.reportsPaths=coverage-e2e.xml"

@@ -2,7 +2,7 @@
   "stryker-config": {
     "project": "Identity.csproj",
     "test-projects": [
-      "../Identity.Tests/Identity.Tests.csproj"
+      "../Identity.Tests.Unit/Identity.Tests.Unit.csproj"
     ],
     "reporters": [
       "html",

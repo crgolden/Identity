@@ -17,6 +17,7 @@
     <Build />
     <Deploy />
   </Project>
-  <Project Path="Identity.Tests/Identity.Tests.csproj" />
+  <Project Path="Identity.Tests.E2E/Identity.Tests.E2E.csproj" Id="a14f95dd-c2ce-4adf-aecd-4ce4c20b9807" />
+  <Project Path="Identity.Tests.Unit/Identity.Tests.Unit.csproj" />
   <Project Path="Identity/Identity.csproj" />
 </Solution>

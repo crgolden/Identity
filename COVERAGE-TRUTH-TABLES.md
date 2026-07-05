@@ -19,8 +19,8 @@ the baseline; counts below are MC/DC `tests_to_author` read from source).
 
 ### Class: `ConsentModel`
 `Identity/Identity/Pages/Account/Manage/Consent.cshtml.cs`
-Unit tests: `Identity.Tests/Pages/Account/Manage/Consent.cshtmlTests.cs`
-E2E tests: `Identity.Tests/E2E/ConsentTests.cs`
+Unit tests: `Identity.Tests.Unit/Pages/Account/Manage/Consent.cshtmlTests.cs`
+E2E tests: `Identity.Tests.E2E/ConsentTests.cs`
 
 Tally: **rows 19 | ✅ 4 | ❌ 11 | ⏳ 4** &nbsp;·&nbsp; level split: **Unit 17 | E2E 0(sole) | Smoke 0 | Manual 0**
 (E2E exists for 3 paths but does not discharge their Unit obligation; see notes.)
@@ -102,7 +102,7 @@ plus compound predicates `Input == null || ScopesConsented.Contains(...)` (E, I,
 ## Class: `PasskeysModel` — 36 uncovered branches → ~15 tests
 `Identity/Identity/Pages/Account/Manage/Passkeys.cshtml.cs`
 No seam needed: `UserManager<IdentityUser<Guid>>` / `SignInManager<IdentityUser<Guid>>` are mocked by
-the existing Identity.Tests infrastructure; the private `DeletePasskey` is reached via the
+the existing Identity.Tests.Unit infrastructure; the private `DeletePasskey` is reached via the
 `OnPostUpdatePasskeyAsync` switch.
 
 #### `OnGetAsync()` — `tests_to_author = 2`

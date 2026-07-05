@@ -1,6 +1,6 @@
 # Admin UI — E2E Test Guide
 
-Captures what was manually spot-checked during browser verification and what a proper E2E test suite should cover for each admin section. Use this as the specification when adding `Category=E2E` tests to `Identity.Tests/Pages/Admin/`.
+Captures what was manually spot-checked during browser verification and what a proper E2E test suite should cover for each admin section. Use this as the specification when adding `Category=E2E` tests to `Identity.Tests.E2E/Pages/Admin/`.
 
 ---
 
@@ -33,7 +33,7 @@ Tests that exercise admin pages must run as a user with the `Admin` role. Option
 
 ### Page Object Model
 
-Each admin section should have a Page Object class under `Identity.Tests/Pages/Admin/E2E/PageObjects/` with typed helpers for Index, Create, Delete, Details, and Edit flows. Pattern from the existing E2E tests (`LoginPage`, `ManagePage`, etc.) applies directly.
+Each admin section should have a Page Object class under `Identity.Tests.E2E/Pages/Admin/PageObjects/` with typed helpers for Index, Create, Delete, Details, and Edit flows. Pattern from the existing E2E tests (`LoginPage`, `ManagePage`, etc.) applies directly.
 
 ---
 
