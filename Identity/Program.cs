@@ -4,7 +4,6 @@ using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Threading.Channels;
 using Azure.Identity;
-using Azure.Security.KeyVault.Secrets;
 using Duende.IdentityServer;
 using Elastic.Ingest.Elasticsearch;
 using Elastic.Ingest.Elasticsearch.DataStreams;
@@ -34,7 +33,12 @@ Log.Logger = new LoggerConfiguration().WriteTo.Console().CreateBootstrapLogger()
 try
 {
     var builder = WebApplication.CreateBuilder(args);
-    string googleClientId, googleClientSecret, gravatarApiSecretKey, reCAPTCHASiteKey, reCAPTCHASecretKey;
+    var (adminEmail, googleClientId, googleClientSecret, serviceBusConnectionString, ) = builder.Configuration.GetIdentitySecrets();
+    string googleClientId,
+        googleClientSecret,
+        gravatarApiSecretKey,
+        reCAPTCHASiteKey,
+        reCAPTCHASecretKey;
     var sqlConnectionStringBuilderSection = builder.Configuration.GetRequiredSection(nameof(SqlConnectionStringBuilder));
     var sqlConnectionStringBuilder = sqlConnectionStringBuilderSection.Get<SqlConnectionStringBuilder>() ?? throw new InvalidOperationException($"Invalid '{nameof(SqlConnectionStringBuilder)}' section.");
     var corsPolicySection = builder.Configuration.GetRequiredSection(nameof(CorsPolicy));
@@ -48,12 +52,9 @@ try
         var tokenCredential = new DefaultAzureCredential(defaultAzureCredentialOptions);
         Uri blobUri = builder.Configuration.GetRequired<Uri>("BlobUri"),
             dataProtectionKeyIdentifier = builder.Configuration.GetRequired<Uri>("DataProtectionKeyIdentifier"),
-            elasticsearchNode = builder.Configuration.GetRequired<Uri>("ElasticsearchNode"),
-            keyVaultUrl = builder.Configuration.GetRequired<Uri>("KeyVaultUri");
+            elasticsearchNode = builder.Configuration.GetRequired<Uri>("ElasticsearchNode");
         string applicationName = builder.Configuration.GetRequired<string>("WEBSITE_SITE_NAME"),
             serviceBusNamespace = builder.Configuration.GetRequired<string>("ServiceBusNamespace");
-        var secretClient = new SecretClient(keyVaultUrl, tokenCredential);
-        var secrets = secretClient.GetIdentitySecrets();
         googleClientId = secrets.GoogleClientId.Value;
         googleClientSecret = secrets.GoogleClientSecret.Value;
         gravatarApiSecretKey = secrets.GravatarApiSecretKey.Value;
@@ -145,7 +146,6 @@ try
                 .AddDatabaseDeveloperPageExceptionFilter();
         }
 
-        var secrets = builder.Configuration.GetIdentitySecrets();
         googleClientId = secrets.GoogleClientId;
         googleClientSecret = secrets.GoogleClientSecret;
         gravatarApiSecretKey = secrets.GravatarApiSecretKey;
