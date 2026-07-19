@@ -11,7 +11,7 @@ public class GenerateRecoveryCodesModel : PageModel
 
     public GenerateRecoveryCodesModel(UserManager<IdentityUser<Guid>> userManager)
     {
-        ArgumentNullException.ThrowIfNull(userManager);
+        ThrowIfNull(userManager);
         _userManager = userManager;
     }
 

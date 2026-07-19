@@ -48,7 +48,7 @@ public class ClaimsModel : PageModel
         await _userManager.RemoveClaimsAsync(user, existing);
         if (Claims.Count > 0)
         {
-            await _userManager.AddClaimsAsync(user, Claims.Select(c => new Claim(c.Type ?? string.Empty, c.Value ?? string.Empty)));
+            await _userManager.AddClaimsAsync(user, Claims.Select(c => new Claim(c.Type ?? Empty, c.Value ?? Empty)));
         }
 
         return RedirectToPage("/Admin/Users/Details/Claims", new { id });

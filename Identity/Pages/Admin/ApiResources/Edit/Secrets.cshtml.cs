@@ -18,7 +18,7 @@ public class SecretsModel : PageModel
     public int ResourceId { get; private set; }
 
     /// <summary>Gets the API resource name.</summary>
-    public string ResourceName { get; private set; } = string.Empty;
+    public string ResourceName { get; private set; } = Empty;
 
     /// <summary>Gets or sets the secrets.</summary>
     [BindProperty]

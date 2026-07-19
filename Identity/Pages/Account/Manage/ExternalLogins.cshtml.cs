@@ -1,5 +1,6 @@
 ﻿namespace Identity.Pages.Account.Manage;
 
+using Extensions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -17,9 +18,9 @@ public class ExternalLoginsModel : PageModel
         SignInManager<IdentityUser<Guid>> signInManager,
         IUserStore<IdentityUser<Guid>> userStore)
     {
-        ArgumentNullException.ThrowIfNull(userManager);
-        ArgumentNullException.ThrowIfNull(signInManager);
-        ArgumentNullException.ThrowIfNull(userStore);
+        ThrowIfNull(userManager);
+        ThrowIfNull(signInManager);
+        ThrowIfNull(userStore);
         _userManager = userManager;
         _signInManager = signInManager;
         _userStore = userStore;
@@ -117,6 +118,8 @@ public class ExternalLoginsModel : PageModel
             StatusMessage = "The external login was not added. External logins can only be associated with one account.";
             return RedirectToPage();
         }
+
+        await _userManager.AddMissingClaimsAsync(user, info.Principal);
 
         await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
         StatusMessage = "The external login was added.";

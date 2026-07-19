@@ -1,6 +1,6 @@
 namespace Identity.Pages.Admin.Roles.Details;
 
-using Identity.Pages.Admin.Roles;
+using Roles;
 using Microsoft.AspNetCore.Identity;
 
 /// <summary>Shows users in a role.</summary>

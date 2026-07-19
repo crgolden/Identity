@@ -14,7 +14,7 @@ public class ClaimsModel : PageModel
     public ClaimsModel(RoleManager<IdentityRole<Guid>> roleManager) => _roleManager = roleManager;
 
     /// <summary>Gets the role name for display.</summary>
-    public string RoleName { get; private set; } = string.Empty;
+    public string RoleName { get; private set; } = Empty;
 
     /// <summary>Gets or sets the claims.</summary>
     [BindProperty]
@@ -29,7 +29,7 @@ public class ClaimsModel : PageModel
             return NotFound();
         }
 
-        RoleName = role.Name ?? string.Empty;
+        RoleName = role.Name ?? Empty;
         Claims = (await _roleManager.GetClaimsAsync(role)).ToList();
         return Page();
     }

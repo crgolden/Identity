@@ -3,7 +3,7 @@ namespace Identity.Tests.Unit.Pages.Admin.SamlSigninStates.Details;
 using Duende.IdentityServer.EntityFramework.Entities;
 using Duende.IdentityServer.EntityFramework.Interfaces;
 using Identity.Pages.Admin.SamlSigninStates.Details;
-using Identity.Tests.Unit.Infrastructure;
+using Infrastructure;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Moq;

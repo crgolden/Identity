@@ -2,7 +2,7 @@ namespace Identity.Tests.Unit.Pages.Admin.Roles.Details;
 
 using System.Security.Claims;
 using Identity.Pages.Admin.Roles.Details;
-using Identity.Tests.Unit.Infrastructure;
+using Infrastructure;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;

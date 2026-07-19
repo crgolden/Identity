@@ -2,6 +2,7 @@
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
     <File Path=".gitignore" />
+    <File Path="ARCHITECTURE.md" />
     <File Path="COVERAGE-TRUTH-TABLES.md" />
     <File Path="coverage.settings.xml" />
     <File Path="DESIGN.md" />

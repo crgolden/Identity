@@ -3,7 +3,7 @@ namespace Identity.Tests.Unit.Pages.Admin.SamlServiceProviders;
 using Duende.IdentityServer.EntityFramework.Entities;
 using Duende.IdentityServer.EntityFramework.Interfaces;
 using Identity.Pages.Admin.SamlServiceProviders;
-using Identity.Tests.Unit.Infrastructure;
+using Infrastructure;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Moq;
 

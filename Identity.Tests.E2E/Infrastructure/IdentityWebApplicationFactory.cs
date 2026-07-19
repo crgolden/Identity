@@ -3,6 +3,7 @@ namespace Identity.Tests.E2E.Infrastructure;
 using System.Net;
 using Azure.Messaging.ServiceBus;
 using Identity;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
@@ -83,6 +84,12 @@ public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Progra
             // Reduce PBKDF2 iterations to 1 for tests — default 600k iterations is CPU-intensive
             // and causes 60s+ timeouts on loaded CI machines (password sign-in late in the suite).
             services.Configure<PasswordHasherOptions>(opts => opts.IterationCount = 1);
+
+            // Decorate the authentication scheme provider so E2E tests can drive the full external-login
+            // callback flow without a real Google account and without touching Program.cs. See
+            // FakeGoogleSchemeProvider for what it intercepts and FakeExternalAuthenticationHandler for
+            // what happens once it does.
+            services.Replace(ServiceDescriptor.Singleton<IAuthenticationSchemeProvider, FakeGoogleSchemeProvider>());
         });
     }
 

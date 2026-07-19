@@ -3,7 +3,7 @@ namespace Identity.Tests.Unit.Pages.Admin.SamlLogoutSessionRequestIndices;
 using Duende.IdentityServer.EntityFramework.Entities;
 using Duende.IdentityServer.EntityFramework.Interfaces;
 using Identity.Pages.Admin.SamlLogoutSessionRequestIndices;
-using Identity.Tests.Unit.Infrastructure;
+using Infrastructure;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Moq;
 

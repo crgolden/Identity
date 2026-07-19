@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using Azure.Messaging.ServiceBus;
+using Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -16,6 +17,7 @@ public class ExternalLoginModel : PageModel
 {
     private const string LoginPageName = "./Login";
     private const string From = "noreply@crgolden.com";
+    private const string EmailVerifiedClaimType = "email_verified";
 
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
     private readonly UserManager<IdentityUser<Guid>> _userManager;
@@ -92,17 +94,48 @@ public class ExternalLoginModel : PageModel
             return RedirectToPage("./Lockout");
         }
 
-        ReturnUrl = returnUrl;
-        ProviderDisplayName = info.ProviderDisplayName;
-        if (info.Principal.HasClaim(c => string.Equals(c.Type, ClaimTypes.Email)))
+        var externalEmail = info.Principal.HasClaim(c => string.Equals(c.Type, ClaimTypes.Email))
+            ? info.Principal.FindFirstValue(ClaimTypes.Email)
+            : null;
+        if (IsNullOrWhiteSpace(externalEmail))
         {
-            Input = new InputModel
-            {
-                Email = info.Principal.FindFirstValue(ClaimTypes.Email)
-            };
+            // The provider didn't supply an email claim — fall back to asking the user for one.
+            ReturnUrl = returnUrl;
+            ProviderDisplayName = info.ProviderDisplayName;
+            return Page();
         }
 
-        return Page();
+        var existingUser = await _userManager.FindByEmailAsync(externalEmail);
+        if (existingUser is not null)
+        {
+            ErrorMessage = $"An account already exists for {externalEmail}. " +
+                $"Log in with that account, then link your {info.ProviderDisplayName} account from the External Logins page.";
+            return RedirectToPage(LoginPageName, new { ReturnUrl = returnUrl });
+        }
+
+        var user = new IdentityUser<Guid>();
+        await _userStore.SetUserNameAsync(user, externalEmail, HttpContext.RequestAborted);
+        await _emailStore.SetEmailAsync(user, externalEmail, HttpContext.RequestAborted);
+        if (bool.TryParse(info.Principal.FindFirstValue(EmailVerifiedClaimType), out var emailVerified) && emailVerified)
+        {
+            await _emailStore.SetEmailConfirmedAsync(user, true, HttpContext.RequestAborted);
+        }
+
+        var createResult = await _userManager.CreateAsync(user);
+        if (!createResult.Succeeded)
+        {
+            ErrorMessage = Join(" ", createResult.Errors.Select(e => e.Description));
+            return RedirectToPage(LoginPageName, new { ReturnUrl = returnUrl });
+        }
+
+        var redirect = await CompleteExternalRegistrationAsync(user, info, externalEmail, returnUrl);
+        if (redirect is not null)
+        {
+            return redirect;
+        }
+
+        ErrorMessage = $"Unable to link your {info.ProviderDisplayName} account.";
+        return RedirectToPage(LoginPageName, new { ReturnUrl = returnUrl });
     }
 
     /// <summary>Handles the POST request to confirm external login registration.</summary>
@@ -120,6 +153,14 @@ public class ExternalLoginModel : PageModel
 
         if (ModelState.IsValid && !IsNullOrWhiteSpace(Input.Email))
         {
+            var existingUser = await _userManager.FindByEmailAsync(Input.Email);
+            if (existingUser is not null)
+            {
+                ErrorMessage = $"An account already exists for {Input.Email}. " +
+                    $"Log in with that account, then link your {info.ProviderDisplayName} account from the External Logins page.";
+                return RedirectToPage(LoginPageName, new { ReturnUrl = returnUrl });
+            }
+
             var user = new IdentityUser<Guid>();
             await _userStore.SetUserNameAsync(user, Input.Email, HttpContext.RequestAborted);
             await _emailStore.SetEmailAsync(user, Input.Email, HttpContext.RequestAborted);
@@ -156,33 +197,38 @@ public class ExternalLoginModel : PageModel
             return null;
         }
 
-        var userId = await _userManager.GetUserIdAsync(user);
-        var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-        var bytes = UTF8.GetBytes(code);
-        code = Base64UrlEncode(bytes);
-        var callbackUrl = Url.Page(
-            "/Account/ConfirmEmail",
-            pageHandler: null,
-            values: new { userId, code },
-            protocol: Request.Scheme);
+        await _userManager.AddMissingClaimsAsync(user, info.Principal);
 
-        if (!IsNullOrWhiteSpace(callbackUrl))
+        if (!await _userManager.IsEmailConfirmedAsync(user))
         {
-            var link = HtmlEncoder.Default.Encode(callbackUrl);
-            var htmlMessage = $"Please confirm your account by <a href='{link}'>clicking here</a>.";
-            var sbMessage = new ServiceBusMessage(htmlMessage)
+            var userId = await _userManager.GetUserIdAsync(user);
+            var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            var bytes = UTF8.GetBytes(code);
+            code = Base64UrlEncode(bytes);
+            var callbackUrl = Url.Page(
+                "/Account/ConfirmEmail",
+                pageHandler: null,
+                values: new { userId, code },
+                protocol: Request.Scheme);
+
+            if (!IsNullOrWhiteSpace(callbackUrl))
             {
-                ReplyTo = From,
-                Subject = "Confirm your email",
-                To = email
-            };
-            var serviceBusSender = _serviceBusClient.CreateSender("email");
-            await serviceBusSender.SendMessageAsync(sbMessage, HttpContext.RequestAborted);
-        }
+                var link = HtmlEncoder.Default.Encode(callbackUrl);
+                var htmlMessage = $"Please confirm your account by <a href='{link}'>clicking here</a>.";
+                var sbMessage = new ServiceBusMessage(htmlMessage)
+                {
+                    ReplyTo = From,
+                    Subject = "Confirm your email",
+                    To = email
+                };
+                var serviceBusSender = _serviceBusClient.CreateSender("email");
+                await serviceBusSender.SendMessageAsync(sbMessage, HttpContext.RequestAborted);
+            }
 
-        if (_userManager.Options.SignIn.RequireConfirmedAccount)
-        {
-            return RedirectToPage("./RegisterConfirmation", new { email });
+            if (_userManager.Options.SignIn.RequireConfirmedAccount)
+            {
+                return RedirectToPage("./RegisterConfirmation", new { email });
+            }
         }
 
         await _signInManager.SignInAsync(user, isPersistent: false, info.LoginProvider);

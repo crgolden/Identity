@@ -1,6 +1,6 @@
 namespace Identity.Pages.Admin.Roles.Edit;
 
-using Identity.Pages.Admin.Roles;
+using Roles;
 using Microsoft.AspNetCore.Identity;
 
 /// <summary>Shows users in a role (read-only from the role edit perspective).</summary>

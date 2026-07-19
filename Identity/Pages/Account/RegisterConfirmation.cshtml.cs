@@ -13,7 +13,7 @@ public class RegisterConfirmationModel : PageModel
 
     public RegisterConfirmationModel(UserManager<IdentityUser<Guid>> userManager)
     {
-        ArgumentNullException.ThrowIfNull(userManager);
+        ThrowIfNull(userManager);
         _userManager = userManager;
     }
 

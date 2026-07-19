@@ -14,7 +14,7 @@ public class CreateModel : PageModel
 
     /// <summary>Gets or sets the role name.</summary>
     [BindProperty]
-    public string RoleName { get; set; } = string.Empty;
+    public string RoleName { get; set; } = Empty;
 
     /// <summary>Returns the create page.</summary>
     public IActionResult OnGet() => Page();
@@ -33,7 +33,7 @@ public class CreateModel : PageModel
         {
             foreach (var error in result.Errors)
             {
-                ModelState.AddModelError(string.Empty, error.Description);
+                ModelState.AddModelError(Empty, error.Description);
             }
 
             return Page();

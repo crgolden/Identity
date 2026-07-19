@@ -19,7 +19,7 @@ internal static class MockHelpers
     {
         var options = new Mock<IOptions<IdentityOptions>>();
         options.Setup(o => o.Value).Returns(identityOptions);
-        return new Mock<UserManager<IdentityUser<Guid>>>(
+        var userManager = new Mock<UserManager<IdentityUser<Guid>>>(
             new Mock<IUserStore<IdentityUser<Guid>>>().Object,
             options.Object,
             new Mock<IPasswordHasher<IdentityUser<Guid>>>().Object,
@@ -29,6 +29,9 @@ internal static class MockHelpers
             new IdentityErrorDescriber(),
             new Mock<IServiceProvider>().Object,
             NullLogger<UserManager<IdentityUser<Guid>>>.Instance);
+        userManager.Setup(u => u.GetClaimsAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync(new List<Claim>());
+        userManager.Setup(u => u.AddClaimsAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<IEnumerable<Claim>>())).ReturnsAsync(IdentityResult.Success);
+        return userManager;
     }
 
     public static Mock<SignInManager<IdentityUser<Guid>>> MockSignInManager(UserManager<IdentityUser<Guid>> userManager)

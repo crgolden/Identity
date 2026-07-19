@@ -3,7 +3,7 @@ namespace Identity.Tests.Unit.Pages.Admin.IdentityProviders;
 using Duende.IdentityServer.EntityFramework.Entities;
 using Duende.IdentityServer.EntityFramework.Interfaces;
 using Identity.Pages.Admin.IdentityProviders;
-using Identity.Tests.Unit.Infrastructure;
+using Infrastructure;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Moq;
 

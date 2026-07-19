@@ -1,7 +1,7 @@
 namespace Identity.Tests.Unit.Pages.Admin.Roles.Edit;
 
 using Identity.Pages.Admin.Roles.Edit;
-using Identity.Tests.Unit.Infrastructure;
+using Infrastructure;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;

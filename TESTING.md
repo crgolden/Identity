@@ -52,6 +52,11 @@ cmd /c "Identity.Tests.E2E\bin\Debug\net10.0\Identity.Tests.E2E.exe -trait ""Cat
 - **`Identity.Tests.E2E` — Load** — throughput / failure-rate tests using `Parallel.ForEachAsync` + `HttpClient` (`Category=Load`, `Load/LoadTests.cs`); run separately (requires live server)
 - **`Identity.Tests.E2E` — Smoke** — post-deploy smoke tests (`Category=Smoke`, `AccountSmokeTests`) run against the live deployed site
 
+**Test infrastructure**
+- **`IdentityWebApplicationFactory`** (extends `WebApplicationFactory<Program>`) — starts a real Kestrel HTTPS server on a random port for Playwright; replaces `IAzureClientFactory<ServiceBusClient>` with `TestServiceBusClientFactory` (captures sent email via `EmailCaptureSender` instead of calling Azure Service Bus); replaces `IAvatarService` with `NullAvatarService` (no real Gravatar HTTP calls); in Development, replaces the Serilog `ILoggerFactory` with a console logger (avoids an Elasticsearch connection at startup).
+- **`PlaywrightFixture`** (xUnit `IAsyncLifetime`) — installs Chromium on first run, warms up the server, provides `NewPageAsync()` per test, and in CI cleans up the test database after the suite.
+- Test collections run serially (`parallelizeTestCollections: false` in `xunit.runner.json`, `Identity.Tests.E2E` only) to prevent `WebApplicationFactory` startup from timing out Key Vault calls when the thread pool is saturated.
+
 **Coverage legend**
 | Symbol | Meaning |
 |---|---|
@@ -636,64 +641,101 @@ flowchart TD
 
 ## 7. External Login — Google OIDC
 
+Google always returns a verified `email` claim (`AddGoogleOpenIdConnect` requests `openid email profile` by
+default), so the callback never shows an editable email field for this provider — it acts immediately on
+the claim it already trusts. The editable-email confirmation page (`Input.Email` +
+`OnPostConfirmationAsync`) only runs as a fallback for a provider that supplies no email claim at all.
+Full claim list and policy: [ARCHITECTURE.md](ARCHITECTURE.md#google-openid-connect).
+
 ```mermaid
 flowchart TD
     classDef covered fill:#bbf7d0,stroke:#15803d
     classDef unitOnly fill:#fef9c3,stroke:#ca8a04
     classDef partial fill:#fed7aa,stroke:#ea580c
-    classDef noTest fill:#fee2e2,stroke:#dc2626
 
-    LoginPage["GET /Account/Login (Google button visible)"]:::unitOnly
+    LoginPage["GET /Account/Login (Google button visible)"]:::covered
 
-    GoogleChallenge["Challenge Google OIDC provider (browser redirect to Google)"]:::noTest
+    GoogleChallenge["Challenge Google OIDC provider"]:::covered
 
     GoogleCallback{"GET /Account/ExternalLogin\n?callback — remote error?"}
 
-    RemoteError["Redirect to /Account/Login with error message"]:::unitOnly
+    RemoteError["Redirect to /Account/Login with error message"]:::covered
 
-    InfoNull["Redirect to /Account/Login with error message"]:::unitOnly
+    InfoNull["Redirect to /Account/Login with error message"]:::covered
 
-    ExistingUserSignIn["Existing user found — sign in directly"]:::noTest
+    NoEmailClaim["No email claim — show editable-email fallback page"]:::unitOnly
 
-    ConfirmationForm{"POST /Account/ExternalLogin/Confirmation\nstate check"}
+    HasEmailClaim{"Email claim present\n— existing account?"}
 
-    ConfirmModelInvalid["Return page"]:::unitOnly
+    ExistingAccount["Redirect to /Account/Login: log in & link instead, no account created"]:::covered
 
-    ConfirmInfoNull["Redirect to Login with error"]:::unitOnly
+    CreateUser{"Create user\n+ AddLogin\n+ sync provider claims\nsucceeds?"}
 
-    CreateAndAddLogin{"Create user\n+ AddLogin\nsucceeds?"}
+    EmailVerifiedCheck{"email_verified\nclaim true?"}
 
-    ConfirmSuccess["Redirect (based on RequireConfirmedAccount)"]:::unitOnly
+    SignInDirect["EmailConfirmed set at creation — sign in immediately, no confirmation email"]:::covered
 
-    ConfirmFail["Return page with errors"]:::noTest
+    ConfirmFlow["Send confirmation email — redirect to RegisterConfirmation (RequireConfirmedAccount)"]:::covered
 
-    LoginPage -->|"click Sign in with Google"| GoogleChallenge
+    CreateFail["Redirect to Login with error"]:::covered
+
+    LoginPage -->|"click Google button"| GoogleChallenge
     GoogleChallenge --> GoogleCallback
     GoogleCallback -->|"remote error"| RemoteError
     GoogleCallback -->|"info null"| InfoNull
-    GoogleCallback -->|"existing user"| ExistingUserSignIn
-    GoogleCallback -->|"new user"| ConfirmationForm
-    ConfirmationForm -->|"invalid model"| ConfirmModelInvalid
-    ConfirmationForm -->|"info null"| ConfirmInfoNull
-    ConfirmationForm --> CreateAndAddLogin
-    CreateAndAddLogin -->|"success"| ConfirmSuccess
-    CreateAndAddLogin -->|"failure"| ConfirmFail
+    GoogleCallback -->|"no email claim"| NoEmailClaim
+    GoogleCallback -->|"has email claim"| HasEmailClaim
+    HasEmailClaim -->|"account exists"| ExistingAccount
+    HasEmailClaim -->|"no account"| CreateUser
+    CreateUser -->|"failure"| CreateFail
+    CreateUser -->|"success"| EmailVerifiedCheck
+    EmailVerifiedCheck -->|"true"| SignInDirect
+    EmailVerifiedCheck -->|"false"| ConfirmFlow
     RemoteError --> LoginPage
     InfoNull --> LoginPage
+    ExistingAccount --> LoginPage
 ```
+
+Linking Google to an *already logged-in* existing account (`Manage/ExternalLogins.cshtml.cs`,
+`OnGetLinkLoginCallbackAsync`) runs the same provider-claims sync as new-user creation, but only adds claim
+types the user doesn't already have — an existing claim value (e.g. one set by an admin) is never
+overwritten. See `UserManagerExtensions.AddMissingClaimsAsync`.
 
 ### External Login Tests
 
 | Path | File | Test Method |
 |---|---|---|
 | GET /Login — external schemes | `Login.cshtmlTests.cs` | `OnGetAsync_ExternalSchemesAvailable_PopulatesExternalLogins` |
-| Callback — remote error | `ExternalLogin.cshtmlTests.cs` | `OnGetCallbackAsync_RemoteErrorProvided_SetsErrorMessageAndRedirectsToLogin` |
-| Callback — info null | `ExternalLogin.cshtmlTests.cs` | `OnGetCallbackAsync_InfoIsNull_SetsErrorMessageAndRedirectsToLogin` |
-| Confirmation — model invalid | `ExternalLogin.cshtmlTests.cs` | `OnPostConfirmationAsync_ModelStateInvalid_ReturnsPageAndSetsProviderDisplayNameAndReturnUrl` |
-| Confirmation — info null | `ExternalLogin.cshtmlTests.cs` | `OnPostConfirmationAsync_InfoNull_ReturnsRedirectToLoginAndSetsErrorMessage` |
-| Confirmation — create + add login | `ExternalLogin.cshtmlTests.cs` | `OnPostConfirmationAsync_CreateAndAddLogin_Succeeds_ConditionalRedirect` |
+| Callback — remote error | `ExternalLogin.cshtmlTests.cs` | `OnGetCallbackAsync_RemoteError_RedirectsToLogin` |
+| Callback — info null | `ExternalLogin.cshtmlTests.cs` | `OnGetCallbackAsync_InfoNull_RedirectsToLogin` |
+| Callback — locked out | `ExternalLogin.cshtmlTests.cs` | `OnGetCallbackAsync_LockedOut_RedirectsToLockout` |
+| Callback — no email claim, fallback page | `ExternalLogin.cshtmlTests.cs` | `OnGetCallbackAsync_RequiresRegistration_NoEmailClaim_ReturnsPageWithoutInputEmail` |
+| Callback — email claim, no existing user, auto-creates + signs in | `ExternalLogin.cshtmlTests.cs` | `OnGetCallbackAsync_WithEmailClaim_NoExistingUser_CreatesAccountAndSignsIn` |
+| Callback — email claim, existing user, blocks registration | `ExternalLogin.cshtmlTests.cs` | `OnGetCallbackAsync_WithEmailClaim_ExistingUser_RedirectsToLoginWithoutCreatingAccount` |
+| Callback — `email_verified=true` skips confirmation email | `ExternalLogin.cshtmlTests.cs` | `OnGetCallbackAsync_EmailVerifiedClaimTrue_SkipsConfirmationEmailAndSignsInImmediately` |
+| Callback — `email_verified=false` still confirms by email | `ExternalLogin.cshtmlTests.cs` | `OnGetCallbackAsync_EmailVerifiedClaimFalse_DoesNotConfirmEmail` |
+| Confirmation fallback — model invalid | `ExternalLogin.cshtmlTests.cs` | `OnPostConfirmationAsync_ModelStateInvalid_ReturnsPage` |
+| Confirmation fallback — info null | `ExternalLogin.cshtmlTests.cs` | `OnPostConfirmationAsync_InfoNull_RedirectsToLogin` |
+| Confirmation fallback — existing user, blocks | `ExternalLogin.cshtmlTests.cs` | `OnPostConfirmationAsync_ExistingUser_RedirectsToLoginWithoutCreatingAccount` |
+| Confirmation fallback — create + add login variants | `ExternalLogin.cshtmlTests.cs` | `OnPostConfirmationAsync_CreateSucceeds_*`, `OnPostConfirmationAsync_CreateFails_AddsErrorsAndReturnsPage` |
+| Link to existing logged-in user — add/skip claim sync | `Manage/ExternalLogins.cshtmlTests.cs` | `OnGetLinkLoginCallbackAsync_AddLoginResult_UpdatesStatusMessageAndRedirects` |
+| Claim-sync contract (add missing, never overwrite) | `Extensions/UserManagerExtensionsTests.cs` | `AddMissingClaimsAsync_*` |
 
-> **Note:** The Google OAuth redirect and the existing-user sign-in path have no automated test coverage (requires live Google OIDC).
+E2E (`Category=E2E`, `ExternalLoginTests.cs`) exercises the real button-click → challenge → callback path
+end to end against a real Kestrel host and SQL Server, without a live Google account —
+`FakeGoogleSchemeProvider` decorates `IAuthenticationSchemeProvider` to resolve the Google scheme to
+`FakeExternalAuthenticationHandler`, which signs into the external cookie scheme with a claim set the test
+controls (via the `E2E-Google-Claims` cookie), then production code (`ExternalLoginModel`,
+`ExternalLoginsModel`, `SignInManager`) runs unmodified from there. See
+`Identity.Tests.E2E/Infrastructure/FakeGoogleSchemeProvider.cs` and
+`FakeExternalAuthenticationHandler.cs`.
+
+| Scenario | Test Method |
+|---|---|
+| New account, `email_verified=true` — created, signed in, provider claims persisted (`sub` excluded — see ARCHITECTURE.md) | `Register_NewGoogleAccount_EmailVerified_CreatesAccountSignsInAndPersistsAllClaims` |
+| New account, `email_verified=false` — requires the confirmation email | `Register_NewGoogleAccount_EmailNotVerified_RequiresConfirmationEmail` |
+| Email already registered — registration blocked, no second account, no login added | `Register_GoogleAccount_EmailAlreadyRegistered_BlocksRegistrationAndInstructsToLinkInstead` |
+| Linking to an existing logged-in user — missing claim types added, existing claim value untouched | `LinkGoogleToExistingLoggedInUser_AddsMissingClaimsWithoutOverwritingExistingOnes` |
 
 ---
 
@@ -1237,7 +1279,7 @@ quadrantChart
     Password Recovery: [0.55, 0.70]
     Two-Factor Auth: [0.70, 0.65]
     Passkeys WebAuthn: [0.65, 0.30]
-    External Login: [0.50, 0.20]
+    External Login: [0.65, 0.80]
     Account Management: [0.80, 0.60]
     Personal Data: [0.45, 0.55]
     Email Change: [0.55, 0.25]
@@ -1264,7 +1306,7 @@ quadrantChart
 | `/Account/ForgotPasswordConfirmation` | 🔵 | — | ✅ | Constructor only |
 | `/Account/ResetPassword` | ✅ | ✅ | ✅ | |
 | `/Account/ResetPasswordConfirmation` | 🔵 | — | ✅ | Constructor only |
-| `/Account/ExternalLogin` | ✅ | ✅ | ❌ | No live OIDC in tests |
+| `/Account/ExternalLogin` | ✅ | ✅ | ✅ | `ExternalLoginTests.cs` via `FakeGoogleSchemeProvider` (no live Google account needed) |
 | `/Account/AccessDenied` | 🔵 | — | ❌ | Constructor only |
 | `/Account/Manage/Index` | ✅ | ✅ | ✅ | Via AccountManagementTests |
 | `/Account/Manage/Email` | ✅ | ✅ | ✅ | Via EmailChangeTests |
@@ -1278,7 +1320,7 @@ quadrantChart
 | `/Account/Manage/ResetAuthenticator` | ✅ | ✅ | ❌ | |
 | `/Account/Manage/Passkeys` | ✅ | ⚠️ | ❌ | 3 tests Skipped |
 | `/Account/Manage/RenamePasskey` | ✅ | ✅ | ❌ | |
-| `/Account/Manage/ExternalLogins` | ✅ | ✅ | ❌ | |
+| `/Account/Manage/ExternalLogins` | ✅ | ✅ | ✅ | `ExternalLoginTests.cs` — link-to-existing-account flow |
 | `/Account/Manage/PersonalData` | ✅ | — | ❌ | |
 | `/Account/Manage/DownloadPersonalData` | ✅ | — | ❌ | |
 | `/Account/Manage/DeletePersonalData` | ✅ | ✅ | ✅ | |
@@ -1306,8 +1348,6 @@ The following paths have no meaningful behavioral test coverage and are candidat
 | WebAuthn browser ceremony (create + sign) | High — core passkey flow untestable | Skip-marked tests in `Passkeys.cshtmlTests.cs` need completion |
 | `POST /Account/PasskeyCreationOptions` — antiforgery rejection | Medium | Integration test with missing antiforgery header |
 | `POST /Account/PasskeyRequestOptions` — antiforgery rejection | Medium | Integration test with missing antiforgery header |
-| `/Account/ExternalLogin` — existing user sign-in success | Medium | Mock `ExternalLoginSignInAsync` success path |
-| `/Account/ExternalLogin` — create user failure | Low | Mock `CreateAsync` failure result |
 | `GET /Health` | Low | Simple `WebApplicationFactory` integration test |
 | `POST /Account/Manage/DownloadPersonalData` — download content | Low | Verify JSON shape and data presence |
 | `GET /Account/ResendEmailConfirmation` + `POST` | Low | Unit tests for OnGet/OnPost page model handlers (E2E already covered) |

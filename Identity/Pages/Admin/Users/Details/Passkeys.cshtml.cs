@@ -1,6 +1,6 @@
 namespace Identity.Pages.Admin.Users.Details;
 
-using Identity.Pages.Admin.Users;
+using Users;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
