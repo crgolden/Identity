@@ -474,7 +474,7 @@ Options are sourced from `DefaultAzureCredentialOptions` in User Secrets (develo
 
 - Bootstrap logger writes to console before the host is built.
 - After build, a full Serilog pipeline is configured:
-  - **Production:** Elasticsearch sink to data stream `logs-dotnet-Identity` (ECS format, basic auth, `BootstrapMethod.Failure` so a missing node does not crash startup) + OpenTelemetry sink.
+  - **Production:** Elasticsearch sink to data stream `logs-app-Identity` (ECS format, basic auth, `BootstrapMethod.Failure` so a missing node does not crash startup) + OpenTelemetry sink.
   - **Non-production:** console sink only; Duende's `IdentityServer.Diagnostics.Summary` source filtered out.
 
 ### Distributed tracing and metrics — OpenTelemetry → Grafana Alloy
