@@ -21,7 +21,6 @@
       "break": 50
     },
     "mutate": [
-      "EmailSender.cs",
       "GravatarService.cs",
       "Extensions/ConfigurationExtensions.cs",
       "Extensions/EndpointRouteBuilderExtensions.cs"

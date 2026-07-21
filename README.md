@@ -214,4 +214,4 @@ Database schema is always deployed before the app to ensure a valid schema is in
 - Downloads the test binaries and runs the `Category=Smoke` suite against the deployed site (`SMOKE_BASE_URL`); reports results to Azure DevOps and Azure Monitor
 
 **Mutation job** — runs on `schedule` or `workflow_dispatch`:
-- Runs Stryker mutation testing over the source files listed in `stryker-config.json` (`GravatarService.cs`, `ConfigurationExtensions.cs`, `EndpointRouteBuilderExtensions.cs`; the config also lists a stale `EmailSender.cs` that no longer exists), and uploads the HTML/JSON report as `stryker-report`
+- Runs Stryker mutation testing over the source files listed in `stryker-config.json` (`GravatarService.cs`, `ConfigurationExtensions.cs`, `EndpointRouteBuilderExtensions.cs`), and uploads the HTML/JSON report as `stryker-report`

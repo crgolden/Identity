@@ -11,11 +11,12 @@
     <a id="btn-create" asp-page="./Create" class="btn btn-primary">Create New</a>
 </p>
 
+<div class="table-responsive">
 <table class="table table-bordered table-hover table-sm">
     <thead class="table-light">
         <tr>
             <th>Name</th>
-            <th></th>
+            <th class="visually-hidden">Actions</th>
         </tr>
     </thead>
     <tbody>
@@ -32,5 +33,6 @@
         }
     </tbody>
 </table>
+</div>
 
 <a id="btn-back" asp-page="/Admin/Index" class="btn btn-outline-secondary">Back</a>

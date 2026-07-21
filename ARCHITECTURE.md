@@ -27,6 +27,8 @@ Built on:
 
 All Razor Pages require authentication by default (`MapRazorPages().RequireAuthorization()`). Pages that must be reachable before login explicitly opt out with `[AllowAnonymous]`.
 
+`.AddDefaultUI()` is deliberately **not** called on the `AddIdentity<...>()` chain in `Program.cs` — this app has its own complete, branded replacement for the entire scaffolded Identity UI page set (everything under `Pages/Account/*` below, including `Manage/*`). Calling `.AddDefaultUI()` would register a second, unstyled `/Identity/Account/*` route tree and — because it also unconditionally repoints the `ApplicationScheme` cookie's `LoginPath`/`LogoutPath`/`AccessDeniedPath` to those scaffolded pages — silently hijack every framework-driven auth challenge and access-denied redirect away from the branded pages below. Framework-driven redirects (an unauthenticated hit on a protected page, or an authenticated-but-unauthorized hit on `/Admin/**`) land on this app's own `/Account/Login` and `/Account/AccessDenied` precisely because `CookieAuthenticationOptions`'s built-in defaults already match this app's page routes — no `ConfigureApplicationCookie()` override needed, as long as `.AddDefaultUI()` stays out of the chain.
+
 ### Tier 1 — Root: public, non-account pages
 
 Pages here are informational or handle system-level errors. They carry no user context and are always `[AllowAnonymous]`.

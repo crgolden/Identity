@@ -185,7 +185,6 @@ try
             identityOptions.Stores.SchemaVersion = IdentitySchemaVersions.Version3;
             identityOptions.SignIn.RequireConfirmedAccount = true;
         })
-        .AddDefaultUI()
         .AddDefaultTokenProviders()
         .AddEntityFrameworkStores<ApplicationDbContext>().Services
         .AddIdentityServer(identityServerOptions =>

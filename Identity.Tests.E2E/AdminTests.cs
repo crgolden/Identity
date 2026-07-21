@@ -69,7 +69,37 @@ public sealed class AdminTests(PlaywrightFixture fixture)
         await using (context)
         {
             await page.GotoAsync("/Admin");
-            Assert.Contains("/Account/Login", page.Url);
+
+            // Exact path check, not a substring match: "/Identity/Account/Login" (the
+            // scaffolded Identity UI's login page) also contains "/Account/Login" as a
+            // substring, so a Contains() assertion here would pass even when the auth
+            // challenge lands on the wrong, unbranded page.
+            Assert.Equal("/Account/Login", new Uri(page.Url).AbsolutePath);
+        }
+    }
+
+    [Fact]
+    public async Task Manage_Unauthenticated_Redirects_To_Login()
+    {
+        var (context, page) = await fixture.NewPageAsync("Admin");
+        await using (context)
+        {
+            await page.GotoAsync("/Account/Manage");
+            Assert.Equal("/Account/Login", new Uri(page.Url).AbsolutePath);
+        }
+    }
+
+    [Fact]
+    public async Task Admin_NonAdminRole_Redirects_To_AccessDenied()
+    {
+        var (email, password) = await fixture.CreateConfirmedUserAsync();
+
+        var (context, page) = await fixture.NewPageAsync("Admin");
+        await using (context)
+        {
+            await LoginAsync(page, email, password);
+            await page.GotoAsync("/Admin");
+            Assert.Equal("/Account/AccessDenied", new Uri(page.Url).AbsolutePath);
         }
     }
 
@@ -121,6 +151,48 @@ public sealed class AdminTests(PlaywrightFixture fixture)
             await page.GotoAsync($"/Admin/Clients/Details?id={clientDbId}");
             await Assertions.Expect(page.Locator("#btn-edit")).ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("#btn-delete")).ToBeVisibleAsync();
+        }
+    }
+
+    [Fact]
+    public async Task Admin_Clients_Edit_Loads()
+    {
+        // Regression coverage: the Edit page previously 500'd on every request because
+        // Client.CoordinateLifetimeWithUserSession is bool? on the Duende entity, and
+        // asp-for cannot bind a checkbox <input> directly to a nullable bool. The prior
+        // "Details_Shows_Edit_And_Delete" test only checked the *button* was visible on
+        // the Details page — it never actually navigated into Edit, so it never rendered
+        // the view and never caught this.
+        var (email, password) = await fixture.CreateAdminUserAsync();
+        var clientDbId = await fixture.SeedClientAsync();
+
+        var (context, page) = await fixture.NewPageAsync("Admin");
+        await using (context)
+        {
+            await LoginAsync(page, email, password);
+            await page.GotoAsync($"/Admin/Clients/Edit/Index?id={clientDbId}");
+            await Assertions.Expect(page.Locator("h1")).ToContainTextAsync("Edit Client");
+            await Assertions.Expect(page.Locator("#save-submit")).ToBeVisibleAsync();
+        }
+    }
+
+    [Fact]
+    public async Task Admin_Clients_Edit_Save_Persists()
+    {
+        var (email, password) = await fixture.CreateAdminUserAsync();
+        var clientDbId = await fixture.SeedClientAsync();
+
+        var (context, page) = await fixture.NewPageAsync("Admin");
+        await using (context)
+        {
+            await LoginAsync(page, email, password);
+            await page.GotoAsync($"/Admin/Clients/Edit/Index?id={clientDbId}");
+            await page.CheckAsync("#CoordinateLifetimeWithUserSession");
+            await page.ClickAsync("#save-submit");
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Clients/Details"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+
+            await page.GotoAsync($"/Admin/Clients/Edit/Index?id={clientDbId}");
+            await Assertions.Expect(page.Locator("#CoordinateLifetimeWithUserSession")).ToBeCheckedAsync();
         }
     }
 

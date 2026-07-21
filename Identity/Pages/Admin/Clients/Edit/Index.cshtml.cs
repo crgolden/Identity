@@ -18,6 +18,14 @@ public class IndexModel : PageModel
     [BindProperty]
     public Client Client { get; set; } = new();
 
+    /// <summary>
+    /// Gets or sets the checkbox-bound proxy for <see cref="Duende.IdentityServer.EntityFramework.Entities.Client.CoordinateLifetimeWithUserSession"/>,
+    /// which is <c>bool?</c> on the Duende entity — <c>asp-for</c> cannot bind a checkbox directly to a
+    /// nullable bool, so this collapses the tri-state (null = inherit server default) to an explicit value.
+    /// </summary>
+    [BindProperty]
+    public bool CoordinateLifetimeWithUserSession { get; set; }
+
     /// <summary>Loads the client for editing.</summary>
     public async Task<IActionResult> OnGetAsync(int id)
     {
@@ -28,6 +36,7 @@ public class IndexModel : PageModel
         }
 
         Client = client;
+        CoordinateLifetimeWithUserSession = client.CoordinateLifetimeWithUserSession ?? false;
         return Page();
     }
 
@@ -88,7 +97,7 @@ public class IndexModel : PageModel
         client.DeviceCodeLifetime = Client.DeviceCodeLifetime;
         client.CibaLifetime = Client.CibaLifetime;
         client.PollingInterval = Client.PollingInterval;
-        client.CoordinateLifetimeWithUserSession = Client.CoordinateLifetimeWithUserSession;
+        client.CoordinateLifetimeWithUserSession = CoordinateLifetimeWithUserSession;
         client.NonEditable = Client.NonEditable;
         client.PushedAuthorizationLifetime = Client.PushedAuthorizationLifetime;
         client.RequirePushedAuthorization = Client.RequirePushedAuthorization;

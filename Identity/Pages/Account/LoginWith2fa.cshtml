@@ -7,7 +7,7 @@
 <h1>@ViewData["Title"]</h1>
 <hr />
 <p>Your login is protected with an authenticator app. Enter your authenticator code below.</p>
-<div class="row">
+<div class="row justify-content-center">
     <div class="col-md-4">
         <form method="post" asp-route-returnUrl="@Model.ReturnUrl">
             <input asp-for="RememberMe" type="hidden" />

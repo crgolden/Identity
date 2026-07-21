@@ -39,11 +39,11 @@
             if (Model.IsMachineRemembered)
             {
                 <form method="post" style="display: inline-block">
-                    <button type="submit" class="btn btn-primary">Forget this browser</button>
+                    <button type="submit" class="btn btn-outline-secondary">Forget this browser</button>
                 </form>
             }
-            <a id="disable-2fa-link" asp-page="./Disable2fa" class="btn btn-primary">Disable 2FA</a>
-            <a asp-page="./GenerateRecoveryCodes" class="btn btn-primary">Reset recovery codes</a>
+            <a id="disable-2fa-link" asp-page="./Disable2fa" class="btn btn-danger">Disable 2FA</a>
+            <a asp-page="./GenerateRecoveryCodes" class="btn btn-danger">Reset recovery codes</a>
         }
 
         <h4>Authenticator app</h4>
@@ -54,7 +54,7 @@
         else
         {
             <a id="enable-authenticator" asp-page="./EnableAuthenticator" class="btn btn-primary">Set up authenticator app</a>
-            <a id="reset-authenticator" asp-page="./ResetAuthenticator" class="btn btn-primary">Reset authenticator app</a>
+            <a id="reset-authenticator" asp-page="./ResetAuthenticator" class="btn btn-danger">Reset authenticator app</a>
         }
     }
     else
