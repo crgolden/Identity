@@ -108,4 +108,60 @@ public class RedirectUriscshtmlTests
 
         Assert.Equal("https://new.com/callback", existing.RedirectUri);
     }
+
+    [Fact]
+    public async Task OnPostAddRowAsync_AddsBlankRow_WhenFound()
+    {
+        var client = new Client { Id = 1, ClientId = "test" };
+        var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.Clients).Returns(mockSet.Object);
+
+        var model = new RedirectUrisModel(ctx.Object) { RedirectUris = [] };
+        var result = await model.OnPostAddRowAsync(1);
+
+        Assert.IsType<PageResult>(result);
+        Assert.Single(model.RedirectUris);
+    }
+
+    [Fact]
+    public async Task OnPostAddRowAsync_ReturnsNotFound_WhenMissing()
+    {
+        var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<Client>());
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.Clients).Returns(mockSet.Object);
+
+        var model = new RedirectUrisModel(ctx.Object) { RedirectUris = [] };
+        var result = await model.OnPostAddRowAsync(99);
+
+        Assert.IsType<NotFoundResult>(result);
+    }
+
+    [Fact]
+    public async Task OnPostRemoveRowAsync_RemovesRow_WhenValidIndex()
+    {
+        var client = new Client { Id = 1, ClientId = "test" };
+        var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.Clients).Returns(mockSet.Object);
+
+        var model = new RedirectUrisModel(ctx.Object) { RedirectUris = [new ClientRedirectUri { Id = 1, RedirectUri = "https://example.com/callback" }] };
+        var result = await model.OnPostRemoveRowAsync(1, 0);
+
+        Assert.IsType<PageResult>(result);
+        Assert.Empty(model.RedirectUris);
+    }
+
+    [Fact]
+    public async Task OnPostRemoveRowAsync_ReturnsNotFound_WhenMissing()
+    {
+        var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<Client>());
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.Clients).Returns(mockSet.Object);
+
+        var model = new RedirectUrisModel(ctx.Object) { RedirectUris = [] };
+        var result = await model.OnPostRemoveRowAsync(99, 0);
+
+        Assert.IsType<NotFoundResult>(result);
+    }
 }

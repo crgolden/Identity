@@ -65,4 +65,38 @@ public class ClaimTypesModel : PageModel
         await _context.SaveChangesAsync();
         return RedirectToPage("/Admin/ApiResources/Details/ClaimTypes", new { id });
     }
+
+    /// <summary>Adds a blank claim type row.</summary>
+    public async Task<IActionResult> OnPostAddRowAsync(int id)
+    {
+        var resource = await _context.ApiResources.FirstOrDefaultAsync(r => r.Id == id);
+        if (resource is null)
+        {
+            return NotFound();
+        }
+
+        ResourceId = resource.Id;
+        ResourceName = resource.Name;
+        ClaimTypes.Add(new ApiResourceClaim());
+        return Page();
+    }
+
+    /// <summary>Removes a claim type row.</summary>
+    public async Task<IActionResult> OnPostRemoveRowAsync(int id, int index)
+    {
+        var resource = await _context.ApiResources.FirstOrDefaultAsync(r => r.Id == id);
+        if (resource is null)
+        {
+            return NotFound();
+        }
+
+        ResourceId = resource.Id;
+        ResourceName = resource.Name;
+        if (index >= 0 && index < ClaimTypes.Count)
+        {
+            ClaimTypes.RemoveAt(index);
+        }
+
+        return Page();
+    }
 }

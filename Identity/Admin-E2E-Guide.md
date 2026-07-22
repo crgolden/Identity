@@ -170,7 +170,7 @@ For **Keys** and **SamlLogoutSessionRequestIndices** (read-only, no Delete): Ind
 
 ## Gaps / Caveats
 
-- **Collection JS (admin-collection.js)**: The add/remove row interactions depend on JavaScript. Playwright tests must `WaitForResponseAsync` or `WaitForSelectorAsync` after clicking Add/Remove before submitting, since rows are DOM-manipulated client-side.
+- **Collection row Add/Remove**: implemented as server-side page handlers (`OnPostAddRowAsync`/`OnPostRemoveRowAsync`), not client-side JavaScript — clicking Add/Remove causes a normal page reload. No special waiting is needed beyond Playwright's default click-then-navigation behavior.
 - **Passkey tests**: Cannot automate WebAuthn registration (hardware authenticator). Tests for Details/Passkeys and Edit/Passkeys should assert the UI renders correctly for a user with no passkeys (empty table, "no passkeys" message) and skip the remove path.
 - **Secret values**: Edit/Secrets never shows the raw value — only Description, Type, Expiration. Tests must not assert the `Value` field after save; assert Description instead.
 - **SAML tables**: PersistedGrantDb SAML tables (SamlSigninStates, SamlLogoutSessions, etc.) are empty in development. Tests for these should assert the table is present even when empty, and skip the Delete/Details test unless data is seeded via the grant store directly.

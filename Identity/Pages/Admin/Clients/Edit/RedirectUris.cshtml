@@ -7,8 +7,8 @@
 
 <h1>Edit Client Redirect URIs</h1>
 
-<form method="post" data-collection-form>
-    <table class="table table-bordered table-sm" data-collection="RedirectUris">
+<form method="post">
+    <table class="table table-bordered table-sm">
         <thead class="table-light">
             <tr>
                 <th>Redirect URI</th>
@@ -18,28 +18,17 @@
         <tbody>
             @for (var i = 0; i < Model.RedirectUris.Count; i++)
             {
-                <tr data-row>
+                <tr>
                     <input type="hidden" name="RedirectUris[@i].Id" value="@Model.RedirectUris[i].Id" />
                     <td><input id="redirecturi-@i" name="RedirectUris[@i].RedirectUri" value="@Model.RedirectUris[i].RedirectUri" class="form-control form-control-sm" aria-label="Redirect URI" /></td>
-                    <td><button id="redirecturi-remove-@i" type="button" class="btn btn-sm btn-danger" data-remove-row>Remove</button></td>
+                    <td><button id="redirecturi-remove-@i" type="submit" asp-page-handler="RemoveRow" asp-route-id="@Model.Client.Id" asp-route-index="@i" class="btn btn-sm btn-danger">Remove</button></td>
                 </tr>
             }
         </tbody>
     </table>
-    <template data-for="RedirectUris">
-        <tr data-row>
-            <input type="hidden" name="RedirectUris[-1].Id" value="0" />
-            <td><input id="redirecturi-IDX" name="RedirectUris[-1].RedirectUri" class="form-control form-control-sm" aria-label="Redirect URI" /></td>
-            <td><button id="redirecturi-remove-IDX" type="button" class="btn btn-sm btn-danger" data-remove-row>Remove</button></td>
-        </tr>
-    </template>
-    <button id="btn-add-row" type="button" class="btn btn-sm btn-outline-secondary mb-3" data-add-for="RedirectUris">Add</button>
+    <button id="btn-add-row" type="submit" asp-page-handler="AddRow" asp-route-id="@Model.Client.Id" class="btn btn-sm btn-outline-secondary mb-3">Add</button>
     <div>
         <button id="save-submit" type="submit" asp-route-id="@Model.Client.Id" class="btn btn-primary">Save</button>
         <a asp-page="/Admin/Clients/Details/RedirectUris" asp-route-id="@Model.Client.Id" class="btn btn-outline-secondary ms-1">Cancel</a>
     </div>
 </form>
-
-@section Scripts {
-    <script src="~/js/admin-collection.js"></script>
-}

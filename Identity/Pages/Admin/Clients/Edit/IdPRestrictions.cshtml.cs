@@ -75,4 +75,36 @@ public class IdPRestrictionsModel : PageModel
         await _context.SaveChangesAsync();
         return RedirectToPage("/Admin/Clients/Details/IdPRestrictions", new { id });
     }
+
+    /// <summary>Adds a blank IdP restriction row.</summary>
+    public async Task<IActionResult> OnPostAddRowAsync(int id)
+    {
+        var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == id);
+        if (client is null)
+        {
+            return NotFound();
+        }
+
+        Client = client;
+        IdPRestrictions.Add(new ClientIdPRestriction());
+        return Page();
+    }
+
+    /// <summary>Removes an IdP restriction row.</summary>
+    public async Task<IActionResult> OnPostRemoveRowAsync(int id, int index)
+    {
+        var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == id);
+        if (client is null)
+        {
+            return NotFound();
+        }
+
+        Client = client;
+        if (index >= 0 && index < IdPRestrictions.Count)
+        {
+            IdPRestrictions.RemoveAt(index);
+        }
+
+        return Page();
+    }
 }

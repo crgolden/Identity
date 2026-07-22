@@ -9,8 +9,4 @@
 <h1>Edit Claim Types</h1>
 
 @await Html.PartialAsync("~/Pages/Admin/Shared/_EditClaimTypesForm.cshtml", rows,
-    new ViewDataDictionary(ViewData) { { "CancelHref", cancelHref } })
-
-@section Scripts {
-    <script src="~/js/admin-collection.js"></script>
-}
+    new ViewDataDictionary(ViewData) { { "CancelHref", cancelHref }, { "EntityId", Request.RouteValues["id"] } })

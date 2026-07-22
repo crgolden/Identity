@@ -51,4 +51,36 @@ public class RolesModel : PageModel
 
         return RedirectToPage("/Admin/Users/Details/Roles", new { id });
     }
+
+    /// <summary>Adds a blank role row.</summary>
+    public async Task<IActionResult> OnPostAddRowAsync(string id)
+    {
+        var user = await _userManager.FindByIdAsync(id);
+        if (user is null)
+        {
+            return NotFound();
+        }
+
+        AppUser = user;
+        Roles.Add(string.Empty);
+        return Page();
+    }
+
+    /// <summary>Removes a role row.</summary>
+    public async Task<IActionResult> OnPostRemoveRowAsync(string id, int index)
+    {
+        var user = await _userManager.FindByIdAsync(id);
+        if (user is null)
+        {
+            return NotFound();
+        }
+
+        AppUser = user;
+        if (index >= 0 && index < Roles.Count)
+        {
+            Roles.RemoveAt(index);
+        }
+
+        return Page();
+    }
 }

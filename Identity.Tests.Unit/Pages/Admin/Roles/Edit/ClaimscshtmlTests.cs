@@ -65,4 +65,52 @@ public class ClaimscshtmlTests
 
         Assert.IsType<NotFoundResult>(await new ClaimsModel(rm.Object).OnPostAsync("missing"));
     }
+
+    [Fact]
+    public async Task OnPostAddRowAsync_AddsBlankRow_WhenFound()
+    {
+        var role = new IdentityRole<Guid>("Admin") { Name = "Admin" };
+        var rm = MockHelpers.MockRoleManager();
+        rm.Setup(m => m.FindByIdAsync(role.Id.ToString())).ReturnsAsync(role);
+
+        var model = new ClaimsModel(rm.Object) { Claims = [] };
+        var result = await model.OnPostAddRowAsync(role.Id.ToString());
+
+        Assert.IsType<PageResult>(result);
+        Assert.Single(model.Claims);
+    }
+
+    [Fact]
+    public async Task OnPostAddRowAsync_ReturnsNotFound_WhenMissing()
+    {
+        var rm = MockHelpers.MockRoleManager();
+        rm.Setup(m => m.FindByIdAsync(It.IsAny<string>())).ReturnsAsync((IdentityRole<Guid>?)null);
+
+        var model = new ClaimsModel(rm.Object) { Claims = [] };
+        Assert.IsType<NotFoundResult>(await model.OnPostAddRowAsync("missing"));
+    }
+
+    [Fact]
+    public async Task OnPostRemoveRowAsync_RemovesRow_WhenValidIndex()
+    {
+        var role = new IdentityRole<Guid>("Admin") { Name = "Admin" };
+        var rm = MockHelpers.MockRoleManager();
+        rm.Setup(m => m.FindByIdAsync(role.Id.ToString())).ReturnsAsync(role);
+
+        var model = new ClaimsModel(rm.Object) { Claims = [new ClaimsModel.ClaimInputModel { Type = "permission", Value = "read" }] };
+        var result = await model.OnPostRemoveRowAsync(role.Id.ToString(), 0);
+
+        Assert.IsType<PageResult>(result);
+        Assert.Empty(model.Claims);
+    }
+
+    [Fact]
+    public async Task OnPostRemoveRowAsync_ReturnsNotFound_WhenMissing()
+    {
+        var rm = MockHelpers.MockRoleManager();
+        rm.Setup(m => m.FindByIdAsync(It.IsAny<string>())).ReturnsAsync((IdentityRole<Guid>?)null);
+
+        var model = new ClaimsModel(rm.Object) { Claims = [] };
+        Assert.IsType<NotFoundResult>(await model.OnPostRemoveRowAsync("missing", 0));
+    }
 }

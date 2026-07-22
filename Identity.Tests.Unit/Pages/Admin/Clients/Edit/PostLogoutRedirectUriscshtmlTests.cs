@@ -108,4 +108,60 @@ public class PostLogoutRedirectUriscshtmlTests
 
         Assert.Equal("https://new.com/logout", existing.PostLogoutRedirectUri);
     }
+
+    [Fact]
+    public async Task OnPostAddRowAsync_AddsBlankRow_WhenFound()
+    {
+        var client = new Client { Id = 1, ClientId = "test" };
+        var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.Clients).Returns(mockSet.Object);
+
+        var model = new PostLogoutRedirectUrisModel(ctx.Object) { PostLogoutRedirectUris = [] };
+        var result = await model.OnPostAddRowAsync(1);
+
+        Assert.IsType<PageResult>(result);
+        Assert.Single(model.PostLogoutRedirectUris);
+    }
+
+    [Fact]
+    public async Task OnPostAddRowAsync_ReturnsNotFound_WhenMissing()
+    {
+        var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<Client>());
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.Clients).Returns(mockSet.Object);
+
+        var model = new PostLogoutRedirectUrisModel(ctx.Object) { PostLogoutRedirectUris = [] };
+        var result = await model.OnPostAddRowAsync(99);
+
+        Assert.IsType<NotFoundResult>(result);
+    }
+
+    [Fact]
+    public async Task OnPostRemoveRowAsync_RemovesRow_WhenValidIndex()
+    {
+        var client = new Client { Id = 1, ClientId = "test" };
+        var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.Clients).Returns(mockSet.Object);
+
+        var model = new PostLogoutRedirectUrisModel(ctx.Object) { PostLogoutRedirectUris = [new ClientPostLogoutRedirectUri { Id = 1, PostLogoutRedirectUri = "https://example.com/logout" }] };
+        var result = await model.OnPostRemoveRowAsync(1, 0);
+
+        Assert.IsType<PageResult>(result);
+        Assert.Empty(model.PostLogoutRedirectUris);
+    }
+
+    [Fact]
+    public async Task OnPostRemoveRowAsync_ReturnsNotFound_WhenMissing()
+    {
+        var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<Client>());
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.Clients).Returns(mockSet.Object);
+
+        var model = new PostLogoutRedirectUrisModel(ctx.Object) { PostLogoutRedirectUris = [] };
+        var result = await model.OnPostRemoveRowAsync(99, 0);
+
+        Assert.IsType<NotFoundResult>(result);
+    }
 }

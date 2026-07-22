@@ -76,4 +76,36 @@ public class ClaimsModel : PageModel
         await _context.SaveChangesAsync();
         return RedirectToPage("/Admin/Clients/Details/Claims", new { id });
     }
+
+    /// <summary>Adds a blank claim row.</summary>
+    public async Task<IActionResult> OnPostAddRowAsync(int id)
+    {
+        var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == id);
+        if (client is null)
+        {
+            return NotFound();
+        }
+
+        Client = client;
+        Claims.Add(new ClientClaim());
+        return Page();
+    }
+
+    /// <summary>Removes a claim row.</summary>
+    public async Task<IActionResult> OnPostRemoveRowAsync(int id, int index)
+    {
+        var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == id);
+        if (client is null)
+        {
+            return NotFound();
+        }
+
+        Client = client;
+        if (index >= 0 && index < Claims.Count)
+        {
+            Claims.RemoveAt(index);
+        }
+
+        return Page();
+    }
 }

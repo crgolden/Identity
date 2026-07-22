@@ -68,4 +68,52 @@ public class ClaimscshtmlTests
         var model = new ClaimsModel(um.Object) { Claims = [] };
         Assert.IsType<NotFoundResult>(await model.OnPostAsync("99"));
     }
+
+    [Fact]
+    public async Task OnPostAddRowAsync_AddsBlankRow_WhenFound()
+    {
+        var user = new IdentityUser<Guid> { UserName = "alice" };
+        var um = MockHelpers.MockUserManager();
+        um.Setup(m => m.FindByIdAsync("1")).ReturnsAsync(user);
+
+        var model = new ClaimsModel(um.Object) { Claims = [] };
+        var result = await model.OnPostAddRowAsync("1");
+
+        Assert.IsType<PageResult>(result);
+        Assert.Single(model.Claims);
+    }
+
+    [Fact]
+    public async Task OnPostAddRowAsync_ReturnsNotFound_WhenMissing()
+    {
+        var um = MockHelpers.MockUserManager();
+        um.Setup(m => m.FindByIdAsync("99")).ReturnsAsync((IdentityUser<Guid>?)null);
+
+        var model = new ClaimsModel(um.Object) { Claims = [] };
+        Assert.IsType<NotFoundResult>(await model.OnPostAddRowAsync("99"));
+    }
+
+    [Fact]
+    public async Task OnPostRemoveRowAsync_RemovesRow_WhenValidIndex()
+    {
+        var user = new IdentityUser<Guid> { UserName = "alice" };
+        var um = MockHelpers.MockUserManager();
+        um.Setup(m => m.FindByIdAsync("1")).ReturnsAsync(user);
+
+        var model = new ClaimsModel(um.Object) { Claims = [new ClaimsModel.ClaimInputModel { Type = "role", Value = "Admin" }] };
+        var result = await model.OnPostRemoveRowAsync("1", 0);
+
+        Assert.IsType<PageResult>(result);
+        Assert.Empty(model.Claims);
+    }
+
+    [Fact]
+    public async Task OnPostRemoveRowAsync_ReturnsNotFound_WhenMissing()
+    {
+        var um = MockHelpers.MockUserManager();
+        um.Setup(m => m.FindByIdAsync("99")).ReturnsAsync((IdentityUser<Guid>?)null);
+
+        var model = new ClaimsModel(um.Object) { Claims = [] };
+        Assert.IsType<NotFoundResult>(await model.OnPostRemoveRowAsync("99", 0));
+    }
 }

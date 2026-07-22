@@ -74,4 +74,38 @@ public class SecretsModel : PageModel
         await _context.SaveChangesAsync();
         return RedirectToPage("/Admin/ApiResources/Details/Secrets", new { id });
     }
+
+    /// <summary>Adds a blank secret row.</summary>
+    public async Task<IActionResult> OnPostAddRowAsync(int id)
+    {
+        var resource = await _context.ApiResources.FirstOrDefaultAsync(r => r.Id == id);
+        if (resource is null)
+        {
+            return NotFound();
+        }
+
+        ResourceId = resource.Id;
+        ResourceName = resource.Name;
+        Secrets.Add(new ApiResourceSecret { Type = "SharedSecret" });
+        return Page();
+    }
+
+    /// <summary>Removes a secret row.</summary>
+    public async Task<IActionResult> OnPostRemoveRowAsync(int id, int index)
+    {
+        var resource = await _context.ApiResources.FirstOrDefaultAsync(r => r.Id == id);
+        if (resource is null)
+        {
+            return NotFound();
+        }
+
+        ResourceId = resource.Id;
+        ResourceName = resource.Name;
+        if (index >= 0 && index < Secrets.Count)
+        {
+            Secrets.RemoveAt(index);
+        }
+
+        return Page();
+    }
 }

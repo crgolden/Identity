@@ -81,4 +81,56 @@ public class ProperiescshtmlTests
 
         Assert.Empty(resource.Properties);
     }
+
+    [Fact]
+    public async Task OnPostAddRowAsync_AddsBlankRow_WhenFound()
+    {
+        var resource = new ApiResource { Id = 1, Name = "my-api" };
+        var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
+
+        var model = new PropertiesModel(ctx.Object) { Properties = [] };
+        var result = await model.OnPostAddRowAsync(1);
+
+        Assert.IsType<PageResult>(result);
+        Assert.Single(model.Properties);
+    }
+
+    [Fact]
+    public async Task OnPostAddRowAsync_ReturnsNotFound_WhenMissing()
+    {
+        var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<ApiResource>());
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
+
+        var model = new PropertiesModel(ctx.Object) { Properties = [] };
+        Assert.IsType<NotFoundResult>(await model.OnPostAddRowAsync(99));
+    }
+
+    [Fact]
+    public async Task OnPostRemoveRowAsync_RemovesRow_WhenValidIndex()
+    {
+        var resource = new ApiResource { Id = 1, Name = "my-api" };
+        var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
+
+        var model = new PropertiesModel(ctx.Object) { Properties = [new ApiResourceProperty { Id = 1, Key = "k", Value = "v" }] };
+        var result = await model.OnPostRemoveRowAsync(1, 0);
+
+        Assert.IsType<PageResult>(result);
+        Assert.Empty(model.Properties);
+    }
+
+    [Fact]
+    public async Task OnPostRemoveRowAsync_ReturnsNotFound_WhenMissing()
+    {
+        var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<ApiResource>());
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
+
+        var model = new PropertiesModel(ctx.Object) { Properties = [] };
+        Assert.IsType<NotFoundResult>(await model.OnPostRemoveRowAsync(99, 0));
+    }
 }

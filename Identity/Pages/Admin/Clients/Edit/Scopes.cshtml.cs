@@ -75,4 +75,36 @@ public class ScopesModel : PageModel
         await _context.SaveChangesAsync();
         return RedirectToPage("/Admin/Clients/Details/Scopes", new { id });
     }
+
+    /// <summary>Adds a blank scope row.</summary>
+    public async Task<IActionResult> OnPostAddRowAsync(int id)
+    {
+        var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == id);
+        if (client is null)
+        {
+            return NotFound();
+        }
+
+        Client = client;
+        Scopes.Add(new ClientScope());
+        return Page();
+    }
+
+    /// <summary>Removes a scope row.</summary>
+    public async Task<IActionResult> OnPostRemoveRowAsync(int id, int index)
+    {
+        var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == id);
+        if (client is null)
+        {
+            return NotFound();
+        }
+
+        Client = client;
+        if (index >= 0 && index < Scopes.Count)
+        {
+            Scopes.RemoveAt(index);
+        }
+
+        return Page();
+    }
 }

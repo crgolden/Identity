@@ -9,8 +9,4 @@
 <h1>Edit Properties</h1>
 
 @await Html.PartialAsync("~/Pages/Admin/Shared/_EditPropertiesForm.cshtml", rows,
-    new ViewDataDictionary(ViewData) { { "CancelHref", cancelHref } })
-
-@section Scripts {
-    <script src="~/js/admin-collection.js"></script>
-}
+    new ViewDataDictionary(ViewData) { { "CancelHref", cancelHref }, { "EntityId", Request.RouteValues["id"] } })

@@ -75,4 +75,36 @@ public class PostLogoutRedirectUrisModel : PageModel
         await _context.SaveChangesAsync();
         return RedirectToPage("/Admin/Clients/Details/PostLogoutRedirectUris", new { id });
     }
+
+    /// <summary>Adds a blank post-logout redirect URI row.</summary>
+    public async Task<IActionResult> OnPostAddRowAsync(int id)
+    {
+        var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == id);
+        if (client is null)
+        {
+            return NotFound();
+        }
+
+        Client = client;
+        PostLogoutRedirectUris.Add(new ClientPostLogoutRedirectUri());
+        return Page();
+    }
+
+    /// <summary>Removes a post-logout redirect URI row.</summary>
+    public async Task<IActionResult> OnPostRemoveRowAsync(int id, int index)
+    {
+        var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == id);
+        if (client is null)
+        {
+            return NotFound();
+        }
+
+        Client = client;
+        if (index >= 0 && index < PostLogoutRedirectUris.Count)
+        {
+            PostLogoutRedirectUris.RemoveAt(index);
+        }
+
+        return Page();
+    }
 }

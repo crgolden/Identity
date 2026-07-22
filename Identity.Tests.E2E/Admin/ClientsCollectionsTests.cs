@@ -6,11 +6,11 @@ using Microsoft.Playwright;
 
 // Covers Admin-E2E-Guide.md's C6-C9 scenarios (repeated across all 9 Client collection sub-pages):
 // add a row -> save -> persists; remove a row -> save -> persists; update an existing row -> save ->
-// persists. Every collection row field and remove button now carries a stable id (index-based --
-// "{field}-{i}"), added to the Razor views and admin-collection.js specifically to support this: per
-// project convention, E2E tests select elements by id only, never by aria-label/attribute/text
-// selectors. Each test uses its own freshly-seeded client with exactly one row, so that row is always
-// at index 0.
+// persists. Add/Remove are server-side page handlers (OnPostAddRowAsync/OnPostRemoveRowAsync) -- there
+// is no client-side JavaScript in this pattern. Every collection row field and remove button carries a
+// stable id (index-based -- "{field}-{i}") from the Razor view's own render loop: per project
+// convention, E2E tests select elements by id only, never by aria-label/attribute/text selectors. Each
+// test uses its own freshly-seeded client with exactly one row, so that row is always at index 0.
 [Trait("Category", "E2E")]
 [Collection(E2ECollection.Name)]
 public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)

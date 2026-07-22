@@ -109,4 +109,61 @@ public class SecretscshtmlTests
 
         Assert.Empty(client.ClientSecrets);
     }
+
+    [Fact]
+    public async Task OnPostAddRowAsync_AddsBlankRowWithDefaultType_WhenFound()
+    {
+        var client = new Client { Id = 1, ClientId = "test" };
+        var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.Clients).Returns(mockSet.Object);
+
+        var model = new SecretsModel(ctx.Object) { Secrets = [] };
+        var result = await model.OnPostAddRowAsync(1);
+
+        Assert.IsType<PageResult>(result);
+        Assert.Single(model.Secrets);
+        Assert.Equal("SharedSecret", model.Secrets[0].Type);
+    }
+
+    [Fact]
+    public async Task OnPostAddRowAsync_ReturnsNotFound_WhenMissing()
+    {
+        var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<Client>());
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.Clients).Returns(mockSet.Object);
+
+        var model = new SecretsModel(ctx.Object) { Secrets = [] };
+        var result = await model.OnPostAddRowAsync(99);
+
+        Assert.IsType<NotFoundResult>(result);
+    }
+
+    [Fact]
+    public async Task OnPostRemoveRowAsync_RemovesRow_WhenValidIndex()
+    {
+        var client = new Client { Id = 1, ClientId = "test" };
+        var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.Clients).Returns(mockSet.Object);
+
+        var model = new SecretsModel(ctx.Object) { Secrets = [new ClientSecret { Id = 1, Value = "hashed", Type = "SharedSecret" }] };
+        var result = await model.OnPostRemoveRowAsync(1, 0);
+
+        Assert.IsType<PageResult>(result);
+        Assert.Empty(model.Secrets);
+    }
+
+    [Fact]
+    public async Task OnPostRemoveRowAsync_ReturnsNotFound_WhenMissing()
+    {
+        var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<Client>());
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.Clients).Returns(mockSet.Object);
+
+        var model = new SecretsModel(ctx.Object) { Secrets = [] };
+        var result = await model.OnPostRemoveRowAsync(99, 0);
+
+        Assert.IsType<NotFoundResult>(result);
+    }
 }
