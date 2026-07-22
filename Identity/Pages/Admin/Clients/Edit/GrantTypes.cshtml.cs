@@ -75,4 +75,36 @@ public class GrantTypesModel : PageModel
         await _context.SaveChangesAsync();
         return RedirectToPage("/Admin/Clients/Details/GrantTypes", new { id });
     }
+
+    /// <summary>Adds a blank grant type row.</summary>
+    public async Task<IActionResult> OnPostAddRowAsync(int id)
+    {
+        var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == id);
+        if (client is null)
+        {
+            return NotFound();
+        }
+
+        Client = client;
+        GrantTypes.Add(new ClientGrantType());
+        return Page();
+    }
+
+    /// <summary>Removes a grant type row.</summary>
+    public async Task<IActionResult> OnPostRemoveRowAsync(int id, int index)
+    {
+        var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == id);
+        if (client is null)
+        {
+            return NotFound();
+        }
+
+        Client = client;
+        if (index >= 0 && index < GrantTypes.Count)
+        {
+            GrantTypes.RemoveAt(index);
+        }
+
+        return Page();
+    }
 }

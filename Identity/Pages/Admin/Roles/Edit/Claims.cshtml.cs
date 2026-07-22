@@ -58,6 +58,38 @@ public class ClaimsModel : PageModel
         return RedirectToPage("/Admin/Roles/Details/Claims", new { id });
     }
 
+    /// <summary>Adds a blank claim row.</summary>
+    public async Task<IActionResult> OnPostAddRowAsync(string id)
+    {
+        var role = await _roleManager.FindByIdAsync(id);
+        if (role is null)
+        {
+            return NotFound();
+        }
+
+        RoleName = role.Name ?? Empty;
+        Claims.Add(new ClaimInputModel());
+        return Page();
+    }
+
+    /// <summary>Removes a claim row.</summary>
+    public async Task<IActionResult> OnPostRemoveRowAsync(string id, int index)
+    {
+        var role = await _roleManager.FindByIdAsync(id);
+        if (role is null)
+        {
+            return NotFound();
+        }
+
+        RoleName = role.Name ?? Empty;
+        if (index >= 0 && index < Claims.Count)
+        {
+            Claims.RemoveAt(index);
+        }
+
+        return Page();
+    }
+
     /// <summary>Represents a claim type/value pair for form binding.</summary>
     public class ClaimInputModel
     {

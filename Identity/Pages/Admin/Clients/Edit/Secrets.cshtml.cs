@@ -84,4 +84,36 @@ public class SecretsModel : PageModel
         await _context.SaveChangesAsync();
         return RedirectToPage("/Admin/Clients/Details/Secrets", new { id });
     }
+
+    /// <summary>Adds a blank secret row.</summary>
+    public async Task<IActionResult> OnPostAddRowAsync(int id)
+    {
+        var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == id);
+        if (client is null)
+        {
+            return NotFound();
+        }
+
+        Client = client;
+        Secrets.Add(new ClientSecret { Type = "SharedSecret" });
+        return Page();
+    }
+
+    /// <summary>Removes a secret row.</summary>
+    public async Task<IActionResult> OnPostRemoveRowAsync(int id, int index)
+    {
+        var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == id);
+        if (client is null)
+        {
+            return NotFound();
+        }
+
+        Client = client;
+        if (index >= 0 && index < Secrets.Count)
+        {
+            Secrets.RemoveAt(index);
+        }
+
+        return Page();
+    }
 }

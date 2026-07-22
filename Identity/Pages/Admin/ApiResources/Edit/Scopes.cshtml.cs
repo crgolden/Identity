@@ -65,4 +65,38 @@ public class ScopesModel : PageModel
         await _context.SaveChangesAsync();
         return RedirectToPage("/Admin/ApiResources/Details/Scopes", new { id });
     }
+
+    /// <summary>Adds a blank scope row.</summary>
+    public async Task<IActionResult> OnPostAddRowAsync(int id)
+    {
+        var resource = await _context.ApiResources.FirstOrDefaultAsync(r => r.Id == id);
+        if (resource is null)
+        {
+            return NotFound();
+        }
+
+        ResourceId = resource.Id;
+        ResourceName = resource.Name;
+        Scopes.Add(new ApiResourceScope());
+        return Page();
+    }
+
+    /// <summary>Removes a scope row.</summary>
+    public async Task<IActionResult> OnPostRemoveRowAsync(int id, int index)
+    {
+        var resource = await _context.ApiResources.FirstOrDefaultAsync(r => r.Id == id);
+        if (resource is null)
+        {
+            return NotFound();
+        }
+
+        ResourceId = resource.Id;
+        ResourceName = resource.Name;
+        if (index >= 0 && index < Scopes.Count)
+        {
+            Scopes.RemoveAt(index);
+        }
+
+        return Page();
+    }
 }

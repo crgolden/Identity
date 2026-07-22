@@ -108,4 +108,60 @@ public class ProperiescshtmlTests
 
         Assert.Equal("prod", existing.Value);
     }
+
+    [Fact]
+    public async Task OnPostAddRowAsync_AddsBlankRow_WhenFound()
+    {
+        var client = new Client { Id = 1, ClientId = "test" };
+        var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.Clients).Returns(mockSet.Object);
+
+        var model = new PropertiesModel(ctx.Object) { Properties = [] };
+        var result = await model.OnPostAddRowAsync(1);
+
+        Assert.IsType<PageResult>(result);
+        Assert.Single(model.Properties);
+    }
+
+    [Fact]
+    public async Task OnPostAddRowAsync_ReturnsNotFound_WhenMissing()
+    {
+        var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<Client>());
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.Clients).Returns(mockSet.Object);
+
+        var model = new PropertiesModel(ctx.Object) { Properties = [] };
+        var result = await model.OnPostAddRowAsync(99);
+
+        Assert.IsType<NotFoundResult>(result);
+    }
+
+    [Fact]
+    public async Task OnPostRemoveRowAsync_RemovesRow_WhenValidIndex()
+    {
+        var client = new Client { Id = 1, ClientId = "test" };
+        var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.Clients).Returns(mockSet.Object);
+
+        var model = new PropertiesModel(ctx.Object) { Properties = [new ClientProperty { Id = 1, Key = "k", Value = "v" }] };
+        var result = await model.OnPostRemoveRowAsync(1, 0);
+
+        Assert.IsType<PageResult>(result);
+        Assert.Empty(model.Properties);
+    }
+
+    [Fact]
+    public async Task OnPostRemoveRowAsync_ReturnsNotFound_WhenMissing()
+    {
+        var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<Client>());
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.Clients).Returns(mockSet.Object);
+
+        var model = new PropertiesModel(ctx.Object) { Properties = [] };
+        var result = await model.OnPostRemoveRowAsync(99, 0);
+
+        Assert.IsType<NotFoundResult>(result);
+    }
 }

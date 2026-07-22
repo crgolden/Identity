@@ -81,4 +81,56 @@ public class ScopescshtmlTests
 
         Assert.Empty(resource.Scopes);
     }
+
+    [Fact]
+    public async Task OnPostAddRowAsync_AddsBlankRow_WhenFound()
+    {
+        var resource = new ApiResource { Id = 1, Name = "my-api" };
+        var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
+
+        var model = new ScopesModel(ctx.Object) { Scopes = [] };
+        var result = await model.OnPostAddRowAsync(1);
+
+        Assert.IsType<PageResult>(result);
+        Assert.Single(model.Scopes);
+    }
+
+    [Fact]
+    public async Task OnPostAddRowAsync_ReturnsNotFound_WhenMissing()
+    {
+        var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<ApiResource>());
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
+
+        var model = new ScopesModel(ctx.Object) { Scopes = [] };
+        Assert.IsType<NotFoundResult>(await model.OnPostAddRowAsync(99));
+    }
+
+    [Fact]
+    public async Task OnPostRemoveRowAsync_RemovesRow_WhenValidIndex()
+    {
+        var resource = new ApiResource { Id = 1, Name = "my-api" };
+        var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
+
+        var model = new ScopesModel(ctx.Object) { Scopes = [new ApiResourceScope { Id = 1, Scope = "my-api.read" }] };
+        var result = await model.OnPostRemoveRowAsync(1, 0);
+
+        Assert.IsType<PageResult>(result);
+        Assert.Empty(model.Scopes);
+    }
+
+    [Fact]
+    public async Task OnPostRemoveRowAsync_ReturnsNotFound_WhenMissing()
+    {
+        var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<ApiResource>());
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
+
+        var model = new ScopesModel(ctx.Object) { Scopes = [] };
+        Assert.IsType<NotFoundResult>(await model.OnPostRemoveRowAsync(99, 0));
+    }
 }

@@ -6,36 +6,25 @@
 
 <h1>@Model.ResourceName — Edit Scopes</h1>
 
-<form method="post" data-collection-form>
-    <table class="table table-bordered table-sm" data-collection="Scopes">
+<form method="post">
+    <table class="table table-bordered table-sm">
         <thead class="table-light">
             <tr><th>Scope</th><th></th></tr>
         </thead>
         <tbody>
             @for (var i = 0; i < Model.Scopes.Count; i++)
             {
-                <tr data-row>
+                <tr>
                     <input type="hidden" name="Scopes[@i].Id" value="@Model.Scopes[i].Id" />
                     <td><input id="scope-@i" name="Scopes[@i].Scope" value="@Model.Scopes[i].Scope" class="form-control form-control-sm" aria-label="Scope" /></td>
-                    <td><button id="scope-remove-@i" data-remove-row class="btn btn-sm btn-danger">Remove</button></td>
+                    <td><button id="scope-remove-@i" type="submit" asp-page-handler="RemoveRow" asp-route-id="@Model.ResourceId" asp-route-index="@i" class="btn btn-sm btn-danger">Remove</button></td>
                 </tr>
             }
         </tbody>
     </table>
-    <template data-for="Scopes">
-        <tr data-row>
-            <input type="hidden" name="Scopes[-1].Id" value="0" />
-            <td><input id="scope-IDX" name="Scopes[-1].Scope" class="form-control form-control-sm" aria-label="Scope" /></td>
-            <td><button id="scope-remove-IDX" data-remove-row class="btn btn-sm btn-danger">Remove</button></td>
-        </tr>
-    </template>
-    <button id="btn-add-row" type="button" data-add-for="Scopes" class="btn btn-sm btn-outline-secondary mb-3">Add Scope</button>
+    <button id="btn-add-row" type="submit" asp-page-handler="AddRow" asp-route-id="@Model.ResourceId" class="btn btn-sm btn-outline-secondary mb-3">Add Scope</button>
     <div>
-        <button id="save-submit" type="submit" class="btn btn-primary">Save</button>
+        <button id="save-submit" type="submit" asp-route-id="@Model.ResourceId" class="btn btn-primary">Save</button>
         <a asp-page="../Details/Scopes" asp-route-id="@HttpContext.Request.RouteValues["id"]" class="btn btn-outline-secondary">Cancel</a>
     </div>
 </form>
-
-@section Scripts {
-    <script src="~/js/admin-collection.js"></script>
-}

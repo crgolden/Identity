@@ -66,4 +66,38 @@ public class PropertiesModel : PageModel
         await _context.SaveChangesAsync();
         return RedirectToPage("/Admin/ApiResources/Details/Properties", new { id });
     }
+
+    /// <summary>Adds a blank property row.</summary>
+    public async Task<IActionResult> OnPostAddRowAsync(int id)
+    {
+        var resource = await _context.ApiResources.FirstOrDefaultAsync(r => r.Id == id);
+        if (resource is null)
+        {
+            return NotFound();
+        }
+
+        ResourceId = resource.Id;
+        ResourceName = resource.Name;
+        Properties.Add(new ApiResourceProperty());
+        return Page();
+    }
+
+    /// <summary>Removes a property row.</summary>
+    public async Task<IActionResult> OnPostRemoveRowAsync(int id, int index)
+    {
+        var resource = await _context.ApiResources.FirstOrDefaultAsync(r => r.Id == id);
+        if (resource is null)
+        {
+            return NotFound();
+        }
+
+        ResourceId = resource.Id;
+        ResourceName = resource.Name;
+        if (index >= 0 && index < Properties.Count)
+        {
+            Properties.RemoveAt(index);
+        }
+
+        return Page();
+    }
 }

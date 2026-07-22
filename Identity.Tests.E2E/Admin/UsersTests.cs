@@ -148,6 +148,29 @@ public sealed class UsersTests(PlaywrightFixture fixture)
     }
 
     [Fact]
+    public async Task Edit_Claims_Update_Persists()
+    {
+        var (email, password) = await fixture.CreateAdminUserAsync();
+        var claimType = $"e2e-claimtype-{Guid.NewGuid():N}";
+        var updatedValue = $"e2e-updated-{Guid.NewGuid():N}";
+
+        var (context, page) = await fixture.NewPageAsync("Admin");
+        await using (context)
+        {
+            await LoginAsync(page, email, password);
+            await NavigateToOwnDetailsAsync(page, email);
+            await AddUserClaimRowAsync(page, claimType);
+
+            await page.ClickAsync("#btn-edit");
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Users/Edit/Claims"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await page.FillAsync("#claim-value-0", updatedValue);
+            await page.ClickAsync("#save-submit");
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Users/Details/Claims"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page.GetByText(updatedValue)).ToBeVisibleAsync();
+        }
+    }
+
+    [Fact]
     public async Task Edit_Roles_Add_Persists()
     {
         var (email, password) = await fixture.CreateAdminUserAsync();
@@ -190,6 +213,32 @@ public sealed class UsersTests(PlaywrightFixture fixture)
             await page.ClickAsync("#role-remove-1");
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Users/Details/Roles"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page.Locator("li.list-group-item", new PageLocatorOptions { HasText = roleName })).Not.ToBeVisibleAsync();
+        }
+    }
+
+    [Fact]
+    public async Task Edit_Roles_Update_Persists()
+    {
+        var (email, password) = await fixture.CreateAdminUserAsync();
+        var roleName = $"e2e-user-role-{Guid.NewGuid():N}";
+        var updatedRoleName = $"e2e-user-role-updated-{Guid.NewGuid():N}";
+
+        var (context, page) = await fixture.NewPageAsync("Admin");
+        await using (context)
+        {
+            await LoginAsync(page, email, password);
+            await CreateRoleAsync(page, roleName);
+            await CreateRoleAsync(page, updatedRoleName);
+            await NavigateToOwnDetailsAsync(page, email);
+            await AddUserRoleRowAsync(page, roleName);
+
+            await page.ClickAsync("#btn-edit");
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Users/Edit/Roles"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await page.FillAsync("#role-1", updatedRoleName);
+            await page.ClickAsync("#save-submit");
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Users/Details/Roles"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page.Locator("li.list-group-item", new PageLocatorOptions { HasText = updatedRoleName })).ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("li.list-group-item", new PageLocatorOptions { HasText = roleName })).Not.ToBeVisibleAsync();
         }
     }

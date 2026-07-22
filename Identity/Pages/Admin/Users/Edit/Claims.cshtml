@@ -6,9 +6,9 @@
 
 <h1>@Model.AppUser.UserName — Edit Claims</h1>
 
-<form method="post" data-collection-form>
+<form method="post">
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-    <table class="table table-bordered table-sm" data-collection="Claims">
+    <table class="table table-bordered table-sm">
         <thead class="table-light">
             <tr>
                 <th>Type</th>
@@ -19,28 +19,17 @@
         <tbody>
             @for (var i = 0; i < Model.Claims.Count; i++)
             {
-                <tr data-row>
+                <tr>
                     <td><input id="claim-type-@i" name="Claims[@i].Type" value="@Model.Claims[i].Type" class="form-control form-control-sm" aria-label="Claim type" /></td>
                     <td><input id="claim-value-@i" name="Claims[@i].Value" value="@Model.Claims[i].Value" class="form-control form-control-sm" aria-label="Claim value" /></td>
-                    <td><button id="claim-remove-@i" type="button" class="btn btn-sm btn-outline-danger" data-remove-row>Remove</button></td>
+                    <td><button id="claim-remove-@i" type="submit" asp-page-handler="RemoveRow" asp-route-id="@Model.AppUser.Id" asp-route-index="@i" class="btn btn-sm btn-outline-danger">Remove</button></td>
                 </tr>
             }
         </tbody>
     </table>
-    <template data-for="Claims">
-        <tr data-row>
-            <td><input id="claim-type-IDX" name="Claims[-1].Type" class="form-control form-control-sm" aria-label="Claim type" /></td>
-            <td><input id="claim-value-IDX" name="Claims[-1].Value" class="form-control form-control-sm" aria-label="Claim value" /></td>
-            <td><button id="claim-remove-IDX" type="button" class="btn btn-sm btn-outline-danger" data-remove-row>Remove</button></td>
-        </tr>
-    </template>
-    <button id="btn-add-row" type="button" class="btn btn-outline-secondary btn-sm mb-3" data-add-for="Claims">Add Claim</button>
+    <button id="btn-add-row" type="submit" asp-page-handler="AddRow" asp-route-id="@Model.AppUser.Id" class="btn btn-outline-secondary btn-sm mb-3">Add Claim</button>
     <div>
-        <button id="save-submit" type="submit" class="btn btn-primary">Save</button>
+        <button id="save-submit" type="submit" asp-route-id="@Model.AppUser.Id" class="btn btn-primary">Save</button>
         <a asp-page="../Details/Claims" asp-route-id="@Model.AppUser.Id" class="btn btn-outline-secondary">Cancel</a>
     </div>
 </form>
-
-@section Scripts {
-    <script src="~/js/admin-collection.js"></script>
-}

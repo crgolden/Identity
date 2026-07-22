@@ -198,11 +198,9 @@ Every table — Admin index pages and Manage sub-pages alike — is wrapped in `
 
 ### Collection edit tables (Admin sub-pages)
 
-Editable rows contain `<input class="form-control form-control-sm">`. An "Add" button (`btn btn-sm btn-outline-secondary`) appends a row from a `<template>` element. A "Remove" button (`btn btn-sm btn-danger`) removes the row. On submit, `admin-collection.js` renumbers surviving inputs into `CollectionProperty[0].Field`, `[1].Field`, … format.
+Editable rows contain `<input class="form-control form-control-sm">`, rendered by a single server-side `@for` loop — there is no client-side JavaScript in this pattern. An "Add" button (`btn btn-sm btn-outline-secondary`, `asp-page-handler="AddRow"`) posts to a page handler that appends one blank item to the bound list and returns `Page()`, so the newly-added row appears via a normal page reload. A "Remove" button (`btn btn-sm btn-danger`, `asp-page-handler="RemoveRow" asp-route-index="@i"`) posts to a handler that removes the item at that index the same way. Both handlers carry an explicit `asp-route-id` — never rely on the browser reusing the current URL's query string, since after an Add/Remove round trip that URL still carries the previous `?handler=` value.
 
-`admin-collection.js` is loaded only in the `@section Scripts` of collection Edit pages — not globally.
-
-Every row field and its Remove button carries an index-based `id` (`{field}-{index}` / `{field}-remove-{index}`, e.g. `scope-0`, `claim-type-0`, `claim-remove-0`) — per project convention, E2E tests select elements by `id` only. The `<template>` element uses an `IDX` placeholder in place of the index, which `admin-collection.js` substitutes with the row's position (alongside the existing `[-1]` → `[count]` substitution in `name` attributes) when a new row is cloned in. See `TESTING.md`'s "ID convention" table for the full pattern.
+Every row field and its Remove button carries an index-based `id` (`{field}-{index}` / `{field}-remove-{index}`, e.g. `scope-0`, `claim-type-0`, `claim-remove-0`) using the loop's own `@i` — per project convention, E2E tests select elements by `id` only. Because the same loop renders both already-saved and freshly-added rows, indices are always contiguous starting at 0, matching ASP.NET Core's default `List<T>` model-binding requirement with no separate renumbering step needed. See `TESTING.md`'s "ID convention" table for the full pattern.
 
 ### Status messages
 
@@ -241,7 +239,7 @@ Rendered in `_StatusMessage.cshtml` as `alert-success` (positive) or `alert-dang
 **Don't:**
 - Use `btn-primary` for delete, remove, revoke, disable, or reset actions — anywhere, including hub-page entry links.
 - Use `btn-danger` for navigation or secondary actions.
-- Add `<script src>` tags for external grid libraries (Kendo, DataTables, etc.) on admin pages — use the vanilla `admin-collection.js` pattern.
+- Add `<script src>` tags for grid libraries (Kendo, DataTables, etc.) or hand-rolled JavaScript on admin pages — collection editors use the server-side `OnPostAddRowAsync`/`OnPostRemoveRowAsync` pattern described above, with no client-side script.
 - Hardcode `returnUrl` into `LocalRedirect` without `IsLocalUrl` check (open redirect risk).
 - Set `border-radius`, `font-family`, or `color` inline or in component-scoped CSS — use Bootstrap tokens and utilities only.
 - Use `form-floating` outside of single-field focused pages (login, register). Admin collection forms use standard label-above layout.

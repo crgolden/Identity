@@ -63,4 +63,34 @@ public class PropertiesModel : PageModel
         await _context.SaveChangesAsync();
         return RedirectToPage("/Admin/ApiScopes/Details/Properties", new { id });
     }
+
+    /// <summary>Adds a blank property row.</summary>
+    public async Task<IActionResult> OnPostAddRowAsync(int id)
+    {
+        var exists = await _context.ApiScopes.AnyAsync(s => s.Id == id);
+        if (!exists)
+        {
+            return NotFound();
+        }
+
+        Properties.Add(new ApiScopeProperty());
+        return Page();
+    }
+
+    /// <summary>Removes a property row.</summary>
+    public async Task<IActionResult> OnPostRemoveRowAsync(int id, int index)
+    {
+        var exists = await _context.ApiScopes.AnyAsync(s => s.Id == id);
+        if (!exists)
+        {
+            return NotFound();
+        }
+
+        if (index >= 0 && index < Properties.Count)
+        {
+            Properties.RemoveAt(index);
+        }
+
+        return Page();
+    }
 }

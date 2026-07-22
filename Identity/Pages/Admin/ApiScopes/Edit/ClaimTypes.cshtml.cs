@@ -62,4 +62,34 @@ public class ClaimTypesModel : PageModel
         await _context.SaveChangesAsync();
         return RedirectToPage("/Admin/ApiScopes/Details/ClaimTypes", new { id });
     }
+
+    /// <summary>Adds a blank claim type row.</summary>
+    public async Task<IActionResult> OnPostAddRowAsync(int id)
+    {
+        var exists = await _context.ApiScopes.AnyAsync(s => s.Id == id);
+        if (!exists)
+        {
+            return NotFound();
+        }
+
+        ClaimTypes.Add(new ApiScopeClaim());
+        return Page();
+    }
+
+    /// <summary>Removes a claim type row.</summary>
+    public async Task<IActionResult> OnPostRemoveRowAsync(int id, int index)
+    {
+        var exists = await _context.ApiScopes.AnyAsync(s => s.Id == id);
+        if (!exists)
+        {
+            return NotFound();
+        }
+
+        if (index >= 0 && index < ClaimTypes.Count)
+        {
+            ClaimTypes.RemoveAt(index);
+        }
+
+        return Page();
+    }
 }
