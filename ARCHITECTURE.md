@@ -253,10 +253,10 @@ EF Core migrations are not used. The `Identity.Data/` SQL Server Database Projec
 
 | Service | Purpose | Registration |
 |---|---|---|
-| **Azure Service Bus** | Transactional email (confirmation, password reset) | Pages inject `IAzureClientFactory<ServiceBusClient>`; call `CreateClient("crgolden")` then `CreateSender("email")` per send; namespace from Key Vault (production) or connection string (non-production) |
+| **Azure Service Bus** | Transactional email (confirmation, password reset) | Pages inject `IAzureClientFactory<ServiceBusClient>`; call `CreateClient("crgolden")` then `CreateSender("email")` per send; namespace from the `ServiceBusNamespace` configuration value (production) or a connection string (non-production) — not a Key Vault secret |
 | **Gravatar** | User avatar images via SHA-256 email hash | `IAvatarService` → `GravatarService` (scoped); NSwag-generated `IGravatar` HTTP client with Bearer auth |
 | **Google APIs** | External OpenID Connect login | `AddGoogleOpenIdConnect`; Client ID/Secret from Key Vault |
-| **Azure Key Vault** | Runtime secrets (DB credentials, API keys, OAuth secrets) | `SecretClient`; the 11 secrets in `SecretClientExtensions.GetIdentitySecrets()` are fetched at startup (production only) |
+| **Azure Key Vault** | Runtime secrets (DB credentials, API keys, OAuth secrets) | No SDK calls at app startup — `crgolden-identity`'s App Service settings hold `@Microsoft.KeyVault(SecretUri=...)` references that the platform resolves into `IConfiguration` before the app starts; `Program.cs` reads them via `IConfiguration.GetRequired<T>` (`Identity.Extensions`) like any other config value |
 | **Azure Blob Storage** | Data Protection key persistence | `PersistKeysToAzureBlobStorage` |
 | **Azure Key Vault** | Data Protection key encryption | `ProtectKeysWithAzureKeyVault` |
 

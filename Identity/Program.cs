@@ -4,7 +4,6 @@ using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Threading.Channels;
 using Azure.Identity;
-using Azure.Security.KeyVault.Secrets;
 using Duende.IdentityServer;
 using Elastic.Ingest.Elasticsearch;
 using Elastic.Ingest.Elasticsearch.DataStreams;
@@ -34,7 +33,13 @@ Log.Logger = new LoggerConfiguration().WriteTo.Console().CreateBootstrapLogger()
 try
 {
     var builder = WebApplication.CreateBuilder(args);
-    string googleClientId, googleClientSecret, gravatarApiSecretKey, reCAPTCHASiteKey, reCAPTCHASecretKey;
+    string googleClientId = builder.Configuration.GetRequired<string>("GoogleClientId"),
+        googleClientSecret = builder.Configuration.GetRequired<string>("GoogleClientSecret"),
+        gravatarApiSecretKey = builder.Configuration.GetRequired<string>("GravatarApiSecretKey"),
+        reCAPTCHASiteKey = builder.Configuration.GetRequired<string>("ReCAPTCHASiteKey"),
+        reCAPTCHASecretKey = builder.Configuration.GetRequired<string>("ReCAPTCHASecretKey");
+    string? adminEmail = builder.Configuration.GetValue<string?>("AdminEmail"),
+        testEmail = builder.Configuration.GetValue<string?>("TestEmail");
     var sqlConnectionStringBuilderSection = builder.Configuration.GetRequiredSection(nameof(SqlConnectionStringBuilder));
     var sqlConnectionStringBuilder = sqlConnectionStringBuilderSection.Get<SqlConnectionStringBuilder>() ?? throw new InvalidOperationException($"Invalid '{nameof(SqlConnectionStringBuilder)}' section.");
     var corsPolicySection = builder.Configuration.GetRequiredSection(nameof(CorsPolicy));
@@ -48,19 +53,11 @@ try
         var tokenCredential = new DefaultAzureCredential(defaultAzureCredentialOptions);
         Uri blobUri = builder.Configuration.GetRequired<Uri>("BlobUri"),
             dataProtectionKeyIdentifier = builder.Configuration.GetRequired<Uri>("DataProtectionKeyIdentifier"),
-            elasticsearchNode = builder.Configuration.GetRequired<Uri>("ElasticsearchNode"),
-            keyVaultUrl = builder.Configuration.GetRequired<Uri>("KeyVaultUri");
+            elasticsearchNode = builder.Configuration.GetRequired<Uri>("ElasticsearchNode");
         string applicationName = builder.Configuration.GetRequired<string>("WEBSITE_SITE_NAME"),
             serviceBusNamespace = builder.Configuration.GetRequired<string>("ServiceBusNamespace");
-        var secretClient = new SecretClient(keyVaultUrl, tokenCredential);
-        var secrets = secretClient.GetIdentitySecrets();
-        googleClientId = secrets.GoogleClientId.Value;
-        googleClientSecret = secrets.GoogleClientSecret.Value;
-        gravatarApiSecretKey = secrets.GravatarApiSecretKey.Value;
-        reCAPTCHASiteKey = secrets.ReCAPTCHASiteKey.Value;
-        reCAPTCHASecretKey = secrets.ReCAPTCHASecretKey.Value;
-        sqlConnectionStringBuilder.UserID = secrets.SqlServerUserId.Value;
-        sqlConnectionStringBuilder.Password = secrets.SqlServerPassword.Value;
+        var elasticsearchUsername = builder.Configuration.GetRequired<string>("ElasticsearchUsername");
+        var elasticsearchPassword = builder.Configuration.GetRequired<string>("ElasticsearchPassword");
         builder.Services.Configure<AspNetCoreTraceInstrumentationOptions>(options => options.Filter = context => !context.Request.Path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase));
         builder.Logging.AddOpenTelemetry(openTelemetryLoggerOptions =>
         {
@@ -70,8 +67,8 @@ try
         builder.Services
             .Configure<ReCAPTCHAOptions>(recaptchaOptions =>
             {
-                recaptchaOptions.AdminEmail = secrets.AdminEmail.Value;
-                recaptchaOptions.TestEmail = secrets.TestEmail.Value;
+                recaptchaOptions.AdminEmail = adminEmail;
+                recaptchaOptions.TestEmail = testEmail;
             })
             .AddSerilog((serviceProvider, loggerConfiguration) => loggerConfiguration
                 .ReadFrom.Configuration(builder.Configuration)
@@ -92,7 +89,7 @@ try
                     },
                     transportConfiguration =>
                     {
-                        var header = new BasicAuthentication(secrets.ElasticsearchUsername.Value, secrets.ElasticsearchPassword.Value);
+                        var header = new BasicAuthentication(elasticsearchUsername, elasticsearchPassword);
                         transportConfiguration.Authentication(header);
                     }))
             .AddOpenTelemetry()
@@ -145,17 +142,12 @@ try
                 .AddDatabaseDeveloperPageExceptionFilter();
         }
 
-        var secrets = builder.Configuration.GetIdentitySecrets();
-        googleClientId = secrets.GoogleClientId;
-        googleClientSecret = secrets.GoogleClientSecret;
-        gravatarApiSecretKey = secrets.GravatarApiSecretKey;
-        reCAPTCHASiteKey = secrets.ReCAPTCHASiteKey;
-        reCAPTCHASecretKey = secrets.ReCAPTCHASecretKey;
+        var serviceBusConnectionString = builder.Configuration.GetRequired<string>("ServiceBusConnectionString");
         builder.Services
             .Configure<ReCAPTCHAOptions>(recaptchaOptions =>
             {
-                recaptchaOptions.AdminEmail = secrets.AdminEmail;
-                recaptchaOptions.TestEmail = secrets.TestEmail;
+                recaptchaOptions.AdminEmail = adminEmail;
+                recaptchaOptions.TestEmail = testEmail;
             })
             .AddSerilog((serviceProvider, loggerConfiguration) => loggerConfiguration
                 .ReadFrom.Configuration(builder.Configuration)
@@ -165,7 +157,7 @@ try
             .UseEphemeralDataProtectionProvider().Services
             .AddAzureClients(azureClientFactoryBuilder =>
             {
-                azureClientFactoryBuilder.AddServiceBusClient(secrets.ServiceBusConnectionString).WithName("crgolden");
+                azureClientFactoryBuilder.AddServiceBusClient(serviceBusConnectionString).WithName("crgolden");
             });
     }
 

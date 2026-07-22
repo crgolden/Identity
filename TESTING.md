@@ -1133,10 +1133,6 @@ flowchart TD
 
 | Scenario | File | Test Method |
 |---|---|---|
-| `ToSecretClient` — valid KeyVaultUri returns SecretClient | `Extensions/ConfigurationExtensionsTests.cs` | `ToSecretClient_ValidKeyVaultUri_ReturnsSecretClient` |
-| `ToSecretClient` — missing KeyVaultUri throws | `Extensions/ConfigurationExtensionsTests.cs` | `ToSecretClient_MissingKeyVaultUri_ThrowsInvalidOperationException` |
-| `ToSecretClient` — empty KeyVaultUri throws | `Extensions/ConfigurationExtensionsTests.cs` | `ToSecretClient_EmptyKeyVaultUri_ThrowsInvalidOperationException` |
-| `ToSecretClient` — invalid URI throws | `Extensions/ConfigurationExtensionsTests.cs` | `ToSecretClient_InvalidUri_ThrowsInvalidOperationException` |
 | `AddCors` — missing CorsPolicy section throws | `Extensions/HostApplicationBuilderExtensionsTests.cs` | `AddCors_MissingCorsPolicySection_ThrowsInvalidOperationException` |
 | `AddCors` — valid section registers ICorsService | `Extensions/HostApplicationBuilderExtensionsTests.cs` | `AddCors_ValidCorsPolicySection_RegistersCorsService` |
 | `AddDataProtection` — missing BlobUri throws | `Extensions/HostApplicationBuilderExtensionsTests.cs` | `AddDataProtection_MissingBlobUri_ThrowsInvalidOperationException` |
@@ -1391,7 +1387,7 @@ Load tests use `Parallel.ForEachAsync` + `HttpClient` (self-signed cert ignored)
 
 | File | Focus |
 |---|---|
-| `ServiceResilienceTests.cs` | `GravatarService` surfaces non-404 API exceptions; `SecretClient` propagates `RequestFailedException`; services tolerate `CancellationToken` cancellation |
+| `ServiceResilienceTests.cs` | `GravatarService` surfaces non-404 API exceptions; services tolerate `CancellationToken` cancellation |
 
 ---
 
@@ -1402,7 +1398,7 @@ Stryker.NET is configured in `stryker-config.json` with `mutation-level: Advance
 | File | Why it's targeted |
 |---|---|
 | `Identity/GravatarService.cs` | Hash computation and error handling |
-| `Identity/Extensions/ConfigurationExtensions.cs` | Key Vault URI → `SecretClient` factory; startup config extraction |
+| `Identity/Extensions/ConfigurationExtensions.cs` | `GetRequired<T>` config extraction |
 | `Identity/Extensions/EndpointRouteBuilderExtensions.cs` | Passkey endpoint registration |
 
 **Thresholds:** high=80, low=60, break=50 (CI fails if mutation score < 50).

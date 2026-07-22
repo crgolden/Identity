@@ -69,14 +69,13 @@ Identity is the **authorization server** for a five-app system. It issues all ac
 ```bash
 cd Identity
 dotnet user-secrets set "ElasticsearchNode" "<your-elasticsearch-node-uri>"
-dotnet user-secrets set "KeyVaultUri" "<your-key-vault-uri>"
 dotnet user-secrets set "BlobUri" "<your-blob-storage-uri>"
 dotnet user-secrets set "DataProtectionKeyIdentifier" "<your-key-vault-key-uri>"
 dotnet user-secrets set "SqlConnectionStringBuilder:DataSource" "<your-sql-server>"
 dotnet user-secrets set "AlloyEndpoint" "<your-grafana-alloy-otlp-endpoint>"
 ```
 
-The following secrets must be present in Azure Key Vault. In production they are fetched at startup via `DefaultAzureCredential` (see `SecretClientExtensions.GetIdentitySecrets`):
+The following secrets must be present in Azure Key Vault. In production, `crgolden-identity`'s App Service settings hold `@Microsoft.KeyVault(SecretUri=...)` references for each one, which the platform resolves into `IConfiguration` automatically at startup (the same mechanism that already supplies `OidcAuthority`/`AlloyEndpoint`) — there is no manual `SecretClient` fetch in `Program.cs`:
 
 | Secret Name | Description |
 |---|---|
@@ -92,7 +91,7 @@ The following secrets must be present in Azure Key Vault. In production they are
 | `AdminEmail` | Admin-role account email |
 | `TestEmail` | E2E/smoke test account email |
 
-The Azure Service Bus namespace is supplied as the `ServiceBusNamespace` **configuration** value (not fetched through `GetIdentitySecrets`).
+The Azure Service Bus namespace is supplied as the `ServiceBusNamespace` **configuration** value, same as the secrets above.
 
 ### 2. Set Up the Database
 
