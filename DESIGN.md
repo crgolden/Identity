@@ -202,6 +202,8 @@ Editable rows contain `<input class="form-control form-control-sm">`. An "Add" b
 
 `admin-collection.js` is loaded only in the `@section Scripts` of collection Edit pages — not globally.
 
+Every row field and its Remove button carries an index-based `id` (`{field}-{index}` / `{field}-remove-{index}`, e.g. `scope-0`, `claim-type-0`, `claim-remove-0`) — per project convention, E2E tests select elements by `id` only. The `<template>` element uses an `IDX` placeholder in place of the index, which `admin-collection.js` substitutes with the row's position (alongside the existing `[-1]` → `[count]` substitution in `name` attributes) when a new row is cloned in. See `TESTING.md`'s "ID convention" table for the full pattern.
+
 ### Status messages
 
 ```csharp

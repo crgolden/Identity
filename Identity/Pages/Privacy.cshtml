@@ -1,8 +1,26 @@
-﻿@page
+@page
 @model PrivacyModel
 @{
     ViewData["Title"] = "Privacy Policy";
 }
 <h1>@ViewData["Title"]</h1>
 
-<p>Use this page to detail your site's privacy policy.</p>
+<p>This site is a sign-in provider. It issues one account you can use to sign in across the crgolden family of applications, so each one doesn't need its own copy of your password.</p>
+
+<h2>What we collect</h2>
+<p>When you register, we store your email address, a username, and a securely hashed password. We never store the password itself. Everything else is optional and only stored if you turn it on: a phone number, two-factor authentication or recovery codes, a passkey, or a linked Google account. If you sign in with Google instead of a password, we store the link to that account, not your Google password.</p>
+
+<h2>Why we collect it</h2>
+<p>Your email and username identify your account and let us send you account-related email: password resets and email confirmations, nothing promotional. The rest exists to secure your account (two-factor authentication, passkeys) or make sign-in more convenient (linked logins).</p>
+
+<h2>Cookies</h2>
+<p>We use cookies to keep you signed in. There are no advertising or analytics cookies on this site.</p>
+
+<h2>Who else sees your data</h2>
+<p>When you sign in to another crgolden application through this site, we share only what that application needs to recognize you: your username and the specific permissions ("scopes") it requested. We never share your password. Account-related email is delivered through a transactional email provider (Resend). If you sign in with Google, Google is involved only in confirming your identity, not in anything else this site does. We don't sell or share your data with advertisers.</p>
+
+<h2>Your data, your control</h2>
+<p>From <a asp-page="/Account/Manage/PersonalData">Account, Personal Data</a> you can download everything we hold about your account as a file, or permanently delete your account and all associated data. Deletion is immediate and cannot be undone. You can also unlink external logins, remove passkeys, and turn two-factor authentication on or off at any time from your account settings.</p>
+
+<h2>Source</h2>
+<p>This site is open source. If you'd like to see how any of this works, the code is at <a href="https://github.com/crgolden/Identity">github.com/crgolden/Identity</a>.</p>

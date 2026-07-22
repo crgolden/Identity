@@ -16,9 +16,9 @@ public class ClaimsModel : PageModel
     /// <summary>Gets the role name for display.</summary>
     public string RoleName { get; private set; } = Empty;
 
-    /// <summary>Gets or sets the claims.</summary>
+    /// <summary>Gets or sets the claims to save.</summary>
     [BindProperty]
-    public List<Claim> Claims { get; set; } = [];
+    public List<ClaimInputModel> Claims { get; set; } = [];
 
     /// <summary>Loads the role and its claims.</summary>
     public async Task<IActionResult> OnGetAsync(string id)
@@ -30,7 +30,8 @@ public class ClaimsModel : PageModel
         }
 
         RoleName = role.Name ?? Empty;
-        Claims = (await _roleManager.GetClaimsAsync(role)).ToList();
+        var existing = await _roleManager.GetClaimsAsync(role);
+        Claims = existing.Select(c => new ClaimInputModel { Type = c.Type, Value = c.Value }).ToList();
         return Page();
     }
 
@@ -51,9 +52,19 @@ public class ClaimsModel : PageModel
 
         foreach (var claim in Claims)
         {
-            await _roleManager.AddClaimAsync(role, claim);
+            await _roleManager.AddClaimAsync(role, new Claim(claim.Type ?? Empty, claim.Value ?? Empty));
         }
 
         return RedirectToPage("/Admin/Roles/Details/Claims", new { id });
+    }
+
+    /// <summary>Represents a claim type/value pair for form binding.</summary>
+    public class ClaimInputModel
+    {
+        /// <summary>Gets or sets the claim type.</summary>
+        public string? Type { get; set; }
+
+        /// <summary>Gets or sets the claim value.</summary>
+        public string? Value { get; set; }
     }
 }

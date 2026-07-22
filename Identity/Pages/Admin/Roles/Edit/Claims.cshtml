@@ -20,18 +20,18 @@
             @for (var i = 0; i < Model.Claims.Count; i++)
             {
                 <tr data-row>
-                    <td><input name="Claims[@i].Type" value="@Model.Claims[i].Type" class="form-control form-control-sm" aria-label="Claim type" /></td>
-                    <td><input name="Claims[@i].Value" value="@Model.Claims[i].Value" class="form-control form-control-sm" aria-label="Claim value" /></td>
-                    <td><button type="button" class="btn btn-sm btn-outline-danger" data-remove-row>Remove</button></td>
+                    <td><input id="claim-type-@i" name="Claims[@i].Type" value="@Model.Claims[i].Type" class="form-control form-control-sm" aria-label="Claim type" /></td>
+                    <td><input id="claim-value-@i" name="Claims[@i].Value" value="@Model.Claims[i].Value" class="form-control form-control-sm" aria-label="Claim value" /></td>
+                    <td><button id="claim-remove-@i" type="button" class="btn btn-sm btn-outline-danger" data-remove-row>Remove</button></td>
                 </tr>
             }
         </tbody>
     </table>
     <template data-for="Claims">
         <tr data-row>
-            <td><input name="Claims[-1].Type" class="form-control form-control-sm" aria-label="Claim type" /></td>
-            <td><input name="Claims[-1].Value" class="form-control form-control-sm" aria-label="Claim value" /></td>
-            <td><button type="button" class="btn btn-sm btn-outline-danger" data-remove-row>Remove</button></td>
+            <td><input id="claim-type-IDX" name="Claims[-1].Type" class="form-control form-control-sm" aria-label="Claim type" /></td>
+            <td><input id="claim-value-IDX" name="Claims[-1].Value" class="form-control form-control-sm" aria-label="Claim value" /></td>
+            <td><button id="claim-remove-IDX" type="button" class="btn btn-sm btn-outline-danger" data-remove-row>Remove</button></td>
         </tr>
     </template>
     <button id="btn-add-row" type="button" class="btn btn-outline-secondary btn-sm mb-3" data-add-for="Claims">Add Claim</button>

@@ -20,8 +20,8 @@
             {
                 <tr data-row>
                     <input type="hidden" name="PostLogoutRedirectUris[@i].Id" value="@Model.PostLogoutRedirectUris[i].Id" />
-                    <td><input name="PostLogoutRedirectUris[@i].PostLogoutRedirectUri" value="@Model.PostLogoutRedirectUris[i].PostLogoutRedirectUri" class="form-control form-control-sm" aria-label="Post-logout redirect URI" /></td>
-                    <td><button type="button" class="btn btn-sm btn-danger" data-remove-row>Remove</button></td>
+                    <td><input id="postlogoutredirecturi-@i" name="PostLogoutRedirectUris[@i].PostLogoutRedirectUri" value="@Model.PostLogoutRedirectUris[i].PostLogoutRedirectUri" class="form-control form-control-sm" aria-label="Post-logout redirect URI" /></td>
+                    <td><button id="postlogoutredirecturi-remove-@i" type="button" class="btn btn-sm btn-danger" data-remove-row>Remove</button></td>
                 </tr>
             }
         </tbody>
@@ -29,8 +29,8 @@
     <template data-for="PostLogoutRedirectUris">
         <tr data-row>
             <input type="hidden" name="PostLogoutRedirectUris[-1].Id" value="0" />
-            <td><input name="PostLogoutRedirectUris[-1].PostLogoutRedirectUri" class="form-control form-control-sm" aria-label="Post-logout redirect URI" /></td>
-            <td><button type="button" class="btn btn-sm btn-danger" data-remove-row>Remove</button></td>
+            <td><input id="postlogoutredirecturi-IDX" name="PostLogoutRedirectUris[-1].PostLogoutRedirectUri" class="form-control form-control-sm" aria-label="Post-logout redirect URI" /></td>
+            <td><button id="postlogoutredirecturi-remove-IDX" type="button" class="btn btn-sm btn-danger" data-remove-row>Remove</button></td>
         </tr>
     </template>
     <button id="btn-add-row" type="button" class="btn btn-sm btn-outline-secondary mb-3" data-add-for="PostLogoutRedirectUris">Add</button>

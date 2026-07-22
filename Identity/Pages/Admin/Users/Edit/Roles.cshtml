@@ -19,16 +19,16 @@
             @for (var i = 0; i < Model.Roles.Count; i++)
             {
                 <tr data-row>
-                    <td><input name="Roles[@i]" value="@Model.Roles[i]" class="form-control form-control-sm" aria-label="Role name" /></td>
-                    <td><button type="button" class="btn btn-sm btn-outline-danger" data-remove-row>Remove</button></td>
+                    <td><input id="role-@i" name="Roles[@i]" value="@Model.Roles[i]" class="form-control form-control-sm" aria-label="Role name" /></td>
+                    <td><button id="role-remove-@i" type="button" class="btn btn-sm btn-outline-danger" data-remove-row>Remove</button></td>
                 </tr>
             }
         </tbody>
     </table>
     <template data-for="Roles">
         <tr data-row>
-            <td><input name="Roles[-1]" class="form-control form-control-sm" aria-label="Role name" /></td>
-            <td><button type="button" class="btn btn-sm btn-outline-danger" data-remove-row>Remove</button></td>
+            <td><input id="role-IDX" name="Roles[-1]" class="form-control form-control-sm" aria-label="Role name" /></td>
+            <td><button id="role-remove-IDX" type="button" class="btn btn-sm btn-outline-danger" data-remove-row>Remove</button></td>
         </tr>
     </template>
     <button id="btn-add-row" type="button" class="btn btn-outline-secondary btn-sm mb-3" data-add-for="Roles">Add Role</button>

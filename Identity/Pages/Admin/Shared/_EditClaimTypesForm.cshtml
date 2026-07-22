@@ -12,8 +12,8 @@
             {
                 <tr data-row>
                     <input type="hidden" name="ClaimTypes[@i].Id" value="@Model[i].Id" />
-                    <td><input class="form-control form-control-sm" name="ClaimTypes[@i].Type" value="@Model[i].Type" aria-label="Claim type" /></td>
-                    <td><button class="btn btn-sm btn-danger" data-remove-row>Remove</button></td>
+                    <td><input id="claimtype-@i" class="form-control form-control-sm" name="ClaimTypes[@i].Type" value="@Model[i].Type" aria-label="Claim type" /></td>
+                    <td><button id="claimtype-remove-@i" class="btn btn-sm btn-danger" data-remove-row>Remove</button></td>
                 </tr>
             }
         </tbody>
@@ -21,8 +21,8 @@
     <template data-for="ClaimTypes">
         <tr data-row>
             <input type="hidden" name="ClaimTypes[-1].Id" value="0" />
-            <td><input class="form-control form-control-sm" name="ClaimTypes[-1].Type" aria-label="Claim type" /></td>
-            <td><button class="btn btn-sm btn-danger" data-remove-row>Remove</button></td>
+            <td><input id="claimtype-IDX" class="form-control form-control-sm" name="ClaimTypes[-1].Type" aria-label="Claim type" /></td>
+            <td><button id="claimtype-remove-IDX" class="btn btn-sm btn-danger" data-remove-row>Remove</button></td>
         </tr>
     </template>
     <button id="btn-add-row" type="button" class="btn btn-sm btn-outline-secondary mb-3" data-add-for="ClaimTypes">Add</button>

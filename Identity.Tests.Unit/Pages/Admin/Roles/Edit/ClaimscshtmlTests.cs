@@ -48,7 +48,7 @@ public class ClaimscshtmlTests
         rm.Setup(m => m.RemoveClaimAsync(role, existing)).ReturnsAsync(IdentityResult.Success);
         rm.Setup(m => m.AddClaimAsync(role, It.IsAny<Claim>())).ReturnsAsync(IdentityResult.Success);
 
-        var model = new ClaimsModel(rm.Object) { Claims = [new Claim("new", "val")] };
+        var model = new ClaimsModel(rm.Object) { Claims = [new ClaimsModel.ClaimInputModel { Type = "new", Value = "val" }] };
         var result = await model.OnPostAsync(role.Id.ToString());
 
         rm.Verify(m => m.RemoveClaimAsync(role, existing), Times.Once);

@@ -89,6 +89,8 @@ cmd /c "Identity.Tests.E2E\bin\Debug\net10.0\Identity.Tests.E2E.exe -trait ""Cat
 18. [Coverage Summary Matrix](#18-coverage-summary-matrix)
 19. [Load, Property-Based & Resilience Tests](#19-load-property-based--resilience-tests)
 20. [Mutation Testing (Stryker)](#20-mutation-testing-stryker)
+21. [Admin UI Pages](#21-admin-ui-pages)
+22. [Playwright Reporting](#22-playwright-reporting)
 
 ---
 
@@ -1438,8 +1440,11 @@ Every interactive element on admin pages carries a unique `id` attribute so E2E 
 | Details page Edit button | `btn-edit` |
 | Details page Delete button | `btn-delete` |
 | Collection sub-page nav links | `nav-{collection}` (e.g. `nav-claims`, `nav-scopes`) |
-| Add row button (collection Edit) | `btn-add-row` |
-| Remove row button (collection Edit) | `btn-remove-{index}` |
+| Add row button (collection Edit) | `btn-add-row` (shared across all collections on a page — there is only ever one add button) |
+| Collection row field (collection Edit) | `{field}-{index}` (e.g. `scope-0`, `claim-type-0`, `claim-value-0`, `secret-description-0`) — field name is collection-specific, not generic |
+| Remove row button (collection Edit) | `{field}-remove-{index}` (e.g. `scope-remove-0`, `claim-remove-0`) — **not** a generic `btn-remove-{index}`; each collection's remove button is prefixed with that collection's own field id |
+
+Collection row ids are index-based (`{index}` = the row's position among currently-visible rows, 0-based) and assigned both to server-rendered existing rows and to rows added client-side via `admin-collection.js`'s `<template>` clone (which substitutes an `IDX` placeholder the same way it substitutes `[-1]` in `name` attributes). This was retrofitted — the original collection-editor markup (`Pages/Admin/Clients/Edit/*.cshtml`, `Pages/Admin/Shared/_EditPropertiesForm.cshtml`) had no `id` attributes at all on row fields/remove buttons, only on the page-level `btn-add-row`/`save-submit`; the `id`s above were added specifically to support id-only E2E selectors for collection rows (see `Identity.Tests.E2E/Admin/ClientsCollectionsTests.cs`).
 
 ### Unit test coverage
 
@@ -1466,10 +1471,17 @@ Every page under `Identity/Pages/Admin/` has unit tests. The 16 sections and the
 
 ### E2E test coverage
 
-See `Identity/Admin-E2E-Guide.md` for the full scenario list. E2E tests require:
+`Identity/Admin-E2E-Guide.md` is the specification this section's E2E coverage was built against. Coverage is now close to complete relative to the guide, spread across `Identity.Tests.E2E/AdminTests.cs` (Auth/Access Control, Landing Page card visibility, Client CRUD, Index-loads for every section, Roles Create/Delete round-trip) and focused files under `Identity.Tests.E2E/Admin/`: `ClientsCollectionsTests.cs` (add/remove/update for all 9 Client collection sub-pages), `ApiResourcesTests.cs`/`ApiScopesTests.cs`/`IdentityResourcesTests.cs` (CRUD plus their ClaimTypes/Properties/Scopes/Secrets collection sub-pages), `IdentityProvidersTests.cs`/`SamlServiceProvidersTests.cs` (flat-form CRUD), `ReadOnlyGrantSectionsTests.cs` (Details/Delete for the one grant-store section with a realistic production path), `UsersTests.cs`/`RolesTests.cs` (Details sub-pages, Edit-flow persistence, Claims/Roles add-remove), and `AdminLandingTests.cs` (L2 — every landing-page card's "Manage" link navigates to the right section).
+
+A handful of sections deliberately stay at the guide's Index-loads-only fallback because no code path in this app can ever populate them, so fabricating rows would test something that can't happen in practice:
+- **Server-Side Sessions** — `Program.cs`'s `.AddIdentityServer(...)` chain never calls `.AddServerSideSessions()`; the table has no writer.
+- **SAML Sign-In States / SAML Logout Sessions / SAML Logout Session Request Indices** — this app's SAML endpoints are disabled (confirmed via the live Duende diagnostics dump).
+- **Device Flow Codes / Pushed Authorization Requests** — no existing UI-driven flow produces a row, and building one is out of proportion to the value for a single test.
+
+Current test infrastructure:
 - `PlaywrightFixture.CreateAdminUserAsync()` — creates a confirmed user and assigns the `Admin` role
-- `PlaywrightFixture.SeedIsConfigAsync()` — seeds one `Client`, `ApiResource`, `ApiScope`, `IdentityResource` via `IConfigurationDbContext`
-- `DisposeAsync` removes seeded IS config entities and the admin test user
+- `PlaywrightFixture.SeedClientAsync(clientId)`, `SeedApiResourceAsync(name)`, `SeedApiScopeAsync(name)`, `SeedIdentityResourceAsync(name)` — find-or-create seed helpers via `IConfigurationDbContext`. `IdentityProvider`/`SamlServiceProvider` have no seed method since their scenarios are Create-driven (the UI Create flow itself produces the row).
+- No per-test cleanup: none of the `Admin/*.cs` test classes have an `IAsyncLifetime`/`DisposeAsync`. Seeded config entities and test users are removed only by `PlaywrightFixture.CleanupDatabaseAsync()` at the end of the whole suite, and only when running in CI (`CI && _started`) — local runs accumulate test data across runs. Every test that mutates shared, by-name-looked-up state (the `Admin` role, the `Admin` user) creates its own uniquely `Guid`-suffixed row instead.
 
 ---
 

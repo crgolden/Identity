@@ -20,8 +20,8 @@
             {
                 <tr data-row>
                     <input type="hidden" name="GrantTypes[@i].Id" value="@Model.GrantTypes[i].Id" />
-                    <td><input name="GrantTypes[@i].GrantType" value="@Model.GrantTypes[i].GrantType" class="form-control form-control-sm" aria-label="Grant type" /></td>
-                    <td><button type="button" class="btn btn-sm btn-danger" data-remove-row>Remove</button></td>
+                    <td><input id="granttype-@i" name="GrantTypes[@i].GrantType" value="@Model.GrantTypes[i].GrantType" class="form-control form-control-sm" aria-label="Grant type" /></td>
+                    <td><button id="granttype-remove-@i" type="button" class="btn btn-sm btn-danger" data-remove-row>Remove</button></td>
                 </tr>
             }
         </tbody>
@@ -29,8 +29,8 @@
     <template data-for="GrantTypes">
         <tr data-row>
             <input type="hidden" name="GrantTypes[-1].Id" value="0" />
-            <td><input name="GrantTypes[-1].GrantType" class="form-control form-control-sm" aria-label="Grant type" /></td>
-            <td><button type="button" class="btn btn-sm btn-danger" data-remove-row>Remove</button></td>
+            <td><input id="granttype-IDX" name="GrantTypes[-1].GrantType" class="form-control form-control-sm" aria-label="Grant type" /></td>
+            <td><button id="granttype-remove-IDX" type="button" class="btn btn-sm btn-danger" data-remove-row>Remove</button></td>
         </tr>
     </template>
     <button id="btn-add-row" type="button" class="btn btn-sm btn-outline-secondary mb-3" data-add-for="GrantTypes">Add</button>

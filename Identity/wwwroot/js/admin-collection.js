@@ -20,7 +20,9 @@ document.addEventListener('DOMContentLoaded', () => {
         table.closest('form').querySelector('[data-add-for="' + prefix + '"]')?.addEventListener('click', e => {
             e.preventDefault();
             const count = tbody.querySelectorAll('tr[data-row]:not([style*="display: none"])').length;
-            const html = template.innerHTML.replace(/\[-1\]/g, '[' + count + ']');
+            const html = template.innerHTML
+                .replace(/\[-1\]/g, '[' + count + ']')
+                .replace(/IDX/g, String(count));
             const tmp = document.createElement('tbody');
             tmp.innerHTML = html;
             const row = tmp.firstElementChild;

@@ -202,6 +202,69 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         return client.Id;
     }
 
+    public async Task<int> SeedApiResourceAsync(string name = "e2e-api-resource")
+    {
+        await using var scope = _factory!.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        var existing = await db.ApiResources.FirstOrDefaultAsync(r => r.Name == name);
+        if (existing is not null)
+        {
+            return existing.Id;
+        }
+
+        var apiResource = new ApiResource
+        {
+            Name = name,
+            DisplayName = "E2E API Resource"
+        };
+        db.ApiResources.Add(apiResource);
+        await db.SaveChangesAsync();
+        return apiResource.Id;
+    }
+
+    public async Task<int> SeedApiScopeAsync(string name = "e2e-api-scope")
+    {
+        await using var scope = _factory!.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        var existing = await db.ApiScopes.FirstOrDefaultAsync(s => s.Name == name);
+        if (existing is not null)
+        {
+            return existing.Id;
+        }
+
+        var apiScope = new ApiScope
+        {
+            Name = name,
+            DisplayName = "E2E API Scope"
+        };
+        db.ApiScopes.Add(apiScope);
+        await db.SaveChangesAsync();
+        return apiScope.Id;
+    }
+
+    public async Task<int> SeedIdentityResourceAsync(string name = "e2e-identity-resource")
+    {
+        await using var scope = _factory!.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        var existing = await db.IdentityResources.FirstOrDefaultAsync(r => r.Name == name);
+        if (existing is not null)
+        {
+            return existing.Id;
+        }
+
+        var identityResource = new IdentityResource
+        {
+            Name = name,
+            DisplayName = "E2E Identity Resource"
+        };
+        db.IdentityResources.Add(identityResource);
+        await db.SaveChangesAsync();
+        return identityResource.Id;
+    }
+
     public async Task ConfirmUserEmailAsync(string email)
     {
         if (IsSmoke)
