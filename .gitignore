@@ -12,6 +12,10 @@ test-results/
 TestResults/
 *-playwright-artifacts/
 
+# SonarCloud/SonarQube scanner working directories
+.scannerwork/
+.sonarqube/
+
 # User-specific files
 *.rsuser
 *.suo

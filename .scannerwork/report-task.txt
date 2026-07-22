@@ -1,7 +1,0 @@
-organization=crgolden
-projectKey=crgolden_Identity
-serverUrl=https://sonarcloud.io
-serverVersion=8.0.0.98270
-dashboardUrl=https://sonarcloud.io/dashboard?id=crgolden_Identity
-ceTaskId=AZ-LyySWjhtA7HIat9Sn
-ceTaskUrl=https://sonarcloud.io/api/ce/task?id=AZ-LyySWjhtA7HIat9Sn
