@@ -6,6 +6,7 @@ using Duende.IdentityServer.Models;
 using Duende.IdentityServer.Services;
 using Identity.Pages.Account;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Moq;
 
@@ -67,7 +68,7 @@ public class LogoutModelTests
     }
 
     [Fact]
-    public async Task OnPostAsync_NoLogoutId_SignsOutAndReturnsPageWithoutCallingInteractionService()
+    public async Task OnPostAsync_NoLogoutId_SignsOutAndRedirectsWithoutCallingInteractionService()
     {
         var interaction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
         var model = BuildModel(interaction.Object);
@@ -75,30 +76,28 @@ public class LogoutModelTests
 
         var result = await model.OnPostAsync();
 
-        Assert.IsType<PageResult>(result);
+        var redirect = Assert.IsType<RedirectToPageResult>(result);
+        Assert.Null(redirect.RouteValues?["logoutId"]);
         Assert.Null(model.PostLogoutRedirectUri);
         Assert.Null(model.SignOutIFrameUrl);
         interaction.VerifyNoOtherCalls();
     }
 
     [Fact]
-    public async Task OnPostAsync_WithLogoutId_SignsOutAndSetsContextProperties()
+    public async Task OnPostAsync_WithLogoutId_SignsOutAndRedirectsToSelfWithLogoutId()
     {
         const string logoutId = "client-logout-id";
-        var logoutRequest = new LogoutRequest(
-            "https://signout.example.com/iframe",
-            new LogoutMessage { PostLogoutRedirectUri = "https://client.example.com/signout-callback" });
         var interaction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
-        interaction.Setup(s => s.GetLogoutContextAsync(logoutId, It.IsAny<CancellationToken>())).ReturnsAsync(logoutRequest);
         var model = BuildModel(interaction.Object);
         model.PageContext = BuildAnonymousPageContext();
 
         var result = await model.OnPostAsync(logoutId);
 
-        Assert.IsType<PageResult>(result);
-        Assert.Equal("https://client.example.com/signout-callback", model.PostLogoutRedirectUri);
-        Assert.Equal("https://signout.example.com/iframe", model.SignOutIFrameUrl);
-        interaction.Verify(s => s.GetLogoutContextAsync(logoutId, It.IsAny<CancellationToken>()), Times.Once);
+        var redirect = Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal(logoutId, redirect.RouteValues?["logoutId"]);
+        Assert.Null(model.PostLogoutRedirectUri);
+        Assert.Null(model.SignOutIFrameUrl);
+        interaction.VerifyNoOtherCalls();
     }
 
     [Theory]
@@ -113,7 +112,7 @@ public class LogoutModelTests
 
         var result = await model.OnPostAsync(logoutId);
 
-        Assert.IsType<PageResult>(result);
+        Assert.IsType<RedirectToPageResult>(result);
         interaction.VerifyNoOtherCalls();
     }
 

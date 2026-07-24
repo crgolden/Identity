@@ -49,12 +49,11 @@ public class LogoutModel : PageModel
 
     /// <summary>Handles the POST request to sign out the current user.</summary>
     /// <param name="logoutId">The IdentityServer logout identifier, if initiated by a client.</param>
-    /// <returns>A task that resolves to the page result after signing out.</returns>
+    /// <returns>A task that resolves to a redirect back to this page, so the follow-up GET reflects the cleared auth cookie.</returns>
     public async Task<IActionResult> OnPostAsync(string? logoutId = null)
     {
         await _signInManager.SignOutAsync();
-        await SetLogoutContextAsync(logoutId);
-        return Page();
+        return RedirectToPage(new { logoutId });
     }
 
     private async Task SetLogoutContextAsync(string? logoutId)
