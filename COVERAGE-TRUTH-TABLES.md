@@ -1,8 +1,8 @@
 # Identity: Coverage Truth Tables
 
 Per-method decision tables built per the workspace standard in
-[../TESTING-COVERAGE.md](../TESTING-COVERAGE.md), which applies the unit, the three laws, and the one
-legend defined in [../DESIGN-LANGUAGE.md](../DESIGN-LANGUAGE.md). Each row is one unit; its status
+[../AGENTS/TESTING-COVERAGE.md](../AGENTS/TESTING-COVERAGE.md), which applies the unit, the three laws, and the one
+legend defined in [../AGENTS/DESIGN-LANGUAGE.md](../AGENTS/DESIGN-LANGUAGE.md). Each row is one unit; its status
 (`✅ won / ❌ open / ⬆️ escalated / ⏳ parked`) and home level (Unit / E2E / Smoke / Manual) are read
 from that one legend, not redefined here.
 
