@@ -16,6 +16,9 @@ TestResults/
 .scannerwork/
 .sonarqube/
 
+# Local ASP.NET Core Data Protection key ring (non-production only — see Program.cs)
+.dataprotection-keys/
+
 # User-specific files
 *.rsuser
 *.suo

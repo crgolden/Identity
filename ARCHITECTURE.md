@@ -260,6 +260,15 @@ EF Core migrations are not used. The `Identity.Data/` SQL Server Database Projec
 | **Azure Blob Storage** | Data Protection key persistence | `PersistKeysToAzureBlobStorage` |
 | **Azure Key Vault** | Data Protection key encryption | `ProtectKeysWithAzureKeyVault` |
 
+Duende's automatic key management persists rotated IdentityServer signing keys to the `Keys` table via
+`AddOperationalStore`, protected through the same Data Protection key ring configured above. The two
+lifetimes must match: a signing key written under one key ring is permanently undecryptable once that
+ring is gone. In production this holds by construction (both are durable — Azure Blob Storage + Key
+Vault). Non-production persists the key ring to a local, gitignored `.dataprotection-keys/` folder next
+to the app for the same reason — an ephemeral key ring here would silently orphan every signing key
+across a restart, which is what happened before this was fixed (accumulated `CryptographicException`s on
+startup, one per orphaned row).
+
 ### Azure credential strategy
 
 | Environment | Credentials enabled |

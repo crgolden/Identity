@@ -154,7 +154,7 @@ try
                 .ReadFrom.Services(serviceProvider)
                 .Filter.ByExcluding(Matching.FromSource("Duende.IdentityServer.Diagnostics.Summary")))
             .AddDataProtection()
-            .UseEphemeralDataProtectionProvider().Services
+            .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(builder.Environment.ContentRootPath, ".dataprotection-keys"))).Services
             .AddAzureClients(azureClientFactoryBuilder =>
             {
                 azureClientFactoryBuilder.AddServiceBusClient(serviceBusConnectionString).WithName("crgolden");
