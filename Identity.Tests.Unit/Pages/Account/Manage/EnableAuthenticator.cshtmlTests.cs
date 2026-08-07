@@ -1,9 +1,9 @@
 namespace Identity.Tests.Unit.Pages.Account.Manage;
-using Infrastructure;
 
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using Identity.Pages.Account.Manage;
+using Infrastructure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -63,8 +63,6 @@ public partial class EnableAuthenticatorModelTests
 
         var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
         userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
-
-        // Ensure LoadSharedKeyAndQrCodeUriAsync internal calls succeed:
         userManagerMock.Setup(um => um.GetAuthenticatorKeyAsync(It.IsAny<IdentityUser<Guid>>()))
             .ReturnsAsync("ABCDEFG");
         userManagerMock.Setup(um => um.GetEmailAsync(It.IsAny<IdentityUser<Guid>>()))
@@ -73,8 +71,6 @@ public partial class EnableAuthenticatorModelTests
             .ReturnsAsync(IdentityResult.Success);
 
         var model = new EnableAuthenticatorModel(userManagerMock.Object, urlEncoder);
-
-        // make the model state invalid
         model.ModelState.AddModelError("SomeKey", "Some error");
 
         // Act
@@ -94,8 +90,6 @@ public partial class EnableAuthenticatorModelTests
         var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
 
         userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
-
-        // Ensure LoadSharedKeyAndQrCodeUriAsync internal calls succeed:
         userManagerMock.Setup(um => um.GetAuthenticatorKeyAsync(It.IsAny<IdentityUser<Guid>>()))
             .ReturnsAsync("ABCDEFG");
         userManagerMock.Setup(um => um.GetEmailAsync(It.IsAny<IdentityUser<Guid>>()))
@@ -103,7 +97,6 @@ public partial class EnableAuthenticatorModelTests
         userManagerMock.Setup(um => um.ResetAuthenticatorKeyAsync(It.IsAny<IdentityUser<Guid>>()))
             .ReturnsAsync(IdentityResult.Success);
 
-        // Expect that VerifyTwoFactorTokenAsync receives the stripped token "123456"
         var rawCode = "12 34-56";
         var stripped = rawCode.Replace(" ", string.Empty).Replace("-", string.Empty);
 
@@ -157,7 +150,6 @@ public partial class EnableAuthenticatorModelTests
         userManagerMock.Setup(um => um.GenerateNewTwoFactorRecoveryCodesAsync(It.IsAny<IdentityUser<Guid>>(), 10))
             .ReturnsAsync(generatedCodes);
 
-        // Ensure LoadSharedKeyAndQrCodeUriAsync internal calls succeed if invoked later (defensive)
         userManagerMock.Setup(um => um.GetAuthenticatorKeyAsync(It.IsAny<IdentityUser<Guid>>()))
             .ReturnsAsync("ABCDEFG");
         userManagerMock.Setup(um => um.GetEmailAsync(It.IsAny<IdentityUser<Guid>>()))
@@ -189,7 +181,6 @@ public partial class EnableAuthenticatorModelTests
             Assert.Empty(model.RecoveryCodes);
         }
 
-        // Verify that enabling 2FA was attempted
         userManagerMock.Verify(um => um.SetTwoFactorEnabledAsync(It.IsAny<IdentityUser<Guid>>(), true), Times.Once);
     }
 
@@ -208,8 +199,6 @@ public partial class EnableAuthenticatorModelTests
         var urlEncoder = UrlEncoder.Default;
 
         var pageModel = new EnableAuthenticatorModel(userManagerMock.Object, urlEncoder);
-
-        // Provide a principal so PageModel.User is non-null (the mocks use It.IsAny but set up for realism)
         var principal = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, expectedId)], "TestAuth"));
         pageModel.PageContext = new PageContext { HttpContext = new DefaultHttpContext { User = principal } };
 

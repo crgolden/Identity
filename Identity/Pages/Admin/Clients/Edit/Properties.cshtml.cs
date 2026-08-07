@@ -6,22 +6,17 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
-/// <summary>Edits properties for a client.</summary>
 public class PropertiesModel : PageModel
 {
     private readonly IConfigurationDbContext _context;
 
-    /// <summary>Initializes a new instance of the <see cref="PropertiesModel"/> class.</summary>
     public PropertiesModel(IConfigurationDbContext context) => _context = context;
 
-    /// <summary>Gets the client.</summary>
     public Client Client { get; private set; } = new();
 
-    /// <summary>Gets or sets the posted properties.</summary>
     [BindProperty]
     public List<ClientProperty> Properties { get; set; } = [];
 
-    /// <summary>Loads the client with properties for editing.</summary>
     public async Task<IActionResult> OnGetAsync(int id)
     {
         var client = await _context.Clients
@@ -37,7 +32,6 @@ public class PropertiesModel : PageModel
         return Page();
     }
 
-    /// <summary>Saves the properties for the client.</summary>
     public async Task<IActionResult> OnPostAsync(int id)
     {
         if (!ModelState.IsValid)
@@ -77,7 +71,6 @@ public class PropertiesModel : PageModel
         return RedirectToPage("/Admin/Clients/Details/Properties", new { id });
     }
 
-    /// <summary>Adds a blank property row.</summary>
     public async Task<IActionResult> OnPostAddRowAsync(int id)
     {
         var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == id);
@@ -91,7 +84,6 @@ public class PropertiesModel : PageModel
         return Page();
     }
 
-    /// <summary>Removes a property row.</summary>
     public async Task<IActionResult> OnPostRemoveRowAsync(int id, int index)
     {
         var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == id);

@@ -1,10 +1,9 @@
-﻿namespace Identity.Pages.Account.Manage;
+namespace Identity.Pages.Account.Manage;
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-/// <summary>Page model for the Generate Recovery Codes page.</summary>
 public class GenerateRecoveryCodesModel : PageModel
 {
     private readonly UserManager<IdentityUser<Guid>> _userManager;
@@ -21,8 +20,6 @@ public class GenerateRecoveryCodesModel : PageModel
     [TempData]
     public string? StatusMessage { get; set; }
 
-    /// <summary>Handles the GET request to display the generate recovery codes confirmation page.</summary>
-    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnGetAsync()
     {
         var user = await _userManager.GetUserAsync(User);
@@ -37,8 +34,6 @@ public class GenerateRecoveryCodesModel : PageModel
             : Page();
     }
 
-    /// <summary>Handles the POST request to generate new two-factor authentication recovery codes.</summary>
-    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnPostAsync()
     {
         var user = await _userManager.GetUserAsync(User);

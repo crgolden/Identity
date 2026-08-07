@@ -47,10 +47,14 @@ internal class TestAsyncQueryProvider<TEntity> : IAsyncQueryProvider
     {
         var expectedResultType = typeof(TResult).GetGenericArguments()[0];
         var executionResult = ((IQueryProvider)this).Execute(expression);
-
-        return (TResult)typeof(Task).GetMethod(nameof(Task.FromResult)) !
+        var fromResultMethod = typeof(Task).GetMethod(nameof(Task.FromResult))
+            ?? throw new InvalidOperationException($"{nameof(Task)}.{nameof(Task.FromResult)} was not found via reflection.");
+        var invocationResult = fromResultMethod
             .MakeGenericMethod(expectedResultType)
-            .Invoke(null, [executionResult]) !;
+            .Invoke(null, [executionResult])
+            ?? throw new InvalidOperationException($"{nameof(Task)}.{nameof(Task.FromResult)} unexpectedly returned null.");
+
+        return (TResult)invocationResult;
     }
 }
 

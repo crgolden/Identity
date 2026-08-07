@@ -6,19 +6,15 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
-/// <summary>Edits identity resource claim types.</summary>
 public class ClaimTypesModel : PageModel
 {
     private readonly IConfigurationDbContext _context;
 
-    /// <summary>Initializes a new instance of the <see cref="ClaimTypesModel"/> class.</summary>
     public ClaimTypesModel(IConfigurationDbContext context) => _context = context;
 
-    /// <summary>Gets or sets the claim types.</summary>
     [BindProperty]
     public List<IdentityResourceClaim> ClaimTypes { get; set; } = [];
 
-    /// <summary>Loads the identity resource claim types for editing.</summary>
     public async Task<IActionResult> OnGetAsync(int id)
     {
         var resource = await _context.IdentityResources
@@ -33,7 +29,6 @@ public class ClaimTypesModel : PageModel
         return Page();
     }
 
-    /// <summary>Saves claim type changes.</summary>
     public async Task<IActionResult> OnPostAsync(int id)
     {
         var resource = await _context.IdentityResources
@@ -63,7 +58,6 @@ public class ClaimTypesModel : PageModel
         return RedirectToPage("/Admin/IdentityResources/Details/ClaimTypes", new { id });
     }
 
-    /// <summary>Adds a blank claim type row.</summary>
     public async Task<IActionResult> OnPostAddRowAsync(int id)
     {
         var exists = await _context.IdentityResources.AnyAsync(r => r.Id == id);
@@ -76,7 +70,6 @@ public class ClaimTypesModel : PageModel
         return Page();
     }
 
-    /// <summary>Removes a claim type row.</summary>
     public async Task<IActionResult> OnPostRemoveRowAsync(int id, int index)
     {
         var exists = await _context.IdentityResources.AnyAsync(r => r.Id == id);

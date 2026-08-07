@@ -6,25 +6,19 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
-/// <summary>Edits scopes for an API resource.</summary>
 public class ScopesModel : PageModel
 {
     private readonly IConfigurationDbContext _context;
 
-    /// <summary>Initializes a new instance of the <see cref="ScopesModel"/> class.</summary>
     public ScopesModel(IConfigurationDbContext context) => _context = context;
 
-    /// <summary>Gets the API resource id.</summary>
     public int ResourceId { get; private set; }
 
-    /// <summary>Gets the API resource name.</summary>
     public string ResourceName { get; private set; } = Empty;
 
-    /// <summary>Gets or sets the scopes.</summary>
     [BindProperty]
     public List<ApiResourceScope> Scopes { get; set; } = [];
 
-    /// <summary>Loads scopes for editing.</summary>
     public async Task<IActionResult> OnGetAsync(int id)
     {
         var resource = await _context.ApiResources.Include(r => r.Scopes).FirstOrDefaultAsync(r => r.Id == id);
@@ -39,7 +33,6 @@ public class ScopesModel : PageModel
         return Page();
     }
 
-    /// <summary>Saves scope changes.</summary>
     public async Task<IActionResult> OnPostAsync(int id)
     {
         var resource = await _context.ApiResources.Include(r => r.Scopes).FirstOrDefaultAsync(r => r.Id == id);
@@ -66,7 +59,6 @@ public class ScopesModel : PageModel
         return RedirectToPage("/Admin/ApiResources/Details/Scopes", new { id });
     }
 
-    /// <summary>Adds a blank scope row.</summary>
     public async Task<IActionResult> OnPostAddRowAsync(int id)
     {
         var resource = await _context.ApiResources.FirstOrDefaultAsync(r => r.Id == id);
@@ -81,7 +73,6 @@ public class ScopesModel : PageModel
         return Page();
     }
 
-    /// <summary>Removes a scope row.</summary>
     public async Task<IActionResult> OnPostRemoveRowAsync(int id, int index)
     {
         var resource = await _context.ApiResources.FirstOrDefaultAsync(r => r.Id == id);

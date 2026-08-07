@@ -46,8 +46,6 @@ public sealed class OidcDiscoveryTests(PlaywrightFixture fixture)
     [Fact]
     public async Task Discovery_IssuerIsHttps()
     {
-        // The in-process TestServer uses HTTP, so IdentityServer would report an http:// issuer.
-        // Use the real Kestrel HTTPS server (fixture.BaseAddress) to get the correct https:// issuer.
         var handler = new HttpClientHandler
         {
             ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
@@ -74,7 +72,6 @@ public sealed class OidcDiscoveryTests(PlaywrightFixture fixture)
             AllowAutoRedirect = false
         });
 
-        // Get discovery doc to find the JWKS URI.
         var discoveryResponse = await client.GetAsync(
             "/.well-known/openid-configuration",
             TestContext.Current.CancellationToken);
@@ -84,7 +81,6 @@ public sealed class OidcDiscoveryTests(PlaywrightFixture fixture)
         var jwksUri = discovery.GetProperty("jwks_uri").GetString();
         Assert.NotNull(jwksUri);
 
-        // Extract relative path from the absolute URI.
         var jwksPath = new Uri(jwksUri).PathAndQuery;
 
         var jwksResponse = await client.GetAsync(jwksPath, TestContext.Current.CancellationToken);
@@ -120,8 +116,6 @@ public sealed class OidcDiscoveryTests(PlaywrightFixture fixture)
             AllowAutoRedirect = false
         });
         var response = await client.GetAsync("/connect/authorize", TestContext.Current.CancellationToken);
-
-        // IdentityServer returns 302 to error page or 400 for missing params
         Assert.NotEqual(HttpStatusCode.OK, response.StatusCode);
     }
 }

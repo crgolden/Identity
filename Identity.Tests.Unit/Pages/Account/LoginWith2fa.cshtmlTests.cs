@@ -1,7 +1,7 @@
 namespace Identity.Tests.Unit.Pages.Account;
-using Infrastructure;
 
 using Identity.Pages.Account;
+using Infrastructure;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -21,7 +21,7 @@ public class LoginWith2faModelTests
         { true, "/" },
         { false, string.Empty },
         { true, "   " },
-        { false, new string('a', 1024) }, // long string
+        { false, new string('a', 1024) },
         { true, "special-chars-!@#$%^&*()\t\n" },
     };
 
@@ -39,7 +39,6 @@ public class LoginWith2faModelTests
             }
         };
 
-        // Make model state invalid
         model.ModelState.AddModelError("SomeKey", "Some error");
 
         // Act
@@ -47,8 +46,6 @@ public class LoginWith2faModelTests
 
         // Assert
         Assert.IsType<PageResult>(result);
-
-        // Ensure no calls to authentication flows when model invalid
         signInManagerMock.Verify(s => s.GetTwoFactorAuthenticationUserAsync(), Times.Never);
         signInManagerMock.Verify(s => s.TwoFactorAuthenticatorSignInAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>()), Times.Never);
     }
@@ -128,8 +125,6 @@ public class LoginWith2faModelTests
 
         // Assert
         Assert.NotNull(model);
-
-        // Default expectations
         Assert.NotNull(model.Input);
         Assert.False(model.RememberMe);
         Assert.Null(model.ReturnUrl);

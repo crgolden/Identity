@@ -6,19 +6,15 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
-/// <summary>Edits an identity resource.</summary>
 public class IndexModel : PageModel
 {
     private readonly IConfigurationDbContext _context;
 
-    /// <summary>Initializes a new instance of the <see cref="IndexModel"/> class.</summary>
     public IndexModel(IConfigurationDbContext context) => _context = context;
 
-    /// <summary>Gets or sets the identity resource to edit.</summary>
     [BindProperty]
     public IdentityResource Resource { get; set; } = new();
 
-    /// <summary>Loads the identity resource for editing.</summary>
     public async Task<IActionResult> OnGetAsync(int id)
     {
         var resource = await _context.IdentityResources.FirstOrDefaultAsync(r => r.Id == id);
@@ -31,7 +27,6 @@ public class IndexModel : PageModel
         return Page();
     }
 
-    /// <summary>Saves the identity resource changes.</summary>
     public async Task<IActionResult> OnPostAsync(int id)
     {
         var resource = await _context.IdentityResources.FirstOrDefaultAsync(r => r.Id == id);

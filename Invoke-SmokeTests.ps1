@@ -1,12 +1,22 @@
 #Requires -Version 7
-# Runs the smoke test suite.
-# Credentials are read from User Secrets (ID aspnet-Identity-149346d0-999f-4a74-8ff7-2a92d39790f2)
-# so they never need to be set as OS environment variables.
-#
-# Local (default): targets https://localhost:7261 — requires Identity running locally with
-# ReCAPTCHA:SmokeTestEmail set via its User Secrets to match TestEmail.
-#
-# Deployed: pass -BaseUrl https://crgolden-identity.azurewebsites.net
+
+<#
+.SYNOPSIS
+    Runs the Identity smoke test suite.
+.DESCRIPTION
+    Credentials are read from User Secrets (ID aspnet-Identity-149346d0-999f-4a74-8ff7-2a92d39790f2) so
+    they never need to be set as OS environment variables.
+.PARAMETER BaseUrl
+    Target for the smoke tests. Defaults to the deployed app. For local runs, pass
+    https://localhost:7261 — requires Identity running locally with ReCAPTCHA:SmokeTestEmail set via its
+    User Secrets to match TestEmail.
+.EXAMPLE
+    .\Invoke-SmokeTests.ps1
+    Runs against the deployed app at https://crgolden-identity.azurewebsites.net.
+.EXAMPLE
+    .\Invoke-SmokeTests.ps1 -BaseUrl https://localhost:7261
+    Runs against a locally running instance.
+#>
 param(
     [string]$BaseUrl = "https://crgolden-identity.azurewebsites.net"
 )

@@ -6,27 +6,18 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
-/// <summary>Edits a client's scalar fields.</summary>
 public class IndexModel : PageModel
 {
     private readonly IConfigurationDbContext _context;
 
-    /// <summary>Initializes a new instance of the <see cref="IndexModel"/> class.</summary>
     public IndexModel(IConfigurationDbContext context) => _context = context;
 
-    /// <summary>Gets or sets the client being edited.</summary>
     [BindProperty]
     public Client Client { get; set; } = new();
 
-    /// <summary>
-    /// Gets or sets the checkbox-bound proxy for <see cref="Duende.IdentityServer.EntityFramework.Entities.Client.CoordinateLifetimeWithUserSession"/>,
-    /// which is <c>bool?</c> on the Duende entity — <c>asp-for</c> cannot bind a checkbox directly to a
-    /// nullable bool, so this collapses the tri-state (null = inherit server default) to an explicit value.
-    /// </summary>
     [BindProperty]
     public bool CoordinateLifetimeWithUserSession { get; set; }
 
-    /// <summary>Loads the client for editing.</summary>
     public async Task<IActionResult> OnGetAsync(int id)
     {
         var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == id);
@@ -40,7 +31,6 @@ public class IndexModel : PageModel
         return Page();
     }
 
-    /// <summary>Saves the edited client.</summary>
     public async Task<IActionResult> OnPostAsync(int id)
     {
         if (!ModelState.IsValid)

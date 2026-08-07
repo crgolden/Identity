@@ -55,8 +55,8 @@ public sealed class UserManagerExtensionsTests
 
         var principal = new ClaimsPrincipal(new ClaimsIdentity(
         [
-            new Claim(ClaimTypes.Email, "from-google@example.com"), // type already present -> must NOT be added/overwritten
-            new Claim(ClaimTypes.GivenName, "Chris") // new type -> should be added
+            new Claim(ClaimTypes.Email, "from-google@example.com"),
+            new Claim(ClaimTypes.GivenName, "Chris")
         ]));
 
         // Act
@@ -75,9 +75,7 @@ public sealed class UserManagerExtensionsTests
     [Fact]
     public async Task AddMissingClaimsAsync_NameIdentifierClaim_IsNeverPersisted()
     {
-        // Arrange: NameIdentifier is the same claim type UserClaimsPrincipalFactory uses for the
-        // user's own ID — persisting the provider's subject identifier under it would create a
-        // second, colliding claim of that type on every principal built for the user.
+        // Arrange
         var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
         var userManager = MockHelpers.MockUserManager();
         userManager.Setup(m => m.GetClaimsAsync(user)).ReturnsAsync(new List<Claim>());

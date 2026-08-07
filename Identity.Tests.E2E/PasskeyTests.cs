@@ -42,7 +42,6 @@ public sealed class PasskeyTests(PlaywrightFixture fixture)
             await page.GotoAsync("/Account/Login");
             await page.WaitForLoadStateAsync();
 
-            // The tag helper must replace <passkey-submit operation="Request"> with a <button type="submit">.
             var button = page.Locator("button[name='__passkeySubmit']");
             await button.WaitForAsync();
             Assert.True(await button.IsVisibleAsync(), "Login passkey button was not rendered; PasskeySubmitTagHelper may not be registered.");

@@ -6,7 +6,6 @@ using Infrastructure;
 [Collection(E2ECollection.Name)]
 public sealed class LoadTests : IDisposable
 {
-    // Ignore the self-signed test certificate from the Kestrel server.
     private readonly HttpClient _httpClient;
 
     public LoadTests(PlaywrightFixture fixture)

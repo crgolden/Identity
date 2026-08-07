@@ -62,7 +62,7 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         }
         else
         {
-            _factory!.CreateClient(); // Triggers server startup; populates Factory.ServerAddress.
+            _factory!.CreateClient();
             BaseAddress = _factory.ServerAddress;
         }
 
@@ -83,17 +83,12 @@ public sealed class PlaywrightFixture : IAsyncLifetime
             return;
         }
 
-        // Warm up the server so connection pool / IdentityServer keys are ready
         var (warmupCtx, warmupPage) = await NewPageAsync();
         await using (warmupCtx)
         {
             await warmupPage.GotoAsync("/Account/Login");
         }
 
-        // Pre-create a confirmed user via the UserManager API so tests that only need
-        // an authenticated session (GrantsTests, ServerSideSessionsTests) can skip the
-        // browser-based registration flow entirely. This avoids those tests accumulating
-        // extra DB state late in the suite and reduces the chance of login timeouts.
         await using var scope = _factory!.Services.CreateAsyncScope();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser<Guid>>>();
         var sharedUser = new IdentityUser<Guid>
@@ -324,17 +319,9 @@ public sealed class PlaywrightFixture : IAsyncLifetime
             IgnoreHTTPSErrors = true
         });
 
-        // Stub grecaptcha so form submissions are synchronous in tests. The server-side
-        // ICAPTCHAService is already replaced with AlwaysPassCAPTCHAService, so the token
-        // value is irrelevant — this just ensures execute() resolves immediately instead of
-        // making an outbound call to Google that would block or fail in CI.
         await page.Context.AddInitScriptAsync("window.grecaptcha = { ready: cb => cb(), execute: () => Promise.resolve('e2e-test-token') };");
-
-        // Block the real reCAPTCHA script — it has no defer/async and overwrites the stub above when it loads.
         await page.Context.RouteAsync("https://www.google.com/recaptcha/**", route => route.AbortAsync());
 
-        // CI machines are slower; double the default 30s timeout to avoid intermittent failures
-        // on late-running tests when the machine is under load.
         if (CI)
         {
             page.SetDefaultTimeout(60_000);
@@ -404,20 +391,13 @@ public sealed class PlaywrightFixture : IAsyncLifetime
             return;
         }
 
-        // Identity — cascade deletes UserClaims, UserLogins, UserTokens, UserPasskeys, UserRoles
         await db.Users.ExecuteDeleteAsync();
-
-        // Roles — cascade deletes RoleClaims (UserRoles already gone via Users cascade)
         await db.Roles.ExecuteDeleteAsync();
-
-        // IdentityServer operational (no FK dependencies)
         await db.PersistedGrants.ExecuteDeleteAsync();
         await db.DeviceFlowCodes.ExecuteDeleteAsync();
         await db.Keys.ExecuteDeleteAsync();
         await db.ServerSideSessions.ExecuteDeleteAsync();
         await db.PushedAuthorizationRequests.ExecuteDeleteAsync();
-
-        // IdentityServer config — cascade deletes all child tables
         await db.Clients.ExecuteDeleteAsync();
         await db.IdentityResources.ExecuteDeleteAsync();
         await db.ApiResources.ExecuteDeleteAsync();

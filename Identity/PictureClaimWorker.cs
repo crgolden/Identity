@@ -5,7 +5,6 @@ using System.Security.Claims;
 using System.Threading.Channels;
 using Microsoft.AspNetCore.Identity;
 
-/// <summary>Hosted service that drains the picture claim channel, adding a picture claim for each user.</summary>
 public class PictureClaimWorker : BackgroundService
 {
     private readonly ChannelReader<string> _pictureClaimReader;
@@ -19,7 +18,6 @@ public class PictureClaimWorker : BackgroundService
         _scopeFactory = scopeFactory;
     }
 
-    /// <inheritdoc/>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         await foreach (var name in _pictureClaimReader.ReadAllAsync(stoppingToken))

@@ -6,22 +6,17 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
-/// <summary>Edits allowed scopes for a client.</summary>
 public class ScopesModel : PageModel
 {
     private readonly IConfigurationDbContext _context;
 
-    /// <summary>Initializes a new instance of the <see cref="ScopesModel"/> class.</summary>
     public ScopesModel(IConfigurationDbContext context) => _context = context;
 
-    /// <summary>Gets the client.</summary>
     public Client Client { get; private set; } = new();
 
-    /// <summary>Gets or sets the posted scopes.</summary>
     [BindProperty]
     public List<ClientScope> Scopes { get; set; } = [];
 
-    /// <summary>Loads the client with allowed scopes for editing.</summary>
     public async Task<IActionResult> OnGetAsync(int id)
     {
         var client = await _context.Clients
@@ -37,7 +32,6 @@ public class ScopesModel : PageModel
         return Page();
     }
 
-    /// <summary>Saves the allowed scopes for the client.</summary>
     public async Task<IActionResult> OnPostAsync(int id)
     {
         if (!ModelState.IsValid)
@@ -76,7 +70,6 @@ public class ScopesModel : PageModel
         return RedirectToPage("/Admin/Clients/Details/Scopes", new { id });
     }
 
-    /// <summary>Adds a blank scope row.</summary>
     public async Task<IActionResult> OnPostAddRowAsync(int id)
     {
         var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == id);
@@ -90,7 +83,6 @@ public class ScopesModel : PageModel
         return Page();
     }
 
-    /// <summary>Removes a scope row.</summary>
     public async Task<IActionResult> OnPostRemoveRowAsync(int id, int index)
     {
         var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == id);

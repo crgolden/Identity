@@ -6,22 +6,17 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
-/// <summary>Edits allowed grant types for a client.</summary>
 public class GrantTypesModel : PageModel
 {
     private readonly IConfigurationDbContext _context;
 
-    /// <summary>Initializes a new instance of the <see cref="GrantTypesModel"/> class.</summary>
     public GrantTypesModel(IConfigurationDbContext context) => _context = context;
 
-    /// <summary>Gets the client.</summary>
     public Client Client { get; private set; } = new();
 
-    /// <summary>Gets or sets the posted grant types.</summary>
     [BindProperty]
     public List<ClientGrantType> GrantTypes { get; set; } = [];
 
-    /// <summary>Loads the client with grant types for editing.</summary>
     public async Task<IActionResult> OnGetAsync(int id)
     {
         var client = await _context.Clients
@@ -37,7 +32,6 @@ public class GrantTypesModel : PageModel
         return Page();
     }
 
-    /// <summary>Saves the grant types for the client.</summary>
     public async Task<IActionResult> OnPostAsync(int id)
     {
         if (!ModelState.IsValid)
@@ -76,7 +70,6 @@ public class GrantTypesModel : PageModel
         return RedirectToPage("/Admin/Clients/Details/GrantTypes", new { id });
     }
 
-    /// <summary>Adds a blank grant type row.</summary>
     public async Task<IActionResult> OnPostAddRowAsync(int id)
     {
         var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == id);
@@ -90,7 +83,6 @@ public class GrantTypesModel : PageModel
         return Page();
     }
 
-    /// <summary>Removes a grant type row.</summary>
     public async Task<IActionResult> OnPostRemoveRowAsync(int id, int index)
     {
         var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == id);

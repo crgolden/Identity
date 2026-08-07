@@ -1,10 +1,9 @@
-﻿namespace Identity.Pages.Account.Manage;
+namespace Identity.Pages.Account.Manage;
 
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Razor.TagHelpers;
 using static Microsoft.AspNetCore.Razor.TagHelpers.NullHtmlEncoder;
 
-/// <summary>Tag helper for <c>passkey-submit</c> that renders a submit button and a custom element containing antiforgery tokens for the client-side passkey JavaScript handler.</summary>
 [HtmlTargetElement("passkey-submit")]
 public class PasskeySubmitTagHelper : TagHelper
 {
@@ -26,7 +25,6 @@ public class PasskeySubmitTagHelper : TagHelper
     [HtmlAttributeName("email-name")]
     public string? EmailName { get; set; }
 
-    /// <inheritdoc/>
     public override async Task ProcessAsync(TagHelperContext context, TagHelperOutput output)
     {
         if (_httpContextAccessor.HttpContext is null)

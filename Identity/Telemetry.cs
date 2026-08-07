@@ -3,13 +3,6 @@ namespace Identity;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 
-/// <summary>
-/// OpenTelemetry instrumentation for Identity UI page events.
-/// Emits counters via the <c>"Identity"</c> meter, which is registered with the Azure Monitor
-/// OpenTelemetry pipeline in <c>Program.cs</c>.
-/// Duende IdentityServer's built-in metrics (token issuance, introspection, client validation)
-/// are emitted under the <c>"Duende.IdentityServer"</c> meter and are also registered there.
-/// </summary>
 public static class Telemetry
 {
     public static readonly ActivitySource ActivitySource = new(nameof(Identity), "1.0.0");
@@ -19,7 +12,6 @@ public static class Telemetry
     public static Activity? StartActivity(string name) =>
         ActivitySource.StartActivity(name, ActivityKind.Internal, parentContext: default);
 
-    /// <summary>OpenTelemetry counter metrics emitted by IdentityServer UI pages.</summary>
     public static class Metrics
     {
         private static readonly Counter<long> ConsentGrantedCounter =
@@ -34,10 +26,6 @@ public static class Telemetry
         private static readonly Counter<long> ExceptionCounter =
             Meter.CreateCounter<long>("identity.exceptions", description: "Number of unhandled exceptions.");
 
-        /// <summary>Records a consent grant for the specified client and scopes.</summary>
-        /// <param name="clientId">The client that was granted consent.</param>
-        /// <param name="scopes">The scopes that were consented to.</param>
-        /// <param name="remember">Whether the user chose to remember the decision.</param>
         public static void ConsentGranted(string clientId, IEnumerable<string> scopes, bool remember) =>
             ConsentGrantedCounter.Add(1, new TagList
             {
@@ -46,9 +34,6 @@ public static class Telemetry
                 { "scope_count", scopes.Count() },
             });
 
-        /// <summary>Records a consent denial for the specified client.</summary>
-        /// <param name="clientId">The client whose consent was denied.</param>
-        /// <param name="scopes">The scopes that were requested but denied.</param>
         public static void ConsentDenied(string clientId, IEnumerable<string> scopes) =>
             ConsentDeniedCounter.Add(1, new TagList
             {
@@ -56,13 +41,9 @@ public static class Telemetry
                 { "scope_count", scopes.Count() },
             });
 
-        /// <summary>Records a grant revocation for the specified client.</summary>
-        /// <param name="clientId">The client whose grants were revoked.</param>
         public static void GrantsRevoked(string? clientId) =>
             GrantsRevokedCounter.Add(1, new TagList { { "client_id", clientId } });
 
-        /// <summary>Records an unhandled exception caught by the global exception handler.</summary>
-        /// <param name="exceptionType">The short type name of the exception.</param>
         public static void ExceptionOccurred(string exceptionType) =>
             ExceptionCounter.Add(1, new TagList { { "exception.type", exceptionType } });
     }

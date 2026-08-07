@@ -1,7 +1,7 @@
 namespace Identity.Tests.Unit.Pages.Account.Manage;
-using Infrastructure;
 
 using Identity.Pages.Account.Manage;
+using Infrastructure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -16,7 +16,6 @@ public class DownloadPersonalDataModelTests
     [Fact]
     public void OnGet_DefaultState_ReturnsNotFoundResult()
     {
-        // userManager is not used by OnGet, but the constructor guards against null, so pass a real mock.
         var model = new DownloadPersonalDataModel(MockHelpers.MockUserManager().Object);
 
         // Act

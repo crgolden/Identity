@@ -1,7 +1,7 @@
 namespace Identity.Tests.Unit.Filters;
-using Infrastructure;
 
 using Identity.Filters;
+using Infrastructure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -101,8 +101,6 @@ public sealed class SecurityHeadersAttributeTests
 
         // Assert — CSP is unchanged
         Assert.Equal("script-src 'none'", (string?)context.HttpContext.Response.Headers.ContentSecurityPolicy);
-
-        // Other headers are still applied
         Assert.Equal("nosniff", (string?)context.HttpContext.Response.Headers.XContentTypeOptions);
         Assert.Equal("SAMEORIGIN", (string?)context.HttpContext.Response.Headers.XFrameOptions);
         Assert.Equal("no-referrer", (string?)context.HttpContext.Response.Headers["Referrer-Policy"]);

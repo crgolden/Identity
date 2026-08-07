@@ -17,28 +17,23 @@ public sealed class EmailChangeTests(PlaywrightFixture fixture)
         var (context, page) = await fixture.NewPageAsync();
         await using (context)
         {
-            // Login with original email
             await page.GotoAsync("/Account/Login");
             await page.FillAsync("input[name='Input.Email']", originalEmail);
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("#login-submit");
             await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
 
-            // Navigate to email management page
             await page.GotoAsync("/Account/Manage/Email");
             await page.WaitForURLAsync("**/Account/Manage/Email**");
 
-            // Request email change
             await page.FillAsync("input[name='Input.NewEmail']", newEmail);
             await page.ClickAsync("#change-email-button");
 
-            // Confirmation email sent
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/Manage/Email"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
             var bodyText = await page.TextContentAsync("body");
             Assert.Contains("confirmation", bodyText, StringComparison.OrdinalIgnoreCase);
         }
 
-        // Capture and follow the confirmation link sent to the new email address
         var confirmEmail = await fixture.Email.WaitForEmailAsync(newEmail);
         var confirmLink = EmailCaptureSender.ExtractLink(confirmEmail.HtmlBody, "http");
 
@@ -51,7 +46,6 @@ public sealed class EmailChangeTests(PlaywrightFixture fixture)
             Assert.Contains("confirm", bodyText, StringComparison.OrdinalIgnoreCase);
         }
 
-        // Verify login now works with the new email
         var (ctx3, page3) = await fixture.NewPageAsync();
         await using (ctx3)
         {
@@ -72,23 +66,18 @@ public sealed class EmailChangeTests(PlaywrightFixture fixture)
         var (context, page) = await fixture.NewPageAsync();
         await using (context)
         {
-            // Login
             await page.GotoAsync("/Account/Login");
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("#login-submit");
             await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
 
-            // Attempt to "change" to the same email
             await page.GotoAsync("/Account/Manage/Email");
             await page.FillAsync("input[name='Input.NewEmail']", email);
             await page.ClickAsync("#change-email-button");
 
-            // Should stay on the page without sending a confirmation
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/Manage/Email"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
             var bodyText = await page.TextContentAsync("body");
-
-            // The page should indicate no change is needed or simply stay current
             Assert.DoesNotContain("confirmation link has been sent", bodyText, StringComparison.OrdinalIgnoreCase);
         }
     }

@@ -1,11 +1,10 @@
-﻿namespace Identity.Pages.Account.Manage;
+namespace Identity.Pages.Account.Manage;
 
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-/// <summary>Page model for the Account management index page.</summary>
 public class IndexModel : PageModel
 {
     private readonly UserManager<IdentityUser<Guid>> _userManager;
@@ -27,8 +26,6 @@ public class IndexModel : PageModel
     [BindProperty]
     public InputModel Input { get; set; } = new InputModel();
 
-    /// <summary>Handles the GET request to display the account management index page.</summary>
-    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnGetAsync()
     {
         var user = await _userManager.GetUserAsync(User);
@@ -41,8 +38,6 @@ public class IndexModel : PageModel
         return Page();
     }
 
-    /// <summary>Handles the POST request to update the user's profile information.</summary>
-    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnPostAsync()
     {
         var user = await _userManager.GetUserAsync(User);
@@ -84,7 +79,6 @@ public class IndexModel : PageModel
         };
     }
 
-    /// <summary>Provides the form input values bound from the request.</summary>
     public class InputModel
     {
         [Phone]

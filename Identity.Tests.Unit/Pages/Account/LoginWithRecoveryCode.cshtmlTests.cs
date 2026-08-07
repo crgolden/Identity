@@ -1,7 +1,7 @@
 namespace Identity.Tests.Unit.Pages.Account;
-using Infrastructure;
 
 using Identity.Pages.Account;
+using Infrastructure;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -15,7 +15,6 @@ using Moq;
 [Trait("Category", "Unit")]
 public class LoginWithRecoveryCodeModelTests
 {
-    // MemberData providing a variety of string edge cases including null.
     public static TheoryData<string?> ReturnUrlValues() => new()
     {
         (string?)null,
@@ -23,17 +22,12 @@ public class LoginWithRecoveryCodeModelTests
         " ",
         "/account/manage?return=true",
         "/path/with/special?param=����d�&x=1",
-
-        // long string (~2048 chars) to test boundary for very long URLs
         new string('a', 2048),
     };
 
     public static TheoryData<string?, string> GetReturnUrlCases() => new()
     {
-        // Case: null returnUrl should redirect to Url.Content("~/") which we mock to "/"
         { null, "/" },
-
-        // Case: provided returnUrl should be used as-is
         { "/some/local/path", "/some/local/path" },
     };
 
@@ -65,8 +59,6 @@ public class LoginWithRecoveryCodeModelTests
         // Arrange
         var signInManagerMock = CreateSignInManagerMock();
         var model = new LoginWithRecoveryCodeModel(signInManagerMock.Object);
-
-        // Make ModelState invalid
         model.ModelState.AddModelError("key", "error");
         model.Input = new LoginWithRecoveryCodeModel.InputModel { RecoveryCode = "irrelevant" };
 
@@ -75,8 +67,6 @@ public class LoginWithRecoveryCodeModelTests
 
         // Assert
         Assert.IsType<PageResult>(result);
-
-        // Ensure sign-in manager methods were not invoked
         signInManagerMock.Verify(s => s.GetTwoFactorAuthenticationUserAsync(), Times.Never);
         signInManagerMock.Verify(s => s.TwoFactorRecoveryCodeSignInAsync(It.IsAny<string>()), Times.Never);
     }
@@ -94,8 +84,6 @@ public class LoginWithRecoveryCodeModelTests
         // Act & Assert
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => model.OnPostAsync(null));
         Assert.Equal("Unable to load two-factor authentication user.", ex.Message);
-
-        // Ensure TwoFactorRecoveryCodeSignInAsync was not called
         signInManagerMock.Verify(s => s.TwoFactorRecoveryCodeSignInAsync(It.IsAny<string>()), Times.Never);
     }
 

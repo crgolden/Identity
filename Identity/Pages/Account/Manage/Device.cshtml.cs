@@ -8,7 +8,6 @@ using Filters;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-/// <summary>Page model for the device authorization flow consent screen.</summary>
 [Authorize]
 [SecurityHeaders]
 public class DeviceModel : ConsentPageModelBase
@@ -24,13 +23,9 @@ public class DeviceModel : ConsentPageModelBase
         _events = events;
     }
 
-    /// <summary>Gets or sets the bound input model from the device flow consent form.</summary>
     [BindProperty]
     public InputModel Input { get; set; } = new InputModel();
 
-    /// <summary>Handles the GET request to display the device authorization consent or user code entry form.</summary>
-    /// <param name="userCode">The user code from the device, if already known.</param>
-    /// <returns>A task resolving to the page result.</returns>
     public async Task<IActionResult> OnGetAsync(string? userCode)
     {
         if (IsNullOrWhiteSpace(userCode))
@@ -48,8 +43,6 @@ public class DeviceModel : ConsentPageModelBase
         return Page();
     }
 
-    /// <summary>Handles the POST request when the user submits the device flow consent form.</summary>
-    /// <returns>A task resolving to a redirect to the success page or back to the consent form.</returns>
     public async Task<IActionResult> OnPostAsync()
     {
         var userCode = Input.UserCode;
@@ -186,22 +179,16 @@ public class DeviceModel : ConsentPageModelBase
         return vm;
     }
 
-    /// <summary>Input model bound from the device flow consent form POST.</summary>
     public class InputModel
     {
-        /// <summary>Gets or sets the user code identifying this device authorization request.</summary>
         public string? UserCode { get; set; }
 
-        /// <summary>Gets or sets the button clicked by the user ("yes" or "no").</summary>
         public string Button { get; set; } = Empty;
 
-        /// <summary>Gets or sets the scope values the user selected.</summary>
         public IEnumerable<string> ScopesConsented { get; set; } = [];
 
-        /// <summary>Gets or sets a value indicating whether the user chose to remember their consent decision.</summary>
         public bool RememberConsent { get; set; }
 
-        /// <summary>Gets or sets an optional description or device name provided by the user.</summary>
         public string? Description { get; set; }
     }
 }

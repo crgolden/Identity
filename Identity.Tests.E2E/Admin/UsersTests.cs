@@ -4,10 +4,6 @@ using System.Text.RegularExpressions;
 using Infrastructure;
 using Microsoft.Playwright;
 
-// Covers Admin-E2E-Guide.md's U3-U9 (U1/U2 Index-lists/sub-nav-visibility already exist in
-// AdminTests.cs). Each test creates its own unique admin user via fixture.CreateAdminUserAsync() --
-// same convention as AdminTests.cs -- so Edit/Claims and Edit/Roles mutations never touch shared state.
-// U10/U11 (Edit/Logins, Edit/Passkeys) are out of scope per the approved plan.
 [Trait("Category", "E2E")]
 [Collection(E2ECollection.Name)]
 public sealed class UsersTests(PlaywrightFixture fixture)

@@ -1,8 +1,8 @@
 namespace Identity.Tests.Unit.Pages.Account.Manage;
-using Infrastructure;
 
 using Duende.IdentityServer.Services;
 using Identity.Pages.Account.Manage;
+using Infrastructure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;

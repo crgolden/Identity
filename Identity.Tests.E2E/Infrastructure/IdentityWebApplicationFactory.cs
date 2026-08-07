@@ -11,9 +11,9 @@ using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Azure;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -28,10 +28,7 @@ public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Progra
 
     protected override IHost CreateHost(IHostBuilder builder)
     {
-        // Build the in-memory TestHost used by Factory.CreateClient().
         var testHost = builder.Build();
-
-        // Build a second host with a real Kestrel socket for Playwright.
         builder.ConfigureWebHost(b => b.UseKestrel(o => o.Listen(IPAddress.Loopback, 0, lo => lo.UseHttps())));
         _kestrelHost = builder.Build();
         _kestrelHost.Start();
@@ -53,42 +50,27 @@ public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Progra
 
         builder.ConfigureServices((context, services) =>
         {
-            // Prevent a transient background-service exception (e.g. IdentityServer key refresh,
-            // token cleanup) from stopping the Kestrel host mid-test-run and causing
-            // ERR_CONNECTION_FAILED on subsequent Playwright navigations.
-            // .NET 6+ default is StopHost; override to Ignore so the server stays alive.
             services.Configure<HostOptions>(opts =>
                 opts.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore);
 
             if (!context.HostingEnvironment.IsProduction())
             {
-                // Replace the Serilog ILoggerFactory (which connects to Elasticsearch on startup)
-                // with the default logging infrastructure to avoid external sink failures in tests.
                 services.RemoveAll<ILoggerFactory>();
                 services.AddLogging(lb => lb.AddConsole());
             }
 
-            // Replace the real ServiceBusClient factory with the in-memory capture sender.
             services.RemoveAll<IAzureClientFactory<ServiceBusClient>>();
             services.AddSingleton(EmailCapture);
             services.AddSingleton<IAzureClientFactory<ServiceBusClient>>(new TestServiceBusClientFactory(EmailCapture));
 
-            // Replace IAvatarService with a no-op stub to avoid real Gravatar HTTP calls in tests.
             services.RemoveAll<IAvatarService>();
             services.AddSingleton<IAvatarService>(new NullAvatarService());
 
-            // Replace ICAPTCHAService with an always-pass stub to prevent outbound calls to Google.
             services.RemoveAll<ICAPTCHAService>();
             services.AddSingleton<ICAPTCHAService>(new AlwaysPassCAPTCHAService());
 
-            // Reduce PBKDF2 iterations to 1 for tests — default 600k iterations is CPU-intensive
-            // and causes 60s+ timeouts on loaded CI machines (password sign-in late in the suite).
             services.Configure<PasswordHasherOptions>(opts => opts.IterationCount = 1);
 
-            // Decorate the authentication scheme provider so E2E tests can drive the full external-login
-            // callback flow without a real Google account and without touching Program.cs. See
-            // FakeGoogleSchemeProvider for what it intercepts and FakeExternalAuthenticationHandler for
-            // what happens once it does.
             services.Replace(ServiceDescriptor.Singleton<IAuthenticationSchemeProvider, FakeGoogleSchemeProvider>());
         });
     }

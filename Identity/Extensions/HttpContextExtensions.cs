@@ -3,7 +3,6 @@ namespace Identity.Extensions;
 using System.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics;
 
-/// <summary>Extension methods for <see cref="HttpContext"/>.</summary>
 public static class HttpContextExtensions
 {
     public static async Task HandleException(this HttpContext context)

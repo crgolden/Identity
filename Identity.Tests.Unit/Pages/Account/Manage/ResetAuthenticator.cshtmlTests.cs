@@ -1,8 +1,8 @@
 namespace Identity.Tests.Unit.Pages.Account.Manage;
-using Infrastructure;
 
 using System.Security.Claims;
 using Identity.Pages.Account.Manage;
+using Infrastructure;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -22,10 +22,7 @@ public class ResetAuthenticatorModelTests
         var expectedMessage = $"Unable to load user with ID '{missingUserId}'.";
         return new TheoryData<bool, string?, Type, string?>
         {
-            // Case: user exists -> expect PageResult
             { true, null, typeof(PageResult), null },
-
-            // Case: user not found -> expect NotFound with ID embedded in message
             { false, missingUserId, typeof(NotFoundObjectResult), expectedMessage },
         };
     }
@@ -36,13 +33,10 @@ public class ResetAuthenticatorModelTests
     {
         // Arrange
         var userManagerMock = MockHelpers.MockUserManager();
-
-        // Setup GetUserAsync to return a user or null based on input
         userManagerMock
             .Setup(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
             .ReturnsAsync(userExists ? new IdentityUser<Guid>() : null);
 
-        // Setup GetUserId to return the provided expectedUserId (may be null)
         userManagerMock
             .Setup(u => u.GetUserId(It.IsAny<ClaimsPrincipal>()))
             .Returns(expectedUserId);
@@ -50,8 +44,6 @@ public class ResetAuthenticatorModelTests
         var signInManager = MockHelpers.MockSignInManager(userManagerMock.Object);
 
         var model = new ResetAuthenticatorModel(userManagerMock.Object, signInManager.Object);
-
-        // Set up a minimal PageContext with a ClaimsPrincipal so PageModel.User is available
         var principal = new ClaimsPrincipal(new ClaimsIdentity(
             [
             new Claim(ClaimTypes.NameIdentifier, expectedUserId ?? string.Empty)
@@ -74,13 +66,10 @@ public class ResetAuthenticatorModelTests
         if (expectedResultType == typeof(NotFoundObjectResult))
         {
             var notFound = Assert.IsType<NotFoundObjectResult>(result);
-
-            // The implementation constructs the message using _userManager.GetUserId(User)
             Assert.Equal(expectedMessage, notFound.Value as string);
         }
         else if (expectedResultType == typeof(PageResult))
         {
-            // Nothing else to assert for PageResult beyond type
             Assert.IsType<PageResult>(result);
         }
     }
@@ -91,13 +80,10 @@ public class ResetAuthenticatorModelTests
         // Arrange
         var userIdString = "missing-user-id";
         var mockUserManager = MockHelpers.MockUserManager();
-
-        // GetUserAsync returns null to simulate missing user
         mockUserManager
             .Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
             .ReturnsAsync((IdentityUser<Guid>?)null);
 
-        // GetUserId returns a string used in the NotFound message
         mockUserManager
             .Setup(um => um.GetUserId(It.IsAny<ClaimsPrincipal>()))
             .Returns(userIdString);
@@ -105,8 +91,6 @@ public class ResetAuthenticatorModelTests
         var mockSignInManager = MockHelpers.MockSignInManager(mockUserManager.Object);
 
         var model = new ResetAuthenticatorModel(mockUserManager.Object, mockSignInManager.Object);
-
-        // Provide a ClaimsPrincipal (not used beyond forwarding to mocks)
         var principal = new ClaimsPrincipal(new ClaimsIdentity());
         model.PageContext = new PageContext { HttpContext = new DefaultHttpContext { User = principal } };
 
@@ -116,8 +100,6 @@ public class ResetAuthenticatorModelTests
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
         Assert.Equal($"Unable to load user with ID '{userIdString}'.", notFound.Value);
-
-        // Ensure no attempt to modify user state occurred
         mockUserManager.Verify(um => um.SetTwoFactorEnabledAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<bool>()), Times.Never);
         mockUserManager.Verify(um => um.ResetAuthenticatorKeyAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
         mockSignInManager.Verify(sm => sm.RefreshSignInAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
@@ -163,8 +145,6 @@ public class ResetAuthenticatorModelTests
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("./EnableAuthenticator", redirect.PageName);
         Assert.Equal("Your authenticator app key has been reset, you will need to configure your authenticator app using the new key.", model.StatusMessage);
-
-        // Verify operations were attempted regardless of identity result success/failure
         mockUserManager.Verify(um => um.SetTwoFactorEnabledAsync(user, false), Times.Once);
         mockUserManager.Verify(um => um.ResetAuthenticatorKeyAsync(user), Times.Once);
         mockSignInManager.Verify(sm => sm.RefreshSignInAsync(user), Times.Once);

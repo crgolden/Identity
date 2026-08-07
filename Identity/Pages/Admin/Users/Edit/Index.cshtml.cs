@@ -4,19 +4,15 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-/// <summary>Edits user scalar fields.</summary>
 public class IndexModel : PageModel
 {
     private readonly UserManager<IdentityUser<Guid>> _userManager;
 
-    /// <summary>Initializes a new instance of the <see cref="IndexModel"/> class.</summary>
     public IndexModel(UserManager<IdentityUser<Guid>> userManager) => _userManager = userManager;
 
-    /// <summary>Gets or sets the user being edited.</summary>
     [BindProperty]
     public IdentityUser<Guid> AppUser { get; set; } = new();
 
-    /// <summary>Loads the user for editing.</summary>
     public async Task<IActionResult> OnGetAsync(string id)
     {
         var user = await _userManager.FindByIdAsync(id);
@@ -29,7 +25,6 @@ public class IndexModel : PageModel
         return Page();
     }
 
-    /// <summary>Saves the updated user fields.</summary>
     public async Task<IActionResult> OnPostAsync(string id)
     {
         var user = await _userManager.FindByIdAsync(id);

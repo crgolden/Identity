@@ -1,5 +1,6 @@
 namespace Identity.Tests.Unit.Pages.Account;
 
+using System.Threading.Channels;
 using Identity;
 using Identity.Pages.Account;
 using Infrastructure;
@@ -13,7 +14,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
-using System.Threading.Channels;
 
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
@@ -251,7 +251,6 @@ public class LoginModelTests
             }
         };
 
-        // Make ModelState invalid
         model.ModelState.AddModelError("error", "invalid");
 
         // Act

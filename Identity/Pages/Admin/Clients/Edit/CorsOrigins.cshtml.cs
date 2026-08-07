@@ -6,22 +6,17 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
-/// <summary>Edits allowed CORS origins for a client.</summary>
 public class CorsOriginsModel : PageModel
 {
     private readonly IConfigurationDbContext _context;
 
-    /// <summary>Initializes a new instance of the <see cref="CorsOriginsModel"/> class.</summary>
     public CorsOriginsModel(IConfigurationDbContext context) => _context = context;
 
-    /// <summary>Gets the client.</summary>
     public Client Client { get; private set; } = new();
 
-    /// <summary>Gets or sets the posted CORS origins.</summary>
     [BindProperty]
     public List<ClientCorsOrigin> CorsOrigins { get; set; } = [];
 
-    /// <summary>Loads the client with CORS origins for editing.</summary>
     public async Task<IActionResult> OnGetAsync(int id)
     {
         var client = await _context.Clients
@@ -37,7 +32,6 @@ public class CorsOriginsModel : PageModel
         return Page();
     }
 
-    /// <summary>Saves the CORS origins for the client.</summary>
     public async Task<IActionResult> OnPostAsync(int id)
     {
         if (!ModelState.IsValid)
@@ -76,7 +70,6 @@ public class CorsOriginsModel : PageModel
         return RedirectToPage("/Admin/Clients/Details/CorsOrigins", new { id });
     }
 
-    /// <summary>Adds a blank CORS origin row.</summary>
     public async Task<IActionResult> OnPostAddRowAsync(int id)
     {
         var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == id);
@@ -90,7 +83,6 @@ public class CorsOriginsModel : PageModel
         return Page();
     }
 
-    /// <summary>Removes a CORS origin row.</summary>
     public async Task<IActionResult> OnPostRemoveRowAsync(int id, int index)
     {
         var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == id);

@@ -17,17 +17,14 @@ public sealed class PasswordResetTests(PlaywrightFixture fixture)
         var (context, page) = await fixture.NewPageAsync();
         await using (context)
         {
-            // Request password reset
             await page.GotoAsync("/Account/ForgotPassword");
             await page.FillAsync("input[name='Input.Email']", email);
             await page.ClickAsync("#forgot-password-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/ForgotPasswordConfirmation"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
 
-            // Extract reset link
             var resetEmail = await fixture.Email.WaitForEmailAsync(email);
             var resetLink = EmailCaptureSender.ExtractLink(resetEmail.HtmlBody, "http");
 
-            // Navigate to reset link and set new password
             await page.GotoAsync(resetLink);
             await page.WaitForURLAsync("**/Account/ResetPassword**");
             await page.FillAsync("input[name='Input.Password']", newPassword);
@@ -35,7 +32,6 @@ public sealed class PasswordResetTests(PlaywrightFixture fixture)
             await page.ClickAsync("#reset-password-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/ResetPasswordConfirmation"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
 
-            // Login with new password should succeed
             await page.GotoAsync("/Account/Login");
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", newPassword);
@@ -69,7 +65,6 @@ public sealed class PasswordResetTests(PlaywrightFixture fixture)
             await page.ClickAsync("#reset-password-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/ResetPasswordConfirmation"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
 
-            // Old password should now fail
             await page.GotoAsync("/Account/Login");
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", oldPassword);

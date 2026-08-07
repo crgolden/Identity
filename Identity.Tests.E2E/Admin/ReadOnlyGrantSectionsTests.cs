@@ -4,32 +4,6 @@ using System.Text.RegularExpressions;
 using Identity.Tests.E2E.Infrastructure;
 using Microsoft.Playwright;
 
-// Covers Admin-E2E-Guide.md's RO2/RO3 scenarios (Details shows fields, Delete removes record) for the
-// one of the eight read-only grant-store sections that has a realistic, real production path via the
-// existing app: PersistedGrants (via the same authorize+consent+allow flow ConsentTests.cs already
-// drives). The other seven stay at the Index-loads-empty-ok coverage already in AdminTests.cs, by
-// explicit decision:
-// - ServerSideSessions: confirmed by reading Program.cs's .AddIdentityServer(...) chain that
-//   .AddServerSideSessions() is never called (grepped the whole repo -- zero matches outside docs/
-//   tests), and confirmed empirically -- a WP5 run that logged in twice against a running instance
-//   produced one SELECT against [ServerSideSessions] and zero INSERTs. There is no code path in this
-//   app that populates this table, so it belongs in the same bucket as the disabled SAML sections below,
-//   not with PersistedGrants.
-// - DeviceFlowCodes / PushedAuthorizationRequests: no existing UI-driven flow produces a row; building
-//   one would need meaningfully more scaffolding (raw device-authorization / PAR requests) for a single
-//   test's worth of value.
-// - SamlSigninStates / SamlLogoutSessions / SamlLogoutSessionRequestIndices: confirmed via the live
-//   Duende diagnostics dump that this app's SAML endpoints are disabled
-//   (EnableSamlSigninEndpoint/EnableSamlLogoutEndpoint/etc. all false) -- there is no code path in this
-//   app that can ever populate these tables, so fabricating rows would test something that can't happen
-//   in practice.
-//
-// Dynamically-keyed row action ids (details-{key}/delete-{key}) can't be predicted client-side, so this
-// test locates the row by matching real page TEXT content (the Client column) then selects within that
-// row via the wildcard-id pattern already established in AdminTests.cs's Users/Roles tests
-// ([id^='details-']) -- this is distinct from the earlier collection-editor id fix, which targets an
-// input's `value` attribute (never valid for HasText); here the target text is genuinely rendered as
-// visible cell content.
 [Trait("Category", "E2E")]
 [Collection(E2ECollection.Name)]
 public sealed class ReadOnlyGrantSectionsTests(PlaywrightFixture fixture)

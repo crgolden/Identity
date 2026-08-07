@@ -6,19 +6,15 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
-/// <summary>Edits an API scope.</summary>
 public class IndexModel : PageModel
 {
     private readonly IConfigurationDbContext _context;
 
-    /// <summary>Initializes a new instance of the <see cref="IndexModel"/> class.</summary>
     public IndexModel(IConfigurationDbContext context) => _context = context;
 
-    /// <summary>Gets or sets the API scope to edit.</summary>
     [BindProperty]
     public ApiScope Scope { get; set; } = new();
 
-    /// <summary>Loads the API scope for editing.</summary>
     public async Task<IActionResult> OnGetAsync(int id)
     {
         var scope = await _context.ApiScopes.FirstOrDefaultAsync(s => s.Id == id);
@@ -31,7 +27,6 @@ public class IndexModel : PageModel
         return Page();
     }
 
-    /// <summary>Saves the API scope changes.</summary>
     public async Task<IActionResult> OnPostAsync(int id)
     {
         var scope = await _context.ApiScopes.FirstOrDefaultAsync(s => s.Id == id);

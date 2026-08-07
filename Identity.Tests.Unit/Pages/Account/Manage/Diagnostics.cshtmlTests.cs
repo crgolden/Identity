@@ -1,8 +1,8 @@
 namespace Identity.Tests.Unit.Pages.Account.Manage;
-using Infrastructure;
 
 using System.Net;
 using Identity.Pages.Account.Manage;
+using Infrastructure;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;

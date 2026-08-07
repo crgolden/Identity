@@ -1,7 +1,7 @@
 namespace Identity.Tests.Unit.Pages.Account.Manage;
-using Infrastructure;
 
 using Identity.Pages.Account.Manage;
+using Infrastructure;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Razor.TagHelpers;
@@ -25,8 +25,6 @@ public class PasskeySubmitTagHelperTests
 
         // Assert
         Assert.NotNull(helper);
-
-        // Read into nullable locals to respect nullable annotations in tests.
         var operation = helper.Operation;
         var name = helper.Name;
         var emailName = helper.EmailName;
@@ -49,8 +47,6 @@ public class PasskeySubmitTagHelperTests
 
         // Assert
         Assert.NotSame(helperA, helperB);
-
-        // Verify defaults for helperA
         var opA = helperA.Operation;
         var nameA = helperA.Name;
         var emailA = helperA.EmailName;
@@ -58,8 +54,6 @@ public class PasskeySubmitTagHelperTests
         Assert.Null(opA);
         Assert.Null(nameA);
         Assert.Null(emailA);
-
-        // Verify defaults for helperB
         var opB = helperB.Operation;
         var nameB = helperB.Name;
         var emailB = helperB.EmailName;
@@ -90,7 +84,6 @@ public class PasskeySubmitTagHelperTests
             EmailName = null
         };
 
-        // Prepare attributes: include ones that should be filtered out and one that should be included
         var attributes = new TagHelperAttributeList
             {
                 new TagHelperAttribute("operation", "op-should-be-ignored"),
@@ -99,7 +92,6 @@ public class PasskeySubmitTagHelperTests
                 new TagHelperAttribute("class", "btn-primary")
             };
 
-        // Child content non-empty to ensure button content will be present
         var childContent = new DefaultTagHelperContent();
         childContent.SetContent("ClickMe");
 
@@ -114,23 +106,15 @@ public class PasskeySubmitTagHelperTests
         await helper.ProcessAsync(context, output);
 
         // Assert
-        Assert.Null(output.TagName); // TagName cleared
-        Assert.Empty(output.Attributes); // Attributes cleared
+        Assert.Null(output.TagName);
+        Assert.Empty(output.Attributes);
         var html = output.Content.GetContent(NullHtmlEncoder.Default);
-
-        // Contains button with submitted class attribute and inner content
         Assert.Contains("<button", html, StringComparison.Ordinal);
         Assert.Contains("class=\"btn-primary\"", html, StringComparison.Ordinal);
         Assert.Contains(">ClickMe</button>", html, StringComparison.Ordinal);
-
-        // passkey-submit element contains operation and provided Name
         Assert.Contains($"operation=\"{helper.Operation}\"", html, StringComparison.Ordinal);
         Assert.Contains($"name=\"{helper.Name}\"", html, StringComparison.Ordinal);
-
-        // EmailName was null -> rendered as empty attribute value
         Assert.Contains("email-name=\"\"", html, StringComparison.Ordinal);
-
-        // No antiforgery tokens -> request-token-name and value empty
         Assert.Contains("request-token-name=\"\"", html, StringComparison.Ordinal);
         Assert.Contains("request-token-value=\"\"", html, StringComparison.Ordinal);
     }

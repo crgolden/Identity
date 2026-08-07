@@ -4,22 +4,17 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-/// <summary>Creates a new role.</summary>
 public class CreateModel : PageModel
 {
     private readonly RoleManager<IdentityRole<Guid>> _roleManager;
 
-    /// <summary>Initializes a new instance of the <see cref="CreateModel"/> class.</summary>
     public CreateModel(RoleManager<IdentityRole<Guid>> roleManager) => _roleManager = roleManager;
 
-    /// <summary>Gets or sets the role name.</summary>
     [BindProperty]
     public string RoleName { get; set; } = Empty;
 
-    /// <summary>Returns the create page.</summary>
     public IActionResult OnGet() => Page();
 
-    /// <summary>Creates the role.</summary>
     public async Task<IActionResult> OnPostAsync()
     {
         if (!ModelState.IsValid)

@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Azure;
 
-/// <summary>Page model for the Resend Email Confirmation page.</summary>
 [AllowAnonymous]
 public class ResendEmailConfirmationModel : PageModel
 {
@@ -28,8 +27,6 @@ public class ResendEmailConfirmationModel : PageModel
     [BindProperty]
     public InputModel Input { get; set; } = new InputModel();
 
-    /// <summary>Handles the POST request to resend the email confirmation link.</summary>
-    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnPostAsync()
     {
         if (!ModelState.IsValid || IsNullOrWhiteSpace(Input.Email))
@@ -70,7 +67,6 @@ public class ResendEmailConfirmationModel : PageModel
         return Page();
     }
 
-    /// <summary>Provides the form input values bound from the request.</summary>
     public class InputModel
     {
         [Required]

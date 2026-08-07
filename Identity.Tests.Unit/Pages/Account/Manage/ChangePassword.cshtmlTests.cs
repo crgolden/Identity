@@ -1,8 +1,8 @@
 namespace Identity.Tests.Unit.Pages.Account.Manage;
-using Infrastructure;
 
 using System.Security.Claims;
 using Identity.Pages.Account.Manage;
+using Infrastructure;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -18,7 +18,6 @@ public class ChangePasswordModelTests
 {
     public static IEnumerable<object?[]> GetUserIdValues()
     {
-        // Provide a concrete string and a null value to exercise both message forms
         yield return
         [
             "test-user-123"
@@ -37,7 +36,6 @@ public class ChangePasswordModelTests
         var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
         var model = new ChangePasswordModel(userManagerMock.Object, signInManagerMock.Object);
 
-        // Put a dummy principal on the PageContext (not strictly used because we expect early exit)
         model.PageContext = new PageContext
         {
             HttpContext = new DefaultHttpContext
@@ -46,7 +44,6 @@ public class ChangePasswordModelTests
             }
         };
 
-        // Make model invalid
         model.ModelState.AddModelError("SomeKey", "Some error");
 
         // Act
@@ -54,8 +51,6 @@ public class ChangePasswordModelTests
 
         // Assert
         Assert.IsType<PageResult>(result);
-
-        // Ensure GetUserAsync was never called due to early return
         userManagerMock.Verify(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()), Times.Never);
     }
 
@@ -67,7 +62,6 @@ public class ChangePasswordModelTests
         var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
         var model = new ChangePasswordModel(userManagerMock.Object, signInManagerMock.Object);
 
-        // Prepare a principal and page context
         var principal = new ClaimsPrincipal(new ClaimsIdentity());
         model.PageContext = new PageContext
         {
@@ -77,12 +71,9 @@ public class ChangePasswordModelTests
             }
         };
 
-        // Setup UserManager to return null user and a known id
         const string expectedId = "expected-user-id";
         userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync((IdentityUser<Guid>?)null);
         userManagerMock.Setup(um => um.GetUserId(It.IsAny<ClaimsPrincipal>())).Returns(expectedId);
-
-        // Set Input so the null/whitespace guard is bypassed and we reach the user lookup
         model.Input = new ChangePasswordModel.InputModel { OldPassword = "OldP@ss1!", NewPassword = "NewP@ss1!" };
 
         // Act

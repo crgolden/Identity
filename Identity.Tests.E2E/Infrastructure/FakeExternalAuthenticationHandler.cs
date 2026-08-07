@@ -9,14 +9,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-/// <summary>
-/// Stands in for the real Google OpenID Connect handler in E2E tests. Reads the claim set a test
-/// wants Google to have "returned" from the <see cref="ClaimsCookieName"/> cookie (set by the test
-/// before it clicks the provider button), signs directly into <see cref="IdentityConstants.ExternalScheme"/>
-/// with those claims, and redirects to the same callback URL the real handler would use after a
-/// completed consent round-trip. Everything downstream of that (ExternalLoginModel, ExternalLoginsModel,
-/// SignInManager) runs unmodified production code.
-/// </summary>
 public sealed class FakeExternalAuthenticationHandler(
     IOptionsMonitor<AuthenticationSchemeOptions> options,
     ILoggerFactory logger,
@@ -77,11 +69,6 @@ public sealed class FakeExternalAuthenticationHandler(
     }
 }
 
-/// <summary>
-/// The claim set an E2E test wants the fake Google handler to present. Tests build one of these and
-/// write it (as JSON) into the <see cref="FakeExternalAuthenticationHandler.ClaimsCookieName"/> cookie
-/// before clicking a provider button.
-/// </summary>
 public sealed class FakeGoogleClaims
 {
     public string? Sub { get; set; }

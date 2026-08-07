@@ -4,9 +4,6 @@ using System.Text.RegularExpressions;
 using Infrastructure;
 using Microsoft.Playwright;
 
-// Covers Admin-E2E-Guide.md's L2 (L1 -- all 16 cards render -- already exists in AdminTests.cs).
-// Card ids read directly from Pages/Admin/Index.cshtml ("admin-card-{slug}"); expected h1 read directly
-// from each section's own Index.cshtml.
 [Trait("Category", "E2E")]
 [Collection(E2ECollection.Name)]
 public sealed class AdminLandingTests(PlaywrightFixture fixture)

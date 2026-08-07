@@ -1,7 +1,7 @@
 namespace Identity.Tests.Unit.Pages.Account;
-using Infrastructure;
 
 using Identity.Pages.Account;
+using Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 
 [Collection(UnitCollection.Name)]

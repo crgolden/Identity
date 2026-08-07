@@ -1,9 +1,9 @@
 namespace Identity.Tests.Unit.Pages.Account.Manage;
-using Infrastructure;
 
 using Duende.IdentityServer.Models;
 using Duende.IdentityServer.Validation;
 using Identity.Pages.Account.Manage;
+using Infrastructure;
 
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]

@@ -1,4 +1,4 @@
-﻿namespace Identity.Pages.Account;
+namespace Identity.Pages.Account;
 
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-/// <summary>Page model for the Reset Password page.</summary>
 [AllowAnonymous]
 public class ResetPasswordModel : PageModel
 {
@@ -20,10 +19,6 @@ public class ResetPasswordModel : PageModel
     [BindProperty]
     public InputModel Input { get; set; } = new InputModel();
 
-    /// <summary>Handles the GET request to display the password reset form.</summary>
-    /// <param name="code">The base64url-encoded password reset token.</param>
-    /// <param name="email">The email address of the account to reset.</param>
-    /// <returns>A redirect or page result.</returns>
     public IActionResult OnGet(string? code = null, string? email = null)
     {
         if (IsNullOrWhiteSpace(code))
@@ -41,8 +36,6 @@ public class ResetPasswordModel : PageModel
         return Page();
     }
 
-    /// <summary>Handles the POST request to reset the user's password.</summary>
-    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnPostAsync()
     {
         if (!ModelState.IsValid || IsNullOrWhiteSpace(Input.Email) || IsNullOrWhiteSpace(Input.Code) || IsNullOrWhiteSpace(Input.Password))
@@ -70,7 +63,6 @@ public class ResetPasswordModel : PageModel
         return Page();
     }
 
-    /// <summary>Provides the form input values bound from the request.</summary>
     public class InputModel
     {
         [Required]

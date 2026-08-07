@@ -1,8 +1,8 @@
 namespace Identity.Tests.Unit.Pages.Account.Manage;
-using Infrastructure;
 
 using System.Security.Claims;
 using Identity.Pages.Account.Manage;
+using Infrastructure;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -18,7 +18,6 @@ public class TwoFactorAuthenticationModelTests
 {
     public static TheoryData<string?, bool, bool, int> GetOnGetAsyncCases() => new()
     {
-        // Cover typical, boundary and unusual numeric values as RecoveryCodesLeft, and both null/non-null authenticator key.
         { null, false, false, 0 },
         { "auth-key-abc", true, true, 5 },
         { "k", false, true, int.MaxValue },
@@ -58,8 +57,6 @@ public class TwoFactorAuthenticationModelTests
         var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
 
         var model = new TwoFactorAuthenticationModel(userManagerMock.Object, signInManagerMock.Object);
-
-        // Prepare ClaimsPrincipal for the PageContext (User)
         var principal = new ClaimsPrincipal(new ClaimsIdentity());
         model.PageContext = new PageContext { HttpContext = new DefaultHttpContext { User = principal } };
 
@@ -89,8 +86,6 @@ public class TwoFactorAuthenticationModelTests
         var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
 
         var model = new TwoFactorAuthenticationModel(userManagerMock.Object, signInManagerMock.Object);
-
-        // Prepare ClaimsPrincipal for the PageContext (User)
         var principal = new ClaimsPrincipal(new ClaimsIdentity());
         model.PageContext = new PageContext { HttpContext = new DefaultHttpContext { User = principal } };
 
@@ -121,7 +116,6 @@ public class TwoFactorAuthenticationModelTests
 
         var mockSignInManager = MockHelpers.MockSignInManager(mockUserManager.Object);
 
-        // Setup: GetUserAsync returns null and GetUserId returns a specific id string
         const string expectedId = "expected-id-123";
         mockUserManager
             .Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
@@ -150,8 +144,6 @@ public class TwoFactorAuthenticationModelTests
         var mockSignInManager = MockHelpers.MockSignInManager(mockUserManager.Object);
 
         var user = new IdentityUser<Guid>();
-
-        // Setup manager behaviors according to parameters
         mockUserManager
             .Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
             .ReturnsAsync(user);

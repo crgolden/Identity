@@ -17,27 +17,23 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
         var (context, page) = await fixture.NewPageAsync();
         await using (context)
         {
-            // Login
             await page.GotoAsync("/Account/Login");
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", oldPassword);
             await page.ClickAsync("#login-submit");
             await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
 
-            // Change password
             await page.GotoAsync("/Account/Manage/ChangePassword");
             await page.FillAsync("input[name='Input.OldPassword']", oldPassword);
             await page.FillAsync("input[name='Input.NewPassword']", newPassword);
             await page.FillAsync("input[name='Input.ConfirmPassword']", newPassword);
             await page.ClickAsync("#change-password-submit");
 
-            // Confirm success message
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/Manage/ChangePassword"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
             var body = await page.TextContentAsync("body");
             Assert.Contains("changed", body, StringComparison.OrdinalIgnoreCase);
         }
 
-        // Old password should now fail
         var (ctx2, page2) = await fixture.NewPageAsync();
         await using (ctx2)
         {
@@ -59,23 +55,19 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
         var (context, page) = await fixture.NewPageAsync();
         await using (context)
         {
-            // Login
             await page.GotoAsync("/Account/Login");
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("#login-submit");
             await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
 
-            // Delete account
             await page.GotoAsync("/Account/Manage/DeletePersonalData");
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("#delete-account-submit");
 
-            // Should redirect to home/login after deletion
             await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Manage"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
         }
 
-        // Login with deleted account should fail
         var (ctx2, page2) = await fixture.NewPageAsync();
         await using (ctx2)
         {
@@ -103,12 +95,10 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
             await page.ClickAsync("#login-submit");
             await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
 
-            // Navigate to logout page and submit the confirmation form
             await page.GotoAsync("/Account/Logout");
             await page.ClickAsync("#logout-submit");
             await page.WaitForLoadStateAsync();
 
-            // A protected page should now redirect to login
             await page.GotoAsync("/Account/Manage/Index");
             await page.WaitForURLAsync(url => url.Contains("/Account/Login"));
             Assert.Contains("/Account/Login", page.Url);
@@ -130,20 +120,17 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
             await page.ClickAsync("#login-submit");
             await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
 
-            // Request email change
             await page.GotoAsync("/Account/Manage/Email");
             await page.FillAsync("input[name='Input.NewEmail']", newEmail);
             await page.ClickAsync("#change-email-button");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/Manage/Email"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
 
-            // Confirm via link sent to the new address
             var changeEmail = await fixture.Email.WaitForEmailAsync(newEmail);
             var changeLink = EmailCaptureSender.ExtractLink(changeEmail.HtmlBody, "http");
             await page.GotoAsync(changeLink);
             await page.WaitForURLAsync("**/Account/ConfirmEmailChange**");
         }
 
-        // Login with the new email should now succeed
         var (ctx2, page2) = await fixture.NewPageAsync();
         await using (ctx2)
         {
@@ -162,7 +149,6 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
         var email = $"e2e-{Guid.NewGuid()}@test.invalid";
         const string password = "Test@123456!";
 
-        // Register but discard the initial confirmation email
         var (ctx1, page1) = await fixture.NewPageAsync();
         await using (ctx1)
         {
@@ -172,10 +158,9 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
             await page1.FillAsync("input[name='Input.ConfirmPassword']", password);
             await page1.ClickAsync("#registerSubmit");
             await Assertions.Expect(page1).ToHaveURLAsync(new Regex("/Account/RegisterConfirmation"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await fixture.Email.WaitForEmailAsync(email); // consume without using
+            await fixture.Email.WaitForEmailAsync(email);
         }
 
-        // Resend confirmation and confirm with the new link
         var (ctx2, page2) = await fixture.NewPageAsync();
         await using (ctx2)
         {
@@ -189,7 +174,6 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
             await page2.WaitForURLAsync("**/Account/ConfirmEmail**");
         }
 
-        // Login should now succeed
         var (ctx3, page3) = await fixture.NewPageAsync();
         await using (ctx3)
         {

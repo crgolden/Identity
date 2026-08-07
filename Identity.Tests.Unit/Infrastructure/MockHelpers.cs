@@ -9,7 +9,6 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
 
-/// <summary>Shared builders for the ASP.NET Core Identity mocks the page-model unit tests depend on.</summary>
 internal static class MockHelpers
 {
     public static Mock<UserManager<IdentityUser<Guid>>> MockUserManager() =>

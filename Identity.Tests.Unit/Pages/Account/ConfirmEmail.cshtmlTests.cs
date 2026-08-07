@@ -1,8 +1,8 @@
 namespace Identity.Tests.Unit.Pages.Account;
-using Infrastructure;
 
 using System.Text;
 using Identity.Pages.Account;
+using Infrastructure;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;

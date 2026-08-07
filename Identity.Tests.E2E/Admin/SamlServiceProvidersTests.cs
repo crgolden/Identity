@@ -4,11 +4,6 @@ using System.Text.RegularExpressions;
 using Infrastructure;
 using Microsoft.Playwright;
 
-// Same shape as IdentityProvidersTests.cs. Details/Edit/Delete use a route parameter ({id:int}) while
-// Index/Create do not -- confirmed by reading each .cshtml's @page directive directly (inconsistent
-// within this entity, unlike IdentityProviders which is query-string throughout). Tests navigate via
-// clicking generated links (#btn-edit/#btn-delete) rather than constructing URLs manually, avoiding the
-// need to parse the created entity's id out of the redirect URL.
 [Trait("Category", "E2E")]
 [Collection(E2ECollection.Name)]
 public sealed class SamlServiceProvidersTests(PlaywrightFixture fixture)

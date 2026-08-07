@@ -1,8 +1,8 @@
 namespace Identity.Tests.Unit.Pages.Account.Manage;
-using Infrastructure;
 
 using System.Security.Claims;
 using Identity.Pages.Account.Manage;
+using Infrastructure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -38,7 +38,6 @@ public class PersonalDataModelTests
         var servicesMock = new Mock<IServiceProvider>(MockBehavior.Loose);
         var userManagerLoggerMock = new Mock<ILogger<UserManager<IdentityUser<Guid>>>>();
 
-        // Construct a real UserManager using mocked dependencies (allowed per requirements)
         var userManager = new UserManager<IdentityUser<Guid>>(
             userStoreMock.Object,
             options,
@@ -144,7 +143,6 @@ public class PersonalDataModelTests
             .Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
             .ReturnsAsync(existingUser);
 
-        // Ensure GetUserId is not invoked in the success path
         userManagerMock
             .Setup(m => m.GetUserId(It.IsAny<ClaimsPrincipal>()))
             .Throws(new Exception("GetUserId should not be called when user is found"));

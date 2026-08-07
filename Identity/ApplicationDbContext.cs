@@ -1,4 +1,4 @@
-﻿namespace Identity;
+namespace Identity;
 
 using Duende.IdentityServer.EntityFramework.Entities;
 using Duende.IdentityServer.EntityFramework.Extensions;
@@ -9,61 +9,43 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 
-/// <inheritdoc cref="DbContext" />
 public class ApplicationDbContext : IdentityDbContext<IdentityUser<Guid>, IdentityRole<Guid>, Guid, IdentityUserClaim<Guid>, IdentityUserRole<Guid>, IdentityUserLogin<Guid>, IdentityRoleClaim<Guid>, IdentityUserToken<Guid>, IdentityUserPasskey<Guid>>, IConfigurationDbContext, IPersistedGrantDbContext
 {
-    /// <inheritdoc cref="DbContext" />
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)
     {
     }
 
-    /// <inheritdoc />
     public virtual DbSet<Client> Clients { get; set; }
 
-    /// <inheritdoc />
     public virtual DbSet<ClientCorsOrigin> ClientCorsOrigins { get; set; }
 
-    /// <inheritdoc />
     public virtual DbSet<IdentityResource> IdentityResources { get; set; }
 
-    /// <inheritdoc />
     public virtual DbSet<ApiResource> ApiResources { get; set; }
 
-    /// <inheritdoc />
     public virtual DbSet<ApiScope> ApiScopes { get; set; }
 
-    /// <inheritdoc />
     public virtual DbSet<IdentityProvider> IdentityProviders { get; set; }
 
-    /// <inheritdoc />
     public virtual DbSet<PersistedGrant> PersistedGrants { get; set; }
 
-    /// <inheritdoc />
     public virtual DbSet<DeviceFlowCodes> DeviceFlowCodes { get; set; }
 
-    /// <inheritdoc />
     public virtual DbSet<Key> Keys { get; set; }
 
-    /// <inheritdoc />
     public virtual DbSet<ServerSideSession> ServerSideSessions { get; set; }
 
-    /// <inheritdoc />
     public virtual DbSet<PushedAuthorizationRequest> PushedAuthorizationRequests { get; set; }
 
-    /// <inheritdoc />
     public virtual DbSet<SamlServiceProvider> SamlServiceProviders { get; set; }
 
-    /// <inheritdoc />
     public virtual DbSet<SamlSigninState> SamlSigninStates { get; set; }
 
-    /// <inheritdoc />
     public virtual DbSet<SamlLogoutSession> SamlLogoutSessions { get; set; }
 
-    /// <inheritdoc />
     public virtual DbSet<SamlLogoutSessionRequestIndex> SamlLogoutSessionRequestIndices { get; set; }
 
-    /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder builder)
     {
         ThrowIfNull(builder);

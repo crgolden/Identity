@@ -4,21 +4,16 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-/// <summary>Shows user roles.</summary>
 public class RolesModel : PageModel
 {
     private readonly UserManager<IdentityUser<Guid>> _userManager;
 
-    /// <summary>Initializes a new instance of the <see cref="RolesModel"/> class.</summary>
     public RolesModel(UserManager<IdentityUser<Guid>> userManager) => _userManager = userManager;
 
-    /// <summary>Gets the user.</summary>
     public IdentityUser<Guid> AppUser { get; private set; } = new();
 
-    /// <summary>Gets the user's roles.</summary>
     public IList<string> Roles { get; private set; } = [];
 
-    /// <summary>Loads the user's roles.</summary>
     public async Task<IActionResult> OnGetAsync(string id)
     {
         var user = await _userManager.FindByIdAsync(id);

@@ -1,6 +1,5 @@
 namespace Identity;
 
-/// <summary>Options for Google reCAPTCHA v3 verification.</summary>
 #pragma warning disable S101
 public sealed class ReCAPTCHAOptions
 #pragma warning restore S101

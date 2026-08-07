@@ -1,5 +1,4 @@
 namespace Identity.Tests.Unit.Pages.Account.Manage;
-using Infrastructure;
 
 using System.Security.Claims;
 using Duende.IdentityServer.Events;
@@ -7,6 +6,7 @@ using Duende.IdentityServer.Models;
 using Duende.IdentityServer.Services;
 using Duende.IdentityServer.Stores;
 using Identity.Pages.Account.Manage;
+using Infrastructure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -90,7 +90,6 @@ public class GrantsIndexModelTests
         var mockClients = new Mock<IClientStore>(MockBehavior.Strict);
         mockClients.Setup(x => x.FindClientByIdAsync("c1", It.IsAny<CancellationToken>())).ReturnsAsync(client);
 
-        // FindResourcesByScopeAsync is an extension method; mock the three underlying interface methods it calls.
         var mockResources = new Mock<IResourceStore>(MockBehavior.Strict);
         mockResources
             .Setup(x => x.FindIdentityResourcesByScopeNameAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
@@ -157,7 +156,6 @@ public class GrantsIndexModelTests
         mockClients.Setup(x => x.FindClientByIdAsync("c2-missing", It.IsAny<CancellationToken>()))
             .ReturnsAsync((Client?)null);
 
-        // FindResourcesByScopeAsync is an extension method; mock the three underlying interface methods it calls.
         var mockResources = new Mock<IResourceStore>(MockBehavior.Strict);
         mockResources
             .Setup(x => x.FindIdentityResourcesByScopeNameAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))

@@ -39,7 +39,6 @@ public sealed class LoginTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Password']", "WrongPassword!99");
             await page.ClickAsync("#login-submit");
 
-            // Should stay on login page with a validation error
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
             var errorText = await page.TextContentAsync("#validation-errors");
             Assert.NotNull(errorText);
@@ -61,13 +60,11 @@ public sealed class LoginTests(PlaywrightFixture fixture)
                 await page.FillAsync("input[name='Input.Email']", email);
                 await page.FillAsync("input[name='Input.Password']", "BadPassword!99");
 
-                // Set up listener before click so the async form.submit() POST is captured race-free.
                 var postResponse = page.WaitForResponseAsync(
                     res => res.Request.Method == "POST" && res.Url.Contains("/Account/Login"));
                 await page.ClickAsync("#login-submit");
                 await postResponse;
 
-                // Locator polling avoids both WaitForLoadStateAsync premature-return and GotoAsync navigation conflicts.
                 if (i < 4)
                 {
                     await page.Locator("input[name='Input.Email']").WaitForAsync();

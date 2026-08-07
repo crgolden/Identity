@@ -1,23 +1,18 @@
 namespace Identity.Tests.Unit.Extensions;
-using Infrastructure;
 
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using Identity.Extensions;
+using Infrastructure;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 
-/// <summary>Unit tests for <see cref="HttpContextExtensions"/>.</summary>
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class HttpContextExtensionsTests
 {
-    /// <summary>
-    /// Verifies that a browser request (Accept: text/html) is redirected to /Error and
-    /// problem details are NOT written.
-    /// </summary>
     [Fact]
     public async Task HandleException_HtmlRequest_RedirectsToErrorPage()
     {
@@ -36,9 +31,6 @@ public class HttpContextExtensionsTests
         mockProblemDetails.Verify(p => p.WriteAsync(It.IsAny<ProblemDetailsContext>()), Times.Never);
     }
 
-    /// <summary>
-    /// Verifies that a non-HTML request receives a 500 problem details response.
-    /// </summary>
     [Fact]
     public async Task HandleException_JsonRequest_WritesProblemDetails500()
     {
@@ -58,9 +50,6 @@ public class HttpContextExtensionsTests
             Times.Once);
     }
 
-    /// <summary>
-    /// Verifies that when an Activity is current, its status is set to Error and an "exception" event is recorded.
-    /// </summary>
     [Fact]
     public async Task HandleException_WithException_RecordsActivityEvent()
     {
@@ -90,9 +79,6 @@ public class HttpContextExtensionsTests
         Assert.Contains(activity.Events, e => string.Equals(e.Name, "exception", StringComparison.Ordinal));
     }
 
-    /// <summary>
-    /// Verifies that the identity.exceptions counter is incremented by 1 with the correct exception.type tag.
-    /// </summary>
     [Fact]
     public async Task HandleException_WithException_IncrementsExceptionMetric()
     {

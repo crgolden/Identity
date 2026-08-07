@@ -4,10 +4,6 @@ using System.Text.RegularExpressions;
 using Infrastructure;
 using Microsoft.Playwright;
 
-// Covers Admin-E2E-Guide.md's IP2-IP4 scenarios (IP1 Index-loads already exists in AdminTests.cs).
-// Flat-form CRUD only -- no collection sub-pages. Route is query-string based (@page, no {id:int}
-// template) -- confirmed by reading Index/Create/Details/Edit/Delete.cshtml directly. No seed method
-// needed: Create IS the row-producing step for these scenarios.
 [Trait("Category", "E2E")]
 [Collection(E2ECollection.Name)]
 public sealed class IdentityProvidersTests(PlaywrightFixture fixture)

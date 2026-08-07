@@ -1,7 +1,7 @@
 namespace Identity.Tests.Unit.Pages.Account.Manage;
-using Infrastructure;
 
 using Identity.Pages.Account.Manage;
+using Infrastructure;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -13,20 +13,16 @@ public class ShowRecoveryCodesModelTests
     private static readonly string[] DuplicateCodes = ["code", "code"];
     private static readonly string[] EmptyWhitespaceCodes = [string.Empty, "   "];
 
-    // MemberData for invalid cases: empty array
     public static TheoryData<string[]> InvalidRecoveryCodes() => new()
     {
         Array.Empty<string>(),
     };
 
-    // MemberData for valid cases: single, duplicates, empty/whitespace codes, and a large array
     public static TheoryData<string[]> ValidRecoveryCodes() => new()
     {
         SingleCode,
         DuplicateCodes,
         EmptyWhitespaceCodes,
-
-        // Large but feasible array to exercise non-empty boundary
         CreateLargeArray(10000, "X"),
     };
 

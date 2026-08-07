@@ -1,4 +1,4 @@
-﻿namespace Identity.Pages.Account.Manage;
+namespace Identity.Pages.Account.Manage;
 
 using Extensions;
 using Microsoft.AspNetCore.Authentication;
@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-/// <summary>Page model for the External Logins management page.</summary>
 public class ExternalLoginsModel : PageModel
 {
     private readonly UserManager<IdentityUser<Guid>> _userManager;
@@ -35,8 +34,6 @@ public class ExternalLoginsModel : PageModel
     [TempData]
     public string? StatusMessage { get; set; }
 
-    /// <summary>Handles the GET request to display the external logins management page.</summary>
-    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnGetAsync()
     {
         var user = await _userManager.GetUserAsync(User);
@@ -60,10 +57,6 @@ public class ExternalLoginsModel : PageModel
         return Page();
     }
 
-    /// <summary>Handles the POST request to remove an external login from the user's account.</summary>
-    /// <param name="loginProvider">The external login provider name.</param>
-    /// <param name="providerKey">The unique key identifying the user in the external provider.</param>
-    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnPostRemoveLoginAsync(string loginProvider, string providerKey)
     {
         var user = await _userManager.GetUserAsync(User);
@@ -84,9 +77,6 @@ public class ExternalLoginsModel : PageModel
         return RedirectToPage();
     }
 
-    /// <summary>Handles the POST request to initiate linking a new external login to the user's account.</summary>
-    /// <param name="provider">The external authentication provider name.</param>
-    /// <returns>A task that resolves to a challenge result for the specified provider.</returns>
     public async Task<IActionResult> OnPostLinkLoginAsync(string provider)
     {
         await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
@@ -95,8 +85,6 @@ public class ExternalLoginsModel : PageModel
         return new ChallengeResult(provider, properties);
     }
 
-    /// <summary>Handles the GET callback from the external provider after initiating a login link.</summary>
-    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnGetLinkLoginCallbackAsync()
     {
         var user = await _userManager.GetUserAsync(User);

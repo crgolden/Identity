@@ -13,7 +13,7 @@ using Moq;
 [Trait("Category", "Unit")]
 public sealed class PasskeysModelTests
 {
-    private const string ValidCredentialId = "AQID"; // Base64Url of [1, 2, 3]
+    private const string ValidCredentialId = "AQID";
 
     [Fact]
     public void Constructor_ValidManagers_InitializesProperties()

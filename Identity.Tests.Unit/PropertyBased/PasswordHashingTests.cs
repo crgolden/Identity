@@ -1,7 +1,7 @@
 namespace Identity.Tests.Unit.PropertyBased;
-using Infrastructure;
 
 using CsCheck;
+using Infrastructure;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 
@@ -9,16 +9,12 @@ using Microsoft.Extensions.Options;
 [Trait("Category", "Unit")]
 public sealed class PasswordHashingTests
 {
-    // Use 1 PBKDF2 iteration — these tests verify API contract (round-trip, uniqueness,
-    // wrong-password rejection), not the security of the iteration count. Default 600k
-    // iterations × ~100 CsCheck samples = minutes of CPU time per test method.
     private readonly PasswordHasher<IdentityUser<Guid>> _hasher = new(
         Options.Create(new PasswordHasherOptions { IterationCount = 1 }));
 
     [Fact]
     public void HashPassword_ThenVerify_AlwaysSucceeds()
     {
-        // Generate non-empty strings up to 72 chars, a realistic UX upper bound.
         Gen.String[1, 72]
             .Sample(password =>
             {
@@ -32,8 +28,6 @@ public sealed class PasswordHashingTests
     [Fact]
     public void HashPassword_SameInput_ProducesDifferentHashesEachTime()
     {
-        // PBKDF2 uses a random salt per invocation — the same password must
-        // never produce the same hash twice.
         Gen.String[1, 72]
             .Sample(password =>
             {

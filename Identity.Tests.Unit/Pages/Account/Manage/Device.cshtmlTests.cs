@@ -97,7 +97,7 @@ public class DeviceIndexModelTests
 
         // Assert
         Assert.IsType<PageResult>(result);
-        Assert.Equal("client1", model.View.ClientName); // ClientName null → ClientId
+        Assert.Equal("client1", model.View.ClientName);
         Assert.Contains(model.View.ApiScopes, s => s.Value == "api.read");
         Assert.Contains(model.View.ApiScopes, s => s.Value == "offline_access");
     }
@@ -241,7 +241,7 @@ public class DeviceIndexModelTests
         var parsed = new[] { new ParsedScopeValue("api.read") };
         return new DeviceFlowAuthorizationRequest
         {
-            Client = new Client { ClientId = "client1" }, // ClientName null → fallback to ClientId
+            Client = new Client { ClientId = "client1" },
             ValidatedResources = new ResourceValidationResult(resources, parsed),
         };
     }

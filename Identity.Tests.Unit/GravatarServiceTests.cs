@@ -1,10 +1,10 @@
 namespace Identity.Tests.Unit;
-using Infrastructure;
 
 using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 using Identity;
+using Infrastructure;
 using Moq;
 
 [Collection(UnitCollection.Name)]
@@ -34,7 +34,7 @@ public class GravatarServiceTests
     public async Task GetAvatarUrlAsync_ProfileReturnsNullAvatarUrl_ReturnsNull()
     {
         // Arrange
-        var profile = new Profile(); // Avatar_url defaults to null
+        var profile = new Profile();
         var gravatarMock = new Mock<IGravatar>(MockBehavior.Strict);
         gravatarMock
             .Setup(g => g.GetProfileByIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -99,8 +99,8 @@ public class GravatarServiceTests
 
         // Assert
         Assert.Equal(expectedHash, capturedHash);
-        Assert.Equal(capturedHash, capturedHash.ToLowerInvariant()); // must be lowercase
-        Assert.Equal(64, capturedHash.Length); // SHA-256 = 32 bytes = 64 hex chars
+        Assert.Equal(capturedHash, capturedHash.ToLowerInvariant());
+        Assert.Equal(64, capturedHash.Length);
     }
 
     [Fact]

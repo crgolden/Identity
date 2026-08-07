@@ -4,8 +4,6 @@ using System.Text.RegularExpressions;
 using Infrastructure;
 using Microsoft.Playwright;
 
-// Same shape as ApiScopesTests.cs: standard CRUD plus the shared ClaimTypes/Properties collection
-// sub-pages. Route uses {id:int}, not a query string. All selectors are #id.
 [Trait("Category", "E2E")]
 [Collection(E2ECollection.Name)]
 public sealed class IdentityResourcesTests(PlaywrightFixture fixture)

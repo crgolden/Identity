@@ -6,22 +6,17 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
-/// <summary>Edits claims for a client.</summary>
 public class ClaimsModel : PageModel
 {
     private readonly IConfigurationDbContext _context;
 
-    /// <summary>Initializes a new instance of the <see cref="ClaimsModel"/> class.</summary>
     public ClaimsModel(IConfigurationDbContext context) => _context = context;
 
-    /// <summary>Gets the client.</summary>
     public Client Client { get; private set; } = new();
 
-    /// <summary>Gets or sets the posted claims.</summary>
     [BindProperty]
     public List<ClientClaim> Claims { get; set; } = [];
 
-    /// <summary>Loads the client with claims for editing.</summary>
     public async Task<IActionResult> OnGetAsync(int id)
     {
         var client = await _context.Clients
@@ -37,7 +32,6 @@ public class ClaimsModel : PageModel
         return Page();
     }
 
-    /// <summary>Saves the claims for the client.</summary>
     public async Task<IActionResult> OnPostAsync(int id)
     {
         if (!ModelState.IsValid)
@@ -77,7 +71,6 @@ public class ClaimsModel : PageModel
         return RedirectToPage("/Admin/Clients/Details/Claims", new { id });
     }
 
-    /// <summary>Adds a blank claim row.</summary>
     public async Task<IActionResult> OnPostAddRowAsync(int id)
     {
         var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == id);
@@ -91,7 +84,6 @@ public class ClaimsModel : PageModel
         return Page();
     }
 
-    /// <summary>Removes a claim row.</summary>
     public async Task<IActionResult> OnPostRemoveRowAsync(int id, int index)
     {
         var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == id);

@@ -493,7 +493,7 @@ public sealed class ExternalLoginModelTests
         url.Setup(u => u.Content("~/")).Returns("/");
         url.Setup(u => u.IsLocalUrl(It.IsAny<string?>())).Returns<string?>(u => u is not null && u.StartsWith('/') && !u.StartsWith("//", StringComparison.Ordinal));
         var routeData = new RouteData();
-        routeData.Values["page"] = "/Account/ExternalLogin"; // needed so relative page paths (./ExternalLogin) resolve
+        routeData.Values["page"] = "/Account/ExternalLogin";
         url.SetupGet(u => u.ActionContext).Returns(new ActionContext(new DefaultHttpContext(), routeData, new ActionDescriptor()));
         url.Setup(u => u.RouteUrl(It.IsAny<UrlRouteContext>())).Returns("https://example/confirm");
 

@@ -1,10 +1,9 @@
-﻿namespace Identity.Pages.Account.Manage;
+namespace Identity.Pages.Account.Manage;
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-/// <summary>Page model for the Two-Factor Authentication management page.</summary>
 public class TwoFactorAuthenticationModel : PageModel
 {
     private readonly UserManager<IdentityUser<Guid>> _userManager;
@@ -30,8 +29,6 @@ public class TwoFactorAuthenticationModel : PageModel
     [TempData]
     public string? StatusMessage { get; set; }
 
-    /// <summary>Handles the GET request to display the two-factor authentication management page.</summary>
-    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnGetAsync()
     {
         var user = await _userManager.GetUserAsync(User);
@@ -47,8 +44,6 @@ public class TwoFactorAuthenticationModel : PageModel
         return Page();
     }
 
-    /// <summary>Handles the POST request to forget the current browser for two-factor authentication.</summary>
-    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnPostAsync()
     {
         var user = await _userManager.GetUserAsync(User);

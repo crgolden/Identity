@@ -1,8 +1,8 @@
 namespace Identity.Tests.Unit.Pages.Account.Manage;
-using Infrastructure;
 
 using System.Security.Claims;
 using Identity.Pages.Account.Manage;
+using Infrastructure;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -19,40 +19,19 @@ public class ManageIndexModelTests
 {
     public static TheoryData<string?, string?> ValidUserData() => new()
     {
-        // Typical values
         { "normalUser", "+1234567890" },
-
-        // Empty strings
         { string.Empty, string.Empty },
-
-        // Whitespace and special unicode
         { "   ", "??-?est" },
-
-        // Very long username and null phone number
         { new string('a', 500), null },
     };
 
     public static TheoryData<string?, string?, bool, bool, bool, string> PhoneUpdateCases() => new()
     {
-        // existingPhone, inputPhone, setSucceeds, expectSetCall, expectRefreshCall, expectedStatusMessage
-        // SetPhoneNumberAsync is only called when both phones are non-null/non-whitespace AND different.
-
-        // 1) Both null -> condition short-circuits, no set, refresh occurs, success message
         { null, null, false, false, true, "Your profile has been updated" },
-
-        // 2) Same non-null phone -> third condition false, no set, refresh occurs, success message
         { "123", "123", false, false, true, "Your profile has been updated" },
-
-        // 3) Changed phone -> set succeeds -> refresh occurs, success message
         { "123", "456", true, true, true, "Your profile has been updated" },
-
-        // 4) Changed phone -> set fails -> no refresh, unexpected error message, still redirects
         { "123", "456", false, true, false, "Unexpected error when trying to set phone number." },
-
-        // 5) existing not null, input null -> input is whitespace, condition short-circuits, no set, refresh
         { "123", null, false, false, true, "Your profile has been updated" },
-
-        // 6) existing null, input empty -> existing is whitespace, condition short-circuits, no set, refresh
         { null, string.Empty, false, false, true, "Your profile has been updated" },
     };
 
@@ -63,7 +42,6 @@ public class ManageIndexModelTests
         var userManagerMock = MockHelpers.MockUserManager();
         var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
 
-        // Configure to return null user and a known id for GetUserId
         const string expectedId = "expected-id-123";
         userManagerMock.Setup(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync((IdentityUser<Guid>?)null);
         userManagerMock.Setup(u => u.GetUserId(It.IsAny<ClaimsPrincipal>())).Returns(expectedId);
@@ -102,9 +80,6 @@ public class ManageIndexModelTests
         Assert.Equal(returnedUserName, model.Username);
         Assert.NotNull(model.Input);
         Assert.Equal(returnedPhoneNumber, model.Input.PhoneNumber);
-
-        // Verify that LoadAsync invoked user manager calls (indirectly validated by above assertions),
-        // but also verify explicit calls to ensure behavior.
         userManagerMock.Verify(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>()), Times.Once);
         userManagerMock.Verify(u => u.GetUserNameAsync(user), Times.Once);
         userManagerMock.Verify(u => u.GetPhoneNumberAsync(user), Times.Once);
@@ -127,8 +102,6 @@ public class ManageIndexModelTests
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
         Assert.Contains(expectedUserId, notFound.Value?.ToString() ?? string.Empty);
-
-        // Ensure no sign-in or phone update calls occurred
         signInManagerMock.Verify(s => s.RefreshSignInAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
         userManagerMock.Verify(u => u.SetPhoneNumberAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>()), Times.Never);
     }
@@ -145,11 +118,7 @@ public class ManageIndexModelTests
         };
         userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
         var page = new IndexModel(userManagerMock.Object, signInManagerMock.Object);
-
-        // Make model state invalid
         page.ModelState.AddModelError("Input.PhoneNumber", "Invalid phone");
-
-        // Provide an Input to exercise the branch but it should not be used beyond LoadAsync
         page.Input = new IndexModel.InputModel
         {
             PhoneNumber = "000"

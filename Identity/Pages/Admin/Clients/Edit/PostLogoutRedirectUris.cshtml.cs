@@ -6,22 +6,17 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
-/// <summary>Edits post-logout redirect URIs for a client.</summary>
 public class PostLogoutRedirectUrisModel : PageModel
 {
     private readonly IConfigurationDbContext _context;
 
-    /// <summary>Initializes a new instance of the <see cref="PostLogoutRedirectUrisModel"/> class.</summary>
     public PostLogoutRedirectUrisModel(IConfigurationDbContext context) => _context = context;
 
-    /// <summary>Gets the client.</summary>
     public Client Client { get; private set; } = new();
 
-    /// <summary>Gets or sets the posted post-logout redirect URIs.</summary>
     [BindProperty]
     public List<ClientPostLogoutRedirectUri> PostLogoutRedirectUris { get; set; } = [];
 
-    /// <summary>Loads the client with post-logout redirect URIs for editing.</summary>
     public async Task<IActionResult> OnGetAsync(int id)
     {
         var client = await _context.Clients
@@ -37,7 +32,6 @@ public class PostLogoutRedirectUrisModel : PageModel
         return Page();
     }
 
-    /// <summary>Saves the post-logout redirect URIs for the client.</summary>
     public async Task<IActionResult> OnPostAsync(int id)
     {
         if (!ModelState.IsValid)
@@ -76,7 +70,6 @@ public class PostLogoutRedirectUrisModel : PageModel
         return RedirectToPage("/Admin/Clients/Details/PostLogoutRedirectUris", new { id });
     }
 
-    /// <summary>Adds a blank post-logout redirect URI row.</summary>
     public async Task<IActionResult> OnPostAddRowAsync(int id)
     {
         var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == id);
@@ -90,7 +83,6 @@ public class PostLogoutRedirectUrisModel : PageModel
         return Page();
     }
 
-    /// <summary>Removes a post-logout redirect URI row.</summary>
     public async Task<IActionResult> OnPostRemoveRowAsync(int id, int index)
     {
         var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == id);

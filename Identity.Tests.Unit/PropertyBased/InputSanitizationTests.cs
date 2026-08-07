@@ -1,9 +1,9 @@
 namespace Identity.Tests.Unit.PropertyBased;
-using Infrastructure;
 
 using System.Security.Cryptography;
 using System.Text;
 using CsCheck;
+using Infrastructure;
 
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
@@ -47,10 +47,8 @@ public sealed class InputSanitizationTests
     [Fact]
     public void GravatarHash_EmailNormalization_CaseInsensitive()
     {
-        // The Gravatar spec mandates trimming and lowercasing before hashing.
-        // Verify the hash is the same regardless of the email's case.
         Gen.String[1, 50]
-            .Select(s => s.Replace('\0', 'a').Trim()) // avoid control chars
+            .Select(s => s.Replace('\0', 'a').Trim())
             .Where(s => s.Length > 0)
             .Sample(input =>
             {
@@ -90,7 +88,6 @@ public sealed class InputSanitizationTests
     public void LocalUrl_IsLocalUrl(string url) =>
         Assert.True(IsLocalUrl(url), $"URL '{url}' should be local.");
 
-    // Mirrors the implementation in GravatarService to test it as a pure function.
     private static string ComputeGravatarHash(string identifier)
     {
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(identifier.Trim().ToLowerInvariant()));
@@ -104,14 +101,12 @@ public sealed class InputSanitizationTests
             return false;
         }
 
-        // Allows "/" or "~/" but not "//" or "/ "
         if (url[0] == '/')
         {
             return url.Length == 1
                 || (url[1] != '/' && url[1] != '\\');
         }
 
-        // Allows "~/"
         if (url[0] == '~' && url.Length > 1 && url[1] == '/')
         {
             return true;

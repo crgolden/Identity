@@ -1,10 +1,10 @@
 namespace Identity.Tests.Unit.Pages.Account;
-using Infrastructure;
 
 using System.Security.Claims;
 using Duende.IdentityServer.Models;
 using Duende.IdentityServer.Services;
 using Identity.Pages.Account;
+using Infrastructure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;

@@ -1,8 +1,8 @@
 namespace Identity.Tests.Unit.Pages.Account;
-using Infrastructure;
 
 using Azure.Messaging.ServiceBus;
 using Identity.Pages.Account;
+using Infrastructure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -36,8 +36,6 @@ public class ResendEmailConfirmationModelTests
         };
 
         model.PageContext = new PageContext { HttpContext = new DefaultHttpContext() };
-
-        // Mark model state invalid
         model.ModelState.AddModelError("someKey", "some error");
 
         // Act

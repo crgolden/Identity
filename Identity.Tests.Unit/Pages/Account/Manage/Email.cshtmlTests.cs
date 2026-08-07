@@ -1,10 +1,10 @@
 namespace Identity.Tests.Unit.Pages.Account.Manage;
-using Infrastructure;
 
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using Azure.Messaging.ServiceBus;
 using Identity.Pages.Account.Manage;
+using Infrastructure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -78,7 +78,6 @@ public class EmailModelTests
             }
         };
 
-        // Make ModelState invalid
         model.ModelState.AddModelError("Input.NewEmail", "Required");
 
         // Act
@@ -86,8 +85,6 @@ public class EmailModelTests
 
         // Assert
         Assert.IsType<PageResult>(result);
-
-        // Ensure no email was attempted to be sent
         senderMock.Verify(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -115,8 +112,6 @@ public class EmailModelTests
 
         const string fixedCallbackUrl = "https://example.test/Account/ConfirmEmail?userId=the-user-id&code=abc";
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
-
-        // ActionContext must be non-null because UrlHelperExtensions.Page always accesses it
         var urlRouteData = new RouteData();
         urlRouteData.Values["page"] = "/Account/Manage/Email";
         urlHelperMock.SetupGet(u => u.ActionContext).Returns(
@@ -147,7 +142,6 @@ public class EmailModelTests
             Url = urlHelperMock.Object
         };
 
-        // Ensure request scheme is set for Url.Page usage
         model.PageContext.HttpContext.Request.Scheme = "https";
 
         // Act
@@ -162,8 +156,6 @@ public class EmailModelTests
         Assert.NotNull(capturedMessage);
         Assert.Equal("Confirm your email", capturedMessage.Subject);
         Assert.Equal(returnedEmail, capturedMessage.To);
-
-        // The body should contain the encoded callback url
         var capturedBody = capturedMessage.Body.ToString();
         var expectedEncodedUrl = HtmlEncoder.Default.Encode(fixedCallbackUrl);
         Assert.Contains(expectedEncodedUrl, capturedBody);
@@ -202,8 +194,6 @@ public class EmailModelTests
         // Assert
         Assert.NotNull(model1);
         Assert.NotNull(model2);
-
-        // Default public state assertions for both instances
         Assert.Null(model1.Email);
         Assert.False(model1.IsEmailConfirmed);
         Assert.Null(model1.StatusMessage);
@@ -220,20 +210,15 @@ public class EmailModelTests
     {
         // Arrange
         var userManagerMock = MockHelpers.MockUserManager();
-
-        // Make GetUserAsync return null to simulate missing user.
         userManagerMock
             .Setup(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
             .ReturnsAsync((IdentityUser<Guid>?)null);
-
-        // Ensure GetUserId returns a specific id used in the NotFound message.
         userManagerMock
             .Setup(u => u.GetUserId(It.IsAny<ClaimsPrincipal>()))
             .Returns("missing-user-id");
 
         var model = new EmailModel(userManagerMock.Object, CreateSenderFactory())
         {
-            // Ensure PageContext is available (PageModel may access Request, Url etc. but not needed here)
             PageContext = new PageContext { HttpContext = new DefaultHttpContext() }
         };
 
@@ -245,7 +230,6 @@ public class EmailModelTests
         Assert.Contains("Unable to load user with ID 'missing-user-id'", notFound.Value?.ToString() ?? string.Empty);
     }
 
-    // Helper methods to create minimal mocks/instances needed for constructor invocation.
     private static IAzureClientFactory<ServiceBusClient> CreateSenderFactory()
     {
         var senderMock = new Mock<ServiceBusSender>(MockBehavior.Strict);

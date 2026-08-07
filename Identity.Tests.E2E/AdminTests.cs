@@ -69,11 +69,6 @@ public sealed class AdminTests(PlaywrightFixture fixture)
         await using (context)
         {
             await page.GotoAsync("/Admin");
-
-            // Exact path check, not a substring match: "/Identity/Account/Login" (the
-            // scaffolded Identity UI's login page) also contains "/Account/Login" as a
-            // substring, so a Contains() assertion here would pass even when the auth
-            // challenge lands on the wrong, unbranded page.
             Assert.Equal("/Account/Login", new Uri(page.Url).AbsolutePath);
         }
     }
@@ -157,12 +152,6 @@ public sealed class AdminTests(PlaywrightFixture fixture)
     [Fact]
     public async Task Admin_Clients_Edit_Loads()
     {
-        // Regression coverage: the Edit page previously 500'd on every request because
-        // Client.CoordinateLifetimeWithUserSession is bool? on the Duende entity, and
-        // asp-for cannot bind a checkbox <input> directly to a nullable bool. The prior
-        // "Details_Shows_Edit_And_Delete" test only checked the *button* was visible on
-        // the Details page — it never actually navigated into Edit, so it never rendered
-        // the view and never caught this.
         var (email, password) = await fixture.CreateAdminUserAsync();
         var clientDbId = await fixture.SeedClientAsync();
 

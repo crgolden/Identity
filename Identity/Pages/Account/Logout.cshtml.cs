@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-/// <summary>Page model for the Logout page.</summary>
 [AllowAnonymous]
 public class LogoutModel : PageModel
 {
@@ -23,18 +22,12 @@ public class LogoutModel : PageModel
         _interactionService = interactionService;
     }
 
-    /// <summary>Gets the post-logout redirect URI supplied by the client, if any.</summary>
     public string? PostLogoutRedirectUri { get; private set; }
 
-    /// <summary>Gets the front-channel sign-out iframe URL for notifying other clients, if any.</summary>
     public string? SignOutIFrameUrl { get; private set; }
 
-    /// <summary>Gets a value indicating whether the logout confirmation prompt should be shown.</summary>
     public bool ShowLogoutPrompt { get; private set; }
 
-    /// <summary>Handles the GET request. Shows a confirmation prompt if the user is still authenticated.</summary>
-    /// <param name="logoutId">The IdentityServer logout identifier, if initiated by a client.</param>
-    /// <returns>A task that resolves to the page result.</returns>
     public async Task<IActionResult> OnGetAsync(string? logoutId = null)
     {
         if (User.Identity?.IsAuthenticated ?? false)
@@ -47,9 +40,6 @@ public class LogoutModel : PageModel
         return Page();
     }
 
-    /// <summary>Handles the POST request to sign out the current user.</summary>
-    /// <param name="logoutId">The IdentityServer logout identifier, if initiated by a client.</param>
-    /// <returns>A task that resolves to a redirect back to this page, so the follow-up GET reflects the cleared auth cookie.</returns>
     public async Task<IActionResult> OnPostAsync(string? logoutId = null)
     {
         await _signInManager.SignOutAsync();

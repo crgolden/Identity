@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Azure;
 
-/// <summary>Page model for the Forgot Password page.</summary>
 [AllowAnonymous]
 public class ForgotPasswordModel : PageModel
 {
@@ -28,8 +27,6 @@ public class ForgotPasswordModel : PageModel
     [BindProperty]
     public InputModel Input { get; set; } = new InputModel();
 
-    /// <summary>Handles the POST request to send a password reset email.</summary>
-    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnPostAsync()
     {
         if (!ModelState.IsValid || IsNullOrWhiteSpace(Input.Email))
@@ -68,7 +65,6 @@ public class ForgotPasswordModel : PageModel
         return RedirectToPage("./ForgotPasswordConfirmation");
     }
 
-    /// <summary>Provides the form input values bound from the request.</summary>
     public class InputModel
     {
         [Required]

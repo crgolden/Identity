@@ -93,7 +93,7 @@ public class ConsentIndexModelTests
 
         // Assert
         Assert.IsType<PageResult>(result);
-        Assert.Equal("client1", model.View.ClientName); // ClientName null → falls back to ClientId
+        Assert.Equal("client1", model.View.ClientName);
         Assert.Contains(model.View.ApiScopes, s => s.Value == "api.read");
         Assert.Contains(model.View.ApiScopes, s => s.Resources.Any(r => r.DisplayName == "API One"));
         Assert.Contains(model.View.ApiScopes, s => s.Value == "offline_access");
@@ -273,7 +273,7 @@ public class ConsentIndexModelTests
         var parsed = new[] { new ParsedScopeValue("api.read", "api.read", "tenant1") };
         var request = new AuthorizationRequest
         {
-            Client = new Client { ClientId = "client1" }, // ClientName null → fallback to ClientId
+            Client = new Client { ClientId = "client1" },
             ValidatedResources = new ResourceValidationResult(resources, parsed),
         };
         request.Parameters.Add(OidcConstants.AuthorizeRequest.Resource, "api1");

@@ -53,9 +53,11 @@ cmd /c "Identity.Tests.E2E\bin\Debug\net10.0\Identity.Tests.E2E.exe -trait ""Cat
 - **`Identity.Tests.E2E` — Smoke** — post-deploy smoke tests (`Category=Smoke`, `AccountSmokeTests`) run against the live deployed site
 
 **Test infrastructure**
-- **`IdentityWebApplicationFactory`** (extends `WebApplicationFactory<Program>`) — starts a real Kestrel HTTPS server on a random port for Playwright; replaces `IAzureClientFactory<ServiceBusClient>` with `TestServiceBusClientFactory` (captures sent email via `EmailCaptureSender` instead of calling Azure Service Bus); replaces `IAvatarService` with `NullAvatarService` (no real Gravatar HTTP calls); in Development, replaces the Serilog `ILoggerFactory` with a console logger (avoids an Elasticsearch connection at startup).
-- **`PlaywrightFixture`** (xUnit `IAsyncLifetime`) — installs Chromium on first run, warms up the server, provides `NewPageAsync()` per test, and in CI cleans up the test database after the suite.
+- **`IdentityWebApplicationFactory`** (extends `WebApplicationFactory<Program>`) — starts a real Kestrel HTTPS server on a random port for Playwright; replaces `IAzureClientFactory<ServiceBusClient>` with `TestServiceBusClientFactory` (captures sent email via `EmailCaptureSender` instead of calling Azure Service Bus); replaces `IAvatarService` with `NullAvatarService` (no real Gravatar HTTP calls); replaces `ICAPTCHAService` with an always-pass stub (no real Google reCAPTCHA calls); reduces the password hasher's PBKDF2 iteration count to 1 (default 600k iterations is CPU-prohibitive across a whole suite of logins); in Development, replaces the Serilog `ILoggerFactory` with a console logger (avoids an Elasticsearch connection at startup); ignores background-service exceptions (IdentityServer key refresh, token cleanup) so a transient one can't tear down the Kestrel host mid-run.
+- **`PlaywrightFixture`** (xUnit `IAsyncLifetime`) — installs Chromium on first run, warms up the server, provides `NewPageAsync()` per test, pre-creates a confirmed user for tests that only need an authenticated session (`GrantsTests`, `ServerSideSessionsTests`), stubs client-side `grecaptcha` so form submissions are synchronous, and in CI cleans up the test database after the suite.
 - Test collections run serially (`parallelizeTestCollections: false` in `xunit.runner.json`, `Identity.Tests.E2E` only) to prevent `WebApplicationFactory` startup from timing out Key Vault calls when the thread pool is saturated.
+- Tests that drive `/connect/authorize` against a client with a fake `redirect_uri` (e.g. `https://localhost:9999/callback` — nothing listens there) must capture the final redirect from the browser's own `Request` event via `page.RunAndWaitForRequestAsync(...)` *before* triggering the click that causes it, rather than awaiting navigation afterward — by the time a post-navigation wait would resolve, the browser has already failed the connection to the fake host (`ERR_CONNECTION_REFUSED`) and the URL is unavailable. The same before-not-after ordering applies to `page.WaitForResponseAsync(...)`: register the listener before the click that triggers the POST, or a fast response can complete before the listener attaches.
+- `page.WaitForURLAsync(...)` can miss a navigation that completes before the listener registers (common right after a form POST that renders in place, e.g. 2FA setup/reset flows). Prefer polling for a DOM element that only appears on the destination page (`Assertions.Expect(page.Locator(...)).ToBeVisibleAsync(...)`) over `WaitForURLAsync` in those spots.
 
 **Coverage legend**
 | Symbol | Meaning |
@@ -790,6 +792,8 @@ flowchart TD
 | Gravatar — SHA-256 hash casing | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_AlwaysHashesEmailToSha256Lowercase` |
 | Gravatar — cancellation | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_PassesCancellationToken` |
 
+`IndexModel.OnPostAsync` only calls `SetPhoneNumberAsync` when the existing and submitted phone numbers are both non-null/non-whitespace *and* different from each other; `OnPostAsync_PhoneUpdateScenarios` (`Manage/Index.cshtmlTests.cs`, via `PhoneUpdateCases`) covers all six combinations of that condition against `existingPhone`/`inputPhone`/`setSucceeds`/`expectSetCall`/`expectRefreshCall`/`expectedStatusMessage`.
+
 ---
 
 ## 9. Account Management — Email Change
@@ -1258,6 +1262,8 @@ These tests use Playwright to verify that all login paths reject attacker-contro
 - `LoginWithRecoveryCode.cshtml.cs` — recovery code sign-in
 - `ExternalLogin.cshtml.cs` — external provider callback + new-user confirmation
 
+`Identity.Tests.E2E/Security/ConcurrentLockoutTests.cs` fires 10 concurrent wrong-password login attempts — more than the 5-attempt lockout threshold — because a race on the failure counter's increment means fewer attempts aren't reliably guaranteed to trip it. The verification step then accepts either `/Account/Lockout` or `/Account/Login` as the resulting URL: the test's purpose is confirming the server stays healthy and throws no unhandled exception under concurrent load, not pinning down which of the two valid outcomes the race resolves to.
+
 ---
 
 ## 18. Coverage Summary Matrix
@@ -1381,6 +1387,8 @@ Load tests use `Parallel.ForEachAsync` + `HttpClient` (self-signed cert ignored)
 | `PasswordHashingTests.cs` | Verifies `PasswordHasher<IdentityUser<Guid>>` round-trips any valid password (up to 72 bytes), rejects tampered hashes, and produces consistent results across instances |
 | `InputSanitizationTests.cs` | Verifies Gravatar hash is lowercase hex for arbitrary email strings; verifies email sender passes through arbitrary subjects/bodies unchanged |
 
+`PasswordHashingTests` builds its `PasswordHasher<IdentityUser<Guid>>` with `IterationCount = 1` instead of the ASP.NET Core Identity default (600,000): these tests verify the API contract (round-trip, uniqueness, wrong-password rejection), not the strength of the iteration count, and 600k iterations × ~100 CsCheck samples per test method would cost minutes of CPU time per run. `Identity.Tests.E2E`'s `IdentityWebApplicationFactory` makes the same iteration-count reduction for the same reason (avoiding a real per-login hashing cost across the whole E2E suite).
+
 ### Resilience Tests (`Identity.Tests.Unit/Resilience/`)
 
 `[Trait("Category", "Unit")]` — run with the normal unit test suite.
@@ -1419,9 +1427,15 @@ The CI `mutation` job runs on schedule (Monday 02:00 UTC) and on manual dispatch
 
 All pages under `Identity/Pages/Admin/` are unit-tested. E2E tests (`Category=E2E`) are in `Identity.Tests.E2E/AdminTests.cs` and require the `PlaywrightFixture` with seeded IS configuration entities and an admin-role user.
 
+`AdminTests.cs`'s unauthenticated-redirect assertions (`Admin_Unauthenticated_Redirects_To_Login`, `Manage_Unauthenticated_Redirects_To_Login`) compare `new Uri(page.Url).AbsolutePath` for exact equality against `/Account/Login`, not with `Contains`: a substring check would also pass if the challenge ever landed on `/Identity/Account/Login` (the ASP.NET Core Identity scaffolded UI's own login route), silently masking a `.AddDefaultUI()` regression instead of catching it (see [ARCHITECTURE.md](ARCHITECTURE.md) for why `.AddDefaultUI()` must stay out of the `AddIdentity<...>()` chain).
+
+`Admin_Clients_Edit_Loads` exists because `Admin_Clients_Details_Shows_Edit_And_Delete` only checks that the Edit *button* is visible on the Details page — it never navigates into Edit itself. That gap let a real regression through: `Client.CoordinateLifetimeWithUserSession` is `bool?` on the Duende entity, and `asp-for` cannot bind a checkbox `<input>` directly to a nullable `bool`, so the Edit page 500'd on every request until a dedicated test actually rendered it.
+
+Secrets (on Clients and API Resources) are write-only once stored — the Edit form never redisplays a previously saved `Value`. The `Secrets_Add_Persists` E2E tests assert the `Description`/`Type` that Details *does* echo back, never the raw `Value`.
+
 ### ID convention
 
-Every interactive element on admin pages carries a unique `id` attribute so E2E tests can select by `#id` without fragile selectors. Pattern:
+The fleet-wide rule (why positional/class selectors are banned, how loop indices are used, and the one model-bound-input exception) now lives in the workspace-level [AGENTS/TESTING.md](../AGENTS/TESTING.md#e2e-selector-strategy--select-by-id-never-by-position) so every Playwright repo sees it, not just this one. What follows is Identity's own admin-page id table, which that rule points back to:
 
 | Element | `id` |
 |---|---|

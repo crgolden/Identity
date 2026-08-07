@@ -1,8 +1,8 @@
 namespace Identity.Tests.Unit.Pages.Account.Manage;
-using Infrastructure;
 
 using System.Security.Claims;
 using Identity.Pages.Account.Manage;
+using Infrastructure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -145,21 +145,16 @@ public class GenerateRecoveryCodesModelTests
     {
         // Arrange
         var userManagerMock = MockHelpers.MockUserManager();
-
-        // Simulate no user found
         userManagerMock
             .Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
             .ReturnsAsync((IdentityUser<Guid>?)null);
 
-        // Ensure GetUserId returns a specific id used in the NotFound message
         const string expectedId = "expected-user-id";
         userManagerMock
             .Setup(um => um.GetUserId(It.IsAny<ClaimsPrincipal>()))
             .Returns(expectedId);
 
         var model = new GenerateRecoveryCodesModel(userManagerMock.Object);
-
-        // Provide a ClaimsPrincipal for completeness
         model.PageContext = new PageContext
         {
             HttpContext = new DefaultHttpContext
@@ -197,8 +192,6 @@ public class GenerateRecoveryCodesModelTests
             .ReturnsAsync(isTwoFactorEnabled);
 
         var model = new GenerateRecoveryCodesModel(userManagerMock.Object);
-
-        // Provide a simple ClaimsPrincipal (not relied upon by mocked methods, but realistic)
         model.PageContext = new PageContext
         {
             HttpContext = new DefaultHttpContext

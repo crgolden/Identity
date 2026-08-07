@@ -6,22 +6,17 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
-/// <summary>Edits identity provider restrictions for a client.</summary>
 public class IdPRestrictionsModel : PageModel
 {
     private readonly IConfigurationDbContext _context;
 
-    /// <summary>Initializes a new instance of the <see cref="IdPRestrictionsModel"/> class.</summary>
     public IdPRestrictionsModel(IConfigurationDbContext context) => _context = context;
 
-    /// <summary>Gets the client.</summary>
     public Client Client { get; private set; } = new();
 
-    /// <summary>Gets or sets the posted IdP restrictions.</summary>
     [BindProperty]
     public List<ClientIdPRestriction> IdPRestrictions { get; set; } = [];
 
-    /// <summary>Loads the client with IdP restrictions for editing.</summary>
     public async Task<IActionResult> OnGetAsync(int id)
     {
         var client = await _context.Clients
@@ -37,7 +32,6 @@ public class IdPRestrictionsModel : PageModel
         return Page();
     }
 
-    /// <summary>Saves the IdP restrictions for the client.</summary>
     public async Task<IActionResult> OnPostAsync(int id)
     {
         if (!ModelState.IsValid)
@@ -76,7 +70,6 @@ public class IdPRestrictionsModel : PageModel
         return RedirectToPage("/Admin/Clients/Details/IdPRestrictions", new { id });
     }
 
-    /// <summary>Adds a blank IdP restriction row.</summary>
     public async Task<IActionResult> OnPostAddRowAsync(int id)
     {
         var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == id);
@@ -90,7 +83,6 @@ public class IdPRestrictionsModel : PageModel
         return Page();
     }
 
-    /// <summary>Removes an IdP restriction row.</summary>
     public async Task<IActionResult> OnPostRemoveRowAsync(int id, int index)
     {
         var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == id);

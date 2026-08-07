@@ -33,7 +33,6 @@ public sealed class ExternalLoginTests(PlaywrightFixture fixture)
             await page.GotoAsync("/Account/Login");
             await page.ClickAsync("#external-login-button-GoogleOpenIdConnect");
 
-            // email_verified=true skips the confirmation-email round trip entirely.
             await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
             Assert.DoesNotContain("/Account/RegisterConfirmation", page.Url, StringComparison.Ordinal);
         }
@@ -45,10 +44,6 @@ public sealed class ExternalLoginTests(PlaywrightFixture fixture)
         Assert.True(user.EmailConfirmed);
 
         var claims = await userManager.GetClaimsAsync(user);
-
-        // Google's sub is not persisted as a UserClaim — it already lives in AspNetUserLogins.ProviderKey,
-        // and storing it again under ClaimTypes.NameIdentifier would collide with the claim type
-        // UserClaimsPrincipalFactory uses for the user's own ID.
         Assert.DoesNotContain(claims, c => c.Type == ClaimTypes.NameIdentifier);
         Assert.Contains(claims, c => c.Type == ClaimTypes.Email && c.Value == email);
         Assert.Contains(claims, c => c.Type == "email_verified" && c.Value == "true");
@@ -113,7 +108,6 @@ public sealed class ExternalLoginTests(PlaywrightFixture fixture)
             Assert.Contains("External Logins", body, StringComparison.Ordinal);
         }
 
-        // No second account was created for the same email, and Google was not linked to the existing one.
         await using var scope = fixture.Factory.Services.CreateAsyncScope();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser<Guid>>>();
         var user = await userManager.FindByEmailAsync(email);
@@ -132,9 +126,6 @@ public sealed class ExternalLoginTests(PlaywrightFixture fixture)
             var seedUserManager = seedScope.ServiceProvider.GetRequiredService<UserManager<IdentityUser<Guid>>>();
             var seedUser = await seedUserManager.FindByEmailAsync(email);
             Assert.NotNull(seedUser);
-
-            // Pre-existing claim: must survive the link untouched, even though Google will present
-            // a different value for the same claim type.
             await seedUserManager.AddClaimAsync(seedUser, new Claim(ClaimTypes.GivenName, "PreExistingGivenName"));
         }
 
@@ -152,8 +143,8 @@ public sealed class ExternalLoginTests(PlaywrightFixture fixture)
                 Sub = Guid.NewGuid().ToString(),
                 Email = email,
                 EmailVerified = true,
-                GivenName = "GoogleGivenName", // same claim type as the pre-existing one — must NOT overwrite
-                Surname = "GoogleSurname" // new claim type — should be added
+                GivenName = "GoogleGivenName",
+                Surname = "GoogleSurname"
             });
 
             await page.GotoAsync("/Account/Manage/ExternalLogins");

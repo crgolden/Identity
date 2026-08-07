@@ -4,9 +4,6 @@ using System.Text.RegularExpressions;
 using Infrastructure;
 using Microsoft.Playwright;
 
-// Covers Admin-E2E-Guide.md's AS1-AS3 scenarios: standard CRUD plus the ClaimTypes and Properties
-// collection sub-pages (shared _EditClaimTypesForm.cshtml / _EditPropertiesForm.cshtml partials, same
-// as ApiResources/IdentityResources). Route uses {id:int}, not a query string. All selectors are #id.
 [Trait("Category", "E2E")]
 [Collection(E2ECollection.Name)]
 public sealed class ApiScopesTests(PlaywrightFixture fixture)

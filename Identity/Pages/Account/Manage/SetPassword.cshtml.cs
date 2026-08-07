@@ -1,11 +1,10 @@
-﻿namespace Identity.Pages.Account.Manage;
+namespace Identity.Pages.Account.Manage;
 
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-/// <summary>Page model for the Set Password page.</summary>
 public class SetPasswordModel : PageModel
 {
     private readonly UserManager<IdentityUser<Guid>> _userManager;
@@ -27,8 +26,6 @@ public class SetPasswordModel : PageModel
     [TempData]
     public string? StatusMessage { get; set; }
 
-    /// <summary>Handles the GET request to display the set password form.</summary>
-    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnGetAsync()
     {
         var user = await _userManager.GetUserAsync(User);
@@ -46,8 +43,6 @@ public class SetPasswordModel : PageModel
         return Page();
     }
 
-    /// <summary>Handles the POST request to set a password for accounts that only have external logins.</summary>
-    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnPostAsync()
     {
         if (!ModelState.IsValid || IsNullOrWhiteSpace(Input?.NewPassword))
@@ -77,7 +72,6 @@ public class SetPasswordModel : PageModel
         return RedirectToPage();
     }
 
-    /// <summary>Provides the form input values bound from the request.</summary>
     public class InputModel
     {
         [Required]

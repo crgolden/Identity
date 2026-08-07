@@ -1,10 +1,9 @@
-﻿namespace Identity.Pages.Account.Manage;
+namespace Identity.Pages.Account.Manage;
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-/// <summary>Page model for the Personal Data page.</summary>
 public class PersonalDataModel : PageModel
 {
     private readonly UserManager<IdentityUser<Guid>> _userManager;
@@ -14,8 +13,6 @@ public class PersonalDataModel : PageModel
         _userManager = userManager;
     }
 
-    /// <summary>Handles the GET request to display the personal data page.</summary>
-    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnGet()
     {
         var user = await _userManager.GetUserAsync(User);

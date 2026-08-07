@@ -1,7 +1,7 @@
 namespace Identity.Tests.Unit.Pages.Account.Manage;
-using Infrastructure;
 
 using Identity.Pages.Account.Manage;
+using Infrastructure;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 [Collection(UnitCollection.Name)]

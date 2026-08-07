@@ -1,8 +1,7 @@
-﻿namespace Identity;
+namespace Identity;
 
 using System.Security.Cryptography;
 
-/// <summary>Gravatar-backed implementation of <see cref="IAvatarService"/>.</summary>
 public class GravatarService : IAvatarService
 {
     private readonly IGravatar _gravatar;
@@ -12,7 +11,6 @@ public class GravatarService : IAvatarService
         _gravatar = gravatar;
     }
 
-    /// <inheritdoc/>
     public async Task<Uri?> GetAvatarUrlAsync(string profileIdentifier, CancellationToken cancellationToken = default)
     {
         var source = UTF8.GetBytes(profileIdentifier);

@@ -9,7 +9,6 @@ using Filters;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-/// <summary>Page model for the OAuth2 consent screen shown when a client requests authorization.</summary>
 [Authorize]
 [SecurityHeaders]
 public class ConsentModel : ConsentPageModelBase
@@ -25,13 +24,9 @@ public class ConsentModel : ConsentPageModelBase
         _events = events;
     }
 
-    /// <summary>Gets or sets the bound input model from the consent form POST.</summary>
     [BindProperty]
     public InputModel Input { get; set; } = new InputModel();
 
-    /// <summary>Handles the GET request to display the consent form.</summary>
-    /// <param name="returnUrl">The authorization return URL identifying the pending request.</param>
-    /// <returns>A task resolving to the page result, or a redirect to the error page on invalid state.</returns>
     public async Task<IActionResult> OnGetAsync(string? returnUrl)
     {
         if (!await SetViewModelAsync(returnUrl))
@@ -43,8 +38,6 @@ public class ConsentModel : ConsentPageModelBase
         return Page();
     }
 
-    /// <summary>Handles the POST request when the user submits the consent form.</summary>
-    /// <returns>A task resolving to a redirect after processing the consent decision.</returns>
     public async Task<IActionResult> OnPostAsync()
     {
         var request = await _interaction.GetAuthorizationContextAsync(Input.ReturnUrl, HttpContext.RequestAborted);
@@ -204,22 +197,16 @@ public class ConsentModel : ConsentPageModelBase
         return vm;
     }
 
-    /// <summary>Input model bound from the consent form POST.</summary>
     public class InputModel
     {
-        /// <summary>Gets or sets the button clicked by the user ("yes" or "no").</summary>
         public string Button { get; set; } = Empty;
 
-        /// <summary>Gets or sets the scope values the user selected.</summary>
         public List<string> ScopesConsented { get; set; } = [];
 
-        /// <summary>Gets or sets a value indicating whether the user chose to remember their consent decision.</summary>
         public bool RememberConsent { get; set; }
 
-        /// <summary>Gets or sets the authorization return URL.</summary>
         public string? ReturnUrl { get; set; }
 
-        /// <summary>Gets or sets an optional description or device name provided by the user.</summary>
         public string? Description { get; set; }
     }
 }

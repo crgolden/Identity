@@ -1,8 +1,8 @@
 namespace Identity.Tests.Unit.Extensions;
-using Infrastructure;
 
 using System.Net;
 using System.Security.Claims;
+using Infrastructure;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;

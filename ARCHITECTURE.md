@@ -221,7 +221,7 @@ Both endpoints validate antiforgery tokens. In development, origin validation is
 ### TOTP two-factor authentication
 
 - Users enable TOTP via `/Account/Manage/EnableAuthenticator`, which displays a QR code (rendered client-side via `davidshimjs-qrcodejs`).
-- At login, if 2FA is active, the user is redirected to `/Account/LoginWith2fa`.
+- At login, if 2FA is active, the user is redirected to `/Account/LoginWith2fa`. `LoginWith2faModel.OnGetAsync` calls `GetTwoFactorAuthenticationUserAsync()` to confirm the caller already passed the username/password step; a null result means the page was reached directly rather than via that redirect, and throws.
 - Recovery codes (generated at `/Account/Manage/GenerateRecoveryCodes`) are the fallback path.
 
 ---

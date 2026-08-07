@@ -11,9 +11,6 @@ public sealed class ConcurrentLockoutTests(PlaywrightFixture fixture)
     {
         var (email, _) = await fixture.CreateConfirmedUserAsync();
 
-        // Send 10 concurrent wrong-password login attempts.
-        // Under a race condition the failure counter may not be atomically incremented,
-        // so we use more than the lockout threshold to ensure lockout is reached.
         var concurrentTasks = Enumerable.Range(0, 10).Select(async _ =>
         {
             var (ctx, page) = await fixture.NewPageAsync();
@@ -28,7 +25,6 @@ public sealed class ConcurrentLockoutTests(PlaywrightFixture fixture)
         });
         await Task.WhenAll(concurrentTasks);
 
-        // After concurrent failures, a further attempt should hit lockout.
         var (verifyCtx, verifyPage) = await fixture.NewPageAsync();
         await using (verifyCtx)
         {
@@ -40,9 +36,6 @@ public sealed class ConcurrentLockoutTests(PlaywrightFixture fixture)
                 url => url.Contains("/Account/Lockout") || url.Contains("/Account/Login"),
                 new Microsoft.Playwright.PageWaitForURLOptions { Timeout = 10_000 });
 
-            // Either already locked (redirected to Lockout) or still on Login —
-            // either is acceptable; the test verifies no unhandled exception occurs
-            // and the server stays healthy under concurrent load.
             Assert.True(
                 verifyPage.Url.Contains("/Account/Lockout") || verifyPage.Url.Contains("/Account/Login"),
                 $"Unexpected URL after concurrent lockout attempts: {verifyPage.Url}");

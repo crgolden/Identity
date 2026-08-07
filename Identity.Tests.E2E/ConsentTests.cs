@@ -31,7 +31,6 @@ public sealed class ConsentTests(PlaywrightFixture fixture)
 
             Assert.Contains("/Account/Manage/Consent", page.Url);
 
-            // Capture the redirect URL from the browser request event before ERR_CONNECTION_REFUSED
             var request = await page.RunAndWaitForRequestAsync(
                 async () => await page.ClickAsync("#consent-deny"),
                 r => r.Url.Contains("localhost:9999"));
@@ -60,15 +59,12 @@ public sealed class ConsentTests(PlaywrightFixture fixture)
             }
 
             Assert.Contains("/Account/Manage/Consent", page.Url);
-
-            // Check all scope checkboxes so the scopes are included in the form submission.
             var checkboxes = await page.QuerySelectorAllAsync("input[id^='scope_']:not([disabled])");
             foreach (var checkbox in checkboxes)
             {
                 await checkbox.CheckAsync();
             }
 
-            // Capture the redirect URL from the browser request event before ERR_CONNECTION_REFUSED.
             var request = await page.RunAndWaitForRequestAsync(
                 async () => await page.ClickAsync("#consent-allow"),
                 r => r.Url.Contains("localhost:9999"),
@@ -96,7 +92,6 @@ public sealed class ConsentTests(PlaywrightFixture fixture)
                 return;
             }
 
-            // Uncheck all non-required scopes
             var checkboxes = await page.QuerySelectorAllAsync("input[id^='scope_']:not([disabled])");
             foreach (var checkbox in checkboxes)
             {

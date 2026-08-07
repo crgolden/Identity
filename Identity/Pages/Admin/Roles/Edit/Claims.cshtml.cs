@@ -5,22 +5,17 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-/// <summary>Edits role claims.</summary>
 public class ClaimsModel : PageModel
 {
     private readonly RoleManager<IdentityRole<Guid>> _roleManager;
 
-    /// <summary>Initializes a new instance of the <see cref="ClaimsModel"/> class.</summary>
     public ClaimsModel(RoleManager<IdentityRole<Guid>> roleManager) => _roleManager = roleManager;
 
-    /// <summary>Gets the role name for display.</summary>
     public string RoleName { get; private set; } = Empty;
 
-    /// <summary>Gets or sets the claims to save.</summary>
     [BindProperty]
     public List<ClaimInputModel> Claims { get; set; } = [];
 
-    /// <summary>Loads the role and its claims.</summary>
     public async Task<IActionResult> OnGetAsync(string id)
     {
         var role = await _roleManager.FindByIdAsync(id);
@@ -35,7 +30,6 @@ public class ClaimsModel : PageModel
         return Page();
     }
 
-    /// <summary>Replaces all claims with the posted set.</summary>
     public async Task<IActionResult> OnPostAsync(string id)
     {
         var role = await _roleManager.FindByIdAsync(id);
@@ -58,7 +52,6 @@ public class ClaimsModel : PageModel
         return RedirectToPage("/Admin/Roles/Details/Claims", new { id });
     }
 
-    /// <summary>Adds a blank claim row.</summary>
     public async Task<IActionResult> OnPostAddRowAsync(string id)
     {
         var role = await _roleManager.FindByIdAsync(id);
@@ -72,7 +65,6 @@ public class ClaimsModel : PageModel
         return Page();
     }
 
-    /// <summary>Removes a claim row.</summary>
     public async Task<IActionResult> OnPostRemoveRowAsync(string id, int index)
     {
         var role = await _roleManager.FindByIdAsync(id);
@@ -90,13 +82,10 @@ public class ClaimsModel : PageModel
         return Page();
     }
 
-    /// <summary>Represents a claim type/value pair for form binding.</summary>
     public class ClaimInputModel
     {
-        /// <summary>Gets or sets the claim type.</summary>
         public string? Type { get; set; }
 
-        /// <summary>Gets or sets the claim value.</summary>
         public string? Value { get; set; }
     }
 }

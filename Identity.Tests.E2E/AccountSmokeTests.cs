@@ -14,13 +14,11 @@ public sealed class AccountSmokeTests(PlaywrightFixture fixture)
         var email = Environment.GetEnvironmentVariable("TestEmail") ?? throw new InvalidOperationException("TestEmail is not set.");
         var password = Environment.GetEnvironmentVariable("TestPassword") ?? throw new InvalidOperationException("TestPassword is not set.");
 
-        // Clean up any leftover account from a previous partial run before registering.
         await fixture.DeleteUserIfExistsAsync(email);
 
         var (ctx, page) = await fixture.NewPageAsync("Smoke");
         await using (ctx)
         {
-            // REGISTER — reCAPTCHA bypassed for smoke account; email confirmation sent but not yet confirmed
             await page.GotoAsync("/Account/Register");
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
@@ -28,10 +26,8 @@ public sealed class AccountSmokeTests(PlaywrightFixture fixture)
             await page.ClickAsync("#registerSubmit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/RegisterConfirmation"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
 
-            // Confirm email directly in the database (no inbox required)
             await fixture.ConfirmUserEmailAsync(email);
 
-            // LOGIN — reCAPTCHA bypassed for smoke account
             await page.GotoAsync("/Account/Login");
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
@@ -39,14 +35,12 @@ public sealed class AccountSmokeTests(PlaywrightFixture fixture)
             await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
             Assert.DoesNotContain("/Account/Login", page.Url);
 
-            // DELETE
             await page.GotoAsync("/Account/Manage/DeletePersonalData");
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("#delete-account-submit");
             await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Manage"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
         }
 
-        // Verify deletion — login must now fail
         var (ctx2, page2) = await fixture.NewPageAsync("Smoke");
         await using (ctx2)
         {

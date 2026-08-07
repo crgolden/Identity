@@ -4,12 +4,6 @@ using Google.Apis.Auth.AspNetCore3;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
 
-/// <summary>
-/// Decorates the default <see cref="AuthenticationSchemeProvider"/> so that any lookup for the Google
-/// OpenID Connect scheme resolves to <see cref="FakeExternalAuthenticationHandler"/> instead of the real
-/// OIDC handler. Every other scheme (cookies, IdentityServer, ...) still resolves through the real,
-/// unmodified provider — this only ever touches the one scheme name E2E tests need to fake.
-/// </summary>
 public sealed class FakeGoogleSchemeProvider(IOptions<AuthenticationOptions> options)
     : AuthenticationSchemeProvider(options)
 {

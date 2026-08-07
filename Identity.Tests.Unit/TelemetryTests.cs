@@ -1,8 +1,8 @@
 namespace Identity.Tests.Unit;
-using Infrastructure;
 
 using System.Diagnostics.Metrics;
 using Identity;
+using Infrastructure;
 
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]

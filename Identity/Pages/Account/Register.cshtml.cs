@@ -1,8 +1,8 @@
-﻿namespace Identity.Pages.Account;
+namespace Identity.Pages.Account;
 
 using System.ComponentModel.DataAnnotations;
-using System.Threading.Channels;
 using System.Text.Encodings.Web;
+using System.Threading.Channels;
 using Azure.Messaging.ServiceBus;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
@@ -11,7 +11,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Azure;
 
-/// <summary>Page model for the Register page.</summary>
 [AllowAnonymous]
 public class RegisterModel : PageModel
 {
@@ -45,9 +44,6 @@ public class RegisterModel : PageModel
 
     public IList<AuthenticationScheme> ExternalLogins { get; set; } = new List<AuthenticationScheme>();
 
-    /// <summary>Handles the GET request to display the registration page.</summary>
-    /// <param name="returnUrl">The URL to return to after registration.</param>
-    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     public async Task OnGetAsync(string? returnUrl = null)
     {
         ReturnUrl = returnUrl;
@@ -55,9 +51,6 @@ public class RegisterModel : PageModel
         RecaptchaSiteKey = _captchaService.SiteKey;
     }
 
-    /// <summary>Handles the POST request to create a new user account.</summary>
-    /// <param name="returnUrl">The URL to return to after registration.</param>
-    /// <returns>A task that resolves to the page result or a redirect.</returns>
     public async Task<IActionResult> OnPostAsync(string? returnUrl = null)
     {
         returnUrl ??= Url.Content("~/");
@@ -130,7 +123,6 @@ public class RegisterModel : PageModel
         return Page();
     }
 
-    /// <summary>Provides the form input values bound from the request.</summary>
     public class InputModel
     {
         [Required]

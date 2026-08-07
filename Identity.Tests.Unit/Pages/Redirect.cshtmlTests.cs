@@ -1,7 +1,7 @@
 namespace Identity.Tests.Unit.Pages;
-using Infrastructure;
 
 using Identity.Pages;
+using Infrastructure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;

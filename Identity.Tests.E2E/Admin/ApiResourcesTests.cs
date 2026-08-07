@@ -4,12 +4,6 @@ using System.Text.RegularExpressions;
 using Infrastructure;
 using Microsoft.Playwright;
 
-// Covers Admin-E2E-Guide.md's AR1-AR5 scenarios: Index lists seeded resource, Create -> Details, Delete,
-// and the two collection sub-pages beyond Claims/Properties -- Scopes and Secrets. Routes use a route
-// parameter ({id:int}), not a query string, e.g. /Admin/ApiResources/Edit/Scopes/{id} -- confirmed by
-// reading the .cshtml @page directives directly (differs from Clients' collection pages, which bind id
-// via query string). All selectors are #id per project convention; each test uses its own uniquely-named
-// seeded resource with exactly one collection row, always at index 0.
 [Trait("Category", "E2E")]
 [Collection(E2ECollection.Name)]
 public sealed class ApiResourcesTests(PlaywrightFixture fixture)
@@ -135,8 +129,6 @@ public sealed class ApiResourcesTests(PlaywrightFixture fixture)
     [Fact]
     public async Task Secrets_Add_Persists()
     {
-        // Secrets are write-only once stored -- assert the Description that IS echoed back on Details,
-        // never the raw Value.
         var (email, password) = await fixture.CreateAdminUserAsync();
         var resourceId = await fixture.SeedApiResourceAsync($"e2e-ar-secrets-add-{Guid.NewGuid():N}");
         var description = $"e2e-secret-{Guid.NewGuid():N}";

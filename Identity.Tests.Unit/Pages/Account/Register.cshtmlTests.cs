@@ -1,5 +1,6 @@
 namespace Identity.Tests.Unit.Pages.Account;
 
+using System.Threading.Channels;
 using Azure.Messaging.ServiceBus;
 using Identity.Pages.Account;
 using Infrastructure;
@@ -14,7 +15,6 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Logging;
 using Moq;
-using System.Threading.Channels;
 
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
@@ -49,8 +49,6 @@ public class RegisterModelTests
         userManagerMock.SetupGet(u => u.SupportsUserEmail).Returns(true);
 
         var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
-
-        // Provide an empty external schemes result to focus this test on ReturnUrl assignment.
         signInManagerMock
             .Setup(s => s.GetExternalAuthenticationSchemesAsync())
             .ReturnsAsync([]);
@@ -66,8 +64,6 @@ public class RegisterModelTests
         var ex = await Record.ExceptionAsync(() => model.OnGetAsync(returnUrl));
         Assert.Null(ex);
         Assert.Equal(returnUrl, model.ReturnUrl);
-
-        // ExternalLogins should be an empty list as set up
         Assert.NotNull(model.ExternalLogins);
         Assert.Empty(model.ExternalLogins);
     }
@@ -101,8 +97,6 @@ public class RegisterModelTests
         Assert.Equal("someReturn", model.ReturnUrl);
         Assert.NotNull(model.ExternalLogins);
         Assert.Equal(schemes.Count(), model.ExternalLogins.Count);
-
-        // Verify that items are present and names match in order
         var expectedNames = schemes.Select(s => s.Name).ToList();
         var actualNames = model.ExternalLogins.Select(s => s.Name).ToList();
         Assert.Equal(expectedNames, actualNames);
@@ -128,7 +122,6 @@ public class RegisterModelTests
             CreateClientFactory(),
             CreateRecaptchaServiceMock().Object);
 
-        // Configure PageContext/Url/Request
         var ctx = new DefaultHttpContext();
         ctx.Request.Scheme = "https";
         model.PageContext = new PageContext { HttpContext = ctx };
@@ -136,8 +129,6 @@ public class RegisterModelTests
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
         model.Url = urlHelperMock.Object;
-
-        // Invalidate model state
         model.ModelState.AddModelError("someKey", "some error");
 
         // Act
@@ -146,8 +137,6 @@ public class RegisterModelTests
         // Assert
         Assert.IsType<PageResult>(result);
         signInManagerMock.Verify(s => s.GetExternalAuthenticationSchemesAsync(), Times.Once);
-
-        // Ensure no user creation call was attempted
         userManagerMock.Verify(u => u.CreateAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>()), Times.Never);
     }
 
@@ -157,15 +146,10 @@ public class RegisterModelTests
     public async Task OnPostAsync_CreateSucceeds_RespectsRequireConfirmedAccount(bool requireConfirmed, string returnUrl)
     {
         // Arrange
-
-        // Pass IdentityOptions with RequireConfirmedAccount through the constructor
-        // (Options property is non-virtual and cannot be set up via Moq)
         var identityOptions = new IdentityOptions();
         identityOptions.SignIn.RequireConfirmedAccount = requireConfirmed;
         var userManagerMock = MockHelpers.MockUserManager(identityOptions);
         userManagerMock.SetupGet(u => u.SupportsUserEmail).Returns(true);
-
-        // Configure UserManager behaviors
         userManagerMock
             .Setup(u => u.CreateAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>()))
             .ReturnsAsync(IdentityResult.Success);
@@ -198,14 +182,11 @@ public class RegisterModelTests
             senderFactory,
             CreateRecaptchaServiceMock().Object);
 
-        // Configure PageContext/Url/Request
         var ctx = new DefaultHttpContext();
         ctx.Request.Scheme = "https";
         model.PageContext = new PageContext { HttpContext = ctx };
 
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
-
-        // ActionContext must be non-null because UrlHelperExtensions.Page always accesses it
         var urlRouteData = new RouteData();
         urlRouteData.Values["page"] = "/Account/Register";
         urlHelperMock.SetupGet(u => u.ActionContext).Returns(
@@ -214,8 +195,6 @@ public class RegisterModelTests
         urlHelperMock.Setup(u => u.RouteUrl(It.IsAny<UrlRouteContext>())).Returns("https://example/confirm");
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
         model.Url = urlHelperMock.Object;
-
-        // Provide Input
         model.Input = new RegisterModel.InputModel
         {
             Email = "user@example.com",
@@ -226,7 +205,6 @@ public class RegisterModelTests
         var actionResult = await model.OnPostAsync(returnUrl);
 
         // Assert
-        // Always should call CreateAsync
         userManagerMock.Verify(u => u.CreateAsync(It.IsAny<IdentityUser<Guid>>(), It.Is<string>(p => p == model.Input.Password)), Times.Once);
         senderMock.Verify(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()), Times.Once);
 
@@ -234,13 +212,9 @@ public class RegisterModelTests
         {
             var redirect = Assert.IsType<RedirectToPageResult>(actionResult);
             Assert.Equal("RegisterConfirmation", redirect.PageName);
-
-            // RouteValues should contain email and returnUrl
             Assert.NotNull(redirect.RouteValues);
             Assert.Equal(model.Input.Email, redirect.RouteValues["email"]);
             Assert.Equal(returnUrl, redirect.RouteValues["returnUrl"]);
-
-            // SignIn should not be called when RequireConfirmedAccount is true
             signInManagerMock.Verify(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<bool>(), It.IsAny<string>()), Times.Never);
         }
         else
@@ -368,7 +342,6 @@ public class RegisterModelTests
         return mock;
     }
 
-    // Minimal IAuthenticationHandler implementation for use in AuthenticationScheme construction
     private class DummyAuthHandler : IAuthenticationHandler
     {
         public Task<AuthenticateResult> AuthenticateAsync()

@@ -1,8 +1,8 @@
 namespace Identity.Tests.Unit.Pages.Account;
-using Infrastructure;
 
 using System.Text;
 using Identity.Pages.Account;
+using Infrastructure;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -50,8 +50,6 @@ public class ResetPasswordModelTests
 
         // Assert
         Assert.NotNull(model);
-
-        // Intentionally minimal: the goal is to ensure constructor wiring works with mocked UserManager.
     }
 
     [Fact]
@@ -109,8 +107,6 @@ public class ResetPasswordModelTests
         var userManagerMock = MockHelpers.MockUserManager();
 
         var model = new ResetPasswordModel(userManagerMock.Object);
-
-        // Create Input but ModelState will be invalid
         model.Input = new ResetPasswordModel.InputModel
         {
             Email = "user@example.com",
@@ -119,7 +115,6 @@ public class ResetPasswordModelTests
             Code = "code"
         };
 
-        // Make ModelState invalid
         model.ModelState.AddModelError("Email", "Required");
 
         // Act
@@ -127,15 +122,13 @@ public class ResetPasswordModelTests
 
         // Assert
         Assert.IsType<PageResult>(result);
-
-        // Ensure user manager methods were not called
         userManagerMock.Verify(um => um.FindByEmailAsync(It.IsAny<string>()), Times.Never);
         userManagerMock.Verify(um => um.ResetPasswordAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
 
     [Theory]
-    [InlineData(false, false)] // user not found -> redirect
-    [InlineData(true, true)] // user found and reset succeeds -> redirect
+    [InlineData(false, false)]
+    [InlineData(true, true)]
     public async Task OnPostAsync_UserMissingOrResetSucceeds_RedirectsToConfirmation(bool userExists, bool resetSucceeds)
     {
         // Arrange
@@ -179,18 +172,14 @@ public class ResetPasswordModelTests
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(actionResult);
         Assert.Equal("./ResetPasswordConfirmation", redirect.PageName);
-
-        // Verify FindByEmailAsync called once
         userManagerMock.Verify(um => um.FindByEmailAsync("test@example.com"), Times.Once);
 
         if (userExists)
         {
-            // ResetPasswordAsync should be called when user exists
             userManagerMock.Verify(um => um.ResetPasswordAsync(foundUser!, "code", "NewP@ssw0rd"), Times.Once);
         }
         else
         {
-            // ResetPasswordAsync should not be called when user is not found
             userManagerMock.Verify(um => um.ResetPasswordAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         }
     }
@@ -229,7 +218,6 @@ public class ResetPasswordModelTests
             }
         };
 
-        // Precondition: ModelState valid
         Assert.True(model.ModelState.IsValid);
 
         // Act
@@ -238,15 +226,11 @@ public class ResetPasswordModelTests
         // Assert
         Assert.IsType<PageResult>(actionResult);
         Assert.False(model.ModelState.IsValid);
-
-        // Errors added with empty key
         var entry = model.ModelState[string.Empty];
         Assert.NotNull(entry);
         var actualMessages = entry!.Errors.Select(e => e.ErrorMessage).ToArray();
         Assert.Contains("Err1", actualMessages);
         Assert.Contains("Err2", actualMessages);
-
-        // Verify calls
         userManagerMock.Verify(um => um.FindByEmailAsync("user2@example.com"), Times.Once);
         userManagerMock.Verify(um => um.ResetPasswordAsync(foundUser, "code2", "AnotherP@ss1"), Times.Once);
     }

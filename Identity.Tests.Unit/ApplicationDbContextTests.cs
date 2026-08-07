@@ -1,4 +1,5 @@
 namespace Identity.Tests.Unit;
+
 using Infrastructure;
 
 using Microsoft.EntityFrameworkCore;
@@ -33,7 +34,6 @@ public class ApplicationDbContextTests
     public void Constructor_ValidOptions_CreatesInstance(DbContextOptions<ApplicationDbContext> options)
     {
         // Arrange
-        // (options provided by MemberData)
 
         // Act
         var context = new ApplicationDbContext(options);

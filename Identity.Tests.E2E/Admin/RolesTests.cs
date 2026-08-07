@@ -4,10 +4,6 @@ using System.Text.RegularExpressions;
 using Infrastructure;
 using Microsoft.Playwright;
 
-// Covers Admin-E2E-Guide.md's R3-R6 (R1/R2 Index-lists/Create-round-trip and Details nav-links already
-// exist in AdminTests.cs). Details/Claims and Details/Users use the shared "Admin" role directly (safe --
-// read-only). Edit/Index rename and Edit/Claims mutate a fresh, uniquely-named role created per test, so
-// the shared "Admin" role used by fixture.CreateAdminUserAsync() across the whole suite is never touched.
 [Trait("Category", "E2E")]
 [Collection(E2ECollection.Name)]
 public sealed class RolesTests(PlaywrightFixture fixture)

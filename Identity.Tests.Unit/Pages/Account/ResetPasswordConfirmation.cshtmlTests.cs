@@ -1,4 +1,5 @@
 namespace Identity.Tests.Unit.Pages.Account;
+
 using Infrastructure;
 
 [Collection(UnitCollection.Name)]

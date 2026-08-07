@@ -22,8 +22,6 @@ public sealed class ServerSideSessionsTests(PlaywrightFixture fixture)
 
             await page.GotoAsync("/Account/Manage/ServerSideSessions");
             await page.WaitForURLAsync("**/Account/Manage/ServerSideSessions**");
-
-            // Page should load successfully (not redirect to error or login)
             Assert.DoesNotContain("/Account/Login", page.Url);
             Assert.DoesNotContain("/Error", page.Url);
         }

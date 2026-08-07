@@ -1,8 +1,8 @@
 namespace Identity.Tests.Unit.Pages.Account;
-using Infrastructure;
 
 using System.Text;
 using Identity.Pages.Account;
+using Infrastructure;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -20,13 +20,6 @@ public class ConfirmEmailChangeModelTests
     public void Constructor_WithValidDependencies_DoesNotThrow()
     {
         // Arrange
-        // NOTE: To implement this test, construct or mock UserManager<IdentityUser<Guid>> and
-        // SignInManager<IdentityUser<Guid>> with valid constructor parameters (stores, options, etc.).
-        // Example approaches:
-        // - Use Moq to mock only the virtual members and supply required constructor args to Mock<UserManager<...>>(...) if feasible.
-        // - Create a real UserManager with an in-memory IUserStore implementation provided by your test environment.
-        //
-        // For safety and portability we do not attempt to instantiate these framework classes here.
         var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
         var options = Microsoft.Extensions.Options.Options.Create(new IdentityOptions());
         var passwordHasher = new Mock<IPasswordHasher<IdentityUser<Guid>>>().Object;
@@ -49,8 +42,6 @@ public class ConfirmEmailChangeModelTests
 
         // Assert
         Assert.NotNull(model);
-
-        // Additional behavioral assertions may be added once dependencies can be provided.
     }
 
     [Theory]

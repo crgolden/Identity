@@ -1,8 +1,8 @@
 namespace Identity.Tests.Unit.Pages.Account.Manage;
-using Infrastructure;
 
 using System.Security.Claims;
 using Identity.Pages.Account.Manage;
+using Infrastructure;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -21,7 +21,6 @@ public class SetPasswordModelTests
     public void Constructor_WithNonNullDependencies_NotImplemented()
     {
         // Arrange
-        // Create the minimal dependencies required to construct concrete UserManager and SignInManager instances.
         var userStoreMock = new Mock<IUserStore<IdentityUser<Guid>>>();
         var options = Options.Create(new IdentityOptions());
         var passwordHasher = new PasswordHasher<IdentityUser<Guid>>();
@@ -75,8 +74,6 @@ public class SetPasswordModelTests
         var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
 
         var pageModel = new SetPasswordModel(userManagerMock.Object, signInManagerMock.Object);
-
-        // Make model state invalid
         pageModel.ModelState.AddModelError("Test", "Invalid");
 
         // Act
@@ -84,8 +81,6 @@ public class SetPasswordModelTests
 
         // Assert
         Assert.IsType<PageResult>(result);
-
-        // Ensure no user manager/signin calls happened
         userManagerMock.Verify(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>()), Times.Never);
         userManagerMock.Verify(u => u.AddPasswordAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>()), Times.Never);
         signInManagerMock.Verify(s => s.RefreshSignInAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
@@ -107,8 +102,6 @@ public class SetPasswordModelTests
         var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
 
         var pageModel = new SetPasswordModel(userManagerMock.Object, signInManagerMock.Object);
-
-        // Set Input so the null/whitespace guard is bypassed and we reach the user lookup
         pageModel.Input = new SetPasswordModel.InputModel { NewPassword = "NewP@ss1!" };
 
         // Act
@@ -138,8 +131,6 @@ public class SetPasswordModelTests
             .Returns(expectedId);
 
         var model = new SetPasswordModel(mockUserManager.Object, mockSignInManager.Object);
-
-        // Provide a PageContext with a principal (content of principal is irrelevant due to setups)
         model.PageContext = new PageContext
         {
             HttpContext = new DefaultHttpContext

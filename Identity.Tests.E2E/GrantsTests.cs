@@ -22,8 +22,6 @@ public sealed class GrantsTests(PlaywrightFixture fixture)
 
             await page.GotoAsync("/Account/Manage/Grants");
             await page.WaitForURLAsync("**/Account/Manage/Grants**");
-
-            // Page should load successfully without error
             Assert.DoesNotContain("/Account/Login", page.Url);
             Assert.DoesNotContain("/Error", page.Url);
         }

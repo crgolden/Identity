@@ -1,8 +1,8 @@
 namespace Identity.Tests.Unit.Pages.Account;
-using Infrastructure;
 
 using Azure.Messaging.ServiceBus;
 using Identity.Pages.Account;
+using Infrastructure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -24,7 +24,6 @@ public class ForgotPasswordModelTests
 
         var model = new ForgotPasswordModel(userManagerMock.Object, factory);
 
-        // Make ModelState invalid
         model.PageContext = new PageContext { HttpContext = new DefaultHttpContext() };
         model.ModelState.AddModelError("Email", "Required");
 
@@ -35,8 +34,6 @@ public class ForgotPasswordModelTests
 
         // Assert
         Assert.IsType<PageResult>(result);
-
-        // Ensure no calls were made to user manager or email sender
         userManagerMock.Verify(um => um.FindByEmailAsync(It.IsAny<string>()), Times.Never);
         senderMock.Verify(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -80,8 +77,6 @@ public class ForgotPasswordModelTests
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("./ForgotPasswordConfirmation", redirect.PageName);
-
-        // Email should not be sent in these cases
         senderMock.Verify(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()), Times.Never);
 
         userManagerMock.Verify();

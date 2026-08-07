@@ -1,7 +1,7 @@
 namespace Identity.Tests.Unit.Pages.Account;
-using Infrastructure;
 
 using Identity.Pages.Account;
+using Infrastructure;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -16,7 +16,6 @@ public class RegisterConfirmationModelTests
     public void Constructor_WithValidDependencies_DoesNotThrow()
     {
         // Arrange
-        // Create the minimal set of dependencies required by UserManager<IdentityUser<Guid>>
         var userStore = new Mock<IUserStore<IdentityUser<Guid>>>().Object;
         var options = Microsoft.Extensions.Options.Options.Create(new IdentityOptions());
         var passwordHasher = new Mock<IPasswordHasher<IdentityUser<Guid>>>().Object;
@@ -81,8 +80,6 @@ public class RegisterConfirmationModelTests
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
         Assert.Equal($"Unable to load user with email '{email}'.", notFound.Value);
-
-        // Ensure Email property not set when user not found
         Assert.Null(model.Email);
     }
 

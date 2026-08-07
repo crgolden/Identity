@@ -6,19 +6,15 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
-/// <summary>Edits API scope properties.</summary>
 public class PropertiesModel : PageModel
 {
     private readonly IConfigurationDbContext _context;
 
-    /// <summary>Initializes a new instance of the <see cref="PropertiesModel"/> class.</summary>
     public PropertiesModel(IConfigurationDbContext context) => _context = context;
 
-    /// <summary>Gets or sets the properties.</summary>
     [BindProperty]
     public List<ApiScopeProperty> Properties { get; set; } = [];
 
-    /// <summary>Loads the API scope properties for editing.</summary>
     public async Task<IActionResult> OnGetAsync(int id)
     {
         var scope = await _context.ApiScopes
@@ -33,7 +29,6 @@ public class PropertiesModel : PageModel
         return Page();
     }
 
-    /// <summary>Saves property changes.</summary>
     public async Task<IActionResult> OnPostAsync(int id)
     {
         var scope = await _context.ApiScopes
@@ -64,7 +59,6 @@ public class PropertiesModel : PageModel
         return RedirectToPage("/Admin/ApiScopes/Details/Properties", new { id });
     }
 
-    /// <summary>Adds a blank property row.</summary>
     public async Task<IActionResult> OnPostAddRowAsync(int id)
     {
         var exists = await _context.ApiScopes.AnyAsync(s => s.Id == id);
@@ -77,7 +71,6 @@ public class PropertiesModel : PageModel
         return Page();
     }
 
-    /// <summary>Removes a property row.</summary>
     public async Task<IActionResult> OnPostRemoveRowAsync(int id, int index)
     {
         var exists = await _context.ApiScopes.AnyAsync(s => s.Id == id);
