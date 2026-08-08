@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <RootNamespace>Identity</RootNamespace>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <UserSecretsId>aspnet-Identity-149346d0-999f-4a74-8ff7-2a92d39790f2</UserSecretsId>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
     <Version>1.0.0.0</Version>

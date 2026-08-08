@@ -13,13 +13,16 @@ public sealed class SecurityHeadersAttribute : ActionFilterAttribute
             var headers = context.HttpContext.Response.Headers;
 
             headers.XContentTypeOptions = "nosniff";
-            headers.XFrameOptions = "SAMEORIGIN";
+            headers.XFrameOptions = "DENY";
             headers["Referrer-Policy"] = "no-referrer";
 
             if (!headers.ContainsKey("Content-Security-Policy"))
             {
                 headers.ContentSecurityPolicy =
                     "default-src 'self'; " +
+                    "script-src 'self' https://cdn.jsdelivr.net https://code.jquery.com; " +
+                    "style-src 'self' https://cdn.jsdelivr.net; " +
+                    "img-src 'self' data: https:; " +
                     "object-src 'none'; " +
                     "frame-ancestors 'none'; " +
                     "base-uri 'self';";

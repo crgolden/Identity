@@ -126,7 +126,7 @@ public class PersonalDataModelTests
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
         var expected = $"Unable to load user with ID '{userId}'.";
         Assert.Equal(expected, Assert.IsType<string>(notFound.Value));
-        Assert.Equal(expected, (string)notFound.Value!);
+        Assert.Equal(expected, (string)notFound.Value);
 
         userManagerMock.Verify(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>()), Times.Once);
         userManagerMock.Verify(m => m.GetUserId(It.IsAny<ClaimsPrincipal>()), Times.Once);

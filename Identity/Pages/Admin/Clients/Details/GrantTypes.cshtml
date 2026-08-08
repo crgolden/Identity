@@ -13,14 +13,16 @@
     </div>
 </div>
 
-<table class="table table-bordered table-hover table-sm">
-    <thead class="table-light">
-        <tr><th>Grant Type</th></tr>
-    </thead>
-    <tbody>
-        @foreach (var g in Model.Client.AllowedGrantTypes ?? [])
-        {
-            <tr><td>@g.GrantType</td></tr>
-        }
-    </tbody>
-</table>
+<div class="table-responsive">
+    <table class="table table-bordered table-hover table-sm">
+        <thead class="table-light">
+            <tr><th>Grant Type</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var g in Model.Client.AllowedGrantTypes ?? [])
+            {
+                <tr><td>@g.GrantType</td></tr>
+            }
+        </tbody>
+    </table>
+</div>

@@ -50,7 +50,7 @@ public partial class EnableAuthenticatorModelTests
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
         Assert.IsType<string>(notFound.Value);
-        var message = (string)notFound.Value!;
+        var message = (string)notFound.Value;
         Assert.Contains(expectedId, message);
     }
 
@@ -119,7 +119,7 @@ public partial class EnableAuthenticatorModelTests
         Assert.True(model.ModelState.ContainsKey("Input.Code"));
         var error = model.ModelState["Input.Code"]?.Errors.FirstOrDefault();
         Assert.NotNull(error);
-        Assert.Equal("Verification code is invalid.", error!.ErrorMessage);
+        Assert.Equal("Verification code is invalid.", error.ErrorMessage);
     }
 
     [Theory]

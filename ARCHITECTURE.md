@@ -327,9 +327,21 @@ Applied to all IdentityServer flow pages (`[SecurityHeaders]`). Adds headers to 
 | Header | Value |
 |---|---|
 | `X-Content-Type-Options` | `nosniff` |
-| `X-Frame-Options` | `SAMEORIGIN` |
+| `X-Frame-Options` | `DENY` |
 | `Referrer-Policy` | `no-referrer` |
-| `Content-Security-Policy` | `default-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self';` (only if not already set) |
+| `Content-Security-Policy` | `default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://code.jquery.com; style-src 'self' https://cdn.jsdelivr.net; img-src 'self' data: https:; object-src 'none'; frame-ancestors 'none'; base-uri 'self';` (only if not already set) |
+
+`X-Frame-Options` is `DENY` rather than `SAMEORIGIN` so it agrees with `frame-ancestors 'none'` instead of contradicting it.
+
+The `script-src` and `style-src` host allowances exist because `_Layout.cshtml` loads Bootstrap and jQuery from CDNs under the Production environment branch — a bare `default-src 'self'` blocks them, and the breakage is invisible in Development, where the same libraries are served from `wwwroot/lib`. `img-src` permits arbitrary HTTPS origins because the consent and device pages render client logos from URLs supplied by client configuration.
+
+### No import map
+
+`_Layout.cshtml` deliberately does not carry a `<script type="importmap">` element. When present, the MVC tag helper fills it at render time with a fingerprint and integrity map covering every static asset — roughly half the HTML of a page like `/Account/Login`, inline and therefore never cached. Nothing consumes it: the app has no ES modules, no `type="module"` scripts, and the CDN tags carry their own `integrity` attributes. It is also the only inline script in the app, so removing it lets the CSP above stay strict without a nonce or `'unsafe-inline'`.
+
+Fingerprinted URLs for ordinary `<script src>` and `<link href>` come from the static asset manifest server-side and do not depend on the import map.
+
+Restore the element if ES modules are ever introduced — bare and relative module specifiers will not resolve to fingerprinted files without it.
 
 ### Antiforgery
 

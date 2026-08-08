@@ -24,25 +24,27 @@
     </li>
 </ul>
 
-<table class="table table-bordered table-sm">
-    <thead class="table-light">
-        <tr>
-            <th>Provider</th>
-            <th>Display Name</th>
-            <th>Provider Key</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var login in Model.Logins)
-        {
+<div class="table-responsive">
+    <table class="table table-bordered table-hover table-sm">
+        <thead class="table-light">
             <tr>
-                <td>@login.LoginProvider</td>
-                <td>@login.ProviderDisplayName</td>
-                <td>@login.ProviderKey</td>
+                <th>Provider</th>
+                <th>Display Name</th>
+                <th>Provider Key</th>
             </tr>
-        }
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+            @foreach (var login in Model.Logins)
+            {
+                <tr>
+                    <td>@login.LoginProvider</td>
+                    <td>@login.ProviderDisplayName</td>
+                    <td>@login.ProviderKey</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
 
 <a id="btn-edit" asp-page="../Edit/Logins" asp-route-id="@Model.AppUser.Id" class="btn btn-primary">Edit</a>
 <a id="btn-back" asp-page="../Index" class="btn btn-outline-secondary">Back</a>

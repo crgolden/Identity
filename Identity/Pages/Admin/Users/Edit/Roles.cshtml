@@ -8,23 +8,25 @@
 
 <form method="post">
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-    <table class="table table-bordered table-sm">
-        <thead class="table-light">
-            <tr>
-                <th>Role</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            @for (var i = 0; i < Model.Roles.Count; i++)
-            {
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover table-sm">
+            <thead class="table-light">
                 <tr>
-                    <td><input id="role-@i" name="Roles[@i]" value="@Model.Roles[i]" class="form-control form-control-sm" aria-label="Role name" /></td>
-                    <td><button id="role-remove-@i" type="submit" asp-page-handler="RemoveRow" asp-route-id="@Model.AppUser.Id" asp-route-index="@i" class="btn btn-sm btn-outline-danger">Remove</button></td>
+                    <th>Role</th>
+                    <th class="visually-hidden">Actions</th>
                 </tr>
-            }
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @for (var i = 0; i < Model.Roles.Count; i++)
+                {
+                    <tr>
+                        <td><input id="role-@i" name="Roles[@i]" value="@Model.Roles[i]" class="form-control form-control-sm" aria-label="Role name" /></td>
+                        <td><button id="role-remove-@i" type="submit" asp-page-handler="RemoveRow" asp-route-id="@Model.AppUser.Id" asp-route-index="@i" class="btn btn-sm btn-outline-danger">Remove</button></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
     <button id="btn-add-row" type="submit" asp-page-handler="AddRow" asp-route-id="@Model.AppUser.Id" class="btn btn-outline-secondary btn-sm mb-3">Add Role</button>
     <div>
         <button id="save-submit" type="submit" asp-route-id="@Model.AppUser.Id" class="btn btn-primary">Save</button>

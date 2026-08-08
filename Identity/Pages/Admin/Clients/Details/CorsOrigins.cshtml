@@ -13,14 +13,16 @@
     </div>
 </div>
 
-<table class="table table-bordered table-hover table-sm">
-    <thead class="table-light">
-        <tr><th>Origin</th></tr>
-    </thead>
-    <tbody>
-        @foreach (var o in Model.Client.AllowedCorsOrigins ?? [])
-        {
-            <tr><td>@o.Origin</td></tr>
-        }
-    </tbody>
-</table>
+<div class="table-responsive">
+    <table class="table table-bordered table-hover table-sm">
+        <thead class="table-light">
+            <tr><th>Origin</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var o in Model.Client.AllowedCorsOrigins ?? [])
+            {
+                <tr><td>@o.Origin</td></tr>
+            }
+        </tbody>
+    </table>
+</div>

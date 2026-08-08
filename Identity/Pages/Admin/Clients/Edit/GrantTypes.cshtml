@@ -8,24 +8,26 @@
 <h1>Edit Client Grant Types</h1>
 
 <form method="post">
-    <table class="table table-bordered table-sm">
-        <thead class="table-light">
-            <tr>
-                <th>Grant Type</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            @for (var i = 0; i < Model.GrantTypes.Count; i++)
-            {
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover table-sm">
+            <thead class="table-light">
                 <tr>
-                    <input type="hidden" name="GrantTypes[@i].Id" value="@Model.GrantTypes[i].Id" />
-                    <td><input id="granttype-@i" name="GrantTypes[@i].GrantType" value="@Model.GrantTypes[i].GrantType" class="form-control form-control-sm" aria-label="Grant type" /></td>
-                    <td><button id="granttype-remove-@i" type="submit" asp-page-handler="RemoveRow" asp-route-id="@Model.Client.Id" asp-route-index="@i" class="btn btn-sm btn-danger">Remove</button></td>
+                    <th>Grant Type</th>
+                    <th class="visually-hidden">Actions</th>
                 </tr>
-            }
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @for (var i = 0; i < Model.GrantTypes.Count; i++)
+                {
+                    <tr>
+                        <input type="hidden" name="GrantTypes[@i].Id" value="@Model.GrantTypes[i].Id" />
+                        <td><input id="granttype-@i" name="GrantTypes[@i].GrantType" value="@Model.GrantTypes[i].GrantType" class="form-control form-control-sm" aria-label="Grant type" /></td>
+                        <td><button id="granttype-remove-@i" type="submit" asp-page-handler="RemoveRow" asp-route-id="@Model.Client.Id" asp-route-index="@i" class="btn btn-sm btn-danger">Remove</button></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
     <button id="btn-add-row" type="submit" asp-page-handler="AddRow" asp-route-id="@Model.Client.Id" class="btn btn-sm btn-outline-secondary mb-3">Add</button>
     <div>
         <button id="save-submit" type="submit" asp-route-id="@Model.Client.Id" class="btn btn-primary">Save</button>

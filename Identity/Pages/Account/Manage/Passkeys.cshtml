@@ -1,4 +1,4 @@
-﻿@page
+@page
 @using System.Buffers.Text
 @model PasskeysModel
 @{
@@ -10,30 +10,32 @@
 
 @if (Model.CurrentPasskeys?.Count > 0)
 {
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-        @foreach (var passkey in Model.CurrentPasskeys)
-        {
-            var credentialId = Base64Url.EncodeToString(passkey.CredentialId);
-            <tr>
-                <td class="align-middle">@(passkey.Name ?? "Unnamed passkey")</td>
-                <td class="align-middle">
-                    <form asp-page-handler="UpdatePasskey" method="post">
-                        <input type="hidden" name="Input.CredentialId" value="@credentialId"/>
-                        <button type="submit" name="Input.Action" value="rename" class="btn btn-primary" title="Rename this passkey">Rename</button>
-                        <button type="submit" name="Input.Action" value="delete" class="btn btn-danger" title="Remove this passkey from your account">Remove</button>
-                    </form>
-                </td>
-            </tr>
-        }
-        </tbody>
-    </table>
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover table-sm">
+            <thead class="table-light">
+                <tr>
+                    <th>Name</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var passkey in Model.CurrentPasskeys)
+            {
+                var credentialId = Base64Url.EncodeToString(passkey.CredentialId);
+                <tr>
+                    <td class="align-middle">@(passkey.Name ?? "Unnamed passkey")</td>
+                    <td class="align-middle">
+                        <form asp-page-handler="UpdatePasskey" method="post">
+                            <input type="hidden" name="Input.CredentialId" value="@credentialId"/>
+                            <button type="submit" name="Input.Action" value="rename" class="btn btn-primary" title="Rename this passkey">Rename</button>
+                            <button type="submit" name="Input.Action" value="delete" class="btn btn-danger" title="Remove this passkey from your account">Remove</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
 }
 else
 {

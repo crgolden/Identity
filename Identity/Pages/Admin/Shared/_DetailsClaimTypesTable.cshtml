@@ -1,12 +1,14 @@
 @model IEnumerable<ClaimTypeRow>
-<table class="table table-bordered table-hover table-sm">
-    <thead class="table-light">
-        <tr><th>Type</th></tr>
-    </thead>
-    <tbody>
-        @foreach (var row in Model)
-        {
-            <tr><td>@row.Type</td></tr>
-        }
-    </tbody>
-</table>
+<div class="table-responsive">
+    <table class="table table-bordered table-hover table-sm">
+        <thead class="table-light">
+            <tr><th>Type</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var row in Model)
+            {
+                <tr><td>@row.Type</td></tr>
+            }
+        </tbody>
+    </table>
+</div>

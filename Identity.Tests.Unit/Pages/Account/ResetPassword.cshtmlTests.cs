@@ -228,7 +228,7 @@ public class ResetPasswordModelTests
         Assert.False(model.ModelState.IsValid);
         var entry = model.ModelState[string.Empty];
         Assert.NotNull(entry);
-        var actualMessages = entry!.Errors.Select(e => e.ErrorMessage).ToArray();
+        var actualMessages = entry.Errors.Select(e => e.ErrorMessage).ToArray();
         Assert.Contains("Err1", actualMessages);
         Assert.Contains("Err2", actualMessages);
         userManagerMock.Verify(um => um.FindByEmailAsync("user2@example.com"), Times.Once);

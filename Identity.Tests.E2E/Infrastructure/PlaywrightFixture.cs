@@ -349,7 +349,10 @@ public sealed class PlaywrightFixture : IAsyncLifetime
             await CleanupDatabaseAsync();
         }
 
-        await _factory!.DisposeAsync();
+        if (_factory is not null)
+        {
+            await _factory.DisposeAsync();
+        }
     }
 
     private static SqlConnection OpenSmokeConnection()

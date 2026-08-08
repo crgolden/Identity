@@ -13,20 +13,22 @@
     </div>
 </div>
 
-<table class="table table-bordered table-hover table-sm">
-    <thead class="table-light">
-        <tr>
-            <th>Type</th>
-            <th>Value</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var c in Model.Client.Claims ?? [])
-        {
+<div class="table-responsive">
+    <table class="table table-bordered table-hover table-sm">
+        <thead class="table-light">
             <tr>
-                <td>@c.Type</td>
-                <td>@c.Value</td>
+                <th>Type</th>
+                <th>Value</th>
             </tr>
-        }
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+            @foreach (var c in Model.Client.Claims ?? [])
+            {
+                <tr>
+                    <td>@c.Type</td>
+                    <td>@c.Value</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

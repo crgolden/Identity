@@ -1,0 +1,18 @@
+User-agent: *
+
+# Account flows: sign-in, registration, and token-bearing confirmation links.
+Disallow: /Account/
+
+# Admin UI: role-gated configuration and operational stores.
+Disallow: /Admin/
+
+# OIDC/OAuth2 protocol endpoints.
+Disallow: /connect/
+
+# Interaction and diagnostic pages reached only mid-flow.
+Disallow: /Ciba
+Disallow: /Redirect
+Disallow: /Error
+Disallow: /health
+
+Sitemap: https://crgolden-identity.azurewebsites.net/sitemap.xml

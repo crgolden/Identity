@@ -4,21 +4,23 @@
     var entityId = ViewData["EntityId"];
 }
 <form method="post">
-    <table class="table table-bordered table-sm">
-        <thead class="table-light">
-            <tr><th>Type</th><th></th></tr>
-        </thead>
-        <tbody>
-            @for (var i = 0; i < Model.Count; i++)
-            {
-                <tr>
-                    <input type="hidden" name="ClaimTypes[@i].Id" value="@Model[i].Id" />
-                    <td><input id="claimtype-@i" class="form-control form-control-sm" name="ClaimTypes[@i].Type" value="@Model[i].Type" aria-label="Claim type" /></td>
-                    <td><button id="claimtype-remove-@i" type="submit" asp-page-handler="RemoveRow" asp-route-id="@entityId" asp-route-index="@i" class="btn btn-sm btn-danger">Remove</button></td>
-                </tr>
-            }
-        </tbody>
-    </table>
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover table-sm">
+            <thead class="table-light">
+                <tr><th>Type</th><th class="visually-hidden">Actions</th></tr>
+            </thead>
+            <tbody>
+                @for (var i = 0; i < Model.Count; i++)
+                {
+                    <tr>
+                        <input type="hidden" name="ClaimTypes[@i].Id" value="@Model[i].Id" />
+                        <td><input id="claimtype-@i" class="form-control form-control-sm" name="ClaimTypes[@i].Type" value="@Model[i].Type" aria-label="Claim type" /></td>
+                        <td><button id="claimtype-remove-@i" type="submit" asp-page-handler="RemoveRow" asp-route-id="@entityId" asp-route-index="@i" class="btn btn-sm btn-danger">Remove</button></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
     <button id="btn-add-row" type="submit" asp-page-handler="AddRow" asp-route-id="@entityId" class="btn btn-sm btn-outline-secondary mb-3">Add</button>
     <div>
         <button id="save-submit" type="submit" asp-route-id="@entityId" class="btn btn-primary">Save</button>

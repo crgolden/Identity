@@ -27,7 +27,7 @@ public sealed class SecurityHeadersAttributeTests
     }
 
     [Fact]
-    public void OnResultExecuting_PageResult_SetsXFrameOptionsSameorigin()
+    public void OnResultExecuting_PageResult_SetsXFrameOptionsDenyMatchingFrameAncestorsNone()
     {
         // Arrange
         var context = MakeContext(new PageResult());
@@ -37,7 +37,7 @@ public sealed class SecurityHeadersAttributeTests
         filter.OnResultExecuting(context);
 
         // Assert
-        Assert.Equal("SAMEORIGIN", (string?)context.HttpContext.Response.Headers.XFrameOptions);
+        Assert.Equal("DENY", (string?)context.HttpContext.Response.Headers.XFrameOptions);
     }
 
     [Fact]
@@ -66,8 +66,45 @@ public sealed class SecurityHeadersAttributeTests
 
         // Assert
         Assert.Equal(
-            "default-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self';",
+            "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://code.jquery.com; style-src 'self' https://cdn.jsdelivr.net; img-src 'self' data: https:; object-src 'none'; frame-ancestors 'none'; base-uri 'self';",
             (string?)context.HttpContext.Response.Headers.ContentSecurityPolicy);
+    }
+
+    [Theory]
+    [InlineData("script-src", "https://cdn.jsdelivr.net")]
+    [InlineData("script-src", "https://code.jquery.com")]
+    [InlineData("style-src", "https://cdn.jsdelivr.net")]
+    public void OnResultExecuting_PageResult_CspAllowsProductionLayoutCdnHost(string directive, string host)
+    {
+        // Arrange
+        var context = MakeContext(new PageResult());
+        var filter = new SecurityHeadersAttribute();
+
+        // Act
+        filter.OnResultExecuting(context);
+
+        // Assert
+        var csp = (string?)context.HttpContext.Response.Headers.ContentSecurityPolicy;
+        Assert.NotNull(csp);
+        var clause = csp.Split(';').Single(x => x.Trim().StartsWith(directive, StringComparison.Ordinal));
+        Assert.Contains(host, clause, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void OnResultExecuting_PageResult_CspAllowsExternalClientLogoImages()
+    {
+        // Arrange
+        var context = MakeContext(new PageResult());
+        var filter = new SecurityHeadersAttribute();
+
+        // Act
+        filter.OnResultExecuting(context);
+
+        // Assert
+        var csp = (string?)context.HttpContext.Response.Headers.ContentSecurityPolicy;
+        Assert.NotNull(csp);
+        var clause = csp.Split(';').Single(x => x.Trim().StartsWith("img-src", StringComparison.Ordinal));
+        Assert.Contains("https:", clause, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -102,7 +139,7 @@ public sealed class SecurityHeadersAttributeTests
         // Assert — CSP is unchanged
         Assert.Equal("script-src 'none'", (string?)context.HttpContext.Response.Headers.ContentSecurityPolicy);
         Assert.Equal("nosniff", (string?)context.HttpContext.Response.Headers.XContentTypeOptions);
-        Assert.Equal("SAMEORIGIN", (string?)context.HttpContext.Response.Headers.XFrameOptions);
+        Assert.Equal("DENY", (string?)context.HttpContext.Response.Headers.XFrameOptions);
         Assert.Equal("no-referrer", (string?)context.HttpContext.Response.Headers["Referrer-Policy"]);
     }
 
@@ -119,10 +156,10 @@ public sealed class SecurityHeadersAttributeTests
 
         // Assert
         Assert.Equal("nosniff", (string?)context.HttpContext.Response.Headers.XContentTypeOptions);
-        Assert.Equal("SAMEORIGIN", (string?)context.HttpContext.Response.Headers.XFrameOptions);
+        Assert.Equal("DENY", (string?)context.HttpContext.Response.Headers.XFrameOptions);
         Assert.Equal("no-referrer", (string?)context.HttpContext.Response.Headers["Referrer-Policy"]);
         Assert.Equal(
-            "default-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self';",
+            "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://code.jquery.com; style-src 'self' https://cdn.jsdelivr.net; img-src 'self' data: https:; object-src 'none'; frame-ancestors 'none'; base-uri 'self';",
             (string?)context.HttpContext.Response.Headers.ContentSecurityPolicy);
     }
 

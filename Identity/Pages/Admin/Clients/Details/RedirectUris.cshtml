@@ -13,14 +13,16 @@
     </div>
 </div>
 
-<table class="table table-bordered table-hover table-sm">
-    <thead class="table-light">
-        <tr><th>Redirect URI</th></tr>
-    </thead>
-    <tbody>
-        @foreach (var u in Model.Client.RedirectUris ?? [])
-        {
-            <tr><td>@u.RedirectUri</td></tr>
-        }
-    </tbody>
-</table>
+<div class="table-responsive">
+    <table class="table table-bordered table-hover table-sm">
+        <thead class="table-light">
+            <tr><th>Redirect URI</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var u in Model.Client.RedirectUris ?? [])
+            {
+                <tr><td>@u.RedirectUri</td></tr>
+            }
+        </tbody>
+    </table>
+</div>

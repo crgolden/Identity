@@ -24,23 +24,25 @@
     </li>
 </ul>
 
-<table class="table table-bordered table-sm">
-    <thead class="table-light">
-        <tr>
-            <th>Type</th>
-            <th>Value</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var claim in Model.Claims)
-        {
+<div class="table-responsive">
+    <table class="table table-bordered table-hover table-sm">
+        <thead class="table-light">
             <tr>
-                <td>@claim.Type</td>
-                <td>@claim.Value</td>
+                <th>Type</th>
+                <th>Value</th>
             </tr>
-        }
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+            @foreach (var claim in Model.Claims)
+            {
+                <tr>
+                    <td>@claim.Type</td>
+                    <td>@claim.Value</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
 
 <a id="btn-edit" asp-page="../Edit/Claims" asp-route-id="@Model.AppUser.Id" class="btn btn-primary">Edit</a>
 <a id="btn-back" asp-page="../Index" class="btn btn-outline-secondary">Back</a>
