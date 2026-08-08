@@ -27,11 +27,13 @@ Identity is the **authorization server** for a five-app system. It issues all ac
 - **Passkeys / WebAuthn** (ASP.NET Core Identity built-in support)
 - **TOTP two-factor authentication** with recovery codes
 - **Gravatar** profile avatars
+- **reCAPTCHA v3** — bot scoring on sign-in and registration, failing closed when unreachable
 - **Consent screen** — OAuth2 scope approval UI with allow/deny and remember-consent
 - **Grants management** — view and revoke previously granted client permissions
 - **Device authorization flow** — user code entry and scope consent for constrained devices
 - **CIBA** — client-initiated backchannel authentication request display
 - **Server-side session management** — view and remove active user sessions
+- **Admin UI** (`/Admin`, `Admin` role) — CRUD over every IdentityServer configuration and operational store, plus users and roles. Includes pushed authorization requests, and SAML entity editors that are storage-only — Identity does not serve the SAML protocol
 - **Redirect page** — loading page for native client redirects
 - **Diagnostics page** — current user claims and tokens (development only)
 - **OpenTelemetry** → Grafana Alloy (OTLP metrics & traces — including Duende IdentityServer built-in signals)

@@ -16,4 +16,4 @@ global using static System.ArgumentNullException;
 global using static System.String;
 global using static System.Text.Encoding;
 global using static Microsoft.AspNetCore.WebUtilities.WebEncoders;
-#pragma warning disable SA1200
+#pragma warning restore SA1200

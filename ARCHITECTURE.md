@@ -135,7 +135,7 @@ All pages under `/Admin` require the `"Admin"` role. Authorization is applied at
 | API Scopes | `/Admin/ApiScopes` | `IConfigurationDbContext` | 2 collection sub-properties |
 | Identity Resources | `/Admin/IdentityResources` | `IConfigurationDbContext` | 2 collection sub-properties |
 | Identity Providers | `/Admin/IdentityProviders` | `IConfigurationDbContext` | Flat edit (dynamic OIDC providers) |
-| SAML Service Providers | `/Admin/SamlServiceProviders` | `IConfigurationDbContext` | Flat edit |
+| SAML Service Providers | `/Admin/SamlServiceProviders` | `IConfigurationDbContext` | Flat edit — see SAML note below |
 | Persisted Grants | `/Admin/PersistedGrants` | `IPersistedGrantDbContext` | View + delete only |
 | Device Flow Codes | `/Admin/DeviceFlowCodes` | `IPersistedGrantDbContext` | View + delete only |
 | Server-Side Sessions | `/Admin/ServerSideSessions` | `IPersistedGrantDbContext` | View + delete only |
@@ -146,6 +146,14 @@ All pages under `/Admin` require the `"Admin"` role. Authorization is applied at
 | SAML Logout Request Indices | `/Admin/SamlLogoutSessionRequestIndices` | `IPersistedGrantDbContext` | Read-only |
 | Users | `/Admin/Users` | `UserManager<IdentityUser<Guid>>` | Claims, Roles, Logins, Passkeys sub-pages |
 | Roles | `/Admin/Roles` | `RoleManager<IdentityRole<Guid>>` | Claims, Users sub-pages |
+
+#### SAML is storage and administration only
+
+**Identity does not serve the SAML protocol.** It is not a SAML identity provider, and no application signs in through it that way.
+
+The four SAML entity types ship with `Duende.IdentityServer.EntityFramework`, so their tables exist in the schema and the admin UI can read and write them. The protocol handler is a separate licensed Duende plugin that is not referenced by `Identity.csproj` and not registered in `Program.cs`. Nothing consumes these rows at runtime.
+
+The admin pages are therefore inert configuration editors. Records created there have no effect. Standing up SAML would mean adding the plugin package, registering it, and exposing its endpoints — none of which is in place.
 
 ### IdentityServer flow pages
 
@@ -256,6 +264,7 @@ EF Core migrations are not used. The `Identity.Data/` SQL Server Database Projec
 | **Azure Service Bus** | Transactional email (confirmation, password reset) | Pages inject `IAzureClientFactory<ServiceBusClient>`; call `CreateClient("crgolden")` then `CreateSender("email")` per send; namespace from the `ServiceBusNamespace` configuration value (production) or a connection string (non-production) — not a Key Vault secret |
 | **Gravatar** | User avatar images via SHA-256 email hash | `IAvatarService` → `GravatarService` (scoped); NSwag-generated `IGravatar` HTTP client with Bearer auth |
 | **Google APIs** | External OpenID Connect login | `AddGoogleOpenIdConnect`; Client ID/Secret from Key Vault |
+| **Google reCAPTCHA v3** | Bot scoring on sign-in and registration | `ICAPTCHAService` → `ReCAPTCHAService` (typed `HttpClient`); site/secret keys from Key Vault, verification endpoint from `ReCAPTCHAVerifyEndpoint` config |
 | **Azure Key Vault** | Runtime secrets (DB credentials, API keys, OAuth secrets) | No SDK calls at app startup — `crgolden-identity`'s App Service settings hold `@Microsoft.KeyVault(SecretUri=...)` references that the platform resolves into `IConfiguration` before the app starts; `Program.cs` reads them via `IConfiguration.GetRequired<T>` (`Identity.Extensions`) like any other config value |
 | **Azure Blob Storage** | Data Protection key persistence | `PersistKeysToAzureBlobStorage` |
 | **Azure Key Vault** | Data Protection key encryption | `ProtectKeysWithAzureKeyVault` |
@@ -344,6 +353,16 @@ The host list must cover every CDN reachable from a page carrying the attribute,
 Fingerprinted URLs for ordinary `<script src>` and `<link href>` come from the static asset manifest server-side and do not depend on the import map.
 
 Restore the element if ES modules are ever introduced — bare and relative module specifiers will not resolve to fingerprinted files without it.
+
+### Bot protection — reCAPTCHA v3
+
+`Login` and `Register` are the only pages that score requests. Both render the site key into the page, collect a token client-side, and pass it to `ICAPTCHAService.VerifyAsync` on POST. A score below `ScoreThreshold` (default `0.5`) fails the request with the generic message "Request could not be verified." — deliberately non-specific, so a bot cannot tell a low score apart from a bad password.
+
+`VerifyAsync` returns `0` — a guaranteed failure — whenever the token is blank, the secret key is unset, the verification call returns a non-success status, or Google reports `success: false`. Verification therefore fails closed: a misconfigured or unreachable reCAPTCHA blocks sign-in and registration rather than silently allowing everything through.
+
+`ICAPTCHAService.IsExempt` skips scoring entirely for two addresses, `AdminEmail` and `TestEmail`, compared case-insensitively. This exists so the E2E and smoke suites can authenticate without solving a challenge, and so the admin account is not locked out by a reCAPTCHA outage. Both values come from Key Vault. Treat them as security-relevant: any address placed in either setting bypasses bot scoring on both pages, so they must name accounts that are not otherwise reachable.
+
+The CSP does not currently cover `Login` or `Register`, which is why `www.google.com` is absent from the header's `script-src`.
 
 ### Antiforgery
 

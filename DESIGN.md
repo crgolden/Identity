@@ -96,7 +96,7 @@ This file is a [design.md](https://github.com/google-labs-code/design.md)-format
 | `on-secondary` | `#ffffff` | White text on secondary backgrounds |
 | `surface` | `#ffffff` | Page and card backgrounds |
 | `on-surface` | `#212529` | `--bs-body-color`, default body text |
-| `surface-variant` | `#f8f9fa` | `--bs-light`, table headers (`table-light`), footer, sidebar |
+| `surface-variant` | `#f8f9fa` | `--bs-light`, table headers (`table-light`), sidebar |
 | `outline` | `#dee2e6` | `--bs-border-color`, form control borders, table borders |
 | `danger` | `#dc3545` | `--bs-danger`, `btn-danger`, `alert-danger`, `text-danger` |
 | `on-danger` | `#ffffff` | White text on danger backgrounds |
@@ -125,7 +125,7 @@ Pages use Bootstrap's fluid container (`container-fluid` or `container`) with th
 - **Anonymous account-flow pages** (`Login`, `Register`, `ForgotPassword`, `ResetPassword`, `LoginWith2fa`, `LoginWithRecoveryCode`, `ResendEmailConfirmation`, `ExternalLogin`): centered single column via `<div class="row justify-content-center"><div class="col-md-4">`. Pages that also offer an external-provider option (Login, Register) add a second `col-md-6 col-md-offset-2` beside it within the same centered row.
 - **Manage sub-pages** (authenticated account settings): sidebar nav + content, two columns — a vertical `nav-pills`-style list of section links (Profile, Email, Password, …) on the left, the active section's content on the right. Not centered, not single-column — this is an intentionally different pattern from the anonymous flow above.
 - **Admin pages**: full-width table layout. No sidebar nav — navigation is via the Admin Index card grid and in-page breadcrumb-style links.
-- **Form layout**: `<div class="mb-3">` wrapper, `<label class="form-label">`, `<input class="form-control">`. Use `form-floating` for single-field focused pages (login, register already use it).
+- **Form layout**: `<div class="mb-3">` wrapper, `<label class="form-label">`, `<input class="form-control">`. Account-flow and account-management forms wrap each field in `form-floating`; admin forms use the label-above layout instead. See Do's and Don'ts.
 - **Collection edit tables**: `table table-bordered table-hover table-sm` with inputs inside cells. See Components section.
 
 ---
@@ -196,6 +196,8 @@ A checkbox `asp-for` target must be a non-nullable `bool`. Several third-party e
 
 Every table — Admin index pages and Manage sub-pages alike — is wrapped in `table-responsive` so it scrolls within its own container on narrow viewports instead of forcing the whole page to scroll horizontally. An action-only column (no visible header text, e.g. Details/Edit/Delete buttons) still needs a screen-reader-only header — an empty `<th></th>` fails automated accessibility checks (axe-core `empty-table-header`).
 
+The four classes above are the whole table style set: don't add `table-striped`, and don't drop `table-hover`. Alignment and spacing utilities are orthogonal to that set and may be added where a table needs them — `Account/Manage/ServerSideSessions.cshtml` carries `align-middle` for its button column, which is allowed and is not a class-set violation.
+
 ### Collection edit tables (Admin sub-pages)
 
 Editable rows contain `<input class="form-control form-control-sm">`, rendered by a single server-side `@for` loop — there is no client-side JavaScript in this pattern. An "Add" button (`btn btn-sm btn-outline-secondary`, `asp-page-handler="AddRow"`) posts to a page handler that appends one blank item to the bound list and returns `Page()`, so the newly-added row appears via a normal page reload. A "Remove" button (`btn btn-sm btn-danger`, `asp-page-handler="RemoveRow" asp-route-index="@i"`) posts to a handler that removes the item at that index the same way. Both handlers carry an explicit `asp-route-id` — never rely on the browser reusing the current URL's query string, since after an Add/Remove round trip that URL still carries the previous `?handler=` value.
@@ -242,5 +244,5 @@ Rendered in `_StatusMessage.cshtml` as `alert-success` (positive) or `alert-dang
 - Add `<script src>` tags for grid libraries (Kendo, DataTables, etc.) or hand-rolled JavaScript on admin pages — collection editors use the server-side `OnPostAddRowAsync`/`OnPostRemoveRowAsync` pattern described above, with no client-side script.
 - Hardcode `returnUrl` into `LocalRedirect` without `IsLocalUrl` check (open redirect risk).
 - Set `border-radius`, `font-family`, or `color` inline or in component-scoped CSS — use Bootstrap tokens and utilities only.
-- Use `form-floating` outside of single-field focused pages (login, register). Admin collection forms use standard label-above layout.
+- Use `form-floating` on admin pages. It belongs to the account-flow and account-management families (`Login`, `Register`, `ForgotPassword`, `ResetPassword`, `LoginWith2fa`, `LoginWithRecoveryCode`, `ResendEmailConfirmation`, and the `Manage` forms); admin collection forms use the standard label-above layout.
 - Bind `asp-for` directly to a `bool?` property on a checkbox `<input>` — it throws at render time, not bind time, so it fails every request rather than only on unexpected data.
