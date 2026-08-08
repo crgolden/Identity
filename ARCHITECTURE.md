@@ -329,11 +329,13 @@ Applied to all IdentityServer flow pages (`[SecurityHeaders]`). Adds headers to 
 | `X-Content-Type-Options` | `nosniff` |
 | `X-Frame-Options` | `DENY` |
 | `Referrer-Policy` | `no-referrer` |
-| `Content-Security-Policy` | `default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://code.jquery.com; style-src 'self' https://cdn.jsdelivr.net; img-src 'self' data: https:; object-src 'none'; frame-ancestors 'none'; base-uri 'self';` (only if not already set) |
+| `Content-Security-Policy` | `default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://code.jquery.com https://cdnjs.cloudflare.com; style-src 'self' https://cdn.jsdelivr.net; img-src 'self' data: https:; object-src 'none'; frame-ancestors 'none'; base-uri 'self';` (only if not already set) |
 
 `X-Frame-Options` is `DENY` rather than `SAMEORIGIN` so it agrees with `frame-ancestors 'none'` instead of contradicting it.
 
-The `script-src` and `style-src` host allowances exist because `_Layout.cshtml` loads Bootstrap and jQuery from CDNs under the Production environment branch — a bare `default-src 'self'` blocks them, and the breakage is invisible in Development, where the same libraries are served from `wwwroot/lib`. `img-src` permits arbitrary HTTPS origins because the consent and device pages render client logos from URLs supplied by client configuration.
+The `script-src` and `style-src` host allowances exist because views load Bootstrap, jQuery, and jQuery Validation from CDNs under the Production environment branch — a bare `default-src 'self'` blocks them, and the breakage is invisible in Development, where the same libraries are served from `wwwroot/lib`. `img-src` permits arbitrary HTTPS origins because the consent and device pages render client logos from URLs supplied by client configuration.
+
+The host list must cover every CDN reachable from a page carrying the attribute, which includes partials those pages pull in — `_ValidationScriptsPartial.cshtml` is why `cdnjs.cloudflare.com` appears, since `Consent` and `Device` render it. Login and Register load reCAPTCHA from `www.google.com`, but neither carries `[SecurityHeaders]`; extending the CSP to those pages would additionally require `www.google.com` and `www.gstatic.com` in `script-src` and `frame-src`.
 
 ### No import map
 

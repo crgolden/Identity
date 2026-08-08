@@ -66,13 +66,14 @@ public sealed class SecurityHeadersAttributeTests
 
         // Assert
         Assert.Equal(
-            "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://code.jquery.com; style-src 'self' https://cdn.jsdelivr.net; img-src 'self' data: https:; object-src 'none'; frame-ancestors 'none'; base-uri 'self';",
+            "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://code.jquery.com https://cdnjs.cloudflare.com; style-src 'self' https://cdn.jsdelivr.net; img-src 'self' data: https:; object-src 'none'; frame-ancestors 'none'; base-uri 'self';",
             (string?)context.HttpContext.Response.Headers.ContentSecurityPolicy);
     }
 
     [Theory]
     [InlineData("script-src", "https://cdn.jsdelivr.net")]
     [InlineData("script-src", "https://code.jquery.com")]
+    [InlineData("script-src", "https://cdnjs.cloudflare.com")]
     [InlineData("style-src", "https://cdn.jsdelivr.net")]
     public void OnResultExecuting_PageResult_CspAllowsProductionLayoutCdnHost(string directive, string host)
     {
@@ -159,7 +160,7 @@ public sealed class SecurityHeadersAttributeTests
         Assert.Equal("DENY", (string?)context.HttpContext.Response.Headers.XFrameOptions);
         Assert.Equal("no-referrer", (string?)context.HttpContext.Response.Headers["Referrer-Policy"]);
         Assert.Equal(
-            "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://code.jquery.com; style-src 'self' https://cdn.jsdelivr.net; img-src 'self' data: https:; object-src 'none'; frame-ancestors 'none'; base-uri 'self';",
+            "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://code.jquery.com https://cdnjs.cloudflare.com; style-src 'self' https://cdn.jsdelivr.net; img-src 'self' data: https:; object-src 'none'; frame-ancestors 'none'; base-uri 'self';",
             (string?)context.HttpContext.Response.Headers.ContentSecurityPolicy);
     }
 

@@ -20,7 +20,7 @@ public sealed class SecurityHeadersAttribute : ActionFilterAttribute
             {
                 headers.ContentSecurityPolicy =
                     "default-src 'self'; " +
-                    "script-src 'self' https://cdn.jsdelivr.net https://code.jquery.com; " +
+                    "script-src 'self' https://cdn.jsdelivr.net https://code.jquery.com https://cdnjs.cloudflare.com; " +
                     "style-src 'self' https://cdn.jsdelivr.net; " +
                     "img-src 'self' data: https:; " +
                     "object-src 'none'; " +
