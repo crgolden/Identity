@@ -1,151 +1,160 @@
 ---
 name: Identity
 colors:
-  primary: "#0d6efd"
+  primary: "#066fd1"
   on-primary: "#ffffff"
-  secondary: "#6c757d"
+  secondary: "#6b7280"
   on-secondary: "#ffffff"
   surface: "#ffffff"
-  on-surface: "#212529"
-  surface-variant: "#f8f9fa"
-  outline: "#dee2e6"
-  danger: "#dc3545"
+  on-surface: "#1f2937"
+  surface-variant: "#f9fafb"
+  outline: "#e5e7eb"
+  danger: "#d63939"
   on-danger: "#ffffff"
-  focus-ring: "#258cfb"
+  success: "#2fb344"
+colors-dark:
+  surface: "#111827"
+  on-surface: "#e5e7eb"
+  primary: "#066fd1"
+  danger: "#d63939"
 typography:
   body:
-    fontFamily: "system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif"
-    fontSize: "1rem"
+    fontFamily: "Inter, -apple-system, BlinkMacSystemFont, \"San Francisco\", \"Segoe UI\", Roboto, \"Helvetica Neue\", sans-serif"
+    fontSize: "0.875rem"
     fontWeight: 400
-    lineHeight: 1.5
+    lineHeight: 1.4285714286
   heading:
-    fontFamily: "system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif"
+    fontFamily: "Inter, -apple-system, BlinkMacSystemFont, \"San Francisco\", \"Segoe UI\", Roboto, \"Helvetica Neue\", sans-serif"
     fontWeight: 600
   code:
-    fontFamily: "SFMono-Regular, Menlo, Monaco, Consolas, monospace"
-    fontSize: "0.875em"
+    fontFamily: "Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace"
 rounded:
-  sm: "0.25rem"
-  md: "0.375rem"
-  lg: "0.5rem"
+  md: "6px"
   pill: "50rem"
 spacing:
   base: "4px"
   unit: "1rem"
-  note: "Use Bootstrap utility classes (p-3, mb-4, gap-2, etc.) — no custom spacing values."
+  note: "Use framework utility classes (p-3, mb-4, gap-2). No custom spacing values."
 components:
   btn-primary:
-    background: "{colors.primary}"
-    color: "{colors.on-primary}"
     use: "Save, Create, Submit — one per form"
   btn-danger:
-    background: "{colors.danger}"
-    color: "{colors.on-danger}"
     use: "Delete and other destructive actions only"
-  btn-secondary:
-    background: "{colors.secondary}"
-    color: "{colors.on-secondary}"
-    use: "Secondary actions where contrast with btn-primary is needed"
   btn-outline-secondary:
-    use: "Cancel and back navigation links rendered as buttons"
-  btn-outline-primary:
-    use: "De-emphasized, non-destructive utility actions in dense panels (e.g. a session-list filter button) — never a substitute for the one true btn-primary in a form"
+    use: "Cancel and back navigation rendered as buttons"
   btn-outline-danger:
-    use: "De-emphasized destructive row actions inside dense tables (e.g. Revoke in a Grants or Sessions table). Prefer solid btn-danger everywhere else"
+    use: "De-emphasized destructive row action inside a dense table"
   btn-link:
-    use: "Low-emphasis inline actions embedded in body text or beside a field (e.g. \"Send verification email\")"
-  nav-link:
-    use: "Top navigation and sidebar links"
+    use: "Low-emphasis inline action beside a field"
   form-control:
-    border-radius: "{rounded.md}"
     use: "All text, email, password, and select inputs"
   table:
     classes: "table table-bordered table-hover table-sm"
-    header-class: "table-light"
+    header: "No class — the framework styles thead natively and theme-aware"
   table-responsive:
-    use: "Wrap every table in <div class=\"table-responsive\"> so wide tables scroll within their own container instead of forcing page-level horizontal scroll on mobile"
+    use: "Wrap every table so it scrolls in its own container on narrow viewports"
   card:
-    border-radius: "{rounded.md}"
-    surface: "{colors.surface}"
-    use: "Admin landing page section cards; account manage panels"
+    use: "Home page feature grid; Admin landing section cards; account manage panels"
   alert-danger:
-    use: "Validation summaries and error status messages (TempData[\"StatusMessage\"] when negative)"
+    use: "Validation summaries and negative status messages"
   alert-success:
-    use: "Confirmation status messages (TempData[\"StatusMessage\"] when positive)"
+    use: "Positive status messages"
 ---
 
 # Design Documentation
 
 ## Overview
 
-Identity is a standalone **OpenID Connect Identity Provider** (IdP) built on Duende IdentityServer 8 and ASP.NET Core Identity. It issues OIDC/OAuth2 tokens for all first-party client applications and provides a full self-service account management UI. An admin section (`/Admin`) gives role-holders direct CRUD access to every IdentityServer configuration entity and ASP.NET Identity user/role.
+Identity is a standalone **OpenID Connect Identity Provider** built on Duende IdentityServer and ASP.NET Core Identity. It issues tokens for every first-party client application and provides self-service account management, plus an admin section (`/Admin`) for role-holders.
 
-Component library: **Bootstrap 5.3.8**. All UI tokens above map directly to Bootstrap CSS custom properties and utility class names. No custom CSS framework or design system — only Bootstrap classes and the tokens declared in the front matter above.
+Component library: **Tabler**, vendored at `Identity/wwwroot/lib/tabler/` — check that directory for the shipped version. Tabler is built on Bootstrap 5 and **bundles it**, so it replaces Bootstrap rather than layering on top. Every Bootstrap class name used in this app is provided by Tabler.
 
-This file is a [design.md](https://github.com/google-labs-code/design.md)-format visual design system spec — UI tokens and component conventions only. For application architecture (routing tiers, authentication flows, data layer, observability, security, CI/CD), see [ARCHITECTURE.md](ARCHITECTURE.md).
+This file is a [design.md](https://github.com/google-labs-code/design.md)-format spec — UI tokens and component conventions only. For application architecture see [ARCHITECTURE.md](ARCHITECTURE.md).
+
+---
+
+## No custom CSS
+
+**The application ships zero hand-written CSS.** `wwwroot/` contains only vendored third-party stylesheets:
+
+| File | Origin |
+|---|---|
+| `lib/tabler/tabler.min.css` | Tabler distribution |
+| `lib/inter/latin.css` | Inter webfont package, with its own `files/*.woff2` |
+
+There is no `site.css` and no `*.cshtml.css` CSS-isolation file. Both previously existed and were deleted: `site.css` only re-stated framework defaults, and `Pages/Shared/_Layout.cshtml.css` was compiled and served but **never linked**, so every rule in it was dead — including a navbar shadow the old spec claimed as the app's one elevation level.
+
+When something needs to change visually, override a framework CSS custom property — never add a rule, and never add a stylesheet. If you believe a custom rule is unavoidable, that is a signal to re-check whether a framework utility already does it.
 
 ---
 
 ## Colors
 
-| Token | Hex | Bootstrap mapping |
+Tabler defines these; do not restate them in markup with hardcoded utilities.
+
+| Token | Light | Dark |
 |---|---|---|
-| `primary` | `#0d6efd` | `--bs-primary`, `btn-primary`, `text-primary` |
-| `on-primary` | `#ffffff` | White text on primary backgrounds |
-| `secondary` | `#6c757d` | `--bs-secondary`, `btn-secondary` |
-| `on-secondary` | `#ffffff` | White text on secondary backgrounds |
-| `surface` | `#ffffff` | Page and card backgrounds |
-| `on-surface` | `#212529` | `--bs-body-color`, default body text |
-| `surface-variant` | `#f8f9fa` | `--bs-light`, table headers (`table-light`), sidebar |
-| `outline` | `#dee2e6` | `--bs-border-color`, form control borders, table borders |
-| `danger` | `#dc3545` | `--bs-danger`, `btn-danger`, `alert-danger`, `text-danger` |
-| `on-danger` | `#ffffff` | White text on danger backgrounds |
-| `focus-ring` | `#258cfb` | Custom focus ring color defined in `site.css` |
+| `primary` | `#066fd1` | unchanged |
+| `danger` | `#d63939` | unchanged |
+| `success` | `#2fb344` | unchanged |
+| `secondary` | `#6b7280` | lighter grey |
+| `surface` (body background) | `#f9fafb` | `#111827` |
+| `on-surface` (body text) | `#1f2937` | `#e5e7eb` |
+| `outline` (borders) | `#e5e7eb` | dark grey |
+
+**Never use a hardcoded light or dark utility** — `text-dark`, `text-white`, `bg-white`, `bg-light`, `bg-dark`, `navbar-light`, `navbar-dark`, `table-light`. Each one pins a palette and breaks the opposite colour mode. All of them were removed from this codebase for exactly that reason; re-introducing one is a regression.
+
+---
+
+## Dark mode
+
+Identity follows the **operating system preference**, with no in-app toggle.
+
+`wwwroot/js/theme.js` sets `data-bs-theme` on `<html>` from `matchMedia("(prefers-color-scheme: dark)")`. It is loaded **synchronously in `<head>`**, before the body renders, so there is no flash of light theme. It is served from `'self'`, so it needs no Content-Security-Policy allowance.
+
+Tabler supplies the dark palette through `[data-bs-theme=dark]` blocks. Components inherit it automatically — provided markup uses semantic classes and not the hardcoded utilities listed above.
 
 ---
 
 ## Typography
 
-Identity does not load a web font. Body and heading text render in Bootstrap's default `system-ui` stack — the OS's native UI font (Segoe UI on Windows, San Francisco on macOS/iOS, Roboto on Android). This is a deliberate choice, not an oversight: no `<link>` or `@font-face` is present anywhere in `site.css` or `_Layout.cshtml`, and this file previously (incorrectly) documented an `Inter` token that was never actually wired up — corrected here to describe what's shipped.
+Inter is **self-hosted** at `wwwroot/lib/inter/`, loaded via the font package's own stylesheet. It is not fetched from a CDN and does not use a hand-written `@font-face`. Tabler's stack names Inter first but ships no font files of its own, so without this the app would silently fall back to the system UI font.
 
-| Role | Family | Size | Weight | Line height |
-|---|---|---|---|---|
-| Body | system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif | 14px (mobile) / 16px (≥768px) | 400 | 1.5 |
-| Heading | same | Bootstrap scale (`h1`–`h6`) | 600 | Bootstrap default |
-| Code | SFMono-Regular, Menlo, Monaco, Consolas, monospace | 0.875em | 400 | Bootstrap default |
+| Role | Family | Size | Weight |
+|---|---|---|---|
+| Body | Inter, then the system UI stack | `0.875rem` | 400 |
+| Heading | same | framework scale | 600 |
+| Code | Monaco, Consolas, Liberation Mono, Courier New, monospace | framework scale | 400 |
 
-Font size is controlled by a `site.css` media query (`html { font-size: 14px }`, raised to `16px` at `min-width: 768px`) — verified against the deployed stylesheet. Headings use `fw-semibold` or native `<h>` weight. Do not set custom `font-family` in component markup — use the body default, and do not introduce a web font without updating this section to match.
-
----
-
-## Layout
-
-Pages use Bootstrap's fluid container (`container-fluid` or `container`) with the shared `_Layout.cshtml`. No custom grid overrides. There are three distinct layout patterns, one per page family — do not mix them:
-
-- **Anonymous account-flow pages** (`Login`, `Register`, `ForgotPassword`, `ResetPassword`, `LoginWith2fa`, `LoginWithRecoveryCode`, `ResendEmailConfirmation`, `ExternalLogin`): centered single column via `<div class="row justify-content-center"><div class="col-md-4">`. Pages that also offer an external-provider option (Login, Register) add a second `col-md-6 col-md-offset-2` beside it within the same centered row.
-- **Manage sub-pages** (authenticated account settings): sidebar nav + content, two columns — a vertical `nav-pills`-style list of section links (Profile, Email, Password, …) on the left, the active section's content on the right. Not centered, not single-column — this is an intentionally different pattern from the anonymous flow above.
-- **Admin pages**: full-width table layout. No sidebar nav — navigation is via the Admin Index card grid and in-page breadcrumb-style links.
-- **Form layout**: `<div class="mb-3">` wrapper, `<label class="form-label">`, `<input class="form-control">`. Account-flow and account-management forms wrap each field in `form-floating`; admin forms use the label-above layout instead. See Do's and Don'ts.
-- **Collection edit tables**: `table table-bordered table-hover table-sm` with inputs inside cells. See Components section.
+The body size is the framework default and is deliberately denser than the browser default. Do not override it, and do not set `font-family` in component markup.
 
 ---
 
-## Elevation & Depth
+## Elevation
 
-Identity uses exactly one elevation level: Bootstrap's `box-shadow` utility on the top navbar (`Pages/Shared/_Layout.cshtml`, `<nav class="... box-shadow ...">`), giving it a subtle lift over page content. No other surface (cards, modals, dropdowns) uses a shadow — cards are differentiated by the `outline` border color and `surface-variant` background only. Do not add `shadow-sm`/`shadow`/`shadow-lg` to any other component without updating this section.
+One elevation level: `shadow-sm` on the top navbar. No other surface carries a shadow — cards and tables are separated by the `outline` border colour and surface tints alone. Do not add `shadow`/`shadow-lg` elsewhere without updating this section.
 
 ---
 
 ## Shapes
 
-| Token | Value | Applied to |
-|---|---|---|
-| `sm` | `0.25rem` | Small badges, tight UI elements |
-| `md` | `0.375rem` | Inputs (`form-control`), cards (Bootstrap default) |
-| `lg` | `0.5rem` | Larger cards, modals |
-| `pill` | `50rem` | `rounded-pill` badges |
+`6px` is the framework corner radius, applied to inputs, cards, and buttons. Use `rounded-*` utilities; never set `border-radius` directly. `rounded-pill` remains available for badges.
 
-Use Bootstrap `rounded-*` utilities. Do not set `border-radius` inline or in custom CSS.
+---
+
+## Layout
+
+Three page-family patterns — do not mix them:
+
+- **Anonymous account flow** (`Login`, `Register`, `ForgotPassword`, `ResetPassword`, `LoginWith2fa`, `LoginWithRecoveryCode`, `ResendEmailConfirmation`, `ExternalLogin`): centred single column, `<div class="row justify-content-center"><div class="col-md-4">`. Pages offering an external provider add a second column beside it.
+- **Manage sub-pages**: sidebar nav plus content, two columns, driven by `_ManageNav`.
+- **Admin pages**: full-width table layout, navigated via the Admin index card grid.
+
+The shell (`Pages/Shared/_Layout.cshtml`) is a flex column at `min-vh-100` with the footer pushed down by `mt-auto` — framework utilities only. This replaces a previous absolutely-positioned footer that depended on the deleted stylesheet and never actually worked.
+
+**Forms:** `<div class="mb-3">` wrapper, `<label class="form-label">`, `<input class="form-control">`. Account-flow and account-management forms wrap fields in `form-floating`; admin forms use label-above instead.
+
+A checkbox `asp-for` target must be a non-nullable `bool`. Several third-party entities expose `bool?`; add a non-nullable proxy property on the page model (see `Pages/Admin/Clients/Edit/Index.cshtml.cs`).
 
 ---
 
@@ -155,35 +164,21 @@ Use Bootstrap `rounded-*` utilities. Do not set `border-radius` inline or in cus
 
 | Use case | Class |
 |---|---|
-| Primary action (Save, Create, Submit) | `btn btn-primary` |
-| Destructive action (Delete, Remove, Revoke, Disable, Reset) | `btn btn-danger` |
-| Secondary / neutral action (e.g. "Forget this browser") | `btn btn-secondary` or `btn btn-outline-secondary` |
-| Cancel / back navigation | `<a class="btn btn-outline-secondary">` |
-| De-emphasized non-destructive utility action (e.g. a table filter) | `btn btn-outline-primary` |
-| De-emphasized destructive row action inside a dense table | `btn btn-outline-danger` |
-| Low-emphasis inline action beside a field | `btn btn-link` |
-| Small table row action | add `btn-sm` |
+| Primary action | `btn btn-primary` |
+| Destructive action | `btn btn-danger` |
+| Cancel / back | `<a class="btn btn-outline-secondary">` |
+| De-emphasized destructive row action in a dense table | `btn btn-outline-danger` |
+| Low-emphasis inline action | `btn btn-link` |
+| Table row action | add `btn-sm` |
 
-One `btn-primary` per form. Never use `btn-primary` for a destructive action — always `btn-danger`, even when that action is reached via a link from a hub/menu page rather than the confirmation page itself. A link that leads to a page whose own submit button is `btn-danger` must itself be styled `btn-danger` (or, in a dense table row, `btn-outline-danger`) — don't let the entry point undersell what it does.
-
-### Forms
-
-```html
-<div class="mb-3">
-    <label asp-for="Field" class="form-label"></label>
-    <input asp-for="Field" class="form-control" />
-    <span asp-validation-for="Field" class="text-danger"></span>
-</div>
-```
-
-A checkbox `asp-for` target must be a non-nullable `bool`. Several third-party entities (e.g. Duende's `Client.CoordinateLifetimeWithUserSession`, `SamlServiceProvider.RequireSignedAuthnRequests`/`RequireSignedLogoutResponses`) expose `bool?` properties — `asp-for` cannot bind a checkbox `<input>` directly to those; add a non-nullable proxy property on the page model instead (see `Pages/Admin/Clients/Edit/Index.cshtml.cs`'s `CoordinateLifetimeWithUserSession` for the pattern).
+One `btn-primary` per form. Never `btn-primary` for a destructive action — including the entry-point link on a hub page. A link leading to a page whose submit button is `btn-danger` must itself read as destructive.
 
 ### Tables
 
 ```html
 <div class="table-responsive">
     <table class="table table-bordered table-hover table-sm">
-        <thead class="table-light">
+        <thead>
             <tr>
                 <th>…</th>
                 <th class="visually-hidden">Actions</th>
@@ -194,55 +189,38 @@ A checkbox `asp-for` target must be a non-nullable `bool`. Several third-party e
 </div>
 ```
 
-Every table — Admin index pages and Manage sub-pages alike — is wrapped in `table-responsive` so it scrolls within its own container on narrow viewports instead of forcing the whole page to scroll horizontally. An action-only column (no visible header text, e.g. Details/Edit/Delete buttons) still needs a screen-reader-only header — an empty `<th></th>` fails automated accessibility checks (axe-core `empty-table-header`).
+`<thead>` carries **no class**. Tabler styles table headers natively — uppercase, letter-spaced, on `--tblr-bg-surface-tertiary`, which flips with the colour mode. The old `table-light` was both a hardcoded light value *and* an override of that better default.
 
-The four classes above are the whole table style set: don't add `table-striped`, and don't drop `table-hover`. Alignment and spacing utilities are orthogonal to that set and may be added where a table needs them — `Account/Manage/ServerSideSessions.cshtml` carries `align-middle` for its button column, which is allowed and is not a class-set violation.
+Every table is wrapped in `table-responsive`. An action-only column still needs a screen-reader-only header — an empty `<th></th>` fails the axe-core `empty-table-header` rule.
 
-### Collection edit tables (Admin sub-pages)
+Alignment utilities are orthogonal to the class set and may be added where needed.
 
-Editable rows contain `<input class="form-control form-control-sm">`, rendered by a single server-side `@for` loop — there is no client-side JavaScript in this pattern. An "Add" button (`btn btn-sm btn-outline-secondary`, `asp-page-handler="AddRow"`) posts to a page handler that appends one blank item to the bound list and returns `Page()`, so the newly-added row appears via a normal page reload. A "Remove" button (`btn btn-sm btn-danger`, `asp-page-handler="RemoveRow" asp-route-index="@i"`) posts to a handler that removes the item at that index the same way. Both handlers carry an explicit `asp-route-id` — never rely on the browser reusing the current URL's query string, since after an Add/Remove round trip that URL still carries the previous `?handler=` value.
+### Collection edit tables (Admin)
 
-Every row field and its Remove button carries an index-based `id` (`{field}-{index}` / `{field}-remove-{index}`, e.g. `scope-0`, `claim-type-0`, `claim-remove-0`) using the loop's own `@i` — per project convention, E2E tests select elements by `id` only. Because the same loop renders both already-saved and freshly-added rows, indices are always contiguous starting at 0, matching ASP.NET Core's default `List<T>` model-binding requirement with no separate renumbering step needed. See `TESTING.md`'s "ID convention" table for the full pattern.
+Editable rows use `<input class="form-control form-control-sm">` rendered by a server-side `@for` loop — no client-side JavaScript. Add/Remove buttons post to `OnPostAddRowAsync`/`OnPostRemoveRowAsync` handlers that mutate the bound list and return `Page()`. Both carry an explicit `asp-route-id`.
+
+Every row field and its Remove button carries an index-based `id` (`{field}-{index}`), because **E2E tests select by `id`**. Keep every `id` when restyling — a class change is free, an `id` change breaks tests. Detail lists rendered for assertion also carry ids (for example `user-role-{index}`); a class-based selector is not an acceptable substitute.
 
 ### Status messages
 
-```csharp
-TempData["StatusMessage"] = "Your profile has been updated.";
-```
-
-Rendered in `_StatusMessage.cshtml` as `alert-success` (positive) or `alert-danger` (negative, prefix message with "Error: ").
-
-### Cards (Admin Index)
-
-```html
-<div class="card h-100">
-    <div class="card-body">
-        <h5 class="card-title">Section</h5>
-        <a asp-page="…" class="btn btn-sm btn-primary">Manage</a>
-    </div>
-</div>
-```
+`TempData["StatusMessage"]` renders through `_StatusMessage.cshtml` as `alert-success`, or `alert-danger` when prefixed with "Error:".
 
 ---
 
 ## Do's and Don'ts
 
 **Do:**
-- Use `btn-danger` for every destructive action (Delete, Remove, Revoke, Disable, Reset) — including the entry-point link on a hub page, not just the final confirmation page's submit button.
-- Use `btn-outline-secondary` styled as `<a>` for Cancel/Back.
-- Use `table-light` on `<thead>` in every table, and wrap every `<table>` in `table-responsive`.
-- Give every table header a non-empty accessible name — use `visually-hidden` text for action-only columns.
-- Use `TempData["StatusMessage"]` + `_StatusMessage.cshtml` for post-redirect feedback.
-- Use `Url.IsLocalUrl(returnUrl) ? LocalRedirect(returnUrl) : LocalRedirect("~/")` — never `LocalRedirect(returnUrl)` directly.
-- Gate `/Admin/**` with the `"Admin"` role policy via `AuthorizeFolder` — no per-page `[Authorize]`.
-- Use `[AllowAnonymous]` explicitly on any page that must be public inside the otherwise-protected Razor Pages tree.
-- Add a non-nullable proxy property on the page model for any checkbox bound to a third-party `bool?` entity property.
+- Use `btn-danger` for every destructive action, including hub-page entry links.
+- Wrap every table in `table-responsive`, and give every header an accessible name.
+- Keep every `id` attribute — tests depend on them.
+- Prefer an HTML attribute over an inline style when sizing media (`height="32"`), since `style-src 'self'` blocks inline styles.
+- Use `[AllowAnonymous]` explicitly on any page that must be public.
 
 **Don't:**
-- Use `btn-primary` for delete, remove, revoke, disable, or reset actions — anywhere, including hub-page entry links.
-- Use `btn-danger` for navigation or secondary actions.
-- Add `<script src>` tags for grid libraries (Kendo, DataTables, etc.) or hand-rolled JavaScript on admin pages — collection editors use the server-side `OnPostAddRowAsync`/`OnPostRemoveRowAsync` pattern described above, with no client-side script.
-- Hardcode `returnUrl` into `LocalRedirect` without `IsLocalUrl` check (open redirect risk).
-- Set `border-radius`, `font-family`, or `color` inline or in component-scoped CSS — use Bootstrap tokens and utilities only.
-- Use `form-floating` on admin pages. It belongs to the account-flow and account-management families (`Login`, `Register`, `ForgotPassword`, `ResetPassword`, `LoginWith2fa`, `LoginWithRecoveryCode`, `ResendEmailConfirmation`, and the `Manage` forms); admin collection forms use the standard label-above layout.
-- Bind `asp-for` directly to a `bool?` property on a checkbox `<input>` — it throws at render time, not bind time, so it fails every request rather than only on unexpected data.
+- Add any `.css` file, or any hand-written CSS rule.
+- Use hardcoded palette utilities (`text-dark`, `bg-white`, `table-light`, `navbar-light`, …).
+- Use inline `style="…"` — it is blocked by the Content-Security-Policy on every page.
+- Add `<script>` blocks inline — also blocked. Put JavaScript in `wwwroot/js/` and pass data via `data-` attributes.
+- Use `btn-primary` for delete/remove/revoke/disable/reset.
+- Use `form-floating` on admin pages.
+- Add `<script src>` grid libraries or hand-rolled JavaScript to admin pages.
