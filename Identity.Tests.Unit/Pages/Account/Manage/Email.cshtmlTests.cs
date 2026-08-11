@@ -181,10 +181,8 @@ public class EmailModelTests
     [Fact]
     public void Constructor_MultipleInstances_AreIndependent()
     {
-        // Arrange - first instance
+        // Arrange
         var userManager1 = CreateUserManager();
-
-        // Arrange - second instance
         var userManager2 = CreateUserManager();
 
         // Act

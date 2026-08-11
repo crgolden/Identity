@@ -137,7 +137,7 @@ public sealed class SecurityHeadersAttributeTests
         // Act
         filter.OnResultExecuting(context);
 
-        // Assert — CSP is unchanged
+        // Assert
         Assert.Equal("script-src 'none'", (string?)context.HttpContext.Response.Headers.ContentSecurityPolicy);
         Assert.Equal("nosniff", (string?)context.HttpContext.Response.Headers.XContentTypeOptions);
         Assert.Equal("DENY", (string?)context.HttpContext.Response.Headers.XFrameOptions);
