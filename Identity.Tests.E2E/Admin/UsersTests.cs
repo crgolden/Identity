@@ -1,5 +1,6 @@
 namespace Identity.Tests.E2E.Admin;
 
+using System.Globalization;
 using System.Text.RegularExpressions;
 using Infrastructure;
 using Microsoft.Playwright;
@@ -183,7 +184,7 @@ public sealed class UsersTests(PlaywrightFixture fixture)
             await page.ClickAsync("#btn-edit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Users/Edit/Roles"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
             await page.ClickAsync("#btn-add-row");
-            await page.FillAsync("#role-1", roleName);
+            await page.FillAsync($"#role-{await RoleRowIndexAsync(page, string.Empty)}", roleName);
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Users/Details/Roles"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
             await Assertions.Expect(page.Locator("[id^='user-role-']", new PageLocatorOptions { HasText = roleName })).ToBeVisibleAsync();
@@ -206,7 +207,7 @@ public sealed class UsersTests(PlaywrightFixture fixture)
 
             await page.ClickAsync("#btn-edit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Users/Edit/Roles"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await page.ClickAsync("#role-remove-1");
+            await page.ClickAsync($"#role-remove-{await RoleRowIndexAsync(page, roleName)}");
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Users/Details/Roles"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
             await Assertions.Expect(page.Locator("[id^='user-role-']", new PageLocatorOptions { HasText = roleName })).Not.ToBeVisibleAsync();
@@ -231,7 +232,7 @@ public sealed class UsersTests(PlaywrightFixture fixture)
 
             await page.ClickAsync("#btn-edit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Users/Edit/Roles"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await page.FillAsync("#role-1", updatedRoleName);
+            await page.FillAsync($"#role-{await RoleRowIndexAsync(page, roleName)}", updatedRoleName);
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Users/Details/Roles"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
             await Assertions.Expect(page.Locator("[id^='user-role-']", new PageLocatorOptions { HasText = updatedRoleName })).ToBeVisibleAsync();
@@ -265,9 +266,17 @@ public sealed class UsersTests(PlaywrightFixture fixture)
         await page.ClickAsync("#btn-edit");
         await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Users/Edit/Roles"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
         await page.ClickAsync("#btn-add-row");
-        await page.FillAsync("#role-1", roleName);
+        await page.FillAsync($"#role-{await RoleRowIndexAsync(page, string.Empty)}", roleName);
         await page.ClickAsync("#save-submit");
         await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Users/Details/Roles"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+    }
+
+    private static async Task<int> RoleRowIndexAsync(IPage page, string value)
+    {
+        var input = page.Locator($"input[id^='role-'][value='{value}']");
+        await Assertions.Expect(input).ToHaveCountAsync(1, new LocatorAssertionsToHaveCountOptions { Timeout = 15_000 });
+        var id = await input.GetAttributeAsync("id") ?? string.Empty;
+        return int.Parse(id["role-".Length..], CultureInfo.InvariantCulture);
     }
 
     private static async Task NavigateToOwnDetailsAsync(IPage page, string email)
