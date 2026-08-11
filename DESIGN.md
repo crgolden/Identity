@@ -133,7 +133,9 @@ The body size is the framework default and is deliberately denser than the brows
 
 ## Elevation
 
-One elevation level: `shadow-sm` on the top navbar. No other surface carries a shadow — cards and tables are separated by the `outline` border colour and surface tints alone. Do not add `shadow`/`shadow-lg` elsewhere without updating this section.
+Elevation comes entirely from Tabler's component defaults. **No `shadow-*` utility appears anywhere in the markup, and none should be added.**
+
+Measured on the rendered page: the header carries a 1px inset bottom rule rather than a drop shadow, cards and buttons carry Tabler's own subtle shadows, and the footer carries none. If a surface needs lift, it already has whatever Tabler gives it — reaching for `shadow-sm`/`shadow`/`shadow-lg` means overriding a deliberate framework decision.
 
 ---
 
@@ -151,7 +153,9 @@ Three page-family patterns — do not mix them:
 - **Manage sub-pages**: sidebar nav plus content, two columns, driven by `_ManageNav`.
 - **Admin pages**: full-width table layout, navigated via the Admin index card grid.
 
-The shell (`Pages/Shared/_Layout.cshtml`) is a flex column at `min-vh-100` with the footer pushed down by `mt-auto` — framework utilities only. This replaces a previous absolutely-positioned footer that depended on the deleted stylesheet and never actually worked.
+The shell (`Pages/Shared/_Layout.cshtml`) is Tabler's own page structure: a `page` flex column containing a `header.navbar` and a `page-wrapper`, which holds `page-body` and a `footer footer-transparent`. Content sits inside `container-xl`. The footer is placed by that structure rather than by utility classes.
+
+**Page titles stay on the page, not in a `page-header` block.** Tabler offers one, but the per-page `<h1>` carries context the page title does not — `Users in {role}` against a title of `Role Users`, for instance — and several Manage pages deliberately have no heading at all. Rendering headings from `ViewData["Title"]` would flatten both.
 
 **Forms:** `<div class="mb-3">` wrapper, `<label class="form-label">`, `<input class="form-control">`. Account-flow and account-management forms wrap fields in `form-floating`; admin forms use label-above instead.
 
