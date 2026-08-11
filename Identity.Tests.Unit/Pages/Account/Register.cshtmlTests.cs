@@ -60,7 +60,7 @@ public class RegisterModelTests
             CreateClientFactory(),
             CreateRecaptchaServiceMock().Object);
 
-        // Act & Assert: ensure no exception and ReturnUrl set as expected
+        // Act & Assert
         var ex = await Record.ExceptionAsync(() => model.OnGetAsync(returnUrl));
         Assert.Null(ex);
         Assert.Equal(returnUrl, model.ReturnUrl);

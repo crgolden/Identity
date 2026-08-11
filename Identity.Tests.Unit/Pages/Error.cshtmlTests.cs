@@ -161,7 +161,7 @@ public class ErrorModelTests
             // Act
             var ex = await Record.ExceptionAsync(() => model.OnGetAsync(errorId));
 
-            // Assert - no exception thrown
+            // Assert
             Assert.Null(ex);
 
             mockInteraction.Verify(s => s.GetErrorContextAsync(errorId, It.IsAny<CancellationToken>()), Times.Once);

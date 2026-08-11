@@ -34,7 +34,7 @@ public class DeviceIndexModelTests
     [Fact]
     public async Task OnGetAsync_NullUserCode_ReturnsPage()
     {
-        // Arrange — blank user code short-circuits to the entry form
+        // Arrange
         var model = CreateModel(new Mock<IDeviceFlowInteractionService>(MockBehavior.Strict).Object);
 
         // Act
@@ -47,7 +47,7 @@ public class DeviceIndexModelTests
     [Fact]
     public async Task OnGetAsync_InvalidUserCode_ReturnsPageWithModelError()
     {
-        // Arrange — SetViewModelAsync returns false (no context) → model error + page
+        // Arrange
         var interaction = new Mock<IDeviceFlowInteractionService>(MockBehavior.Strict);
         interaction
             .Setup(x => x.GetAuthorizationContextAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -85,7 +85,7 @@ public class DeviceIndexModelTests
     [Fact]
     public async Task OnGetAsync_RichRequest_BuildsApiScopesWithResourcesAndOfflineAccess()
     {
-        // Arrange — populated scopes/resources exercise the ClientName fallback, api-scope loop, and offline scope
+        // Arrange
         var interaction = new Mock<IDeviceFlowInteractionService>(MockBehavior.Strict);
         interaction
             .Setup(x => x.GetAuthorizationContextAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -169,7 +169,7 @@ public class DeviceIndexModelTests
     [Fact]
     public async Task OnPostAsync_ButtonYes_NoScopes_AddsModelErrorAndReRenders()
     {
-        // Arrange — "yes" with no scopes adds MustChooseOne, then re-renders via SetViewModelAsync
+        // Arrange
         var interaction = new Mock<IDeviceFlowInteractionService>(MockBehavior.Strict);
         interaction.Setup(x => x.GetAuthorizationContextAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(BuildRequest());
         var model = CreateModel(interaction.Object);
@@ -186,7 +186,7 @@ public class DeviceIndexModelTests
     [Fact]
     public async Task OnPostAsync_InvalidButton_SetViewModelFails_RedirectsToError()
     {
-        // Arrange — unknown button adds InvalidSelection; the re-render's SetViewModelAsync then fails
+        // Arrange
         var interaction = new Mock<IDeviceFlowInteractionService>(MockBehavior.Strict);
         interaction
             .SetupSequence(x => x.GetAuthorizationContextAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -206,7 +206,7 @@ public class DeviceIndexModelTests
     [Fact]
     public async Task OnPostAsync_NullUserCode_Throws()
     {
-        // Arrange — a null user code trips ThrowIfNull before any interaction call
+        // Arrange
         var model = CreateModel(new Mock<IDeviceFlowInteractionService>(MockBehavior.Strict).Object);
         model.Input = new DeviceModel.InputModel { UserCode = null };
 

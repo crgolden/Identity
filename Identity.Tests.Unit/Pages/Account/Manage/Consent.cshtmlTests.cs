@@ -35,7 +35,7 @@ public class ConsentIndexModelTests
     [Fact]
     public async Task OnGetAsync_NullReturnUrl_RedirectsToError()
     {
-        // Arrange — blank returnUrl makes SetViewModelAsync return false
+        // Arrange
         var interaction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
         var model = CreateModel(interaction.Object);
 
@@ -64,7 +64,7 @@ public class ConsentIndexModelTests
     [Fact]
     public async Task OnGetAsync_ValidReturnUrl_BuildsViewModelAndReturnsPage()
     {
-        // Arrange — a constructed AuthorizationRequest drives the happy SetViewModelAsync + CreateConsentViewModel path
+        // Arrange
         var interaction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
         interaction.Setup(x => x.GetAuthorizationContextAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(BuildRequestWithIdentityScope());
         var model = CreateModel(interaction.Object);
@@ -82,8 +82,7 @@ public class ConsentIndexModelTests
     [Fact]
     public async Task OnGetAsync_RichRequest_BuildsApiScopesWithResourcesAndOfflineAccess()
     {
-        // Arrange — populated scopes/resources exercise the ClientName fallback, the api-scope loop,
-        // FindApiScope-found, the resource indicator path, and the offline-access scope
+        // Arrange
         var interaction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
         interaction.Setup(x => x.GetAuthorizationContextAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(BuildRichRequest());
         var model = CreateModel(interaction.Object);
@@ -102,7 +101,7 @@ public class ConsentIndexModelTests
     [Fact]
     public async Task OnGetAsync_RequestWithUnknownScope_SkipsScopeWithoutApiScope()
     {
-        // Arrange — a parsed scope FindApiScope cannot resolve is skipped; no offline scope when OfflineAccess is false
+        // Arrange
         var parsed = new[] { new ParsedScopeValue("unknown.scope") };
         var request = new AuthorizationRequest
         {
@@ -189,7 +188,7 @@ public class ConsentIndexModelTests
     [Fact]
     public async Task OnPostAsync_ButtonYes_NoScopesConsented_AddsModelErrorAndReRenders()
     {
-        // Arrange — the genuine "yes + no scopes" path (defect D-2 fix): MustChooseOne error, then re-render
+        // Arrange
         var request = BuildRequest();
         var interaction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
         interaction.Setup(x => x.GetAuthorizationContextAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(request);
@@ -212,7 +211,7 @@ public class ConsentIndexModelTests
     [Fact]
     public async Task OnPostAsync_InvalidButton_SetViewModelFails_RedirectsToError()
     {
-        // Arrange — unknown button → InvalidSelection error; the re-render's SetViewModelAsync then fails
+        // Arrange
         var request = BuildRequest();
         var interaction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
         interaction
@@ -233,7 +232,7 @@ public class ConsentIndexModelTests
     [Fact]
     public async Task OnPostAsync_GrantedConsentWithNullReturnUrl_Throws()
     {
-        // Arrange — deny grants a consent response, but the null ReturnUrl trips ThrowIfNull before the redirect
+        // Arrange
         var request = BuildRequest();
         var interaction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
         interaction.Setup(x => x.GetAuthorizationContextAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(request);

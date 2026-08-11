@@ -63,7 +63,7 @@ public class PersonalDataModelTests
     [Fact]
     public void PersonalDataModel_WithDifferentLoggerInstances_CreatesDistinctInstances()
     {
-        // Arrange - build minimal UserManager as in previous test
+        // Arrange
         var userStoreMock = new Mock<IUserStore<IdentityUser<Guid>>>();
         var options = Options.Create(new IdentityOptions());
         var passwordHasherMock = new Mock<IPasswordHasher<IdentityUser<Guid>>>();
