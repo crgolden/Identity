@@ -6,7 +6,7 @@ colors:
   secondary: "#6b7280"
   on-secondary: "#ffffff"
   surface: "#ffffff"
-  on-surface: "#1f2937"
+  on-surface: "#374151"
   surface-variant: "#f9fafb"
   outline: "#e5e7eb"
   danger: "#d63939"
@@ -30,6 +30,7 @@ typography:
     fontFamily: "Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace"
 rounded:
   md: "6px"
+  lg: "8px"
   pill: "50rem"
 spacing:
   base: "4px"
@@ -99,7 +100,7 @@ Tabler defines these; do not restate them in markup with hardcoded utilities.
 | `success` | `#2fb344` | unchanged |
 | `secondary` | `#6b7280` | lighter grey |
 | `surface` (body background) | `#f9fafb` | `#111827` |
-| `on-surface` (body text) | `#1f2937` | `#e5e7eb` |
+| `on-surface` (body text) | `#374151` | `#e5e7eb` |
 | `outline` (borders) | `#e5e7eb` | dark grey |
 
 **Never use a hardcoded light or dark utility** — `text-dark`, `text-white`, `bg-white`, `bg-light`, `bg-dark`, `navbar-light`, `navbar-dark`, `table-light`. Each one pins a palette and breaks the opposite colour mode. All of them were removed from this codebase for exactly that reason; re-introducing one is a regression.
@@ -138,7 +139,7 @@ One elevation level: `shadow-sm` on the top navbar. No other surface carries a s
 
 ## Shapes
 
-`6px` is the framework corner radius, applied to inputs, cards, and buttons. Use `rounded-*` utilities; never set `border-radius` directly. `rounded-pill` remains available for badges.
+There are two radii, not one: form controls render at `6px`, cards at `8px`. Both are framework defaults — measured on the deployed site, not assumed. Use `rounded-*` utilities; never set `border-radius` directly. `rounded-pill` remains available for badges.
 
 ---
 
