@@ -5,12 +5,10 @@ using Duende.IdentityServer.Events;
 using Duende.IdentityServer.Extensions;
 using Duende.IdentityServer.Models;
 using Duende.IdentityServer.Services;
-using Filters;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 [Authorize]
-[SecurityHeaders]
 public class ConsentModel : ConsentPageModelBase
 {
     private readonly IIdentityServerInteractionService _interaction;

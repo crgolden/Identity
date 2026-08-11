@@ -261,6 +261,8 @@ try
             };
         });
 
+    webApplication.UseSecurityHeaders();
+
     if (webApplication.Environment.IsDevelopment())
     {
         webApplication.UseDeveloperExceptionPage();

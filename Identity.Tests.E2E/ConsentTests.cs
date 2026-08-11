@@ -1,6 +1,7 @@
 namespace Identity.Tests.E2E;
 
 using System.Text.RegularExpressions;
+using Identity.Pages.Account.Manage;
 using Infrastructure;
 using Microsoft.Playwright;
 
@@ -106,8 +107,9 @@ public sealed class ConsentTests(PlaywrightFixture fixture)
                 r => r.Url.Contains("/Account/Manage/Consent") && r.Request.Method == "POST");
 
             Assert.Contains("/Account/Manage/Consent", page.Url);
-            var content = await page.ContentAsync();
-            Assert.Contains("permission", content, StringComparison.OrdinalIgnoreCase);
+            await Assertions.Expect(page.Locator("#validation-errors")).ToContainTextAsync(
+                ConsentOptions.MustChooseOneErrorMessage,
+                new LocatorAssertionsToContainTextOptions { Timeout = 15_000 });
         }
     }
 

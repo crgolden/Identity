@@ -157,7 +157,7 @@ The admin pages are therefore inert configuration editors. Records created there
 
 ### IdentityServer flow pages
 
-These pages participate in the OAuth2/OIDC protocol flows. They use `[Authorize]` or `[AllowAnonymous]` explicitly and always carry the `[SecurityHeaders]` filter.
+These pages participate in the OAuth2/OIDC protocol flows. They use `[Authorize]` or `[AllowAnonymous]` explicitly. Security headers are applied globally by middleware, not per page — see [Security headers](#security-headers).
 
 | URL | Auth | Purpose |
 |---|---|---|
@@ -329,26 +329,30 @@ Defined in `Telemetry.cs`, meter name `"Identity"`:
 
 ## Security
 
-### `SecurityHeadersAttribute`
+### Security headers
 
-Applied to all IdentityServer flow pages (`[SecurityHeaders]`). Adds headers to every `PageResult`:
+`UseSecurityHeaders()` (`Extensions/ApplicationBuilderExtensions.cs`) is registered as the first middleware in `Program.cs`, so it covers every page. Headers are written from a `Response.OnStarting` callback and only when the response content type is `text/html`.
 
 | Header | Value |
 |---|---|
 | `X-Content-Type-Options` | `nosniff` |
 | `X-Frame-Options` | `DENY` |
 | `Referrer-Policy` | `no-referrer` |
-| `Content-Security-Policy` | `default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://code.jquery.com https://cdnjs.cloudflare.com; style-src 'self' https://cdn.jsdelivr.net; img-src 'self' data: https:; object-src 'none'; frame-ancestors 'none'; base-uri 'self';` (only if not already set) |
+| `Content-Security-Policy` | `default-src 'self'; script-src 'self' https://www.google.com https://www.gstatic.com; style-src 'self'; img-src 'self' data: https:; connect-src 'self' https://www.google.com; frame-src https://www.google.com; object-src 'none'; frame-ancestors 'none'; base-uri 'self';` (only if not already set) |
 
 `X-Frame-Options` is `DENY` rather than `SAMEORIGIN` so it agrees with `frame-ancestors 'none'` instead of contradicting it.
 
-The `script-src` and `style-src` host allowances exist because views load Bootstrap, jQuery, and jQuery Validation from CDNs under the Production environment branch — a bare `default-src 'self'` blocks them, and the breakage is invisible in Development, where the same libraries are served from `wwwroot/lib`. `img-src` permits arbitrary HTTPS origins because the consent and device pages render client logos from URLs supplied by client configuration.
+This was previously a per-page `[SecurityHeaders]` action filter carried by seven page models. Everything else — 160 pages, including `/Account/Login` — received no headers at all and was therefore framable, which is a clickjacking exposure on the credential-entry page of an identity provider. Applying the headers globally is what closed that.
 
-The host list must cover every CDN reachable from a page carrying the attribute, which includes partials those pages pull in — `_ValidationScriptsPartial.cshtml` is why `cdnjs.cloudflare.com` appears, since `Consent` and `Device` render it. Login and Register load reCAPTCHA from `www.google.com`, but neither carries `[SecurityHeaders]`; extending the CSP to those pages would additionally require `www.google.com` and `www.gstatic.com` in `script-src` and `frame-src`.
+**The `text/html` gate is load-bearing.** `X-Frame-Options: DENY` on `/connect/authorize` would break any client that renews tokens through a hidden iframe. Those responses are redirects rather than HTML, so they never receive the header. The `ContainsKey` guard on CSP serves the same purpose for Duende, which sets its own policy on some of its responses.
+
+Every library is served from `wwwroot`, so no CDN hosts appear in `script-src` or `style-src`. The remaining allowances exist for reCAPTCHA on `Login` and `Register`, which loads from `www.google.com` and `www.gstatic.com` and renders its badge in a `www.google.com` frame. `img-src` permits arbitrary HTTPS origins because the consent and device pages render client logos from URLs supplied by client configuration.
+
+**No inline scripts or inline styles remain in any view.** That is what allows the policy to stay strict without a nonce or `'unsafe-inline'`. Where a page needs server data in JavaScript it passes it through `data-` attributes — `Login` and `Register` carry the reCAPTCHA site key and action on the hidden token input, consumed by `wwwroot/js/recaptcha.js`; `Redirect` carries its target on `<body data-redirect-uri>`, consumed by `wwwroot/js/redirect.js`. Sizing that would otherwise want an inline `style` uses an HTML attribute instead (`height="32"` on client logos), since `style-src 'self'` blocks style attributes.
 
 ### No import map
 
-`_Layout.cshtml` deliberately does not carry a `<script type="importmap">` element. When present, the MVC tag helper fills it at render time with a fingerprint and integrity map covering every static asset — roughly half the HTML of a page like `/Account/Login`, inline and therefore never cached. Nothing consumes it: the app has no ES modules, no `type="module"` scripts, and the CDN tags carry their own `integrity` attributes. It is also the only inline script in the app, so removing it lets the CSP above stay strict without a nonce or `'unsafe-inline'`.
+`_Layout.cshtml` deliberately does not carry a `<script type="importmap">` element. When present, the MVC tag helper fills it at render time with a fingerprint and integrity map covering every static asset — roughly half the HTML of a page like `/Account/Login`, inline and therefore never cached. Nothing consumes it: the app has no ES modules and no `type="module"` scripts.
 
 Fingerprinted URLs for ordinary `<script src>` and `<link href>` come from the static asset manifest server-side and do not depend on the import map.
 

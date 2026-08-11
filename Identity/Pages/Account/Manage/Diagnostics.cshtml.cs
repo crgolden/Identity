@@ -1,14 +1,12 @@
 namespace Identity.Pages.Account.Manage;
 
 using System.Security.Claims;
-using Filters;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 [Authorize]
-[SecurityHeaders]
 public class DiagnosticsModel : PageModel
 {
     public DiagnosticsViewModel View { get; set; } = new DiagnosticsViewModel();

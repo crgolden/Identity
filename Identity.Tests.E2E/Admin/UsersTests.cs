@@ -38,7 +38,7 @@ public sealed class UsersTests(PlaywrightFixture fixture)
 
             await page.ClickAsync("#nav-roles");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Users/Details/Roles"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.Locator("li.list-group-item", new PageLocatorOptions { HasText = "Admin" })).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("[id^='user-role-']", new PageLocatorOptions { HasText = "Admin" })).ToBeVisibleAsync();
         }
     }
 
@@ -186,7 +186,7 @@ public sealed class UsersTests(PlaywrightFixture fixture)
             await page.FillAsync("#role-1", roleName);
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Users/Details/Roles"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.Locator("li.list-group-item", new PageLocatorOptions { HasText = roleName })).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("[id^='user-role-']", new PageLocatorOptions { HasText = roleName })).ToBeVisibleAsync();
         }
     }
 
@@ -209,7 +209,7 @@ public sealed class UsersTests(PlaywrightFixture fixture)
             await page.ClickAsync("#role-remove-1");
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Users/Details/Roles"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.Locator("li.list-group-item", new PageLocatorOptions { HasText = roleName })).Not.ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("[id^='user-role-']", new PageLocatorOptions { HasText = roleName })).Not.ToBeVisibleAsync();
         }
     }
 
@@ -234,8 +234,8 @@ public sealed class UsersTests(PlaywrightFixture fixture)
             await page.FillAsync("#role-1", updatedRoleName);
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Users/Details/Roles"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.Locator("li.list-group-item", new PageLocatorOptions { HasText = updatedRoleName })).ToBeVisibleAsync();
-            await Assertions.Expect(page.Locator("li.list-group-item", new PageLocatorOptions { HasText = roleName })).Not.ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("[id^='user-role-']", new PageLocatorOptions { HasText = updatedRoleName })).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("[id^='user-role-']", new PageLocatorOptions { HasText = roleName })).Not.ToBeVisibleAsync();
         }
     }
 

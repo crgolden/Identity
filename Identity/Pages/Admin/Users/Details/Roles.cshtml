@@ -25,9 +25,9 @@
 </ul>
 
 <ul class="list-group mb-3">
-    @foreach (var role in Model.Roles)
+    @for (var i = 0; i < Model.Roles.Count; i++)
     {
-        <li class="list-group-item">@role</li>
+        <li id="user-role-@i" class="list-group-item">@Model.Roles[i]</li>
     }
 </ul>
 

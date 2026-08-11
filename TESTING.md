@@ -1199,19 +1199,22 @@ These pages implement the IdentityServer interactive UI — consent, grants, dev
 | `/Redirect` | `Pages/Redirect.cshtmlTests.cs` | — | 🟡 Unit only |
 | `/Account/Manage/Diagnostics` | `Pages/Account/Manage/Diagnostics.cshtmlTests.cs` | `E2E/DiagnosticsTests.cs` | ✅ Unit + E2E |
 
-### SecurityHeadersAttribute Tests
+### Security header middleware tests
 
-`[SecurityHeaders]` is applied to all IdentityServer flow pages. Tests verify header injection and idempotency.
+`UseSecurityHeaders()` applies headers globally. Tests drive the real middleware through an `ApplicationBuilder` and fire the `OnStarting` callback via a capturing response feature, so they exercise the actual wiring rather than a helper method.
 
 | Scenario | File | Test Method |
 |---|---|---|
-| `PageResult` sets `X-Content-Type-Options: nosniff` | `Filters/SecurityHeadersAttributeTests.cs` | `OnResultExecuting_PageResult_SetsXContentTypeOptionsNosniff` |
-| `PageResult` sets `X-Frame-Options: SAMEORIGIN` | `Filters/SecurityHeadersAttributeTests.cs` | `OnResultExecuting_PageResult_SetsXFrameOptionsSameorigin` |
-| `PageResult` sets `Referrer-Policy: no-referrer` | `Filters/SecurityHeadersAttributeTests.cs` | `OnResultExecuting_PageResult_SetsReferrerPolicyNoReferrer` |
-| `PageResult` sets default Content-Security-Policy | `Filters/SecurityHeadersAttributeTests.cs` | `OnResultExecuting_PageResult_SetsDefaultContentSecurityPolicy` |
-| Non-`PageResult` does not set any headers | `Filters/SecurityHeadersAttributeTests.cs` | `OnResultExecuting_NonPageResult_DoesNotSetAnyHeaders` |
-| Pre-existing CSP is not overwritten | `Filters/SecurityHeadersAttributeTests.cs` | `OnResultExecuting_PageResult_ExistingCspNotOverwritten` |
-| Calling filter twice leaves headers unchanged (idempotent) | `Filters/SecurityHeadersAttributeTests.cs` | `OnResultExecuting_PageResult_CalledTwice_HeaderValuesUnchanged` |
+| HTML response sets `X-Content-Type-Options: nosniff` | `Extensions/ApplicationBuilderExtensionsTests.cs` | `UseSecurityHeaders_HtmlResponse_SetsXContentTypeOptionsNosniff` |
+| HTML response sets `X-Frame-Options: DENY`, matching `frame-ancestors 'none'` | `Extensions/ApplicationBuilderExtensionsTests.cs` | `UseSecurityHeaders_HtmlResponse_SetsXFrameOptionsDenyMatchingFrameAncestorsNone` |
+| HTML response sets `Referrer-Policy: no-referrer` | `Extensions/ApplicationBuilderExtensionsTests.cs` | `UseSecurityHeaders_HtmlResponse_SetsReferrerPolicyNoReferrer` |
+| HTML response sets the exact default Content-Security-Policy | `Extensions/ApplicationBuilderExtensionsTests.cs` | `UseSecurityHeaders_HtmlResponse_SetsDefaultContentSecurityPolicy` |
+| CSP allows each reCAPTCHA host per directive | `Extensions/ApplicationBuilderExtensionsTests.cs` | `UseSecurityHeaders_CspAllowsRecaptchaHost` |
+| CSP contains no CDN host, locking in self-hosting | `Extensions/ApplicationBuilderExtensionsTests.cs` | `UseSecurityHeaders_CspExcludesSelfHostedLibraryCdn` |
+| CSP allows external client logo images | `Extensions/ApplicationBuilderExtensionsTests.cs` | `UseSecurityHeaders_CspAllowsExternalClientLogoImages` |
+| Non-HTML response sets no headers, so protocol redirects are untouched | `Extensions/ApplicationBuilderExtensionsTests.cs` | `UseSecurityHeaders_NonHtmlResponse_DoesNotSetAnyHeaders` |
+| Pre-existing CSP is not overwritten, deferring to Duende | `Extensions/ApplicationBuilderExtensionsTests.cs` | `UseSecurityHeaders_ExistingCspNotOverwritten` |
+| Null application builder throws | `Extensions/ApplicationBuilderExtensionsTests.cs` | `UseSecurityHeaders_NullApplicationBuilder_Throws` |
 
 ### Telemetry Tests
 

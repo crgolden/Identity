@@ -22,7 +22,7 @@ else
                 <div class="d-flex align-items-center gap-2">
                     @if (grant.ClientLogoUrl != null)
                     {
-                        <img src="@grant.ClientLogoUrl" alt="@grant.ClientName logo" style="max-height:32px" />
+                        <img src="@grant.ClientLogoUrl" alt="@grant.ClientName logo" class="object-fit-contain" height="32" />
                     }
                     @if (grant.ClientUrl != null)
                     {

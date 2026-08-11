@@ -12,13 +12,8 @@
     <title>@ViewData["Title"]</title>
 
 </head>
-<body>
+<body data-redirect-uri="@Model.RedirectUri">
     <p>Redirecting to <a href="@Model.RedirectUri">@Model.RedirectUri</a>&hellip;</p>
-    @if (Model.RedirectUri != null)
-    {
-        <script>
-            window.location.replace('@Html.Raw(Model.RedirectUri)');
-        </script>
-    }
+    <script src="~/js/redirect.js" asp-append-version="true"></script>
 </body>
 </html>

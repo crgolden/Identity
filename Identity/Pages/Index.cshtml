@@ -1,29 +1,56 @@
 @page
 @model IndexModel
 @{
-    ViewData["Title"] = "Sign in to crgolden";
-    ViewData["Description"] = "The sign-in service for crgolden applications. One account across every app, with two-factor authentication, passkeys, and Google sign-in.";
+    ViewData["Title"] = "Sign in";
+    ViewData["Description"] = "One account for every application connected to this sign-in service. Passkeys, two-factor authentication, and Google sign-in, with full control over what each application can see.";
 }
 
-<h1>One account for every crgolden application</h1>
+<h1>One account. Every app you connect.</h1>
 
-<p class="lead">This site is a sign-in provider. You register once here, and every crgolden application sends you back to this page when it needs to know who you are — so none of them keeps its own copy of your password.</p>
+<p class="lead">Register once here. Any application connected to this service sends you back when it needs to know who you are &mdash; so none of them ever stores your password.</p>
 
-<h2>Signing in</h2>
-<p>You can sign in with an email address and password, with a passkey, or with your Google account. Passkeys use your device's own unlock — a fingerprint, face, or PIN — and there is no password to be guessed or reused. New accounts confirm their email address before the first sign-in.</p>
-
-<h2>Keeping your account secure</h2>
-<p>Two-factor authentication is available with any authenticator app, and comes with recovery codes for the day you lose your phone. You can register more than one passkey, so a lost device doesn't lock you out. Repeated failed sign-in attempts lock the account for a short period.</p>
-
-<h2>Staying in control</h2>
-<p>From your account settings you can see every application you've granted access to and revoke any of them, review the devices and browsers with an active session and sign them out, download everything held about your account, or delete the account outright. Deletion is immediate and cannot be undone.</p>
-
-<h2>What applications receive</h2>
-<p>When you sign in to an application through this site, it is shown your username and the specific permissions it asked for — nothing more, and never your password. You see and approve that list the first time each application asks.</p>
-
-<p>
-    <a asp-page="/Account/Manage/Index" class="btn btn-primary">Manage your account</a>
-    <a asp-page="/Privacy" class="btn btn-outline-secondary ms-1">Privacy policy</a>
+<p class="mb-4">
+    <a asp-page="/Account/Register" class="btn btn-primary">Create an account</a>
+    <a asp-page="/Account/Login" class="btn btn-outline-secondary ms-1">Sign in</a>
 </p>
 
-<p>This site is open source. The code is at <a href="https://github.com/crgolden/Identity">github.com/crgolden/Identity</a>.</p>
+<div class="row row-cols-1 row-cols-md-2 g-3 mb-4">
+    <div class="col">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="card-title">Three ways in</h2>
+                <p class="card-text">Email and password, a passkey, or your Google account. Passkeys use your device's own fingerprint, face, or PIN &mdash; nothing to guess, nothing to reuse.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="card-title">Locked down by default</h2>
+                <p class="card-text">Two-factor authentication with any authenticator app, backed by recovery codes. Register several passkeys so one lost device can't shut you out.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="card-title">Apps see almost nothing</h2>
+                <p class="card-text">Just your username and the exact permissions you approved &mdash; never your password. You see that list before you agree to it.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="card-title">Revoke anything, anytime</h2>
+                <p class="card-text">Cut off any application's access, sign other devices out, download everything held about you, or delete the account outright.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<p class="text-muted">
+    Already registered? <a asp-page="/Account/Manage/Index">Manage your account</a>.
+    Read the <a asp-page="/Privacy">privacy policy</a>, or browse the source at
+    <a href="https://github.com/crgolden/Identity">github.com/crgolden/Identity</a>.
+</p>

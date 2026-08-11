@@ -3,13 +3,11 @@ namespace Identity.Pages.Account.Manage;
 using Duende.IdentityServer.Models;
 using Duende.IdentityServer.Services;
 using Duende.IdentityServer.Stores;
-using Filters;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 [Authorize]
-[SecurityHeaders]
 public class ServerSideSessionsModel : PageModel
 {
     private readonly ISessionManagementService? _sessionManagement;
