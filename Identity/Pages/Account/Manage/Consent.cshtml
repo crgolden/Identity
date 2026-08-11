@@ -31,7 +31,7 @@
         <form id="consent-form" method="post">
             <input type="hidden" asp-for="Input.ReturnUrl" />
 
-            <div asp-validation-summary="ModelOnly" class="text-danger mb-3" role="alert"></div>
+            <div id="validation-errors" asp-validation-summary="ModelOnly" class="text-danger mb-3" role="alert"></div>
 
             @if (Model.View.IdentityScopes.Any())
             {
