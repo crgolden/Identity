@@ -94,8 +94,11 @@ public class GenerateRecoveryCodesModelTests
             PageContext = new PageContext { HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal() } }
         };
 
-        // Act & Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await model.OnPostAsync());
+        // Act
+        var exception = await Record.ExceptionAsync(() => model.OnPostAsync());
+
+        // Assert
+        var ex = Assert.IsType<InvalidOperationException>(exception);
         Assert.Equal("Cannot generate recovery codes for user as they do not have 2FA enabled.", ex.Message);
     }
 
@@ -174,12 +177,35 @@ public class GenerateRecoveryCodesModelTests
         Assert.Equal($"Unable to load user with ID '{expectedId}'.", message);
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task OnGetAsync_TwoFactorEnabledFlag_BehavesAsExpected(bool isTwoFactorEnabled)
+    [Fact]
+    public async Task OnGetAsync_TwoFactorEnabled_ReturnsPageResult()
     {
         // Arrange
+        var model = CreateModelWithTwoFactorState(true);
+
+        // Act
+        var result = await model.OnGetAsync();
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_TwoFactorNotEnabled_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var model = CreateModelWithTwoFactorState(false);
+
+        // Act
+        var exception = await Record.ExceptionAsync(() => model.OnGetAsync());
+
+        // Assert
+        var ex = Assert.IsType<InvalidOperationException>(exception);
+        Assert.Equal("Cannot generate recovery codes for user because they do not have 2FA enabled.", ex.Message);
+    }
+
+    private static GenerateRecoveryCodesModel CreateModelWithTwoFactorState(bool isTwoFactorEnabled)
+    {
         var userManagerMock = MockHelpers.MockUserManager();
 
         var user = new IdentityUser<Guid>();
@@ -191,25 +217,15 @@ public class GenerateRecoveryCodesModelTests
             .Setup(um => um.GetTwoFactorEnabledAsync(It.IsAny<IdentityUser<Guid>>()))
             .ReturnsAsync(isTwoFactorEnabled);
 
-        var model = new GenerateRecoveryCodesModel(userManagerMock.Object);
-        model.PageContext = new PageContext
+        return new GenerateRecoveryCodesModel(userManagerMock.Object)
         {
-            HttpContext = new DefaultHttpContext
+            PageContext = new PageContext
             {
-                User = new ClaimsPrincipal(new ClaimsIdentity())
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal(new ClaimsIdentity())
+                }
             }
         };
-
-        // Act & Assert
-        if (isTwoFactorEnabled)
-        {
-            var result = await model.OnGetAsync();
-            Assert.IsType<PageResult>(result);
-        }
-        else
-        {
-            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => model.OnGetAsync());
-            Assert.Equal("Cannot generate recovery codes for user because they do not have 2FA enabled.", ex.Message);
-        }
     }
 }

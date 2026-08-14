@@ -166,8 +166,11 @@ public sealed class ApplicationBuilderExtensionsTests
         // Arrange
         IApplicationBuilder applicationBuilder = null!;
 
-        // Act / Assert
-        Assert.Throws<ArgumentNullException>(() => applicationBuilder.UseSecurityHeaders());
+        // Act
+        var exception = Record.Exception(() => applicationBuilder.UseSecurityHeaders());
+
+        // Assert
+        Assert.IsType<ArgumentNullException>(exception);
     }
 
     private static (DefaultHttpContext Context, CapturingResponseFeature ResponseFeature) MakeContext(string? contentType)

@@ -258,8 +258,11 @@ public class ManageNavPagesTests
         // Arrange
         ViewContext? viewContext = null;
 
-        // Act & Assert
-        Assert.Throws<NullReferenceException>(() => ManageNavPages.DeletePersonalDataNavClass(viewContext!));
+        // Act
+        var exception = Record.Exception(() => ManageNavPages.DeletePersonalDataNavClass(viewContext!));
+
+        // Assert
+        Assert.IsType<NullReferenceException>(exception);
     }
 
 #pragma warning disable xUnit1045
@@ -408,8 +411,11 @@ public class ManageNavPagesTests
         // Arrange
         ViewContext? viewContext = null;
 
-        // Act & Assert
-        Assert.Throws<NullReferenceException>(() => ManageNavPages.ExternalLoginsNavClass(viewContext!));
+        // Act
+        var exception = Record.Exception(() => ManageNavPages.ExternalLoginsNavClass(viewContext!));
+
+        // Assert
+        Assert.IsType<NullReferenceException>(exception);
     }
 
     [Theory]
@@ -605,8 +611,11 @@ public class ManageNavPagesTests
         // Arrange
         ViewContext? viewContext = null;
 
-        // Act & Assert
-        Assert.Throws<NullReferenceException>(() => ManageNavPages.PasskeysNavClass(viewContext!));
+        // Act
+        var exception = Record.Exception(() => ManageNavPages.PasskeysNavClass(viewContext!));
+
+        // Assert
+        Assert.IsType<NullReferenceException>(exception);
     }
 
     [Theory]
@@ -783,8 +792,11 @@ public class ManageNavPagesTests
         // Arrange
         ViewContext? viewContext = null;
 
-        // Act & Assert
-        Assert.Throws<NullReferenceException>(() => ManageNavPages.TwoFactorAuthenticationNavClass(viewContext!));
+        // Act
+        var exception = Record.Exception(() => ManageNavPages.TwoFactorAuthenticationNavClass(viewContext!));
+
+        // Assert
+        Assert.IsType<NullReferenceException>(exception);
     }
 
     private static ViewContext CreateViewContext(string? activePage, string? displayName)

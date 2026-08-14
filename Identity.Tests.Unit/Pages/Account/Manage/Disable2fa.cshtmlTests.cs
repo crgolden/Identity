@@ -48,46 +48,31 @@ public class Disable2faModelTests
         Assert.Equal($"Unable to load user with ID '{expectedId}'.", message);
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task OnGet_TwoFactorState_BehavesAsExpected(bool twoFactorEnabled)
+    [Fact]
+    public async Task OnGet_TwoFactorEnabled_ReturnsPageResult()
     {
         // Arrange
-        var userManagerMock = MockHelpers.MockUserManager();
+        var model = CreateModelWithTwoFactorState(true);
 
-        var existingUser = new IdentityUser<Guid>();
+        // Act
+        var result = await model.OnGet();
 
-        userManagerMock
-            .Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
-            .ReturnsAsync(existingUser);
+        // Assert
+        Assert.IsType<PageResult>(result);
+    }
 
-        userManagerMock
-            .Setup(m => m.GetTwoFactorEnabledAsync(existingUser))
-            .ReturnsAsync(twoFactorEnabled);
+    [Fact]
+    public async Task OnGet_TwoFactorNotEnabled_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var model = CreateModelWithTwoFactorState(false);
 
-        var model = new Disable2faModel(userManagerMock.Object)
-        {
-            PageContext = new PageContext
-            {
-                HttpContext = new DefaultHttpContext
-                {
-                    User = new ClaimsPrincipal(new ClaimsIdentity())
-                }
-            }
-        };
+        // Act
+        var exception = await Record.ExceptionAsync(() => model.OnGet());
 
-        // Act & Assert
-        if (twoFactorEnabled)
-        {
-            var result = await model.OnGet();
-            Assert.IsType<PageResult>(result);
-        }
-        else
-        {
-            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => model.OnGet());
-            Assert.Equal("Cannot disable 2FA for user as it's not currently enabled.", ex.Message);
-        }
+        // Assert
+        var ex = Assert.IsType<InvalidOperationException>(exception);
+        Assert.Equal("Cannot disable 2FA for user as it's not currently enabled.", ex.Message);
     }
 
     [Fact]
@@ -144,8 +129,11 @@ public class Disable2faModelTests
             }
         };
 
-        // Act & Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => model.OnPostAsync());
+        // Act
+        var exception = await Record.ExceptionAsync(() => model.OnPostAsync());
+
+        // Assert
+        var ex = Assert.IsType<InvalidOperationException>(exception);
         Assert.Equal("Unexpected error occurred disabling 2FA.", ex.Message);
     }
 
@@ -182,5 +170,31 @@ public class Disable2faModelTests
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("./TwoFactorAuthentication", redirect.PageName);
         Assert.Equal("2fa has been disabled. You can reenable 2fa when you setup an authenticator app", model.StatusMessage);
+    }
+
+    private static Disable2faModel CreateModelWithTwoFactorState(bool twoFactorEnabled)
+    {
+        var userManagerMock = MockHelpers.MockUserManager();
+
+        var existingUser = new IdentityUser<Guid>();
+
+        userManagerMock
+            .Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
+            .ReturnsAsync(existingUser);
+
+        userManagerMock
+            .Setup(m => m.GetTwoFactorEnabledAsync(existingUser))
+            .ReturnsAsync(twoFactorEnabled);
+
+        return new Disable2faModel(userManagerMock.Object)
+        {
+            PageContext = new PageContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal(new ClaimsIdentity())
+                }
+            }
+        };
     }
 }

@@ -50,7 +50,10 @@ public class ApplicationDbContextTests
         // Arrange
         DbContextOptions<ApplicationDbContext>? options = null;
 
-        // Act & Assert
-        Assert.Throws<ArgumentNullException>(() => new ApplicationDbContext(options!));
+        // Act
+        var exception = Record.Exception(() => new ApplicationDbContext(options!));
+
+        // Assert
+        Assert.IsType<ArgumentNullException>(exception);
     }
 }

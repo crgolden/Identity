@@ -24,8 +24,10 @@ public partial class EnableAuthenticatorModelTests
 
         var userManager = MockHelpers.MockUserManager().Object;
 
-        // Act & Assert
+        // Act
         var model = new EnableAuthenticatorModel(userManager, urlEncoderMock.Object);
+
+        // Assert
         Assert.NotNull(model);
     }
 

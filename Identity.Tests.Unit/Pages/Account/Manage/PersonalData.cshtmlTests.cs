@@ -188,8 +188,11 @@ public class PersonalDataModelTests
             }
         };
 
-        // Act & Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(() => model.OnGet());
+        // Act
+        var exception = await Record.ExceptionAsync(() => model.OnGet());
+
+        // Assert
+        Assert.IsType<InvalidOperationException>(exception);
         userManagerMock.Verify(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>()), Times.Once);
     }
 }

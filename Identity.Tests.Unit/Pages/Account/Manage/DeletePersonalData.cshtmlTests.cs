@@ -167,8 +167,11 @@ public sealed class DeletePersonalDataModelTests
         userManager.Setup(m => m.HasPasswordAsync(user)).ReturnsAsync(false);
         userManager.Setup(m => m.DeleteAsync(user)).ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "boom" }));
 
-        // Act / Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(() => model.OnPostAsync());
+        // Act
+        var exception = await Record.ExceptionAsync(() => model.OnPostAsync());
+
+        // Assert
+        Assert.IsType<InvalidOperationException>(exception);
     }
 
     private static (Mock<UserManager<IdentityUser<Guid>>> UserManager, Mock<SignInManager<IdentityUser<Guid>>> SignInManager, DeletePersonalDataModel Model) CreateModel()

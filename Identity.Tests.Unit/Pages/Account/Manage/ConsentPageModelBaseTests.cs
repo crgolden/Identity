@@ -68,7 +68,7 @@ public class ConsentPageModelBaseTests
     [Fact]
     public void ResourceViewModel_PropertiesRoundTrip()
     {
-        // Arrange & Act
+        // Act
         var resource = new ConsentPageModelBase.ResourceViewModel
         {
             Name = "res1",

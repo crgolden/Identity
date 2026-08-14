@@ -21,7 +21,7 @@ public class DeviceSuccessModelTests
     [Fact]
     public void Constructor_IsPageModel()
     {
-        // Arrange & Act
+        // Act
         var model = new DeviceSuccessModel();
 
         // Assert

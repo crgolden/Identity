@@ -93,8 +93,11 @@ public class ExternalLoginsModelTests
         var model = new ExternalLoginsModel(userManagerMock.Object, signInManagerMock.Object, userStore);
         model.PageContext = new PageContext { HttpContext = new DefaultHttpContext() };
 
-        // Act & Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(() => model.OnGetLinkLoginCallbackAsync());
+        // Act
+        var exception = await Record.ExceptionAsync(() => model.OnGetLinkLoginCallbackAsync());
+
+        // Assert
+        Assert.IsType<InvalidOperationException>(exception);
     }
 
     [Theory]

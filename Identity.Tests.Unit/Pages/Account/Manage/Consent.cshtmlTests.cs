@@ -241,8 +241,11 @@ public class ConsentIndexModelTests
         var model = CreateModel(interaction.Object, events.Object);
         model.Input = new ConsentModel.InputModel { Button = "no", ReturnUrl = null };
 
-        // Act / Assert
-        await Assert.ThrowsAsync<ArgumentNullException>(() => model.OnPostAsync());
+        // Act
+        var exception = await Record.ExceptionAsync(() => model.OnPostAsync());
+
+        // Assert
+        Assert.IsType<ArgumentNullException>(exception);
     }
 
     private static AuthorizationRequest BuildRequest() => new()

@@ -96,8 +96,11 @@ public class ResetPasswordModelTests
         var mockUserManager = MockHelpers.MockUserManager();
         var model = new ResetPasswordModel(mockUserManager.Object);
 
-        // Act & Assert
-        Assert.Throws<FormatException>(() => model.OnGet(malformed));
+        // Act
+        var exception = Record.Exception(() => model.OnGet(malformed));
+
+        // Assert
+        Assert.IsType<FormatException>(exception);
     }
 
     [Fact]

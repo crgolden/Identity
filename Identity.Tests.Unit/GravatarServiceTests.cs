@@ -75,8 +75,12 @@ public class GravatarServiceTests
             .ThrowsAsync(new ApiException("Internal Server Error", 500, string.Empty, new Dictionary<string, IEnumerable<string>>(), null));
         var service = new GravatarService(gravatarMock.Object);
 
-        // Act & Assert
-        await Assert.ThrowsAsync<ApiException>(() => service.GetAvatarUrlAsync("user@example.com", TestContext.Current.CancellationToken));
+        // Act
+        var exception = await Record.ExceptionAsync(
+            () => service.GetAvatarUrlAsync("user@example.com", TestContext.Current.CancellationToken));
+
+        // Assert
+        Assert.IsType<ApiException>(exception);
     }
 
     [Fact]

@@ -160,8 +160,11 @@ public sealed class PasskeysModelTests
         userManager.Setup(m => m.GetUserIdAsync(user)).ReturnsAsync("uid-1");
         model.Input = new PasskeysModel.InputModel { CredentialId = ValidCredentialId, Action = "delete" };
 
-        // Act / Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(() => model.OnPostUpdatePasskeyAsync());
+        // Act
+        var exception = await Record.ExceptionAsync(() => model.OnPostUpdatePasskeyAsync());
+
+        // Assert
+        Assert.IsType<InvalidOperationException>(exception);
     }
 
     [Fact]

@@ -159,8 +159,11 @@ public sealed class RenamePasskeyModelTests
         userManager.Setup(m => m.GetUserIdAsync(user)).ReturnsAsync("uid-1");
         model.Input = new RenamePasskeyModel.InputModel { CredentialId = ValidCredentialId, Name = "New name" };
 
-        // Act / Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(() => model.OnPostAsync());
+        // Act
+        var exception = await Record.ExceptionAsync(() => model.OnPostAsync());
+
+        // Assert
+        Assert.IsType<InvalidOperationException>(exception);
     }
 
     private static UserPasskeyInfo BuildPasskey(string name) =>

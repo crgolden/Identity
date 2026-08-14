@@ -69,8 +69,11 @@ public class LoginWith2faModelTests
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
         model.Url = urlHelperMock.Object;
 
-        // Act & Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await model.OnPostAsync(false, null));
+        // Act
+        var exception = await Record.ExceptionAsync(() => model.OnPostAsync(false, null));
+
+        // Assert
+        var ex = Assert.IsType<InvalidOperationException>(exception);
         Assert.Equal("Unable to load two-factor authentication user.", ex.Message);
     }
 
@@ -135,14 +138,11 @@ public class LoginWith2faModelTests
     [InlineData(3)]
     public void Constructor_MultipleValidDependencies_NoExceptionAndIndependentDefaults(int instances)
     {
-        // Arrange & Act
-        var models = new List<LoginWith2faModel>();
-        for (var i = 0; i < instances; i++)
-        {
-            var signInManagerMock = CreateSignInManagerMock();
-            var model = new LoginWith2faModel(signInManagerMock.Object);
-            models.Add(model);
-        }
+        // Arrange
+        var signInManagerMocks = Enumerable.Range(0, instances).Select(_ => CreateSignInManagerMock()).ToList();
+
+        // Act
+        var models = signInManagerMocks.Select(m => new LoginWith2faModel(m.Object)).ToList();
 
         // Assert
         Assert.Equal(instances, models.Count);

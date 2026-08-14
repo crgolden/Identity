@@ -210,8 +210,11 @@ public class DeviceIndexModelTests
         var model = CreateModel(new Mock<IDeviceFlowInteractionService>(MockBehavior.Strict).Object);
         model.Input = new DeviceModel.InputModel { UserCode = null };
 
-        // Act / Assert
-        await Assert.ThrowsAsync<ArgumentNullException>(() => model.OnPostAsync());
+        // Act
+        var exception = await Record.ExceptionAsync(() => model.OnPostAsync());
+
+        // Assert
+        Assert.IsType<ArgumentNullException>(exception);
     }
 
     private static DeviceFlowAuthorizationRequest BuildRequest() => new()

@@ -60,8 +60,10 @@ public class RegisterModelTests
             CreateClientFactory(),
             CreateRecaptchaServiceMock().Object);
 
-        // Act & Assert
+        // Act
         var ex = await Record.ExceptionAsync(() => model.OnGetAsync(returnUrl));
+
+        // Assert
         Assert.Null(ex);
         Assert.Equal(returnUrl, model.ReturnUrl);
         Assert.NotNull(model.ExternalLogins);

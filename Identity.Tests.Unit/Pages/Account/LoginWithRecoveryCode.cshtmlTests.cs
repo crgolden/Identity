@@ -81,8 +81,11 @@ public class LoginWithRecoveryCodeModelTests
         var model = new LoginWithRecoveryCodeModel(signInManagerMock.Object);
         model.Input = new LoginWithRecoveryCodeModel.InputModel { RecoveryCode = "code" };
 
-        // Act & Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => model.OnPostAsync(null));
+        // Act
+        var exception = await Record.ExceptionAsync(() => model.OnPostAsync(null));
+
+        // Assert
+        var ex = Assert.IsType<InvalidOperationException>(exception);
         Assert.Equal("Unable to load two-factor authentication user.", ex.Message);
         signInManagerMock.Verify(s => s.TwoFactorRecoveryCodeSignInAsync(It.IsAny<string>()), Times.Never);
     }
@@ -95,8 +98,11 @@ public class LoginWithRecoveryCodeModelTests
         signInManagerMock.Setup(s => s.GetTwoFactorAuthenticationUserAsync()).ReturnsAsync((IdentityUser<Guid>?)null);
         var model = new LoginWithRecoveryCodeModel(signInManagerMock.Object);
 
-        // Act & Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => model.OnGetAsync(null));
+        // Act
+        var exception = await Record.ExceptionAsync(() => model.OnGetAsync(null));
+
+        // Assert
+        var ex = Assert.IsType<InvalidOperationException>(exception);
         Assert.Equal("Unable to load two-factor authentication user.", ex.Message);
     }
 
