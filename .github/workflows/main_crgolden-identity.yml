@@ -21,6 +21,7 @@ jobs:
   build:
     name: Build and analyze
     runs-on: windows-latest
+    if: github.event_name != 'schedule'
     outputs:
       playwright-version: ${{ steps.playwright-version.outputs.version }}
     permissions:
