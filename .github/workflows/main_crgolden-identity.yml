@@ -11,10 +11,8 @@ on:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
   schedule:
-    # TEMPORARY — live-verifying that a real `schedule` trigger now only runs `mutation`
-    # (build/deploy/smoke should cascade-skip). Revert to '0 2 * * 1' (Monday 02:00 UTC)
-    # immediately after this fires once.
-    - cron: '50 14 * * *'
+    # Run mutation tests weekly on Monday at 02:00 UTC
+    - cron: '0 2 * * 1'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
