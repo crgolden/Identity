@@ -31,8 +31,6 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         }
 
         BaseAddress = Empty;
-        SharedEmail = $"e2e-shared-{Guid.NewGuid()}@test.invalid";
-        SharedPassword = $"Test@{Guid.NewGuid():N}!A1";
     }
 
     public static bool IsSmoke => SmokeBaseUrl is not null;
@@ -44,10 +42,6 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         _factory?.EmailCapture ?? throw new InvalidOperationException("Email capture is not available in smoke mode.");
 
     public string BaseAddress { get; private set; }
-
-    public string SharedEmail { get; }
-
-    public string SharedPassword { get; }
 
     public async ValueTask InitializeAsync()
     {
@@ -87,22 +81,6 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         await using (warmupCtx)
         {
             await warmupPage.GotoAsync("/Account/Login");
-        }
-
-        await using var scope = _factory!.Services.CreateAsyncScope();
-        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser<Guid>>>();
-        var sharedUser = new IdentityUser<Guid>
-        {
-            UserName = SharedEmail,
-            Email = SharedEmail,
-            EmailConfirmed = true
-        };
-
-        var createResult = await userManager.CreateAsync(sharedUser, SharedPassword);
-        if (!createResult.Succeeded)
-        {
-            throw new InvalidOperationException(
-                $"Failed to create shared test user: {Join(", ", createResult.Errors.Select(e => e.Description))}");
         }
 
         _started = true;

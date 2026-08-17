@@ -1,6 +1,7 @@
 namespace Identity.Tests.E2E.Security;
 
 using Infrastructure;
+using Microsoft.Playwright;
 
 [Trait("Category", "E2E")]
 [Collection(E2ECollection.Name)]
@@ -54,7 +55,7 @@ public sealed class OpenRedirectTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("button[type='submit']");
-            await page.WaitForURLAsync(url => !url.Contains("/Account/Login"));
+            await Assertions.Expect(page.Locator("#profile-form")).ToBeVisibleAsync(new LocatorAssertionsToBeVisibleOptions { Timeout = 60_000 });
 
             Assert.DoesNotContain("/Account/Login", page.Url);
         }
