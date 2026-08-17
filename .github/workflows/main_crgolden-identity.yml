@@ -562,11 +562,6 @@ jobs:
       - name: Install dotnet-stryker
         run: dotnet tool install --global dotnet-stryker
 
-      - name: Build solution
-        env:
-          NuGetPackageSourceCredentials_GitHub: Username=${{ github.actor }};Password=${{ secrets.PACKAGES_READ_TOKEN }}
-        run: dotnet build --configuration Release /p:RestoreLockedMode=true
-
       - name: Run Stryker mutation tests
         working-directory: Identity
         env:
