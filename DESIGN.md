@@ -175,8 +175,11 @@ A checkbox `asp-for` target must be a non-nullable `bool`. Several third-party e
 | De-emphasized destructive row action in a dense table | `btn btn-outline-danger` |
 | Low-emphasis inline action | `btn btn-link` |
 | Table row action | add `btn-sm` |
+| External identity provider (Google) | `btn-outline-secondary d-inline-flex align-items-center justify-content-center gap-2` |
 
 One `btn-primary` per form. Never `btn-primary` for a destructive action — including the entry-point link on a hub page. A link leading to a page whose submit button is `btn-danger` must itself read as destructive.
+
+The Google button in `_ExternalProviders.cshtml` carries the official multicolor "G" mark as an inline `<svg>`, sized with `width`/`height` attributes (never inline `style`), plus the CTA text "Continue with Google" — following Google's Sign In branding guidelines, which require the logo be reproduced unaltered and paired with an approved CTA string. It uses `btn-outline-secondary` rather than `btn-primary`: the mark's own colors carry the brand recognition regardless of theme, so no hardcoded light/dark utility is needed, and it stays visually secondary to the page's real primary action (`Log in`/`Register`). Any other provider (there is none currently — Google is the only one configured, in `Program.cs`) falls back to the plain `btn-primary` + display-name rendering.
 
 ### Tables
 
