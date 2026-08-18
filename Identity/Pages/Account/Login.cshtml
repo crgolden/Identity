@@ -62,6 +62,6 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script src="~/js/passkey-submit.js" asp-append-version="true"></script>
-    <script src="https://www.google.com/recaptcha/api.js?render=@Model.RecaptchaSiteKey"></script>
+    <script src="https://www.google.com/recaptcha/api.js?render=@Model.RecaptchaSiteKey" async></script>
     <script src="~/js/recaptcha.js" asp-append-version="true"></script>
 }
