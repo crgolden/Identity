@@ -1,4 +1,4 @@
-namespace Identity;
+namespace Identity.Avatar;
 
 public interface IAvatarService
 {

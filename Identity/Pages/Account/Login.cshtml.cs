@@ -2,6 +2,7 @@ namespace Identity.Pages.Account;
 
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Channels;
+using CAPTCHA;
 using Manage;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;

@@ -1,6 +1,7 @@
 namespace Identity.Tests.Unit.Pages.Account;
 
 using System.Threading.Channels;
+using CAPTCHA;
 using Identity;
 using Identity.Pages.Account;
 using Infrastructure;

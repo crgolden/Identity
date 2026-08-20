@@ -3,6 +3,8 @@ namespace Identity.Tests.Unit;
 using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
+using Avatar;
+using Avatar.GravatarApi;
 using Identity;
 using Infrastructure;
 using Moq;

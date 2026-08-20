@@ -1,6 +1,7 @@
-namespace Identity;
+namespace Identity.Avatar;
 
 using System.Security.Cryptography;
+using GravatarApi;
 
 public class GravatarService : IAvatarService
 {

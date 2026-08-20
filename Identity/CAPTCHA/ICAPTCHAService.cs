@@ -1,4 +1,4 @@
-namespace Identity;
+namespace Identity.CAPTCHA;
 
 #pragma warning disable S101
 public interface ICAPTCHAService

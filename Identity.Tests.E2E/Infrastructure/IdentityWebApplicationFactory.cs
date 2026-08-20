@@ -1,7 +1,9 @@
 namespace Identity.Tests.E2E.Infrastructure;
 
 using System.Net;
+using Avatar;
 using Azure.Messaging.ServiceBus;
+using CAPTCHA;
 using Identity;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;

@@ -1,4 +1,4 @@
-namespace Identity;
+namespace Identity.Avatar;
 
 using System.Diagnostics;
 using System.Security.Claims;

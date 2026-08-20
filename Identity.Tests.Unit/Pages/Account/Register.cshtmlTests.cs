@@ -2,6 +2,7 @@ namespace Identity.Tests.Unit.Pages.Account;
 
 using System.Threading.Channels;
 using Azure.Messaging.ServiceBus;
+using CAPTCHA;
 using Identity.Pages.Account;
 using Infrastructure;
 using Microsoft.AspNetCore.Authentication;

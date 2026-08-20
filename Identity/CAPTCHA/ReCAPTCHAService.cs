@@ -1,4 +1,4 @@
-namespace Identity;
+namespace Identity.CAPTCHA;
 
 using System.Net.Http;
 using System.Net.Http.Json;

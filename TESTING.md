@@ -1486,9 +1486,9 @@ Every page under `Identity/Pages/Admin/` has unit tests. The 16 sections and the
 
 ### E2E test coverage
 
-`Identity/Admin-E2E-Guide.md` is the specification this section's E2E coverage was built against. Coverage is now close to complete relative to the guide, spread across `Identity.Tests.E2E/AdminTests.cs` (Auth/Access Control, Landing Page card visibility, Client CRUD, Index-loads for every section, Roles Create/Delete round-trip) and focused files under `Identity.Tests.E2E/Admin/`: `ClientsCollectionsTests.cs` (add/remove/update for all 9 Client collection sub-pages), `ApiResourcesTests.cs`/`ApiScopesTests.cs`/`IdentityResourcesTests.cs` (CRUD plus their ClaimTypes/Properties/Scopes/Secrets collection sub-pages), `IdentityProvidersTests.cs`/`SamlServiceProvidersTests.cs` (flat-form CRUD), `ReadOnlyGrantSectionsTests.cs` (Details/Delete for the one grant-store section with a realistic production path), `UsersTests.cs`/`RolesTests.cs` (Details sub-pages, Edit-flow persistence, Claims/Roles add-remove), and `AdminLandingTests.cs` (L2 — every landing-page card's "Manage" link navigates to the right section).
+The admin area's E2E coverage is spread across `Identity.Tests.E2E/AdminTests.cs` (Auth/Access Control, Landing Page card visibility, Client CRUD, Index-loads for every section, Roles Create/Delete round-trip) and focused files under `Identity.Tests.E2E/Admin/`: `ClientsCollectionsTests.cs` (add/remove/update for all 9 Client collection sub-pages), `ApiResourcesTests.cs`/`ApiScopesTests.cs`/`IdentityResourcesTests.cs` (CRUD plus their ClaimTypes/Properties/Scopes/Secrets collection sub-pages), `IdentityProvidersTests.cs`/`SamlServiceProvidersTests.cs` (flat-form CRUD), `ReadOnlyGrantSectionsTests.cs` (Details/Delete for the one grant-store section with a realistic production path), `UsersTests.cs`/`RolesTests.cs` (Details sub-pages, Edit-flow persistence, Claims/Roles add-remove), and `AdminLandingTests.cs` (L2 — every landing-page card's "Manage" link navigates to the right section).
 
-A handful of sections deliberately stay at the guide's Index-loads-only fallback because no code path in this app can ever populate them, so fabricating rows would test something that can't happen in practice:
+A handful of sections deliberately stay at an Index-loads-only assertion because no code path in this app can ever populate them, so fabricating rows would test something that can't happen in practice:
 - **Server-Side Sessions** — `Program.cs`'s `.AddIdentityServer(...)` chain never calls `.AddServerSideSessions()`; the table has no writer.
 - **SAML Sign-In States / SAML Logout Sessions / SAML Logout Session Request Indices** — this app's SAML endpoints are disabled (confirmed via the live Duende diagnostics dump).
 - **Device Flow Codes / Pushed Authorization Requests** — no existing UI-driven flow produces a row, and building one is out of proportion to the value for a single test.
@@ -1530,7 +1530,7 @@ CI uses the `AZURE_DEVOPS_EXT_PAT` secret and the `PLAYWRIGHT_APPINSIGHTS_CONNEC
 Provision or repair the workbook (from the Tools workspace):
 
 ```powershell
-pwsh -NoProfile -File Tools\Azure\Monitor\Ensure-PlaywrightMonitor.ps1
+pwsh -File Tools\Azure\Monitor\Ensure-PlaywrightMonitor.ps1
 ```
 
 ### Downloading CI artifacts locally
@@ -1573,7 +1573,7 @@ $env:SONAR_TOKEN = "<token>"
 & "$env:SystemDrive\sonar-scanner-8.0.1.6346-windows-x64\bin\sonar-scanner.bat" `
   "-Dsonar.projectKey=crgolden_Identity" `
   "-Dsonar.organization=crgolden" `
-  "-Dsonar.sources=Identity,Identity.Benchmarks" `
+  "-Dsonar.sources=Identity" `
   "-Dsonar.tests=Identity.Tests.Unit,Identity.Tests.E2E" `
   "-Dsonar.exclusions=**/bin/**,**/obj/**" `
   "-Dsonar.cs.opencover.reportsPaths=coverage.opencover.xml" `

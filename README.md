@@ -127,7 +127,6 @@ Identity/            # ASP.NET Core 10 Razor Pages web app and DbContext
 Identity.Data/       # SQL Server Database Project — schema source of truth, builds to .dacpac
 Identity.Tests.Unit/ # xUnit v3 test project: unit tests (Moq)
 Identity.Tests.E2E/  # xUnit v3 test project: E2E tests (Playwright/Chromium), load tests, smoke tests
-Identity.Benchmarks/ # BenchmarkDotNet microbenchmarks for authentication hot paths
 ```
 
 ## Commands
@@ -158,9 +157,6 @@ dotnet build Identity.Data/Identity.Data.sqlproj --configuration Release
 
 # Deploy dacpac to production SQL Server
 sqlpackage /Action:Publish /SourceFile:Identity.Data/bin/Release/Identity.Data.dacpac /TargetConnectionString:"<connection-string>"
-
-# Run benchmarks
-dotnet run --project Identity.Benchmarks -c Release
 
 # Run mutation tests (Stryker — slow; see stryker-config.json for the mutated files)
 dotnet stryker --config-file stryker-config.json

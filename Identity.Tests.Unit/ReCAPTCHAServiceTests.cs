@@ -1,6 +1,7 @@
 namespace Identity.Tests.Unit;
 
 using System.Net;
+using CAPTCHA;
 using Identity;
 using Infrastructure;
 using Microsoft.Extensions.Options;
