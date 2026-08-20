@@ -191,14 +191,12 @@ $env:SONAR_TOKEN = "squ_..."                     # SonarCloud user token
 
 The GitHub Actions workflow triggers on pushes to `main`, pull requests, and manual dispatch.
 
-The workflow also runs on a **weekly schedule** (Monday 02:00 UTC).
-
 **Build job** — runs on every trigger:
 1. Builds the full solution (`dotnet build --no-incremental --configuration Release`), which also compiles `Identity.Data.sqlproj` and produces the `.dacpac`
 2. Runs unit tests with coverage
 3. Deploys the E2E test database schema (`SqlPackage`), then runs E2E tests with `ASPNETCORE_ENVIRONMENT=CI`. There is no `appsettings.CI.json` — the test server's secrets (Google, Gravatar, reCAPTCHA, SQL login, Service Bus) are injected as environment variables, and the production-only Key Vault fetch path is never reached under the `CI` environment
 4. Reports E2E results to Azure DevOps and Azure Monitor; uploads test results and Playwright failure artifacts
-5. Runs load tests (on `schedule` or `workflow_dispatch` only)
+5. Runs load tests (on `workflow_dispatch` only)
 6. Runs SonarCloud analysis, publishes the web app (`-r win-x86`), and uploads the app, `.dacpac`, and test binaries
 
 **Deploy job** — runs after a successful build (skipped on `pull_request`):
@@ -210,5 +208,5 @@ Database schema is always deployed before the app to ensure a valid schema is in
 **Smoke job** — runs after deploy, only on `main`:
 - Downloads the test binaries and runs the `Category=Smoke` suite against the deployed site (`SMOKE_BASE_URL`); reports results to Azure DevOps and Azure Monitor
 
-**Mutation job** — runs on `schedule` or `workflow_dispatch`:
-- Runs Stryker mutation testing over the source files listed in `stryker-config.json` (`GravatarService.cs`, `ConfigurationExtensions.cs`, `EndpointRouteBuilderExtensions.cs`), and uploads the HTML/JSON report as `stryker-report`
+**Mutation job** — runs on every push, manual dispatch, and pull requests from branches in this repository (fork PRs cannot read the Stryker dashboard secret):
+- Runs Stryker mutation testing over the whole `Identity` project, excluding only generated code, `Program.cs`, and `Properties/`, and uploads the HTML/JSON report as `stryker-report`. The job takes about 70 minutes; it runs in parallel with the build job and is not a deploy dependency. See [TESTING.md](TESTING.md#20-mutation-testing-stryker) for the measured trade-offs behind that scope and why the Stryker version is pinned

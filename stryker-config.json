@@ -16,14 +16,15 @@
     },
     "mutation-level": "Advanced",
     "thresholds": {
-      "high": 80,
-      "low": 60,
-      "break": 50
+      "high": 75,
+      "low": 65,
+      "break": 60
     },
     "mutate": [
-      "GravatarService.cs",
-      "Extensions/ConfigurationExtensions.cs",
-      "Extensions/EndpointRouteBuilderExtensions.cs"
+      "**/*.cs",
+      "!obj/**/*.cs",
+      "!Program.cs",
+      "!Properties/**/*.cs"
     ],
     "since": {
       "enabled": false

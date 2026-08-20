@@ -10,9 +10,6 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
-  schedule:
-    # Run mutation tests weekly on Monday at 02:00 UTC
-    - cron: '0 2 * * 1'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -21,7 +18,6 @@ jobs:
   build:
     name: Build and analyze
     runs-on: windows-latest
-    if: github.event_name != 'schedule'
     outputs:
       playwright-version: ${{ steps.playwright-version.outputs.version }}
     permissions:
@@ -284,7 +280,7 @@ jobs:
           Write-Host "Sent $($events.Count) telemetry events to Azure Monitor."
 
       - name: Run load tests
-        if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+        if: github.event_name == 'workflow_dispatch'
         env:
           ASPNETCORE_ENVIRONMENT: CI
           GoogleClientId: ${{ secrets.GOOGLE_CLIENT_ID }}
@@ -534,7 +530,7 @@ jobs:
   mutation:
     name: Mutation testing
     runs-on: windows-latest
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     permissions:
       contents: read
 
@@ -561,7 +557,7 @@ jobs:
           restore-keys: ${{ runner.os }}-dotnet-tools-
 
       - name: Install dotnet-stryker
-        run: dotnet tool install --global dotnet-stryker
+        run: dotnet tool update --global dotnet-stryker --version 4.16.0
 
       - name: Run Stryker mutation tests
         working-directory: Identity

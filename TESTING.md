@@ -1404,25 +1404,45 @@ Load tests use `Parallel.ForEachAsync` + `HttpClient` (self-signed cert ignored)
 
 ## 20. Mutation Testing (Stryker)
 
-Stryker.NET is configured in `stryker-config.json` with `mutation-level: Advanced`. It targets these core source files (the `mutate` array also lists a stale `EmailSender.cs` that no longer exists in the codebase):
+Stryker.NET is configured in `stryker-config.json` with `mutation-level: Advanced`. It mutates the whole `Identity` project, minus three exclusions:
 
-| File | Why it's targeted |
+| Excluded | Why |
 |---|---|
-| `Identity/GravatarService.cs` | Hash computation and error handling |
-| `Identity/Extensions/ConfigurationExtensions.cs` | `GetRequired<T>` config extraction |
-| `Identity/Extensions/EndpointRouteBuilderExtensions.cs` | Passkey endpoint registration |
+| `obj/**/*.cs` | The NSwag-generated Gravatar client is compiled into the project; mutating generated code measures the generator, not this codebase |
+| `Program.cs` | Top-level startup wiring, already excluded from coverage via `sonar.coverage.exclusions` |
+| `Properties/**/*.cs` | `AssemblyInfo.cs` and `GlobalUsings.cs` carry no executable logic |
 
-**Thresholds:** high=80, low=60, break=50 (CI fails if mutation score < 50).
+**Nothing is excluded for being slow.** This is a shared authentication server that is deployed rarely, so a long mutation run costs far less than a defect reaching production. `Pages/Admin/` in particular — 112 files, 1,410 mutants — is the configuration surface of the authorization server: redirect URI and post-logout redirect URI allow-lists, CORS origins, grant types, scopes, and client secrets. A mutant surviving there is the shape of an open redirect or a token-leak path, which makes it the highest-value code in the repo to mutate, not the most skippable. It also scores well (107 of its 112 files have a matching unit-test file), so including it *raises* the overall score rather than threatening the gate.
+
+**Pin the Stryker version — the score moves with it.** The CI job runs `dotnet tool update --global dotnet-stryker --version 4.16.0`. `update` rather than `install` because the job restores `~/.dotnet/tools` from an `actions/cache` step, and `dotnet tool install` fails outright when the tool is already present; `update` is idempotent against a warm cache. Measured 2026-08-20 on identical code and config, only the tool differing: 4.14.0 scored **55.56 %** (Killed 65 / Survived 27) and 4.16.0 scored **63.25 %** (Killed 74 / Survived 18). An unpinned `dotnet tool install` therefore lets the gate's number move on someone else's release schedule, with no commit to blame. Bump the pin deliberately and re-derive the thresholds in the same change.
+
+**What the scope costs, measured 2026-08-20 under 4.16.0.** Narrowing is possible but has been rejected deliberately; the numbers are recorded so the trade is not re-litigated from guesswork:
+
+| Scope | Mutants tested | Time | Score |
+|---|---|---|---|
+| All of `Pages/` excluded | 92 | 4 m 19 s | 63.25 % |
+| Only `Pages/Admin/` excluded | 825 | 21 m 58 s | 65.33 % |
+| **Nothing excluded but the three above (current)** | **1,871** | **1 h 11 m** | **70.56 %** |
+
+The full scope is both the slowest *and* the highest-scoring, because the page models it adds are well covered by unit tests.
+
+Do **not** narrow this by reintroducing a blanket `!Pages/**`: under dotnet-stryker 4.14.0 page-model mutants could not compile (`Failed to load analyzer 'Microsoft.CodeAnalysis.Razor.Compiler': ReferencesNewerCompiler`) and silently hung — 1,869 mutants queued, **1 h 36 m** elapsed, and only 244 ever reaching a verdict, with 1,604 of the 1,625 unfinished in `Pages/`. It looked like a scope problem and was a tool problem. 4.16.0 runs the same scope with zero errors and zero timeouts. That is why the pin matters.
+
+Only `Category=Unit` tests run under Stryker (`test-case-filter`), so a mutant in code reachable solely through E2E will survive. That is a real signal about unit coverage, not a configuration flaw.
+
+**Thresholds:** high=75, low=65, break=60 (CI fails if mutation score < 60). Re-derived 2026-08-20 against the current scope and pin, which measured **70.56 %** — Killed 1,462, Survived 409, Timeout 0, Errors 0, across 1,871 tested mutants. That leaves about 10 points of headroom, roughly 190 mutants, so the gate is a real floor rather than a formality; lower `break` toward 50 if it proves too tight in practice. The previous 85.71 % was measured over the old three-file allowlist and just **20 mutants**; the two numbers are not comparable, and the difference is a wider denominator, not a regression in the code.
+
+**This replaced a hand-maintained allowlist that had silently gone stale four times.** The old `mutate` array was seeded with five files in `efe74d0` (2026-03-19) and every subsequent edit was a deletion or a rename chasing a file that had moved: `PasskeyEndpointRouteBuilderExtensions.cs` renamed (`1ab0aae`), `SecretClientExtensions.cs` deleted (`798a47a`), the `Identity.Api/` prefix stripped (`8c9dd8e`), `EmailSender.cs` dropped once it no longer existed (`dd4e4e4`), and finally `GravatarService.cs` left pointing at the project root after the Avatar slice moved it. Nothing was ever added. A stale entry never failed the job — Stryker just mutated a smaller set and still reported a score, so the run stayed green while covering less, and the score's denominator moved whenever a file left the list. Do not reintroduce a filename allowlist; add an exclusion with a stated reason instead.
 
 ```bash
 # Install once
 dotnet tool install -g dotnet-stryker
 
-# Run (slow — allow 10–30 minutes depending on machine)
+# Run (about 70 minutes on a developer machine at the current scope)
 dotnet stryker --config-file stryker-config.json
 ```
 
-The CI `mutation` job runs on schedule (Monday 02:00 UTC) and on manual dispatch. Reports are uploaded as the `stryker-report` artifact (HTML + JSON). The `Run Stryker mutation tests` step sets `working-directory: Identity`, so Stryker writes `StrykerOutput/` under `Identity/`, not the repo root — the `Upload Stryker report` step's `path:` must read `Identity/StrykerOutput/**/*` to match (fixed 2026-08-17; it previously read the repo-root-relative `StrykerOutput/**/*`, which matched nothing and silently produced `No files were found ... No artifacts will be uploaded` on every mutation run without failing the job — same working-directory/hardcoded-path mismatch shape as the E2E `--results-directory` issue documented in [the workspace-level TESTING.md](../AGENTS/TESTING.md)).
+The CI `mutation` job runs on every push, on manual dispatch, and on pull requests raised from branches in this repository — fork PRs are skipped because they cannot read `STRYKER_DASHBOARD_API_KEY` and the `dashboard` reporter would fail. It runs in parallel with `build` and is not a deploy dependency, so a score dip turns the commit red without blocking the release. Reports are uploaded as the `stryker-report` artifact (HTML + JSON). The `Run Stryker mutation tests` step sets `working-directory: Identity`, so Stryker writes `StrykerOutput/` under `Identity/`, not the repo root — the `Upload Stryker report` step's `path:` must read `Identity/StrykerOutput/**/*` to match (fixed 2026-08-17; it previously read the repo-root-relative `StrykerOutput/**/*`, which matched nothing and silently produced `No files were found ... No artifacts will be uploaded` on every mutation run without failing the job — same working-directory/hardcoded-path mismatch shape as the E2E `--results-directory` issue documented in [the workspace-level TESTING.md](../AGENTS/TESTING.md)).
 
 The `mutation` job does **not** depend on (`needs:`) the `build` job, and this is correct, not an oversight — Stryker performs its own build as part of its "Initial test run" phase and never consumes anything the `build` job produces. Confirmed from a live CI log (2026-08-17): the job used to run an explicit `dotnet build --configuration Release` over the whole solution before invoking Stryker, taking ~52s — then Stryker immediately built `Identity.Tests.Unit.csproj` itself, in **Debug** config, discarding the prior Release build entirely (`Building project Identity.Tests.Unit.csproj using dotnet build ... -c Debug`). That step was removed as pure dead work; `needs: build` would not have helped either, since Stryker needs the source tree and its own build cycle, not the `build` job's published output. The step's `NuGetPackageSourceCredentials_GitHub` env var was also dead for this repo specifically — neither `Identity.csproj` nor `Identity.Tests.Unit.csproj` reference anything from the private `crgolden` GitHub Packages feed, and there is no `NuGet.config` adding it as a global source, so nothing needed the credential.
 
