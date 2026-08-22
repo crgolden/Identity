@@ -90,6 +90,76 @@ public class AvatarEndpointsTests
     }
 
     [Fact]
+    public async Task GetAvatarAsync_RecomputesOverALegacyGravatarClaimLeftByThePictureClaimWorker()
+    {
+        // Arrange
+        var legacyGravatarUrl = $"https://gravatar.com/avatar/{Guid.NewGuid():N}?s=2048&d=identicon";
+        var computed = new Uri($"https://gravatar.com/avatar/{Guid.NewGuid():N}?s=2048&d=identicon");
+        var emailAddress = $"{Guid.NewGuid()}@example.com";
+        var user = UserWithEmail(emailAddress);
+        var avatarService = new Mock<IAvatarService>(MockBehavior.Strict);
+        avatarService.Setup(x => x.IsOwnComputedUrl(legacyGravatarUrl)).Returns(true);
+        avatarService
+            .Setup(x => x.GetAvatarUrlAsync(emailAddress, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(computed);
+        var userManager = UserManagerFor(user, [new Claim(AvatarProfileService.PictureClaimType, legacyGravatarUrl)]);
+
+        // Act
+        var result = await AvatarEndpoints.GetAvatarAsync(
+            user.Id.ToString(),
+            userManager.Object,
+            avatarService.Object,
+            TestContext.Current.CancellationToken);
+
+        // Assert
+        var redirect = Assert.IsType<RedirectHttpResult>(result);
+        Assert.Equal(computed.AbsoluteUri, redirect.Url);
+        Assert.NotEqual(legacyGravatarUrl, redirect.Url);
+    }
+
+    [Fact]
+    public async Task GetAvatarAsync_ReturnsNotFoundWhenTheAvatarServiceResolvesNoUrl()
+    {
+        // Arrange
+        var emailAddress = $"{Guid.NewGuid()}@example.com";
+        var user = UserWithEmail(emailAddress);
+        var avatarService = new Mock<IAvatarService>(MockBehavior.Strict);
+        avatarService
+            .Setup(x => x.GetAvatarUrlAsync(emailAddress, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Uri?)null);
+        var userManager = UserManagerFor(user, []);
+
+        // Act
+        var result = await AvatarEndpoints.GetAvatarAsync(
+            user.Id.ToString(),
+            userManager.Object,
+            avatarService.Object,
+            TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.IsType<NotFound>(result);
+    }
+
+    [Fact]
+    public async Task GetAvatarAsync_ReturnsNotFoundForAUserWithNoEmailOrUserName()
+    {
+        // Arrange
+        var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
+        var avatarService = new Mock<IAvatarService>(MockBehavior.Strict);
+        var userManager = UserManagerFor(user, []);
+
+        // Act
+        var result = await AvatarEndpoints.GetAvatarAsync(
+            user.Id.ToString(),
+            userManager.Object,
+            avatarService.Object,
+            TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.IsType<NotFound>(result);
+    }
+
+    [Fact]
     public async Task GetAvatarAsync_ReturnsNotFoundForASubWithNoUser()
     {
         // Arrange

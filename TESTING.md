@@ -1153,6 +1153,9 @@ flowchart TD
 | Avatar endpoint — stored https claim is redirected to | `Avatar/AvatarEndpointsTests.cs` | `GetAvatarAsync_RedirectsToAStoredHttpsPictureClaim` |
 | Avatar endpoint — a non-https claim is ignored, not echoed | `Avatar/AvatarEndpointsTests.cs` | `GetAvatarAsync_IgnoresAStoredClaimWhoseSchemeIsNotHttpsAndComputesInstead` |
 | Avatar endpoint — no stored claim falls back to the computed URL | `Avatar/AvatarEndpointsTests.cs` | `GetAvatarAsync_FallsBackToTheComputedUrlWhenNoClaimIsStored` |
+| Avatar endpoint — a legacy worker-written Gravatar claim loses to a recompute | `Avatar/AvatarEndpointsTests.cs` | `GetAvatarAsync_RecomputesOverALegacyGravatarClaimLeftByThePictureClaimWorker` |
+| Avatar endpoint — a user with neither email nor username is 404 | `Avatar/AvatarEndpointsTests.cs` | `GetAvatarAsync_ReturnsNotFoundForAUserWithNoEmailOrUserName` |
+| Avatar endpoint — the service resolving no URL is 404 | `Avatar/AvatarEndpointsTests.cs` | `GetAvatarAsync_ReturnsNotFoundWhenTheAvatarServiceResolvesNoUrl` |
 | Avatar endpoint — unknown `sub` is 404 | `Avatar/AvatarEndpointsTests.cs` | `GetAvatarAsync_ReturnsNotFoundForASubWithNoUser` |
 
 `GetAvatarAsync_IgnoresAStoredClaimWhoseSchemeIsNotHttpsAndComputesInstead` is the scheme allowlist's
@@ -1161,13 +1164,36 @@ regression cover, and it discriminates: removing the `Uri.UriSchemeHttps` compar
 in the redirect target. The claim value originates from an external IdP rather than an anonymous caller,
 so this is defence in depth rather than a closed exploit path.
 
+Every branch of `GetAvatarAsync` is covered, and each of the three branch tests below was proved
+against the reverted code, one red each:
+
+- **`_RecomputesOverALegacyGravatarClaimLeftByThePictureClaimWorker`** covers the
+  `!IsOwnComputedUrl(x.Value)` filter — the retired `PictureClaimWorker` wrote computed Gravatar URLs
+  into the `picture` claim, and those must lose to a fresh computation rather than being served
+  forever. It only discriminates because the stored URL and the computed one carry **different**
+  hashes; with a shared hash the assertion passes while the stale claim wins. Deleting the filter turns
+  it red with the two URLs printed side by side.
+- **`_ReturnsNotFoundForAUserWithNoEmailOrUserName`** covers the guard before the recompute. Its
+  `IAvatarService` mock is `MockBehavior.Strict` with **no** `GetAvatarUrlAsync` setup, deliberately:
+  that is what proves the endpoint returns before computing rather than merely returning 404 by some
+  other route. Removing the guard turns it red as a strict-mock violation, naming the call that should
+  not have happened.
+- **`_ReturnsNotFoundWhenTheAvatarServiceResolvesNoUrl`** covers the last arm — `GetAvatarUrlAsync`
+  returning null. Nothing else in the file stubs it that way, so before this test the `NotFound` arm
+  could be deleted with the suite still green.
+
 ### Configuration & Startup Extension Tests
 
 **There are none.** This section listed eight rows naming test methods on
-`Extensions/HostApplicationBuilderExtensionsTests.cs`; that file is an empty class, and none of the
-eight production methods it named (`AddCors`, `AddDataProtection`, `AddObservabilityAsync`,
-`AddPersistenceAsync`, `AddPictureAsync`, `AddAuthAsync`) exists either — startup wiring is inline in
-`Program.cs`. The rows were removed rather than corrected because there was nothing to correct them to.
+`Extensions/HostApplicationBuilderExtensionsTests.cs`; that file is an empty class. The eight rows named
+six production methods between them (`AddCors` and `AddDataProtection` twice each, plus
+`AddObservabilityAsync`, `AddPersistenceAsync`, `AddPictureAsync` and `AddAuthAsync`), and **none of the
+six is an Identity-authored extension method.** No C# source defines or calls four of them — the only
+hits a repo-wide grep returns for those four are in this paragraph. The other two are
+ASP.NET Core built-ins invoked inline — `AddDataProtection` at `Program.cs:122` and `:156`, `AddCors` at
+`:232` — so grepping for them finds hits that confirm the point rather than contradict it: startup
+wiring is written into `Program.cs`, not extracted into testable extension methods. The rows were
+removed rather than corrected because there was nothing to correct them to.
 
 `AddPictureAsync` in particular never existed: avatar registration is
 `Program.cs`'s `.AddProfileService<AvatarProfileService>()` and `.AddScoped<IAvatarService, GravatarService>()`.

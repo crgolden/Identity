@@ -280,9 +280,20 @@ token it already holds at `/bff/callback` and copies a short allowlist of claims
 
 Reach for a dedicated identity resource only when a claim genuinely must ride the ID token — and even
 then, **never hang it off `profile`**, which every client requests, so a claim placed there is handed to
-all of them (the standing `churches.mod` defect, `AGENTS/PARKING_LOT.md` §8b-i). Server-side enforcement
-is unaffected either way: Curator authorizes `require_admin` from the access token, and anything the
-browser reads is a UI affordance.
+all of them. That was the `churches.mod` defect (`AGENTS/PARKING_LOT.md` §8b-i), **fixed 2026-08-22**:
+the Churches BFF now reads it from the access token, and the `profile` attachment was deleted from
+LocalDB, production, and `Tools/Identity/IdentityResources.sql`. `profile` carries only its fourteen
+standard OIDC claims again, and `churches.mod` survives as an `ApiScopeClaim` on the `directory` scope
+that only Churches requests. Server-side enforcement is unaffected either way: Curator authorizes
+`require_admin` from the access token, and anything the browser reads is a UI affordance.
+
+**Two operational facts that fix cost real time, worth having before the next one.** The live
+`IdentityResourceClaims`/`ApiScopes` ids have drifted from `Tools/Identity/*.sql` *and differ between
+environments* — that row was `Id 3005` locally and `Id 21` in production, and the `directory` scope is
+`Id 3` in the seed but `Id 5` in production — so **write configuration-store edits as joins on
+`Name`/`Type`, never on a seeded `Id`.** And `Program.cs` calls `AddConfigurationStore` with no
+`AddConfigurationStoreCache`, so such a change is live immediately with no restart; verify that line
+still holds before assuming the same next time.
 
 ---
 
