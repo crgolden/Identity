@@ -21,7 +21,7 @@ public static class AvatarEndpoints
         return endpoints;
     }
 
-    private static async Task<IResult> GetAvatarAsync(
+    internal static async Task<IResult> GetAvatarAsync(
         string sub,
         UserManager<IdentityUser<Guid>> userManager,
         IAvatarService avatarService,
@@ -37,7 +37,9 @@ public static class AvatarEndpoints
         var stored = claims.FirstOrDefault(
             x => string.Equals(x.Type, AvatarProfileService.PictureClaimType, StringComparison.Ordinal)
                 && !avatarService.IsOwnComputedUrl(x.Value));
-        if (stored is not null && Uri.TryCreate(stored.Value, UriKind.Absolute, out var storedUrl))
+        if (stored is not null
+            && Uri.TryCreate(stored.Value, UriKind.Absolute, out var storedUrl)
+            && string.Equals(storedUrl.Scheme, Uri.UriSchemeHttps, StringComparison.Ordinal))
         {
             return Results.Redirect(storedUrl.ToString());
         }

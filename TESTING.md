@@ -1150,19 +1150,34 @@ flowchart TD
 | Profile service — falls back to the computed URL | `Avatar/AvatarProfileServiceTests.cs` | `GetProfileDataAsync_FallsBackToTheComputedGravatarUrlWhenNoPictureClaimIsStored` |
 | Profile service — legacy worker-written claim is recomputed | `Avatar/AvatarProfileServiceTests.cs` | `GetProfileDataAsync_RecomputesOverALegacyGravatarClaimLeftByThePictureClaimWorker` |
 | Profile service — `picture` not requested, nothing added | `Avatar/AvatarProfileServiceTests.cs` | `GetProfileDataAsync_AddsNoPictureWhenTheClientDidNotRequestIt` |
+| Avatar endpoint — stored https claim is redirected to | `Avatar/AvatarEndpointsTests.cs` | `GetAvatarAsync_RedirectsToAStoredHttpsPictureClaim` |
+| Avatar endpoint — a non-https claim is ignored, not echoed | `Avatar/AvatarEndpointsTests.cs` | `GetAvatarAsync_IgnoresAStoredClaimWhoseSchemeIsNotHttpsAndComputesInstead` |
+| Avatar endpoint — no stored claim falls back to the computed URL | `Avatar/AvatarEndpointsTests.cs` | `GetAvatarAsync_FallsBackToTheComputedUrlWhenNoClaimIsStored` |
+| Avatar endpoint — unknown `sub` is 404 | `Avatar/AvatarEndpointsTests.cs` | `GetAvatarAsync_ReturnsNotFoundForASubWithNoUser` |
+
+`GetAvatarAsync_IgnoresAStoredClaimWhoseSchemeIsNotHttpsAndComputesInstead` is the scheme allowlist's
+regression cover, and it discriminates: removing the `Uri.UriSchemeHttps` comparison from
+`Avatar/AvatarEndpoints.cs` turns exactly this one test red, with the `javascript:` claim value visible
+in the redirect target. The claim value originates from an external IdP rather than an anonymous caller,
+so this is defence in depth rather than a closed exploit path.
 
 ### Configuration & Startup Extension Tests
 
-| Scenario | File | Test Method |
-|---|---|---|
-| `AddCors` — missing CorsPolicy section throws | `Extensions/HostApplicationBuilderExtensionsTests.cs` | `AddCors_MissingCorsPolicySection_ThrowsInvalidOperationException` |
-| `AddCors` — valid section registers ICorsService | `Extensions/HostApplicationBuilderExtensionsTests.cs` | `AddCors_ValidCorsPolicySection_RegistersCorsService` |
-| `AddDataProtection` — missing BlobUri throws | `Extensions/HostApplicationBuilderExtensionsTests.cs` | `AddDataProtection_MissingBlobUri_ThrowsInvalidOperationException` |
-| `AddDataProtection` — missing key identifier throws | `Extensions/HostApplicationBuilderExtensionsTests.cs` | `AddDataProtection_MissingDataProtectionKeyIdentifier_ThrowsInvalidOperationException` |
-| `AddObservabilityAsync` — missing ElasticsearchNode throws | `Extensions/HostApplicationBuilderExtensionsTests.cs` | `AddObservabilityAsync_MissingElasticsearchNode_ThrowsInvalidOperationException` |
-| `AddPersistenceAsync` — missing SqlConnectionStringBuilder throws | `Extensions/HostApplicationBuilderExtensionsTests.cs` | `AddPersistenceAsync_MissingSqlConnectionStringBuilderSection_ThrowsInvalidOperationException` |
-| `AddPictureAsync` — registers IAvatarService | `Extensions/HostApplicationBuilderExtensionsTests.cs` | `AddPictureAsync_RegistersAvatarService` |
-| `AddAuthAsync` — registers IAuthenticationService | `Extensions/HostApplicationBuilderExtensionsTests.cs` | `AddAuthAsync_RegistersAuthenticationServices` |
+**There are none.** This section listed eight rows naming test methods on
+`Extensions/HostApplicationBuilderExtensionsTests.cs`; that file is an empty class, and none of the
+eight production methods it named (`AddCors`, `AddDataProtection`, `AddObservabilityAsync`,
+`AddPersistenceAsync`, `AddPictureAsync`, `AddAuthAsync`) exists either — startup wiring is inline in
+`Program.cs`. The rows were removed rather than corrected because there was nothing to correct them to.
+
+`AddPictureAsync` in particular never existed: avatar registration is
+`Program.cs`'s `.AddProfileService<AvatarProfileService>()` and `.AddScoped<IAvatarService, GravatarService>()`.
+
+The real gap this leaves is worth stating rather than pointing at: **`Program.cs`'s configuration-failure
+paths have no tests.** The deleted rows described the useful ones — a missing `CorsPolicy` section, a
+missing Data Protection blob URI or key identifier, a missing `ElasticsearchNode`, a missing
+`SqlConnectionStringBuilder` section — each of which should throw at startup rather than boot degraded.
+`Extensions/HostApplicationBuilderExtensionsTests.cs` is an empty stub left over from that fiction and
+should either be filled in or deleted.
 
 ---
 
