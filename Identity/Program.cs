@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Security.Claims;
-using System.Threading.Channels;
 using Azure.Identity;
 using Duende.IdentityServer;
 using Elastic.Ingest.Elasticsearch;
@@ -12,13 +11,13 @@ using Elastic.Transport;
 using Google.Apis.Auth.AspNetCore3;
 using Identity;
 using Identity.Avatar;
-using Identity.Avatar.GravatarApi;
 using Identity.CAPTCHA;
 using Identity.Extensions;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -38,7 +37,6 @@ try
     var builder = WebApplication.CreateBuilder(args);
     string googleClientId = builder.Configuration.GetRequired<string>("GoogleClientId"),
         googleClientSecret = builder.Configuration.GetRequired<string>("GoogleClientSecret"),
-        gravatarApiSecretKey = builder.Configuration.GetRequired<string>("GravatarApiSecretKey"),
         reCAPTCHASiteKey = builder.Configuration.GetRequired<string>("ReCAPTCHASiteKey"),
         reCAPTCHASecretKey = builder.Configuration.GetRequired<string>("ReCAPTCHASecretKey");
     string? adminEmail = builder.Configuration.GetValue<string?>("AdminEmail"),
@@ -48,7 +46,6 @@ try
     var corsPolicySection = builder.Configuration.GetRequiredSection(nameof(CorsPolicy));
     var corsPolicy = corsPolicySection.Get<CorsPolicy>() ?? throw new InvalidOperationException($"Invalid '{nameof(CorsPolicy)}' section.");
     var recaptchaVerifyEndpoint = builder.Configuration.GetRequired<Uri>("RecaptchaVerifyEndpoint");
-    var backgroundChannel = Channel.CreateUnbounded<string>(new UnboundedChannelOptions { SingleReader = true });
     if (builder.Environment.IsProduction())
     {
         var defaultAzureCredentialOptionsSection = builder.Configuration.GetRequiredSection(nameof(DefaultAzureCredentialOptions));
@@ -194,6 +191,7 @@ try
             identityServerOptions.UserInteraction.LogoutUrl = "/Account/Logout";
         })
         .AddAspNetIdentity<IdentityUser<Guid>>()
+        .AddProfileService<AvatarProfileService>()
         .AddLicenseSummary()
         .AddConfigurationStore<ApplicationDbContext>(configurationStoreOptions =>
         {
@@ -213,10 +211,6 @@ try
                 openIdConnectOptions.ClientId = googleClientId;
                 openIdConnectOptions.ClientSecret = googleClientSecret;
             }).Services
-        .AddHttpClient<IGravatar, Gravatar>(httpClient =>
-        {
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(IdentityConstants.BearerScheme, gravatarApiSecretKey);
-        }).Services
         .AddScoped<IAvatarService, GravatarService>()
         .Configure<ReCAPTCHAOptions>(recaptchaOptions =>
         {
@@ -225,9 +219,16 @@ try
             recaptchaOptions.VerifyEndpoint = recaptchaVerifyEndpoint;
         })
         .AddHttpClient<ICAPTCHAService, ReCAPTCHAService>().Services
-        .AddSingleton(backgroundChannel.Writer)
-        .AddSingleton(backgroundChannel.Reader)
-        .AddHostedService<PictureClaimWorker>()
+        .AddRateLimiter(rateLimiterOptions =>
+        {
+            rateLimiterOptions.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+            rateLimiterOptions.AddFixedWindowLimiter(AvatarEndpoints.RateLimiterPolicyName, fixedWindowOptions =>
+            {
+                fixedWindowOptions.PermitLimit = 120;
+                fixedWindowOptions.Window = TimeSpan.FromMinutes(1);
+                fixedWindowOptions.QueueLimit = 0;
+            });
+        })
         .AddCors()
         .Configure<ForwardedHeadersOptions>(forwardedHeadersOptions =>
         {
@@ -299,7 +300,9 @@ try
                 return next(ctx);
             }
         });
+    webApplication.UseRateLimiter();
     webApplication.MapAdditionalIdentityEndpoints();
+    webApplication.MapAvatarEndpoint();
     webApplication.MapHealthChecks("/health").DisableHttpMetrics();
     webApplication.MapStaticAssets();
     webApplication.MapRazorPages().WithStaticAssets().RequireAuthorization();

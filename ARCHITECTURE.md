@@ -254,6 +254,36 @@ EF Core migrations are not used. The `Identity.Data/` SQL Server Database Projec
 - **Development:** apply changes directly to the local SQL Server instance.
 - **Production/CI:** the CI pipeline deploys the `.dacpac` before deploying the application.
 
+### Client/resource *rows* are configuration data, not schema — and they drift
+
+Clients, API scopes and identity resources live in `Clients`, `ApiScopes` and `IdentityResources`, seeded
+by `Tools/Identity/*.sql` and thereafter edited through the admin UI. Those scripts use their own
+independent incremental numbering, so **the live ids have drifted from the seed files** — adding a row
+means inserting it and reading back the generated id, never copying one. Adding `curator.roles` to LocalDB
+produced id `5004` where the seed script says `6`.
+
+### A claim only reaches a browser if it is on an *identity* resource
+
+`ApiScopeClaims` put a claim in the **access token**; `IdentityResourceClaims` put it in the **ID token
+and userinfo**. A BFF builds its client-visible session from the latter two, so an access-token-only claim
+is invisible to the browser no matter how correct the authorization is.
+
+That is why `curator.admin` — present in `ApiScopes.sql` but on no identity resource — was invisible to
+Librarian's browser, which made it fetch `GET /me` per page load just to colour its own nav.
+
+**The fix was *not* a new identity resource, and that matters.** Giving the claim its own resource was
+implemented and then reverted, because adding a scope to a client's authorize request is a one-way door:
+if the app deploys requesting a scope the live client has not been granted, **sign-in fails for every
+user** — and the grant has to land in LocalDB *and* production first. Instead the BFF decodes the access
+token it already holds at `/bff/callback` and copies a short allowlist of claims into the session
+(`Librarian/src/bff/routes.ts`, `accessTokenClaims`). No Identity change, no new scope, no login risk.
+
+Reach for a dedicated identity resource only when a claim genuinely must ride the ID token — and even
+then, **never hang it off `profile`**, which every client requests, so a claim placed there is handed to
+all of them (the standing `churches.mod` defect, `AGENTS/PARKING_LOT.md` §8b-i). Server-side enforcement
+is unaffected either way: Curator authorizes `require_admin` from the access token, and anything the
+browser reads is a UI affordance.
+
 ---
 
 ## External Services
@@ -261,12 +291,67 @@ EF Core migrations are not used. The `Identity.Data/` SQL Server Database Projec
 | Service | Purpose | Registration |
 |---|---|---|
 | **Azure Service Bus** | Transactional email (confirmation, password reset) | Pages inject `IAzureClientFactory<ServiceBusClient>`; call `CreateClient("crgolden")` then `CreateSender("email")` per send; namespace from the `ServiceBusNamespace` configuration value (production) or a connection string (non-production) — not a Key Vault secret |
-| **Gravatar** | User avatar images via SHA-256 email hash | `IAvatarService` → `GravatarService` (scoped); NSwag-generated `IGravatar` HTTP client with Bearer auth |
+| **Gravatar** | User avatar images via SHA-256 email hash | `IAvatarService` → `GravatarService` (scoped). **No outbound call and no credential** — see below |
 | **Google APIs** | External OpenID Connect login | `AddGoogleOpenIdConnect`; Client ID/Secret from Key Vault |
 | **Google reCAPTCHA v3** | Bot scoring on sign-in and registration | `ICAPTCHAService` → `ReCAPTCHAService` (typed `HttpClient`); site/secret keys from Key Vault, verification endpoint from `ReCAPTCHAVerifyEndpoint` config |
 | **Azure Key Vault** | Runtime secrets (DB credentials, API keys, OAuth secrets) | No SDK calls at app startup — `crgolden-identity`'s App Service settings hold `@Microsoft.KeyVault(SecretUri=...)` references that the platform resolves into `IConfiguration` before the app starts; `Program.cs` reads them via `IConfiguration.GetRequired<T>` (`Identity.Extensions`) like any other config value |
 | **Azure Blob Storage** | Data Protection key persistence | `PersistKeysToAzureBlobStorage` |
 | **Azure Key Vault** | Data Protection key encryption | `ProtectKeysWithAzureKeyVault` |
+
+### Gravatar is resolved by construction, not by a call
+
+`GravatarService` builds `https://gravatar.com/avatar/{sha256}?s=2048&d=identicon` and returns it. The
+avatar *image* endpoint is public and unauthenticated — Gravatar documents it as usable straight from an
+`img` tag — so the URL is a pure function of the email address and there is nothing to look up.
+
+This replaced a round trip to the authenticated Profile API (`api.gravatar.com/v3`) whose only purpose was
+to read back a URL we can derive. Deleting it removed the NSwag `OpenApiReference` and its generated
+`IGravatar` client, the typed `HttpClient` registration, and the **`GravatarApiSecretKey` Key Vault
+secret** — which `Program.cs` read with `GetRequired`, so it was a hard startup dependency for a call the
+app no longer makes.
+
+Two consequences worth knowing before changing this:
+
+- **`d=identicon` means every user has an avatar.** Gravatar decides at image-fetch time: the real avatar
+  when the address has one, a deterministic generated image when it does not. There is no
+  "this address has no Gravatar" case for a caller to branch on and no 404 path to handle. Previously a
+  404 from the Profile API meant no claim was written and the user had no avatar at all.
+- **The hash input must be trimmed and lower-cased *before* hashing**, per Gravatar's documented
+  algorithm. Registration stores `UserName` as the raw typed string, so without normalization a
+  mixed-case or space-padded address hashes to a digest Gravatar has never seen and the user silently
+  has no avatar. (The lower-casing applied to the resulting hex is a separate, unrelated step:
+  `Convert.ToHexString` emits upper-case.)
+
+Gravatar publishes no stability, versioning or deprecation statement for this scheme, and it has already
+changed once (MD5 → SHA-256). The derivation is therefore confined to `GravatarService.HashIdentifier`
+and one URL template, so a future change moves one method.
+
+### A stored `picture` claim only outranks the computed URL when it is *not* ours
+
+Precedence is "a stored `picture` claim wins", because that claim is how an external photo (Google's,
+via `AddMissingClaimsAsync`) reaches a token. That rule rests on an assumption which was **false for
+existing rows**: the deleted `PictureClaimWorker` also wrote `picture` claims, and its values were
+computed Gravatar URLs from the old Profile API — `https://0.gravatar.com/avatar/{hash}`, with **no
+`?s=2048` and no `?d=identicon`**.
+
+Found by running the real service against the real database rather than by any test: `GET /avatar/{sub}`
+for a seeded user 302'd to exactly that legacy URL. So for every user the worker had already touched,
+none of the improvements above applied — no generated-identicon fallback (so a user without a Gravatar
+account got nothing, the one case `d=identicon` exists to remove), no 2048px size, and a hash that may
+have been computed from an un-normalized address and therefore point at no avatar at all. The feature
+would have shipped looking correct and changing nothing for existing accounts.
+
+`IAvatarService.IsOwnComputedUrl` closes it: the provider recognizes its own URLs, and a stored claim
+matching them is ignored and recomputed. It lives on the interface rather than in the two call sites
+because the shape of a computed URL is the provider's own knowledge, and both `AvatarProfileService` and
+`AvatarEndpoints` must apply the identical rule. `AvatarProfileService` additionally *removes* the stale
+claim before adding the fresh one — otherwise the token carries two `picture` claims rather than a
+replaced one.
+
+This is self-healing and needs no data migration; it also survives a stale deployment writing another
+legacy claim mid-rollout. Host matching is exact-or-subdomain (`gravatar.com`, `*.gravatar.com`), never
+`Contains` — `notgravatar.com` is a covered negative case, since a substring test would hand an attacker
+a way to have their URL silently discarded.
 
 Duende's automatic key management persists rotated IdentityServer signing keys to the `Keys` table via
 `AddOperationalStore`, protected through the same Data Protection key ring configured above. The two

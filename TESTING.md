@@ -1408,7 +1408,7 @@ Stryker.NET is configured in `stryker-config.json` with `mutation-level: Advance
 
 | Excluded | Why |
 |---|---|
-| `obj/**/*.cs` | The NSwag-generated Gravatar client is compiled into the project; mutating generated code measures the generator, not this codebase |
+| `obj/**/*.cs` | Build-generated sources; mutating generated code measures the generator, not this codebase. (Kept as a standing guard — the NSwag Gravatar client that originally motivated it is gone: `GravatarService` now builds the avatar URL by construction, so nothing is generated into `obj/` for it any more. See `ARCHITECTURE.md`.) |
 | `Program.cs` | Top-level startup wiring, already excluded from coverage via `sonar.coverage.exclusions` |
 | `Properties/**/*.cs` | `AssemblyInfo.cs` and `GlobalUsings.cs` carry no executable logic |
 

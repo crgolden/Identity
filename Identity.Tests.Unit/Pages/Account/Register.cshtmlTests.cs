@@ -57,7 +57,6 @@ public class RegisterModelTests
         var model = new RegisterModel(
             userManagerMock.Object,
             signInManagerMock.Object,
-            Channel.CreateUnbounded<string>().Writer,
             CreateClientFactory(),
             CreateRecaptchaServiceMock().Object);
 
@@ -89,7 +88,6 @@ public class RegisterModelTests
         var model = new RegisterModel(
             userManagerMock.Object,
             signInManagerMock.Object,
-            Channel.CreateUnbounded<string>().Writer,
             CreateClientFactory(),
             CreateRecaptchaServiceMock().Object);
 
@@ -121,7 +119,6 @@ public class RegisterModelTests
         var model = new RegisterModel(
             userManagerMock.Object,
             signInManagerMock.Object,
-            Channel.CreateUnbounded<string>().Writer,
             CreateClientFactory(),
             CreateRecaptchaServiceMock().Object);
 
@@ -181,7 +178,6 @@ public class RegisterModelTests
         var model = new RegisterModel(
             userManagerMock.Object,
             signInManagerMock.Object,
-            Channel.CreateUnbounded<string>().Writer,
             senderFactory,
             CreateRecaptchaServiceMock().Object);
 
@@ -241,7 +237,6 @@ public class RegisterModelTests
         var model = new RegisterModel(
             userManagerMock.Object,
             signInManagerMock.Object,
-            Channel.CreateUnbounded<string>().Writer,
             CreateClientFactory(),
             recaptchaServiceMock.Object);
 
@@ -286,7 +281,6 @@ public class RegisterModelTests
         var model = new RegisterModel(
             userManagerMock.Object,
             signInManagerMock.Object,
-            Channel.CreateUnbounded<string>().Writer,
             CreateClientFactory(),
             recaptchaServiceMock.Object);
 

@@ -92,6 +92,8 @@ internal sealed class NullAvatarService : IAvatarService
 {
     public Task<Uri?> GetAvatarUrlAsync(string profileIdentifier, CancellationToken cancellationToken = default)
         => Task.FromResult<Uri?>(null);
+
+    public bool IsOwnComputedUrl(string candidate) => false;
 }
 
 #pragma warning disable S101

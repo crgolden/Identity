@@ -2,7 +2,6 @@ namespace Identity.Pages.Account;
 
 using System.ComponentModel.DataAnnotations;
 using System.Text.Encodings.Web;
-using System.Threading.Channels;
 using Azure.Messaging.ServiceBus;
 using CAPTCHA;
 using Microsoft.AspNetCore.Authentication;
@@ -18,20 +17,17 @@ public class RegisterModel : PageModel
     private const string From = "noreply@crgolden.com";
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
     private readonly UserManager<IdentityUser<Guid>> _userManager;
-    private readonly ChannelWriter<string> _pictureClaimWriter;
     private readonly ServiceBusClient _serviceBusClient;
     private readonly ICAPTCHAService _captchaService;
 
     public RegisterModel(
         UserManager<IdentityUser<Guid>> userManager,
         SignInManager<IdentityUser<Guid>> signInManager,
-        ChannelWriter<string> pictureClaimWriter,
         IAzureClientFactory<ServiceBusClient> serviceBusClientFactory,
         ICAPTCHAService captchaService)
     {
         _userManager = userManager;
         _signInManager = signInManager;
-        _pictureClaimWriter = pictureClaimWriter;
         _serviceBusClient = serviceBusClientFactory.CreateClient("crgolden");
         _captchaService = captchaService;
     }
@@ -81,7 +77,6 @@ public class RegisterModel : PageModel
             activity?.SetTag("succeeded", true);
             var userId = await _userManager.GetUserIdAsync(user);
             var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-            _pictureClaimWriter.TryWrite(Input.Email);
             var input = UTF8.GetBytes(code);
             code = Base64UrlEncode(input);
             var callbackUrl = Url.Page(

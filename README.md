@@ -83,7 +83,6 @@ The following secrets must be present in Azure Key Vault. In production, `crgold
 |---|---|
 | `GoogleClientId` | Google OAuth client ID |
 | `GoogleClientSecret` | Google OAuth client secret |
-| `GravatarApiSecretKey` | Gravatar API key |
 | `IdentitySqlServerUserId` | SQL Server login user |
 | `IdentitySqlServerPassword` | SQL Server login password |
 | `ElasticsearchUsername` | Elasticsearch username |

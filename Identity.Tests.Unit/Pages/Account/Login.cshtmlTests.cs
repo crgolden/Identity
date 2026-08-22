@@ -102,7 +102,7 @@ public class LoginModelTests
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
         urlHelperMock.Setup(u => u.IsLocalUrl("/")).Returns(true);
 
-        var model = new LoginModel(signInManagerMock.Object, Channel.CreateUnbounded<string>().Writer, CreateRecaptchaServiceMock().Object)
+        var model = new LoginModel(signInManagerMock.Object, CreateRecaptchaServiceMock().Object)
         {
             Url = urlHelperMock.Object,
             PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
@@ -129,7 +129,7 @@ public class LoginModelTests
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
 
-        var model = new LoginModel(signInManagerMock.Object, Channel.CreateUnbounded<string>().Writer, CreateRecaptchaServiceMock().Object)
+        var model = new LoginModel(signInManagerMock.Object, CreateRecaptchaServiceMock().Object)
         {
             Url = urlHelperMock.Object,
             PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
@@ -156,7 +156,7 @@ public class LoginModelTests
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
 
-        var model = new LoginModel(signInManagerMock.Object, Channel.CreateUnbounded<string>().Writer, CreateRecaptchaServiceMock().Object)
+        var model = new LoginModel(signInManagerMock.Object, CreateRecaptchaServiceMock().Object)
         {
             Url = urlHelperMock.Object,
             PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
@@ -183,7 +183,7 @@ public class LoginModelTests
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
 
-        var model = new LoginModel(signInManagerMock.Object, Channel.CreateUnbounded<string>().Writer, CreateRecaptchaServiceMock().Object)
+        var model = new LoginModel(signInManagerMock.Object, CreateRecaptchaServiceMock().Object)
         {
             Url = urlHelperMock.Object,
             PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
@@ -211,7 +211,7 @@ public class LoginModelTests
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
         urlHelperMock.Setup(u => u.IsLocalUrl(It.IsAny<string?>())).Returns(true);
 
-        var model = new LoginModel(signInManagerMock.Object, Channel.CreateUnbounded<string>().Writer, CreateRecaptchaServiceMock().Object)
+        var model = new LoginModel(signInManagerMock.Object, CreateRecaptchaServiceMock().Object)
         {
             Url = urlHelperMock.Object,
             Input = new LoginModel.InputModel
@@ -240,7 +240,7 @@ public class LoginModelTests
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
 
-        var model = new LoginModel(signInManagerMock.Object, Channel.CreateUnbounded<string>().Writer, CreateRecaptchaServiceMock().Object)
+        var model = new LoginModel(signInManagerMock.Object, CreateRecaptchaServiceMock().Object)
         {
             Url = urlHelperMock.Object,
             Input = new LoginModel.InputModel
@@ -271,7 +271,7 @@ public class LoginModelTests
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
 
-        var model = new LoginModel(signInManagerMock.Object, Channel.CreateUnbounded<string>().Writer, recaptchaServiceMock.Object)
+        var model = new LoginModel(signInManagerMock.Object, recaptchaServiceMock.Object)
         {
             Url = urlHelperMock.Object,
             PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
@@ -300,7 +300,7 @@ public class LoginModelTests
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
         urlHelperMock.Setup(u => u.IsLocalUrl("/")).Returns(true);
 
-        var model = new LoginModel(signInManagerMock.Object, Channel.CreateUnbounded<string>().Writer, recaptchaServiceMock.Object)
+        var model = new LoginModel(signInManagerMock.Object, recaptchaServiceMock.Object)
         {
             Url = urlHelperMock.Object,
             Input = new LoginModel.InputModel
@@ -330,7 +330,7 @@ public class LoginModelTests
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
         urlHelperMock.Setup(u => u.IsLocalUrl("/")).Returns(true);
 
-        var model = new LoginModel(signInManagerMock.Object, Channel.CreateUnbounded<string>().Writer, recaptchaServiceMock.Object)
+        var model = new LoginModel(signInManagerMock.Object, recaptchaServiceMock.Object)
         {
             Url = urlHelperMock.Object,
             PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
@@ -352,7 +352,7 @@ public class LoginModelTests
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
 
-        var model = new LoginModel(signInManagerMock.Object, Channel.CreateUnbounded<string>().Writer, recaptchaServiceMock.Object)
+        var model = new LoginModel(signInManagerMock.Object, recaptchaServiceMock.Object)
         {
             Url = urlHelperMock.Object,
             PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
@@ -375,7 +375,7 @@ public class LoginModelTests
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
 
-        var model = new LoginModel(signInManagerMock.Object, Channel.CreateUnbounded<string>().Writer, recaptchaServiceMock.Object)
+        var model = new LoginModel(signInManagerMock.Object, recaptchaServiceMock.Object)
         {
             Url = urlHelperMock.Object,
             PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
@@ -404,7 +404,7 @@ public class LoginModelTests
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
         urlHelperMock.Setup(u => u.IsLocalUrl("/")).Returns(true);
 
-        var model = new LoginModel(signInManagerMock.Object, Channel.CreateUnbounded<string>().Writer, recaptchaServiceMock.Object)
+        var model = new LoginModel(signInManagerMock.Object, recaptchaServiceMock.Object)
         {
             Url = urlHelperMock.Object,
             PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
@@ -436,7 +436,7 @@ public class LoginModelTests
             .BuildServiceProvider();
 
         var httpContext = new DefaultHttpContext { RequestServices = serviceProvider };
-        var model = new LoginModel(signInManagerMock.Object, Channel.CreateUnbounded<string>().Writer, CreateRecaptchaServiceMock().Object);
+        var model = new LoginModel(signInManagerMock.Object, CreateRecaptchaServiceMock().Object);
         model.PageContext = new PageContext(new ActionContext(httpContext, new RouteData(), new PageActionDescriptor()));
 
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);

@@ -1,7 +1,6 @@
 namespace Identity.Pages.Account;
 
 using System.ComponentModel.DataAnnotations;
-using System.Threading.Channels;
 using CAPTCHA;
 using Manage;
 using Microsoft.AspNetCore.Authentication;
@@ -14,19 +13,15 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 public class LoginModel : PageModel
 {
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
-    private readonly ChannelWriter<string> _pictureClaimWriter;
     private readonly ICAPTCHAService _captchaService;
 
     public LoginModel(
         SignInManager<IdentityUser<Guid>> signInManager,
-        ChannelWriter<string> pictureClaimWriter,
         ICAPTCHAService captchaService)
     {
         ThrowIfNull(signInManager);
-        ThrowIfNull(pictureClaimWriter);
         ThrowIfNull(captchaService);
         _signInManager = signInManager;
-        _pictureClaimWriter = pictureClaimWriter;
         _captchaService = captchaService;
     }
 
@@ -93,11 +88,6 @@ public class LoginModel : PageModel
 
         if (result.Succeeded)
         {
-            if (!IsNullOrWhiteSpace(Input.Email))
-            {
-                _pictureClaimWriter.TryWrite(Input.Email);
-            }
-
             return Url.IsLocalUrl(returnUrl) ? LocalRedirect(returnUrl) : LocalRedirect("~/");
         }
 

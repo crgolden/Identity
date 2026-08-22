@@ -1,32 +1,40 @@
 namespace Identity.Avatar;
 
 using System.Security.Cryptography;
-using GravatarApi;
 
 public class GravatarService : IAvatarService
 {
-    private readonly IGravatar _gravatar;
+    internal const string ActivityName = "identity.gravatar.build_url";
+    internal const string HashTagName = "gravatar.hash";
+#pragma warning disable S1075 // Fixed vendor endpoint, not configuration — see CODE-STYLE.md's "Configuration must not decide control flow" corollary.
+    internal const string ImageBaseUrl = "https://gravatar.com/avatar/";
+#pragma warning restore S1075
+    internal const string DefaultImageQuery = "?s=2048&d=identicon";
+    internal const string GravatarHost = "gravatar.com";
 
-    public GravatarService(IGravatar gravatar)
+    public Task<Uri?> GetAvatarUrlAsync(string profileIdentifier, CancellationToken cancellationToken = default)
     {
-        _gravatar = gravatar;
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var hash = HashIdentifier(profileIdentifier);
+        using var activity = Telemetry.StartActivity(ActivityName);
+        activity?.SetTag(HashTagName, hash);
+
+        var url = new Uri($"{ImageBaseUrl}{hash}{DefaultImageQuery}");
+        return Task.FromResult<Uri?>(url);
     }
 
-    public async Task<Uri?> GetAvatarUrlAsync(string profileIdentifier, CancellationToken cancellationToken = default)
+    public bool IsOwnComputedUrl(string candidate)
     {
-        var source = UTF8.GetBytes(profileIdentifier);
+        return Uri.TryCreate(candidate, UriKind.Absolute, out var uri)
+            && (string.Equals(uri.Host, GravatarHost, StringComparison.OrdinalIgnoreCase)
+                || uri.Host.EndsWith($".{GravatarHost}", StringComparison.OrdinalIgnoreCase));
+    }
+
+    internal static string HashIdentifier(string profileIdentifier)
+    {
+        var source = UTF8.GetBytes(profileIdentifier.Trim().ToLowerInvariant());
         var inArray = SHA256.HashData(source);
-        var hash = System.Convert.ToHexString(inArray);
-        using var activity = Telemetry.StartActivity("identity.gravatar.get_profile");
-        activity?.SetTag("gravatar.hash", hash.ToLowerInvariant());
-        try
-        {
-            var profile = await _gravatar.GetProfileByIdAsync(hash.ToLowerInvariant(), cancellationToken);
-            return profile?.Avatar_url;
-        }
-        catch (ApiException ex) when (ex.StatusCode == 404)
-        {
-            return null;
-        }
+        return System.Convert.ToHexString(inArray).ToLowerInvariant();
     }
 }

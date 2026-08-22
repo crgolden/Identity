@@ -3,164 +3,158 @@ namespace Identity.Tests.Unit;
 using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
-using Avatar;
-using Avatar.GravatarApi;
 using Identity;
+using Identity.Avatar;
 using Infrastructure;
-using Moq;
 
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public class GravatarServiceTests
 {
-    [Fact]
-    public async Task GetAvatarUrlAsync_ProfileFound_ReturnsAvatarUrl()
+    [Theory]
+    [InlineData("https://" + GravatarService.GravatarHost + "/avatar/abc", true)]
+    [InlineData("https://0." + GravatarService.GravatarHost + "/avatar/abc", true)]
+    [InlineData("https://secure." + GravatarService.GravatarHost + "/avatar/abc", true)]
+    [InlineData("https://GRAVATAR.COM/avatar/abc", true)]
+    [InlineData("https://lh3.googleusercontent.com/abc", false)]
+    [InlineData("https://example.test/avatar.jpg", false)]
+    [InlineData("https://not" + GravatarService.GravatarHost + "/avatar/abc", false)]
+    [InlineData("not a url", false)]
+    public void IsOwnComputedUrl_RecognizesEveryGravatarHostAndNothingElse(string candidate, bool expected)
     {
         // Arrange
-        var expected = new Uri("https://gravatar.com/avatar/abc123");
-        var profile = new Profile { Avatar_url = expected };
-        var gravatarMock = new Mock<IGravatar>(MockBehavior.Strict);
-        gravatarMock
-            .Setup(g => g.GetProfileByIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(profile);
-        var service = new GravatarService(gravatarMock.Object);
+        var service = new GravatarService();
 
         // Act
-        var result = await service.GetAvatarUrlAsync("user@example.com", TestContext.Current.CancellationToken);
+        var actual = service.IsOwnComputedUrl(candidate);
 
         // Assert
-        Assert.Equal(expected, result);
+        Assert.Equal(expected, actual);
     }
 
     [Fact]
-    public async Task GetAvatarUrlAsync_ProfileReturnsNullAvatarUrl_ReturnsNull()
+    public async Task GetAvatarUrlAsync_NormalizesTheEmailBeforeHashing()
     {
         // Arrange
-        var profile = new Profile();
-        var gravatarMock = new Mock<IGravatar>(MockBehavior.Strict);
-        gravatarMock
-            .Setup(g => g.GetProfileByIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(profile);
-        var service = new GravatarService(gravatarMock.Object);
+        var localPart = Guid.NewGuid().ToString();
+        var canonicalAddress = $"{localPart}@example.com";
+        var expectedHash = ExpectedHash(canonicalAddress);
+        var service = new GravatarService();
 
         // Act
-        var result = await service.GetAvatarUrlAsync("user@example.com", TestContext.Current.CancellationToken);
+        var fromCanonical = await service.GetAvatarUrlAsync(canonicalAddress, TestContext.Current.CancellationToken);
+        var fromUpperCase = await service.GetAvatarUrlAsync(
+            canonicalAddress.ToUpperInvariant(),
+            TestContext.Current.CancellationToken);
+        var fromPadded = await service.GetAvatarUrlAsync(
+            $"  {canonicalAddress}  ",
+            TestContext.Current.CancellationToken);
+        var fromMixedCase = await service.GetAvatarUrlAsync(
+            $"{localPart}@Example.COM",
+            TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.Null(result);
+        Assert.Contains(expectedHash, fromCanonical?.ToString(), StringComparison.Ordinal);
+        Assert.Contains(expectedHash, fromUpperCase?.ToString(), StringComparison.Ordinal);
+        Assert.Contains(expectedHash, fromPadded?.ToString(), StringComparison.Ordinal);
+        Assert.Contains(expectedHash, fromMixedCase?.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task GetAvatarUrlAsync_ProfileNotFound_ReturnsNull()
+    public async Task GetAvatarUrlAsync_BuildsTheDocumentedImageUrl()
     {
         // Arrange
-        var gravatarMock = new Mock<IGravatar>(MockBehavior.Strict);
-        gravatarMock
-            .Setup(g => g.GetProfileByIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new ApiException("Not Found", 404, string.Empty, new Dictionary<string, IEnumerable<string>>(), null));
-        var service = new GravatarService(gravatarMock.Object);
+        var emailAddress = $"{Guid.NewGuid()}@example.com";
+        var service = new GravatarService();
 
         // Act
-        var result = await service.GetAvatarUrlAsync("unknown@example.com", TestContext.Current.CancellationToken);
+        var result = await service.GetAvatarUrlAsync(emailAddress, TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.Null(result);
+        Assert.Equal(
+            $"{GravatarService.ImageBaseUrl}{ExpectedHash(emailAddress)}{GravatarService.DefaultImageQuery}",
+            result?.ToString());
     }
 
     [Fact]
-    public async Task GetAvatarUrlAsync_NonNotFoundApiException_PropagatesException()
+    public async Task GetAvatarUrlAsync_ResolvesAnImageForAnAddressWithNoGravatarAccount()
     {
         // Arrange
-        var gravatarMock = new Mock<IGravatar>(MockBehavior.Strict);
-        gravatarMock
-            .Setup(g => g.GetProfileByIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new ApiException("Internal Server Error", 500, string.Empty, new Dictionary<string, IEnumerable<string>>(), null));
-        var service = new GravatarService(gravatarMock.Object);
+        var registeredAddress = $"{Guid.NewGuid()}@example.com";
+        var unregisteredAddress = $"{Guid.NewGuid()}@example.invalid";
+        var service = new GravatarService();
 
         // Act
-        var exception = await Record.ExceptionAsync(
-            () => service.GetAvatarUrlAsync("user@example.com", TestContext.Current.CancellationToken));
+        var registered = await service.GetAvatarUrlAsync(registeredAddress, TestContext.Current.CancellationToken);
+        var unregistered = await service.GetAvatarUrlAsync(unregisteredAddress, TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.IsType<ApiException>(exception);
+        Assert.NotNull(registered);
+        Assert.NotNull(unregistered);
+        Assert.NotEqual(registered, unregistered);
+        Assert.EndsWith(GravatarService.DefaultImageQuery, unregistered.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task GetAvatarUrlAsync_AlwaysHashesEmailToSha256Lowercase()
+    public async Task GetAvatarUrlAsync_ConstructsWithNoCollaboratorAndMakesNoOutboundCall()
     {
         // Arrange
-        const string profileIdentifier = "User@Example.COM";
-        var expectedHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(profileIdentifier))).ToLowerInvariant();
-
-        var capturedHash = string.Empty;
-        var gravatarMock = new Mock<IGravatar>(MockBehavior.Strict);
-        gravatarMock
-            .Setup(g => g.GetProfileByIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .Callback<string, CancellationToken>((h, _) => capturedHash = h)
-            .ReturnsAsync((Profile?)null);
-        var service = new GravatarService(gravatarMock.Object);
+        var emailAddress = $"{Guid.NewGuid()}@example.com";
+        var service = new GravatarService();
 
         // Act
-        await service.GetAvatarUrlAsync(profileIdentifier, TestContext.Current.CancellationToken);
+        var result = await service.GetAvatarUrlAsync(emailAddress, TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.Equal(expectedHash, capturedHash);
-        Assert.Equal(capturedHash, capturedHash.ToLowerInvariant());
-        Assert.Equal(64, capturedHash.Length);
+        Assert.NotNull(result);
     }
 
     [Fact]
-    public async Task GetAvatarUrlAsync_PassesCancellationToken()
+    public async Task GetAvatarUrlAsync_HonoursCancellation()
     {
         // Arrange
+        var emailAddress = $"{Guid.NewGuid()}@example.com";
+        var service = new GravatarService();
         using var cts = new CancellationTokenSource();
-        CancellationToken capturedToken = default;
-        var profile = new Profile { Avatar_url = new Uri("https://gravatar.com/avatar/test") };
-        var gravatarMock = new Mock<IGravatar>(MockBehavior.Strict);
-        gravatarMock
-            .Setup(g => g.GetProfileByIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .Callback<string, CancellationToken>((_, ct) => capturedToken = ct)
-            .ReturnsAsync(profile);
-        var service = new GravatarService(gravatarMock.Object);
+        await cts.CancelAsync();
 
         // Act
-        await service.GetAvatarUrlAsync("user@example.com", cts.Token);
+        var exception = await Record.ExceptionAsync(() => service.GetAvatarUrlAsync(emailAddress, cts.Token));
 
         // Assert
-        Assert.Equal(cts.Token, capturedToken);
+        Assert.IsAssignableFrom<OperationCanceledException>(exception);
     }
 
     [Fact]
-    public async Task GetAvatarUrlAsync_StartsActivityWithGravatarHashTag()
+    public async Task GetAvatarUrlAsync_TagsTheActivityWithTheNormalizedHash()
     {
         // Arrange
-        const string profileIdentifier = "user@example.com";
-        var expectedHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(profileIdentifier))).ToLowerInvariant();
+        var localPart = Guid.NewGuid().ToString();
+        var expectedHash = ExpectedHash($"{localPart}@example.com");
         string? capturedOperationName = null;
         string? capturedHashTag = null;
         const string activitySourceName = nameof(Identity);
         using var listener = new ActivityListener
         {
-            ShouldListenTo = source => source.Name == activitySourceName,
+            ShouldListenTo = source => string.Equals(source.Name, activitySourceName, StringComparison.Ordinal),
             Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData,
             ActivityStopped = activity =>
             {
                 capturedOperationName = activity.OperationName;
-                capturedHashTag = activity.GetTagItem("gravatar.hash")?.ToString();
+                capturedHashTag = activity.GetTagItem(GravatarService.HashTagName)?.ToString();
             },
         };
         ActivitySource.AddActivityListener(listener);
-        var gravatarMock = new Mock<IGravatar>(MockBehavior.Strict);
-        gravatarMock
-            .Setup(g => g.GetProfileByIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Profile?)null);
-        var service = new GravatarService(gravatarMock.Object);
+        var service = new GravatarService();
 
         // Act
-        await service.GetAvatarUrlAsync(profileIdentifier, TestContext.Current.CancellationToken);
+        await service.GetAvatarUrlAsync($"{localPart}@Example.COM", TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.Equal("identity.gravatar.get_profile", capturedOperationName);
+        Assert.Equal(GravatarService.ActivityName, capturedOperationName);
         Assert.Equal(expectedHash, capturedHashTag);
     }
+
+    private static string ExpectedHash(string address) =>
+        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(address.ToLowerInvariant()))).ToLowerInvariant();
 }

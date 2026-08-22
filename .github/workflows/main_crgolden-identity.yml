@@ -11,9 +11,6 @@ on:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   build:
     name: Build and analyze
@@ -113,7 +110,7 @@ jobs:
         run: |
           dotnet coverlet Identity.Tests.Unit\bin\Release\net10.0 `
             --target "dotnet" `
-            --targetargs "test --project Identity.Tests.Unit --no-build --configuration Release -- --filter-trait Category=Unit --report-xunit-trx --report-xunit-trx-filename unit-tests.trx" `
+            --targetargs "test --project Identity.Tests.Unit --no-build --configuration Release -- --filter-trait Category=Unit --report-xunit-trx --report-xunit-trx-filename unit-tests.trx --results-directory=Identity.Tests.Unit/bin/Release/net10.0/TestResults" `
             --format opencover --output "coverage.opencover.xml" `
             --skipautoprops `
             --exclude-by-attribute GeneratedCodeAttribute `
@@ -166,7 +163,6 @@ jobs:
           ASPNETCORE_ENVIRONMENT: CI
           GoogleClientId: ${{ secrets.GOOGLE_CLIENT_ID }}
           GoogleClientSecret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-          GravatarApiSecretKey: ${{ secrets.GRAVATAR_API_SECRET_KEY }}
           ReCAPTCHASiteKey: ${{ secrets.RECAPTCHA_SITE_KEY_E2E }}
           ReCAPTCHASecretKey: ${{ secrets.RECAPTCHA_SECRET_KEY }}
           SqlConnectionStringBuilder__DataSource: ${{ vars.DB_SERVER }}
@@ -185,7 +181,10 @@ jobs:
         if: always() && github.actor != 'dependabot[bot]'
         with:
           name: test-results
-          path: Identity.Tests.E2E/bin/Release/net10.0/TestResults/
+          if-no-files-found: error
+          path: |
+            Identity.Tests.Unit/bin/Release/net10.0/TestResults/
+            Identity.Tests.E2E/bin/Release/net10.0/TestResults/
 
       - name: Upload Playwright failure artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
@@ -285,7 +284,6 @@ jobs:
           ASPNETCORE_ENVIRONMENT: CI
           GoogleClientId: ${{ secrets.GOOGLE_CLIENT_ID }}
           GoogleClientSecret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-          GravatarApiSecretKey: ${{ secrets.GRAVATAR_API_SECRET_KEY }}
           ReCAPTCHASiteKey: ${{ secrets.RECAPTCHA_SITE_KEY_E2E }}
           ReCAPTCHASecretKey: ${{ secrets.RECAPTCHA_SECRET_KEY }}
           SqlConnectionStringBuilder__DataSource: ${{ vars.DB_SERVER }}
@@ -361,7 +359,7 @@ jobs:
           restore-keys: ${{ runner.os }}-dotnet-tools-
 
       - name: Login to Azure
-        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5  # v2
+        uses: azure/login@f5d393ae46f8fde4be8b75f32e3fc50e654ad0ca  # v3.0.1
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_4533A76F9560447CBA73C7D19BFDC764 }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_07B3DB796C7C4D409EFADCB306F23869 }}
@@ -382,7 +380,7 @@ jobs:
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
-        uses: azure/webapps-deploy@84a80cfe7e9889f35148ed88c307e6e93bf02578  # v3
+        uses: azure/webapps-deploy@02a81bead70021f5284939794bcec79c271ab383  # v3.0.8
         with:
           app-name: 'crgolden-identity'
           slot-name: 'Production'
