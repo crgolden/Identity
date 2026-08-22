@@ -1102,36 +1102,54 @@ flowchart TD
     classDef unitOnly fill:#fef9c3,stroke:#ca8a04
 
     subgraph GravatarSvc["GravatarService (IAvatarService)"]
-        GV_Hash["SHA-256 hash email (lowercase)"]:::unitOnly
+        GV_Hash["trim + lowercase, then SHA-256\nno outbound call, no API key"]:::unitOnly
 
-        GV_Found["Gravatar profile found\nreturn avatar URL"]:::unitOnly
+        GV_Url["build https://gravatar.com/avatar/{hash}?s=2048&d=identicon"]:::unitOnly
 
-        GV_NotFound["Gravatar profile not found (404)\nreturn null"]:::unitOnly
+        GV_NoAccount["address with no Gravatar account\nstill resolves — d=identicon"]:::unitOnly
 
-        GV_NullUrl["Profile found but no avatar URL\nreturn null"]:::unitOnly
+        GV_Own["IsOwnComputedUrl\ngravatar.com and its subdomains only"]:::unitOnly
 
-        GV_OtherErr["Non-404 API exception\npropagates"]:::unitOnly
+        GV_Cancel["Cancellation token\nhonoured"]:::unitOnly
 
-        GV_Cancel["Cancellation token\npropagates"]:::unitOnly
+        GV_Tag["Activity tagged with the normalized hash"]:::unitOnly
     end
 
-    GV_Hash --> GV_Found
-    GV_Hash --> GV_NotFound
-    GV_Hash --> GV_NullUrl
-    GV_Hash --> GV_OtherErr
+    subgraph AvatarProfile["AvatarProfileService (Duende IProfileService)"]
+        AP_Stored["stored external picture claim\nwins over the computed URL"]:::unitOnly
+
+        AP_Computed["no stored claim\ncompute from the normalized email"]:::unitOnly
+
+        AP_Legacy["legacy PictureClaimWorker-written Gravatar claim\nrecomputed, not preferred"]:::unitOnly
+
+        AP_NotRequested["client did not request `picture`\nnothing added"]:::unitOnly
+    end
+
+    GV_Hash --> GV_Url
+    GV_Url --> GV_NoAccount
+    GV_Url --> GV_Own
     GV_Hash --> GV_Cancel
+    GV_Hash --> GV_Tag
+    AP_Stored --> AP_Computed
+    AP_Computed --> AP_Legacy
+    AP_Legacy --> AP_NotRequested
 ```
 
 ### Service Tests
 
 | Scenario | File | Test Method |
 |---|---|---|
-| Gravatar — profile found | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_ProfileFound_ReturnsAvatarUrl` |
-| Gravatar — profile not found | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_ProfileNotFound_ReturnsNull` |
-| Gravatar — null avatar URL | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_ProfileReturnsNullAvatarUrl_ReturnsNull` |
-| Gravatar — non-404 exception | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_NonNotFoundApiException_PropagatesException` |
-| Gravatar — SHA-256 hash casing | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_AlwaysHashesEmailToSha256Lowercase` |
-| Gravatar — cancellation token | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_PassesCancellationToken` |
+| Gravatar — trim + lowercase before hashing | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_NormalizesTheEmailBeforeHashing` |
+| Gravatar — documented image URL | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_BuildsTheDocumentedImageUrl` |
+| Gravatar — address with no Gravatar account still resolves | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_ResolvesAnImageForAnAddressWithNoGravatarAccount` |
+| Gravatar — no collaborator, no outbound call | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_ConstructsWithNoCollaboratorAndMakesNoOutboundCall` |
+| Gravatar — cancellation token | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_HonoursCancellation` |
+| Gravatar — activity tagged with the normalized hash | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_TagsTheActivityWithTheNormalizedHash` |
+| Gravatar — own-URL recognition, hosts and non-hosts | `GravatarServiceTests.cs` | `IsOwnComputedUrl_RecognizesEveryGravatarHostAndNothingElse` |
+| Profile service — stored picture claim wins | `Avatar/AvatarProfileServiceTests.cs` | `GetProfileDataAsync_PrefersAStoredPictureClaimOverTheComputedGravatarUrl` |
+| Profile service — falls back to the computed URL | `Avatar/AvatarProfileServiceTests.cs` | `GetProfileDataAsync_FallsBackToTheComputedGravatarUrlWhenNoPictureClaimIsStored` |
+| Profile service — legacy worker-written claim is recomputed | `Avatar/AvatarProfileServiceTests.cs` | `GetProfileDataAsync_RecomputesOverALegacyGravatarClaimLeftByThePictureClaimWorker` |
+| Profile service — `picture` not requested, nothing added | `Avatar/AvatarProfileServiceTests.cs` | `GetProfileDataAsync_AddsNoPictureWhenTheClientDidNotRequestIt` |
 
 ### Configuration & Startup Extension Tests
 

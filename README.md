@@ -50,7 +50,7 @@ Identity is the **authorization server** for a five-app system. It issues all ac
 | Database | SQL Server via EF Core 10 |
 | Schema deployment | SQL Database Project (dacpac) |
 | Email | Azure Service Bus |
-| Pictures | Gravatar API |
+| Pictures | Gravatar image URLs, built by construction (no API, no key) |
 | Observability | OpenTelemetry → Grafana Alloy (OTLP), Serilog → Elasticsearch |
 | Hosting | Azure App Service |
 | Secrets | Azure Key Vault |
@@ -193,7 +193,7 @@ The GitHub Actions workflow triggers on pushes to `main`, pull requests, and man
 **Build job** — runs on every trigger:
 1. Builds the full solution (`dotnet build --no-incremental --configuration Release`), which also compiles `Identity.Data.sqlproj` and produces the `.dacpac`
 2. Runs unit tests with coverage
-3. Deploys the E2E test database schema (`SqlPackage`), then runs E2E tests with `ASPNETCORE_ENVIRONMENT=CI`. There is no `appsettings.CI.json` — the test server's secrets (Google, Gravatar, reCAPTCHA, SQL login, Service Bus) are injected as environment variables, and the production-only Key Vault fetch path is never reached under the `CI` environment
+3. Deploys the E2E test database schema (`SqlPackage`), then runs E2E tests with `ASPNETCORE_ENVIRONMENT=CI`. There is no `appsettings.CI.json` — the test server's secrets (Google, reCAPTCHA, SQL login, Service Bus) are injected as environment variables, and the production-only Key Vault fetch path is never reached under the `CI` environment
 4. Reports E2E results to Azure DevOps and Azure Monitor; uploads test results and Playwright failure artifacts
 5. Runs load tests (on `workflow_dispatch` only)
 6. Runs SonarCloud analysis, publishes the web app (`-r win-x86`), and uploads the app, `.dacpac`, and test binaries

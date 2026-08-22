@@ -477,7 +477,7 @@ Allowed origins are read from the `CorsPolicy:Origins` configuration array (supp
 7. IdentityServer (configuration store + operational store + ASP.NET Identity integration)
 8. Google OpenID Connect external authentication
 9. Azure Service Bus (`ServiceBusClient` + named `ServiceBusSender` "email")
-10. Gravatar HTTP client (`IGravatar` + `IAvatarService`)
+10. Avatar URL construction (`IAvatarService` → `GravatarService`) and the Duende `IProfileService` (`AvatarProfileService`) that issues the `picture` claim — no HTTP client, no API key
 11. Razor Pages
 12. CORS
 13. Health checks (DbContext check)
