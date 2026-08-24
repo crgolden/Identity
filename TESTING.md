@@ -37,6 +37,16 @@ dotnet build Identity.Tests.E2E --configuration Debug
 cmd /c "Identity.Tests.E2E\bin\Debug\net10.0\Identity.Tests.E2E.exe -trait ""Category=E2E"" -showLiveOutput > C:\temp\identity-e2e.txt 2>&1"
 ```
 
+**`-trait "Category=E2E"` is not optional, and dropping it fails in a way that looks like a code
+regression.** `Identity.Tests.E2E` also holds the `Category=Smoke` suite (`AccountSmokeTests`), which is
+written to run against the **live deployed site** and needs a `TestEmail` that only Key Vault supplies.
+Run the project unfiltered — `dotnet run --project Identity.Tests.E2E` — and those tests are discovered and
+executed locally, where they fail with `InvalidOperationException: TestEmail is not set` and take a
+registration test down with them, because `TestEmail` is also the reCAPTCHA exemption
+(`ICAPTCHAService.IsExempt`, see `ARCHITECTURE.md`). The symptom is two failures in files nobody touched
+and a total five higher than the last green run. Check the total before blaming the diff: **the E2E tier
+alone is the count to compare.**
+
 ### Single Test (by method name)
 
 ```powershell
@@ -1157,6 +1167,9 @@ flowchart TD
 | Avatar endpoint — a user with neither email nor username is 404 | `Avatar/AvatarEndpointsTests.cs` | `GetAvatarAsync_ReturnsNotFoundForAUserWithNoEmailOrUserName` |
 | Avatar endpoint — the service resolving no URL is 404 | `Avatar/AvatarEndpointsTests.cs` | `GetAvatarAsync_ReturnsNotFoundWhenTheAvatarServiceResolvesNoUrl` |
 | Avatar endpoint — unknown `sub` is 404 | `Avatar/AvatarEndpointsTests.cs` | `GetAvatarAsync_ReturnsNotFoundForASubWithNoUser` |
+| Avatar endpoint — a stored-claim redirect carries `public, max-age=300` | `Avatar/AvatarEndpointsTests.cs` | `GetAvatarAsync_SetsCacheControlOnAStoredClaimRedirect` |
+| Avatar endpoint — a computed-URL redirect carries `public, max-age=300` | `Avatar/AvatarEndpointsTests.cs` | `GetAvatarAsync_SetsCacheControlOnTheComputedUrlRedirect` |
+| Avatar endpoint — a 404 carries no `Cache-Control` | `Avatar/AvatarEndpointsTests.cs` | `GetAvatarAsync_LeavesCacheControlUnsetOnANotFound` |
 
 `GetAvatarAsync_IgnoresAStoredClaimWhoseSchemeIsNotHttpsAndComputesInstead` is the scheme allowlist's
 regression cover, and it discriminates: removing the `Uri.UriSchemeHttps` comparison from
@@ -1182,28 +1195,53 @@ against the reverted code, one red each:
   returning null. Nothing else in the file stubs it that way, so before this test the `NotFound` arm
   could be deleted with the suite still green.
 
+The three `Cache-Control` tests cover both redirect sites and the deliberate absence on a 404. They
+assert the header **literally** rather than through `AvatarEndpoints.RedirectCacheControl`: the constant
+exists so the two redirect sites cannot drift apart from each other, but a test that compared the header
+to that same constant would pass if the directive were changed to `no-store`, which is the one thing
+these tests exist to prevent. `max-age=300` bounds how long a stale redirect can outlive a user changing
+their email or gaining a `picture` claim; a 404 gets no header at all, because a cached 404 would outlive
+a user *adding* an email and keep serving "no avatar" after one exists.
+
 ### Configuration & Startup Extension Tests
 
-**There are none.** This section listed eight rows naming test methods on
-`Extensions/HostApplicationBuilderExtensionsTests.cs`; that file is an empty class. The eight rows named
-six production methods between them (`AddCors` and `AddDataProtection` twice each, plus
-`AddObservabilityAsync`, `AddPersistenceAsync`, `AddPictureAsync` and `AddAuthAsync`), and **none of the
-six is an Identity-authored extension method.** No C# source defines or calls four of them — the only
-hits a repo-wide grep returns for those four are in this paragraph. The other two are
-ASP.NET Core built-ins invoked inline — `AddDataProtection` at `Program.cs:122` and `:156`, `AddCors` at
-`:232` — so grepping for them finds hits that confirm the point rather than contradict it: startup
-wiring is written into `Program.cs`, not extracted into testable extension methods. The rows were
-removed rather than corrected because there was nothing to correct them to.
+`Identity.Extensions` holds exactly one member — `ConfigurationExtensions.GetRequired<T>` — and it is
+covered:
 
-`AddPictureAsync` in particular never existed: avatar registration is
-`Program.cs`'s `.AddProfileService<AvatarProfileService>()` and `.AddScoped<IAvatarService, GravatarService>()`.
+| Behaviour | File | Test |
+|---|---|---|
+| A present key returns its value | `Extensions/ConfigurationExtensionsTests.cs` | `GetRequired_ReturnsTheValueForAPresentStringKey` |
+| A present key converts to a non-`string` `T` (`Uri`) | `Extensions/ConfigurationExtensionsTests.cs` | `GetRequired_ConvertsAPresentKeyToTheRequestedNonStringType` |
+| An absent key throws `InvalidOperationException` naming that key | `Extensions/ConfigurationExtensionsTests.cs` | `GetRequired_ThrowsNamingTheKeyWhenItIsAbsent` |
+
+The third test asserts the message **contains the requested key and not some other configured key**.
+Both halves matter: `Assert.Throws` alone cannot fail when the wrong key is reported, and the message is
+the only thing that tells an operator which setting the deployment is missing. The `Uri` row exists
+because `GetRequired<T>` delegates to `GetValue<T?>`, whose non-`string` conversions go through a
+`TypeConverter` — a behaviour of the binder, not of this method, and therefore worth pinning here.
+
+**Startup wiring itself lives inline in `Program.cs` and is not extracted into testable extension
+methods.** This section previously listed eight rows naming test methods on a
+`HostApplicationBuilderExtensionsTests.cs` that was an empty class, against six production methods
+(`AddCors` and `AddDataProtection` twice each, plus `AddObservabilityAsync`, `AddPersistenceAsync`,
+`AddPictureAsync` and `AddAuthAsync`), **none of which is an Identity-authored extension method.** No C#
+source defined or called four of them; the other two are ASP.NET Core built-ins invoked inline —
+`AddDataProtection` at `Program.cs:122` and `:156`, `AddCors` at `:232` — so grepping for them finds hits
+that confirm the point rather than contradict it. The rows were removed rather than corrected because
+there was nothing to correct them to. `AddPictureAsync` in particular never existed: avatar registration
+is `Program.cs`'s `.AddProfileService<AvatarProfileService>()` and
+`.AddScoped<IAvatarService, GravatarService>()`.
+
+`Identity/Extensions/HostApplicationBuilderExtensions.cs` and its test stub have both been deleted: the
+production class was an extension shell with zero members and zero callers, so the stub was testing
+nothing and the class was carrying nothing. `Program.cs` still needs `using Identity.Extensions;` for
+`GetRequired`.
 
 The real gap this leaves is worth stating rather than pointing at: **`Program.cs`'s configuration-failure
 paths have no tests.** The deleted rows described the useful ones — a missing `CorsPolicy` section, a
 missing Data Protection blob URI or key identifier, a missing `ElasticsearchNode`, a missing
 `SqlConnectionStringBuilder` section — each of which should throw at startup rather than boot degraded.
-`Extensions/HostApplicationBuilderExtensionsTests.cs` is an empty stub left over from that fiction and
-should either be filled in or deleted.
+Closing that gap means testing `Program.cs`, not reviving an empty extension class.
 
 ---
 

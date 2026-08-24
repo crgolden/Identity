@@ -105,17 +105,22 @@ public sealed class OidcDiscoveryTests(PlaywrightFixture fixture)
             new FormUrlEncodedContent(Array.Empty<KeyValuePair<string, string>>()),
             TestContext.Current.CancellationToken);
 
-        Assert.NotEqual(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
-    public async Task AuthorizationEndpoint_MissingRequiredParams_ReturnsBadRequest()
+    public async Task AuthorizationEndpoint_MissingRequiredParams_RedirectsToErrorPage()
     {
         var client = fixture.Factory.CreateClient(new WebApplicationFactoryClientOptions
         {
             AllowAutoRedirect = false
         });
         var response = await client.GetAsync("/connect/authorize", TestContext.Current.CancellationToken);
-        Assert.NotEqual(HttpStatusCode.OK, response.StatusCode);
+
+        Assert.Equal(HttpStatusCode.RedirectMethod, response.StatusCode);
+        var location = response.Headers.Location;
+        Assert.NotNull(location);
+        Assert.True(location.IsAbsoluteUri);
+        Assert.Equal("/Error", location.AbsolutePath);
     }
 }

@@ -279,14 +279,6 @@ public sealed class UsersTests(PlaywrightFixture fixture)
         return int.Parse(id["role-".Length..], CultureInfo.InvariantCulture);
     }
 
-    private static async Task NavigateToOwnDetailsAsync(IPage page, string email)
-    {
-        await page.GotoAsync("/Admin/Users");
-        var detailsLink = page.Locator("tr", new PageLocatorOptions { HasText = email }).Locator("[id^='details-']").First;
-        await detailsLink.ClickAsync();
-        await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Users/Details/(?!Claims|Roles|Logins|Passkeys)"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-    }
-
     private static async Task LoginAsync(IPage page, string email, string password)
     {
         await page.GotoAsync("/Account/Login");
@@ -294,5 +286,13 @@ public sealed class UsersTests(PlaywrightFixture fixture)
         await page.FillAsync("input[name='Input.Password']", password);
         await page.ClickAsync("#login-submit");
         await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+    }
+
+    private async Task NavigateToOwnDetailsAsync(IPage page, string email)
+    {
+        var userId = await fixture.GetUserIdAsync(email);
+        await page.GotoAsync("/Admin/Users", new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
+        await page.ClickAsync($"#details-{userId}");
+        await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Users/Details/(?!Claims|Roles|Logins|Passkeys)"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
     }
 }

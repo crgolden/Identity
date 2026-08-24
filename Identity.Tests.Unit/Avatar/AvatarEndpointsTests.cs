@@ -6,6 +6,7 @@ using Infrastructure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Net.Http.Headers;
 using Moq;
 
 [Collection(UnitCollection.Name)]
@@ -25,6 +26,7 @@ public class AvatarEndpointsTests
         // Act
         var result = await AvatarEndpoints.GetAvatarAsync(
             user.Id.ToString(),
+            new DefaultHttpContext(),
             userManager.Object,
             avatarService.Object,
             TestContext.Current.CancellationToken);
@@ -55,6 +57,7 @@ public class AvatarEndpointsTests
         // Act
         var result = await AvatarEndpoints.GetAvatarAsync(
             user.Id.ToString(),
+            new DefaultHttpContext(),
             userManager.Object,
             avatarService.Object,
             TestContext.Current.CancellationToken);
@@ -80,6 +83,7 @@ public class AvatarEndpointsTests
         // Act
         var result = await AvatarEndpoints.GetAvatarAsync(
             user.Id.ToString(),
+            new DefaultHttpContext(),
             userManager.Object,
             avatarService.Object,
             TestContext.Current.CancellationToken);
@@ -107,6 +111,7 @@ public class AvatarEndpointsTests
         // Act
         var result = await AvatarEndpoints.GetAvatarAsync(
             user.Id.ToString(),
+            new DefaultHttpContext(),
             userManager.Object,
             avatarService.Object,
             TestContext.Current.CancellationToken);
@@ -128,16 +133,19 @@ public class AvatarEndpointsTests
             .Setup(x => x.GetAvatarUrlAsync(emailAddress, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Uri?)null);
         var userManager = UserManagerFor(user, []);
+        var httpContext = new DefaultHttpContext();
 
         // Act
         var result = await AvatarEndpoints.GetAvatarAsync(
             user.Id.ToString(),
+            httpContext,
             userManager.Object,
             avatarService.Object,
             TestContext.Current.CancellationToken);
 
         // Assert
         Assert.IsType<NotFound>(result);
+        Assert.False(httpContext.Response.Headers.ContainsKey(HeaderNames.CacheControl));
     }
 
     [Fact]
@@ -147,16 +155,19 @@ public class AvatarEndpointsTests
         var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
         var avatarService = new Mock<IAvatarService>(MockBehavior.Strict);
         var userManager = UserManagerFor(user, []);
+        var httpContext = new DefaultHttpContext();
 
         // Act
         var result = await AvatarEndpoints.GetAvatarAsync(
             user.Id.ToString(),
+            httpContext,
             userManager.Object,
             avatarService.Object,
             TestContext.Current.CancellationToken);
 
         // Assert
         Assert.IsType<NotFound>(result);
+        Assert.False(httpContext.Response.Headers.ContainsKey(HeaderNames.CacheControl));
     }
 
     [Fact]
@@ -167,16 +178,70 @@ public class AvatarEndpointsTests
         var avatarService = new Mock<IAvatarService>(MockBehavior.Strict);
         var userManager = MockHelpers.MockUserManager();
         userManager.Setup(x => x.FindByIdAsync(unknownSub)).ReturnsAsync((IdentityUser<Guid>?)null);
+        var httpContext = new DefaultHttpContext();
 
         // Act
         var result = await AvatarEndpoints.GetAvatarAsync(
             unknownSub,
+            httpContext,
             userManager.Object,
             avatarService.Object,
             TestContext.Current.CancellationToken);
 
         // Assert
         Assert.IsType<NotFound>(result);
+        Assert.False(httpContext.Response.Headers.ContainsKey(HeaderNames.CacheControl));
+    }
+
+    [Fact]
+    public async Task GetAvatarAsync_SetsCacheControlOnAStoredClaimRedirect()
+    {
+        // Arrange
+        var googlePhotoUrl = $"https://lh3.googleusercontent.com/{Guid.NewGuid()}";
+        var user = UserWithEmail($"{Guid.NewGuid()}@example.com");
+        var httpContext = new DefaultHttpContext();
+        var avatarService = new Mock<IAvatarService>(MockBehavior.Strict);
+        avatarService.Setup(x => x.IsOwnComputedUrl(googlePhotoUrl)).Returns(false);
+        var userManager = UserManagerFor(user, [new Claim(AvatarProfileService.PictureClaimType, googlePhotoUrl)]);
+
+        // Act
+        var result = await AvatarEndpoints.GetAvatarAsync(
+            user.Id.ToString(),
+            httpContext,
+            userManager.Object,
+            avatarService.Object,
+            TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.IsType<RedirectHttpResult>(result);
+        Assert.Equal("public, max-age=300", httpContext.Response.Headers.CacheControl.ToString());
+    }
+
+    [Fact]
+    public async Task GetAvatarAsync_SetsCacheControlOnTheComputedUrlRedirect()
+    {
+        // Arrange
+        var computed = new Uri($"https://gravatar.com/avatar/{Guid.NewGuid():N}?s=2048&d=identicon");
+        var emailAddress = $"{Guid.NewGuid()}@example.com";
+        var user = UserWithEmail(emailAddress);
+        var httpContext = new DefaultHttpContext();
+        var avatarService = new Mock<IAvatarService>(MockBehavior.Strict);
+        avatarService
+            .Setup(x => x.GetAvatarUrlAsync(emailAddress, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(computed);
+        var userManager = UserManagerFor(user, []);
+
+        // Act
+        var result = await AvatarEndpoints.GetAvatarAsync(
+            user.Id.ToString(),
+            httpContext,
+            userManager.Object,
+            avatarService.Object,
+            TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.IsType<RedirectHttpResult>(result);
+        Assert.Equal("public, max-age=300", httpContext.Response.Headers.CacheControl.ToString());
     }
 
     private static IdentityUser<Guid> UserWithEmail(string emailAddress)

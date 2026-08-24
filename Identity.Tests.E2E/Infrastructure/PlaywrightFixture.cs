@@ -263,6 +263,26 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         }
     }
 
+    public async Task<Guid> GetUserIdAsync(string email)
+    {
+        if (IsSmoke)
+        {
+            await using var conn = OpenSmokeConnection();
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT Id FROM AspNetUsers WHERE NormalizedEmail = @email";
+            cmd.Parameters.AddWithValue("@email", email.ToUpperInvariant());
+            var scalar = await cmd.ExecuteScalarAsync()
+                ?? throw new InvalidOperationException($"User '{email}' not found.");
+            return (Guid)scalar;
+        }
+
+        await using var scope = _factory!.Services.CreateAsyncScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser<Guid>>>();
+        var user = await userManager.FindByEmailAsync(email)
+            ?? throw new InvalidOperationException($"User '{email}' not found.");
+        return user.Id;
+    }
+
     public async Task DeleteUserIfExistsAsync(string email)
     {
         if (IsSmoke)

@@ -9,6 +9,7 @@ public static class AvatarEndpoints
 {
     internal const string RateLimiterPolicyName = "avatar";
     internal const string RoutePattern = "/avatar/{sub}";
+    internal const string RedirectCacheControl = "public, max-age=300";
 
     public static IEndpointRouteBuilder MapAvatarEndpoint(this IEndpointRouteBuilder endpoints)
     {
@@ -23,6 +24,7 @@ public static class AvatarEndpoints
 
     internal static async Task<IResult> GetAvatarAsync(
         string sub,
+        HttpContext httpContext,
         UserManager<IdentityUser<Guid>> userManager,
         IAvatarService avatarService,
         CancellationToken cancellationToken)
@@ -41,6 +43,7 @@ public static class AvatarEndpoints
             && Uri.TryCreate(stored.Value, UriKind.Absolute, out var storedUrl)
             && string.Equals(storedUrl.Scheme, Uri.UriSchemeHttps, StringComparison.Ordinal))
         {
+            httpContext.Response.Headers.CacheControl = RedirectCacheControl;
             return Results.Redirect(storedUrl.ToString());
         }
 
@@ -51,6 +54,12 @@ public static class AvatarEndpoints
         }
 
         var avatarUrl = await avatarService.GetAvatarUrlAsync(email, cancellationToken);
-        return avatarUrl is null ? Results.NotFound() : Results.Redirect(avatarUrl.ToString());
+        if (avatarUrl is null)
+        {
+            return Results.NotFound();
+        }
+
+        httpContext.Response.Headers.CacheControl = RedirectCacheControl;
+        return Results.Redirect(avatarUrl.ToString());
     }
 }
