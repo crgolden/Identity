@@ -13,6 +13,7 @@ using Identity;
 using Identity.Avatar;
 using Identity.CAPTCHA;
 using Identity.Extensions;
+using Identity.Logging;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -74,6 +75,7 @@ try
                 .ReadFrom.Configuration(builder.Configuration)
                 .ReadFrom.Services(serviceProvider)
                 .Enrich.WithProperty(nameof(IHostEnvironment.ApplicationName), applicationName)
+                .Filter.ByExcluding(DuendeLicenseNotice.IsUnlicensedNotice)
                 .WriteTo.Elasticsearch(
                     [elasticsearchNode],
                     elasticsearchSinkOptions =>

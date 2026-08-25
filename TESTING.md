@@ -1203,6 +1203,12 @@ these tests exist to prevent. `max-age=300` bounds how long a stale redirect can
 their email or gaining a `picture` claim; a 404 gets no header at all, because a cached 404 would outlive
 a user *adding* an email and keep serving "no avatar" after one exists.
 
+**These unit tests are the only detector — the E2E tier cannot reach the header.**
+`IdentityWebApplicationFactory` does `RemoveAll<IAvatarService>()` and substitutes `NullAvatarService`,
+whose `GetAvatarUrlAsync` returns `null`, so the only path through `GetAvatarAsync` reachable under E2E is
+the `Results.NotFound()` arm — precisely the one deliberately left without a header. Do not read a green
+E2E run as evidence about avatar caching.
+
 ### Configuration & Startup Extension Tests
 
 `Identity.Extensions` holds exactly one member — `ConfigurationExtensions.GetRequired<T>` — and it is
@@ -1242,6 +1248,45 @@ paths have no tests.** The deleted rows described the useful ones — a missing 
 missing Data Protection blob URI or key identifier, a missing `ElasticsearchNode`, a missing
 `SqlConnectionStringBuilder` section — each of which should throw at startup rather than boot degraded.
 Closing that gap means testing `Program.cs`, not reviving an empty extension class.
+
+### Log Filter Tests
+
+`Identity.Logging.DuendeLicenseNotice.IsUnlicensedNotice` is the Serilog exclusion wired into the
+Production sink chain at `Program.cs:78`. It drops one Duende event — `NoValidLicenseKey` — and must
+leave every other event from the same logger alone.
+
+| Behaviour | File | Test |
+|---|---|---|
+| The unlicensed notice never reaches the sink | `Logging/DuendeLicenseNoticeTests.cs` | `IsUnlicensedNotice_DropsTheUnlicensedNoticeBeforeItReachesTheSink` |
+| A malformed license key still reaches the sink | `Logging/DuendeLicenseNoticeTests.cs` | `IsUnlicensedNotice_KeepsTheMalformedLicenseKeyEventFromTheSameSource` |
+| An expired license still reaches the sink | `Logging/DuendeLicenseNoticeTests.cs` | `IsUnlicensedNotice_KeepsTheExpiredLicenseEventFromTheSameSource` |
+| The same event name from another logger is kept | `Logging/DuendeLicenseNoticeTests.cs` | `IsUnlicensedNotice_KeepsTheUnlicensedNoticeNameWhenItComesFromAnotherSource` |
+| Another event carrying the same numeric id is kept | `Logging/DuendeLicenseNoticeTests.cs` | `IsUnlicensedNotice_KeepsAnotherEventCarryingTheUnlicensedNoticeIdentifier` |
+
+Each row writes through a real `LoggerFactory` → Serilog → sink pipeline rather than calling the
+predicate directly, because the property shape the predicate reads (`SourceContext` as a `ScalarValue`,
+`EventId` as a `StructureValue` with a `Name` member) is produced by `Serilog.Extensions.Logging`, not by
+anything in this repo — a test that constructed a `LogEvent` by hand would pin an assumption instead of a
+behaviour. A production Elasticsearch document corroborates both halves independently of these tests:
+`log.logger` is the ECS mapping of `SourceContext` and `event.action` of `EventId.Name`, and they read
+`Duende.Private.Licencing.V2.LicenseValidator` and `NoValidLicenseKey`.
+
+**The first row guards the misspelling.** Duende's namespace is `Licencing`, not `Licensing`. Correcting
+that typo in `DuendeLicenseNotice` — or Duende correcting it in a future package — leaves a predicate
+that matches nothing, and `DropsTheUnlicensedNoticeBeforeItReachesTheSink` is the only test that goes red
+for it while the other four stay green. Do not delete it as a test that "cannot fail".
+
+The suite was proved against a widened filter: replacing the event-name comparison with a
+source-context-only match turns `KeepsTheMalformedLicenseKeyEventFromTheSameSource`,
+`KeepsTheExpiredLicenseEventFromTheSameSource` and
+`KeepsAnotherEventCarryingTheUnlicensedNoticeIdentifier` red, three of five. That widened form is the
+obvious implementation and it swallows `ErrorValidatingV2LicenseKey`, which is **Critical** and fires
+only when a license key *is* configured and cannot be parsed — the one event that would explain a
+license key silently not taking effect.
+
+`KeepsAnotherEventCarryingTheUnlicensedNoticeIdentifier` reuses the real `NoValidLicenseKey` event id
+under a generated name. It fails if the predicate is ever rewritten to match on the numeric id, which is
+a generated hash that Duende can change between package versions without changing the event.
 
 ---
 
