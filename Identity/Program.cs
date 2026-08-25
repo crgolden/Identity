@@ -75,7 +75,7 @@ try
                 .ReadFrom.Configuration(builder.Configuration)
                 .ReadFrom.Services(serviceProvider)
                 .Enrich.WithProperty(nameof(IHostEnvironment.ApplicationName), applicationName)
-                .Filter.ByExcluding(DuendeLicenseNotice.IsUnlicensedNotice)
+                .Filter.ByExcluding(DuendeLicenseNotice.IsNoLicenseConfiguredNotice)
                 .WriteTo.Elasticsearch(
                     [elasticsearchNode],
                     elasticsearchSinkOptions =>

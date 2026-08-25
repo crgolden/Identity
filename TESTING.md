@@ -1251,17 +1251,28 @@ Closing that gap means testing `Program.cs`, not reviving an empty extension cla
 
 ### Log Filter Tests
 
-`Identity.Logging.DuendeLicenseNotice.IsUnlicensedNotice` is the Serilog exclusion wired into the
-Production sink chain at `Program.cs:78`. It drops one Duende event — `NoValidLicenseKey` — and must
-leave every other event from the same logger alone.
+`Identity.Logging.DuendeLicenseNotice.IsNoLicenseConfiguredNotice` is the Serilog exclusion wired into
+the Production sink chain at `Program.cs:78`. **The line it draws is "no license is configured" versus
+"a license exists and something is wrong with it".** Duende reports the first fact three ways — once as
+an Error and twice as a Warning naming whichever feature or entitlement triggered the check — and all
+three are the same single fact. Every other event from that logger requires a configured license to fire
+at all, so none of them can be noise.
 
 | Behaviour | File | Test |
 |---|---|---|
-| The unlicensed notice never reaches the sink | `Logging/DuendeLicenseNoticeTests.cs` | `IsUnlicensedNotice_DropsTheUnlicensedNoticeBeforeItReachesTheSink` |
-| A malformed license key still reaches the sink | `Logging/DuendeLicenseNoticeTests.cs` | `IsUnlicensedNotice_KeepsTheMalformedLicenseKeyEventFromTheSameSource` |
-| An expired license still reaches the sink | `Logging/DuendeLicenseNoticeTests.cs` | `IsUnlicensedNotice_KeepsTheExpiredLicenseEventFromTheSameSource` |
-| The same event name from another logger is kept | `Logging/DuendeLicenseNoticeTests.cs` | `IsUnlicensedNotice_KeepsTheUnlicensedNoticeNameWhenItComesFromAnotherSource` |
-| Another event carrying the same numeric id is kept | `Logging/DuendeLicenseNoticeTests.cs` | `IsUnlicensedNotice_KeepsAnotherEventCarryingTheUnlicensedNoticeIdentifier` |
+| The unlicensed notice is dropped | `Logging/DuendeLicenseNoticeTests.cs` | `IsNoLicenseConfiguredNotice_DropsTheUnlicensedNotice` |
+| The per-feature warning (PAR, key management) is dropped | `Logging/DuendeLicenseNoticeTests.cs` | `IsNoLicenseConfiguredNotice_DropsTheUnlicensedFeatureWarningThatNamesPar` |
+| The per-entitlement count warning is dropped | `Logging/DuendeLicenseNoticeTests.cs` | `IsNoLicenseConfiguredNotice_DropsTheUnlicensedEntitlementCountWarning` |
+| A malformed license key still reaches the sink | `Logging/DuendeLicenseNoticeTests.cs` | `IsNoLicenseConfiguredNotice_KeepsTheMalformedLicenseKeyEventFromTheSameSource` |
+| An expired license still reaches the sink | `Logging/DuendeLicenseNoticeTests.cs` | `IsNoLicenseConfiguredNotice_KeepsTheExpiredLicenseEventFromTheSameSource` |
+| A feature missing from a configured license is kept | `Logging/DuendeLicenseNoticeTests.cs` | `IsNoLicenseConfiguredNotice_KeepsAFeatureMissingFromAConfiguredLicense` |
+| An entitlement past its licensed grace is kept | `Logging/DuendeLicenseNoticeTests.cs` | `IsNoLicenseConfiguredNotice_KeepsAnEntitlementBeyondItsLicensedGrace` |
+| A dropped event name from another logger is kept | `Logging/DuendeLicenseNoticeTests.cs` | `IsNoLicenseConfiguredNotice_KeepsADroppedEventNameWhenItComesFromAnotherSource` |
+| Another event carrying a dropped numeric id is kept | `Logging/DuendeLicenseNoticeTests.cs` | `IsNoLicenseConfiguredNotice_KeepsAnotherEventCarryingADroppedEventIdentifier` |
+
+`FeatureNotLicensed` and `QuantizedExceedsGrace` are the two easiest to lose by accident: they read like
+the events being dropped, but Duende only reaches them on the branch where `license.IsConfigured` is
+true, so they mean "your licence does not cover this" rather than "you have no licence".
 
 Each row writes through a real `LoggerFactory` → Serilog → sink pipeline rather than calling the
 predicate directly, because the property shape the predicate reads (`SourceContext` as a `ScalarValue`,
@@ -1271,22 +1282,21 @@ behaviour. A production Elasticsearch document corroborates both halves independ
 `log.logger` is the ECS mapping of `SourceContext` and `event.action` of `EventId.Name`, and they read
 `Duende.Private.Licencing.V2.LicenseValidator` and `NoValidLicenseKey`.
 
-**The first row guards the misspelling.** Duende's namespace is `Licencing`, not `Licensing`. Correcting
-that typo in `DuendeLicenseNotice` — or Duende correcting it in a future package — leaves a predicate
-that matches nothing, and `DropsTheUnlicensedNoticeBeforeItReachesTheSink` is the only test that goes red
-for it while the other four stay green. Do not delete it as a test that "cannot fail".
+**The three "drops" rows guard the misspelling.** Duende's namespace is `Licencing`, not `Licensing`.
+Correcting that typo in `DuendeLicenseNotice` — or Duende correcting it in a future package — leaves a
+predicate that matches nothing, and only those three rows go red while the six "keeps" rows stay green.
+Do not delete them as tests that "cannot fail".
 
-The suite was proved against a widened filter: replacing the event-name comparison with a
-source-context-only match turns `KeepsTheMalformedLicenseKeyEventFromTheSameSource`,
-`KeepsTheExpiredLicenseEventFromTheSameSource` and
-`KeepsAnotherEventCarryingTheUnlicensedNoticeIdentifier` red, three of five. That widened form is the
-obvious implementation and it swallows `ErrorValidatingV2LicenseKey`, which is **Critical** and fires
-only when a license key *is* configured and cannot be parsed — the one event that would explain a
-license key silently not taking effect.
+The suite was proved against a widened filter: replacing the event-name check with a source-context-only
+match turns five of the nine red, including
+`KeepsTheMalformedLicenseKeyEventFromTheSameSource`. That widened form is the obvious implementation and
+it swallows `ErrorValidatingV2LicenseKey`, which is **Critical** and fires only when a license key *is*
+configured and cannot be parsed — the one event that would explain a license key silently not taking
+effect.
 
-`KeepsAnotherEventCarryingTheUnlicensedNoticeIdentifier` reuses the real `NoValidLicenseKey` event id
-under a generated name. It fails if the predicate is ever rewritten to match on the numeric id, which is
-a generated hash that Duende can change between package versions without changing the event.
+`KeepsAnotherEventCarryingADroppedEventIdentifier` reuses the real `NoValidLicenseKey` event id under a
+generated name. It fails if the predicate is ever rewritten to match on the numeric id, which is a
+generated hash that Duende can change between package versions without changing the event.
 
 ---
 
