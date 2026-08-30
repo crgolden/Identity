@@ -4,7 +4,7 @@
     ViewData["Title"] = $"Edit \"{Model.Resource.Name}\"";
 }
 
-<h1>Edit: @Model.Resource.Name</h1>
+<h1 id="page-heading">Edit: @Model.Resource.Name</h1>
 
 <form method="post">
     <input type="hidden" asp-for="Resource.Id" />

@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
 
@@ -25,15 +26,17 @@ public class ManageIndexModelTests
         { new string('a', 500), null },
     };
 
-    public static TheoryData<string?, string?, bool, bool, bool, string> PhoneUpdateCases() => new()
+    public static TheoryData<string?, string?> PhoneNumbersThatNeedNoUpdate()
     {
-        { null, null, false, false, true, "Your profile has been updated" },
-        { "123", "123", false, false, true, "Your profile has been updated" },
-        { "123", "456", true, true, true, "Your profile has been updated" },
-        { "123", "456", false, true, false, "Unexpected error when trying to set phone number." },
-        { "123", null, false, false, true, "Your profile has been updated" },
-        { null, string.Empty, false, false, true, "Your profile has been updated" },
-    };
+        var storedPhoneNumber = BuildPhoneNumber();
+        return new TheoryData<string?, string?>
+        {
+            { null, null },
+            { storedPhoneNumber, storedPhoneNumber },
+            { storedPhoneNumber, null },
+            { null, string.Empty },
+        };
+    }
 
     [Fact]
     public async Task OnGetAsync_UserNotFound_ReturnsNotFoundObjectResult()
@@ -101,7 +104,8 @@ public class ManageIndexModelTests
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
-        Assert.Contains(expectedUserId, notFound.Value?.ToString() ?? string.Empty);
+        var message = Assert.IsType<string>(notFound.Value);
+        Assert.Contains(expectedUserId, message, StringComparison.Ordinal);
         signInManagerMock.Verify(s => s.RefreshSignInAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
         userManagerMock.Verify(u => u.SetPhoneNumberAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>()), Times.Never);
     }
@@ -135,8 +139,10 @@ public class ManageIndexModelTests
     }
 
     [Theory]
-    [MemberData(nameof(PhoneUpdateCases))]
-    public async Task OnPostAsync_PhoneUpdateScenarios(string? existingPhone, string? inputPhone, bool setSucceeds, bool expectSetCall, bool expectRefreshCall, string expectedStatusMessage)
+    [MemberData(nameof(PhoneNumbersThatNeedNoUpdate))]
+    public async Task OnPostAsync_PhoneNumberUnchangedOrBlank_RefreshesSignInWithoutSettingPhoneNumber(
+        string? existingPhone,
+        string? inputPhone)
     {
         // Arrange
         var userManagerMock = MockHelpers.MockUserManager();
@@ -144,43 +150,72 @@ public class ManageIndexModelTests
         var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
         userManagerMock.Setup(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
         userManagerMock.Setup(u => u.GetPhoneNumberAsync(user)).ReturnsAsync(existingPhone);
-
-        if (expectSetCall)
-        {
-            var identityResult = setSucceeds ? IdentityResult.Success : IdentityResult.Failed(new IdentityError { Description = "Error" });
-            userManagerMock.Setup(u => u.SetPhoneNumberAsync(user, inputPhone)).ReturnsAsync(identityResult);
-        }
-
         signInManagerMock.Setup(s => s.RefreshSignInAsync(user)).Returns(Task.CompletedTask);
 
-        var page = new IndexModel(userManagerMock.Object, signInManagerMock.Object);
-        page.TempData = new TempDataDictionary(new DefaultHttpContext(), Mock.Of<ITempDataProvider>());
-        page.Input = new IndexModel.InputModel { PhoneNumber = inputPhone };
+        var page = BuildPostPage(userManagerMock, signInManagerMock, inputPhone);
 
         // Act
         var result = await page.OnPostAsync();
 
         // Assert
         Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal(expectedStatusMessage, page.StatusMessage);
+        Assert.Equal("Your profile has been updated", page.StatusMessage);
+        userManagerMock.Verify(u => u.SetPhoneNumberAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>()), Times.Never);
+        signInManagerMock.Verify(s => s.RefreshSignInAsync(user), Times.Once);
+    }
 
-        if (expectSetCall)
-        {
-            userManagerMock.Verify(u => u.SetPhoneNumberAsync(user, inputPhone), Times.Once);
-        }
-        else
-        {
-            userManagerMock.Verify(u => u.SetPhoneNumberAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>()), Times.Never);
-        }
+    [Fact]
+    public async Task OnPostAsync_PhoneNumberChangedAndSetSucceeds_SetsPhoneNumberAndRefreshesSignIn()
+    {
+        // Arrange
+        var existingPhoneNumber = BuildPhoneNumber();
+        var replacementPhoneNumber = BuildPhoneNumber();
+        var userManagerMock = MockHelpers.MockUserManager();
+        var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
+        var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
+        userManagerMock.Setup(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
+        userManagerMock.Setup(u => u.GetPhoneNumberAsync(user)).ReturnsAsync(existingPhoneNumber);
+        userManagerMock.Setup(u => u.SetPhoneNumberAsync(user, replacementPhoneNumber)).ReturnsAsync(IdentityResult.Success);
+        signInManagerMock.Setup(s => s.RefreshSignInAsync(user)).Returns(Task.CompletedTask);
 
-        if (expectRefreshCall)
-        {
-            signInManagerMock.Verify(s => s.RefreshSignInAsync(user), Times.Once);
-        }
-        else
-        {
-            signInManagerMock.Verify(s => s.RefreshSignInAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
-        }
+        var page = BuildPostPage(userManagerMock, signInManagerMock, replacementPhoneNumber);
+
+        // Act
+        var result = await page.OnPostAsync();
+
+        // Assert
+        Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal("Your profile has been updated", page.StatusMessage);
+        userManagerMock.Verify(u => u.SetPhoneNumberAsync(user, replacementPhoneNumber), Times.Once);
+        signInManagerMock.Verify(s => s.RefreshSignInAsync(user), Times.Once);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_PhoneNumberChangedAndSetFails_ReportsErrorAndDoesNotRefreshSignIn()
+    {
+        // Arrange
+        var existingPhoneNumber = BuildPhoneNumber();
+        var rejectedPhoneNumber = BuildPhoneNumber();
+        var userManagerMock = MockHelpers.MockUserManager();
+        var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
+        var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
+        userManagerMock.Setup(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
+        userManagerMock.Setup(u => u.GetPhoneNumberAsync(user)).ReturnsAsync(existingPhoneNumber);
+        userManagerMock
+            .Setup(u => u.SetPhoneNumberAsync(user, rejectedPhoneNumber))
+            .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = $"rejected-{Guid.NewGuid():N}" }));
+        signInManagerMock.Setup(s => s.RefreshSignInAsync(user)).Returns(Task.CompletedTask);
+
+        var page = BuildPostPage(userManagerMock, signInManagerMock, rejectedPhoneNumber);
+
+        // Act
+        var result = await page.OnPostAsync();
+
+        // Assert
+        Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal("Unexpected error when trying to set phone number.", page.StatusMessage);
+        userManagerMock.Verify(u => u.SetPhoneNumberAsync(user, rejectedPhoneNumber), Times.Once);
+        signInManagerMock.Verify(s => s.RefreshSignInAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
     }
 
     [Fact]
@@ -196,14 +231,14 @@ public class ManageIndexModelTests
         var lookupNormalizerMock = new Mock<ILookupNormalizer>(MockBehavior.Strict);
         var identityErrorDescriber = new IdentityErrorDescriber();
         var serviceProviderMock = new Mock<IServiceProvider>(MockBehavior.Loose);
-        var userManagerLoggerMock = new Mock<ILogger<UserManager<IdentityUser<Guid>>>>();
-        var userManager = new UserManager<IdentityUser<Guid>>(storeMock.Object, optionsMock.Object, passwordHasherMock.Object, userValidators, pwdValidators, lookupNormalizerMock.Object, identityErrorDescriber, serviceProviderMock.Object, userManagerLoggerMock.Object);
+        var userManagerLogger = NullLogger<UserManager<IdentityUser<Guid>>>.Instance;
+        var userManager = new UserManager<IdentityUser<Guid>>(storeMock.Object, optionsMock.Object, passwordHasherMock.Object, userValidators, pwdValidators, lookupNormalizerMock.Object, identityErrorDescriber, serviceProviderMock.Object, userManagerLogger);
         var httpContextAccessorMock = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
         var claimsFactoryMock = new Mock<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>();
-        var signInManagerLoggerMock = new Mock<ILogger<SignInManager<IdentityUser<Guid>>>>();
+        var signInManagerLogger = NullLogger<SignInManager<IdentityUser<Guid>>>.Instance;
         var schemeProviderMock = new Mock<IAuthenticationSchemeProvider>(MockBehavior.Strict);
         var userConfirmationMock = new Mock<IUserConfirmation<IdentityUser<Guid>>>();
-        var signInManager = new SignInManager<IdentityUser<Guid>>(userManager, httpContextAccessorMock.Object, claimsFactoryMock.Object, optionsMock.Object, signInManagerLoggerMock.Object, schemeProviderMock.Object, userConfirmationMock.Object);
+        var signInManager = new SignInManager<IdentityUser<Guid>>(userManager, httpContextAccessorMock.Object, claimsFactoryMock.Object, optionsMock.Object, signInManagerLogger, schemeProviderMock.Object, userConfirmationMock.Object);
 
         // Act
         var model = new IndexModel(userManager, signInManager);
@@ -211,4 +246,17 @@ public class ManageIndexModelTests
         // Assert
         Assert.NotNull(model);
     }
+
+    private static string BuildPhoneNumber() =>
+        $"+1{Random.Shared.Next(2000000000, int.MaxValue)}";
+
+    private static IndexModel BuildPostPage(
+        Mock<UserManager<IdentityUser<Guid>>> userManagerMock,
+        Mock<SignInManager<IdentityUser<Guid>>> signInManagerMock,
+        string? inputPhone) =>
+        new(userManagerMock.Object, signInManagerMock.Object)
+        {
+            TempData = new TempDataDictionary(new DefaultHttpContext(), Mock.Of<ITempDataProvider>()),
+            Input = new IndexModel.InputModel { PhoneNumber = inputPhone }
+        };
 }

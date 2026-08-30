@@ -79,18 +79,22 @@ dotnet user-secrets set "AlloyEndpoint" "<your-grafana-alloy-otlp-endpoint>"
 
 The following secrets must be present in Azure Key Vault. In production, `crgolden-identity`'s App Service settings hold `@Microsoft.KeyVault(SecretUri=...)` references for each one, which the platform resolves into `IConfiguration` automatically at startup (the same mechanism that already supplies `OidcAuthority`/`AlloyEndpoint`) — there is no manual `SecretClient` fetch in `Program.cs`:
 
-| Secret Name | Description |
-|---|---|
-| `GoogleClientId` | Google OAuth client ID |
-| `GoogleClientSecret` | Google OAuth client secret |
-| `IdentitySqlServerUserId` | SQL Server login user |
-| `IdentitySqlServerPassword` | SQL Server login password |
-| `ElasticsearchUsername` | Elasticsearch username |
-| `ElasticsearchPassword` | Elasticsearch password |
-| `ReCAPTCHASiteKey` | Google reCAPTCHA v3 site key |
-| `ReCAPTCHASecretKey` | Google reCAPTCHA v3 secret key |
-| `AdminEmail` | Admin-role account email |
-| `TestEmail` | E2E/smoke test account email |
+**A Key Vault secret name is not always the configuration key it lands under.** Most resolve under their
+own name; the two SQL credentials do not, because they bind into the `SqlConnectionStringBuilder` section.
+Setting a local User Secret under the secret name instead of the configuration key silently does nothing.
+
+| Secret Name | Configuration key | Description |
+|---|---|---|
+| `GoogleClientId` | same | Google OAuth client ID |
+| `GoogleClientSecret` | same | Google OAuth client secret |
+| `IdentitySqlServerUserId` | `SqlConnectionStringBuilder:UserID` | SQL Server login user |
+| `IdentitySqlServerPassword` | `SqlConnectionStringBuilder:Password` | SQL Server login password |
+| `ElasticsearchUsername` | same | Elasticsearch username |
+| `ElasticsearchPassword` | same | Elasticsearch password |
+| `ReCAPTCHASiteKey` | same | Google reCAPTCHA v3 site key |
+| `ReCAPTCHASecretKey` | same | Google reCAPTCHA v3 secret key |
+| `AdminEmail` | same | Admin-role account email |
+| `TestEmail` | same | E2E/smoke test account email |
 
 The Azure Service Bus namespace is supplied as the `ServiceBusNamespace` **configuration** value, same as the secrets above.
 

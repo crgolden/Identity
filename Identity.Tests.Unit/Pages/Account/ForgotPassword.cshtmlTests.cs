@@ -38,12 +38,11 @@ public class ForgotPasswordModelTests
         senderMock.Verify(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    [Theory]
-    [InlineData(false, false)]
-    [InlineData(true, false)]
-    public async Task OnPostAsync_UserNullOrUnconfirmed_RedirectsToConfirmation_DoesNotSendEmail(bool userExists, bool isConfirmed)
+    [Fact]
+    public async Task OnPostAsync_UnknownEmail_RedirectsToConfirmationWithoutSendingEmail()
     {
         // Arrange
+        var unknownEmail = $"{Guid.NewGuid():N}@example.com";
         var userManagerMock = MockHelpers.MockUserManager();
 
         var (factory, senderMock) = CreateSenderFactoryWithMock();
@@ -51,35 +50,63 @@ public class ForgotPasswordModelTests
         var model = new ForgotPasswordModel(userManagerMock.Object, factory);
 
         model.PageContext = new PageContext { HttpContext = new DefaultHttpContext() };
-        model.Input = new ForgotPasswordModel.InputModel { Email = "user@example.com" };
+        model.Input = new ForgotPasswordModel.InputModel { Email = unknownEmail };
 
-        if (!userExists)
-        {
-            userManagerMock.Setup(um => um.FindByEmailAsync(It.Is<string>(s => s == model.Input.Email)))
-                .ReturnsAsync((IdentityUser<Guid>?)null)
-                .Verifiable();
-        }
-        else
-        {
-            var user = new IdentityUser<Guid> { UserName = "u", Email = model.Input.Email };
-            userManagerMock.Setup(um => um.FindByEmailAsync(It.Is<string>(s => s == model.Input.Email)))
-                .ReturnsAsync(user)
-                .Verifiable();
-
-            userManagerMock.Setup(um => um.IsEmailConfirmedAsync(It.Is<IdentityUser<Guid>>(u => u == user)))
-                .ReturnsAsync(isConfirmed)
-                .Verifiable();
-        }
+        userManagerMock.Setup(um => um.FindByEmailAsync(unknownEmail))
+            .ReturnsAsync((IdentityUser<Guid>?)null)
+            .Verifiable();
 
         // Act
         var result = await model.OnPostAsync();
 
         // Assert
+        AssertRedirectedToConfirmationWithoutEmail(result, senderMock);
+        userManagerMock.Verify();
+    }
+
+    [Fact]
+    public async Task OnPostAsync_UnconfirmedEmail_RedirectsToConfirmationWithoutSendingEmail()
+    {
+        // Arrange
+        var unconfirmedEmail = $"{Guid.NewGuid():N}@example.com";
+        var userManagerMock = MockHelpers.MockUserManager();
+
+        var (factory, senderMock) = CreateSenderFactoryWithMock();
+
+        var model = new ForgotPasswordModel(userManagerMock.Object, factory);
+
+        model.PageContext = new PageContext { HttpContext = new DefaultHttpContext() };
+        model.Input = new ForgotPasswordModel.InputModel { Email = unconfirmedEmail };
+
+        var unconfirmedUser = new IdentityUser<Guid>
+        {
+            UserName = unconfirmedEmail,
+            Email = unconfirmedEmail
+        };
+        userManagerMock.Setup(um => um.FindByEmailAsync(unconfirmedEmail))
+            .ReturnsAsync(unconfirmedUser)
+            .Verifiable();
+        userManagerMock.Setup(um => um.IsEmailConfirmedAsync(unconfirmedUser))
+            .ReturnsAsync(false)
+            .Verifiable();
+
+        // Act
+        var result = await model.OnPostAsync();
+
+        // Assert
+        AssertRedirectedToConfirmationWithoutEmail(result, senderMock);
+        userManagerMock.Verify();
+    }
+
+    private static void AssertRedirectedToConfirmationWithoutEmail(
+        IActionResult result,
+        Mock<ServiceBusSender> senderMock)
+    {
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("./ForgotPasswordConfirmation", redirect.PageName);
-        senderMock.Verify(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()), Times.Never);
-
-        userManagerMock.Verify();
+        senderMock.Verify(
+            s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     private static (IAzureClientFactory<ServiceBusClient> factory, Mock<ServiceBusSender> senderMock) CreateSenderFactoryWithMock()

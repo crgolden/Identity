@@ -54,7 +54,7 @@ public sealed class EmailChangeTests(PlaywrightFixture fixture)
             await page3.FillAsync("input[name='Input.Password']", password);
             await page3.ClickAsync("#login-submit");
             await Assertions.Expect(page3).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            Assert.DoesNotContain("/Account/Login", page3.Url);
+            Assert.DoesNotContain("/Account/Login", page3.Url, StringComparison.Ordinal);
         }
     }
 

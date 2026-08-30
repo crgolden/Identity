@@ -55,8 +55,10 @@ public class GrantsModel : PageModel
                     ClientLogoUrl = client.LogoUri,
                     ClientUrl = client.ClientUri,
                     Description = grant.Description,
-                    Created = grant.CreationTime,
-                    Expires = grant.Expiration,
+                    Created = new DateTimeOffset(grant.CreationTime.Ticks, TimeSpan.Zero),
+                    Expires = grant.Expiration is { } expiration
+                        ? new DateTimeOffset(expiration.Ticks, TimeSpan.Zero)
+                        : null,
                     IdentityGrantNames = grantResources.IdentityResources
                         .Select(x => x.DisplayName ?? x.Name)
                         .ToArray(),
@@ -97,9 +99,9 @@ public class GrantsModel : PageModel
 
         public string? Description { get; set; }
 
-        public DateTime Created { get; set; }
+        public DateTimeOffset Created { get; set; }
 
-        public DateTime? Expires { get; set; }
+        public DateTimeOffset? Expires { get; set; }
 
         public IEnumerable<string> IdentityGrantNames { get; set; } = [];
 

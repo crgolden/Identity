@@ -34,7 +34,7 @@ public class DownloadPersonalDataModel : PageModel
         var personalData = typeof(IdentityUser<Guid>)
             .GetProperties()
             .Where(x => IsDefined(x, typeof(PersonalDataAttribute)))
-            .ToDictionary(p => p.Name, p => p.GetValue(user)?.ToString());
+            .ToDictionary(p => p.Name, p => p.GetValue(user)?.ToString(), StringComparer.Ordinal);
         var userLoginInfos = await _userManager.GetLoginsAsync(user);
         foreach (var userLoginInfo in userLoginInfos)
         {

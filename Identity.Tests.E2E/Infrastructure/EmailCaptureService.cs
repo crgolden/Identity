@@ -29,9 +29,9 @@ public sealed class EmailCaptureSender : ServiceBusSender
 
     public async Task<CapturedEmail> WaitForEmailAsync(string toAddress, TimeSpan? timeout = null)
     {
-        var deadline = DateTime.UtcNow + (timeout ?? TimeSpan.FromSeconds(10));
+        var deadline = DateTimeOffset.UtcNow + (timeout ?? TimeSpan.FromSeconds(10));
         var queue = _messagesByAddress.GetOrAdd(toAddress, _ => new ConcurrentQueue<ServiceBusMessage>());
-        while (DateTime.UtcNow < deadline)
+        while (DateTimeOffset.UtcNow < deadline)
         {
             if (queue.TryDequeue(out var msg))
             {

@@ -108,8 +108,8 @@ public sealed class AdminTests(PlaywrightFixture fixture)
         {
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/Clients");
-            await Assertions.Expect(page.Locator("h1")).ToContainTextAsync("Clients");
-            await Assertions.Expect(page.Locator("table")).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("Clients");
+            await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("#btn-create")).ToBeVisibleAsync();
         }
     }
@@ -160,7 +160,7 @@ public sealed class AdminTests(PlaywrightFixture fixture)
         {
             await LoginAsync(page, email, password);
             await page.GotoAsync($"/Admin/Clients/Edit/Index?id={clientDbId}");
-            await Assertions.Expect(page.Locator("h1")).ToContainTextAsync("Edit Client");
+            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("Edit Client");
             await Assertions.Expect(page.Locator("#save-submit")).ToBeVisibleAsync();
         }
     }
@@ -198,7 +198,7 @@ public sealed class AdminTests(PlaywrightFixture fixture)
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/Clients");
             await page.ClickAsync($"#delete-{clientDbId}");
-            await Assertions.Expect(page.Locator("h1")).ToContainTextAsync("Delete");
+            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("Delete");
             await page.ClickAsync("#delete-submit");
             await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("Delete"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
             await Assertions.Expect(page.Locator($"#delete-{clientDbId}")).Not.ToBeVisibleAsync();
@@ -215,8 +215,8 @@ public sealed class AdminTests(PlaywrightFixture fixture)
         {
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/ApiResources");
-            await Assertions.Expect(page.Locator("h1")).ToContainTextAsync("API Resources");
-            await Assertions.Expect(page.Locator("table")).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("API Resources");
+            await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
         }
     }
 
@@ -230,8 +230,8 @@ public sealed class AdminTests(PlaywrightFixture fixture)
         {
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/ApiScopes");
-            await Assertions.Expect(page.Locator("h1")).ToContainTextAsync("API Scopes");
-            await Assertions.Expect(page.Locator("table")).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("API Scopes");
+            await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
         }
     }
 
@@ -245,8 +245,8 @@ public sealed class AdminTests(PlaywrightFixture fixture)
         {
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/IdentityResources");
-            await Assertions.Expect(page.Locator("h1")).ToContainTextAsync("Identity Resources");
-            await Assertions.Expect(page.Locator("table")).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("Identity Resources");
+            await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
         }
     }
 
@@ -260,8 +260,8 @@ public sealed class AdminTests(PlaywrightFixture fixture)
         {
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/IdentityProviders");
-            await Assertions.Expect(page.Locator("h1")).ToContainTextAsync("Identity Providers");
-            await Assertions.Expect(page.Locator("table")).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("Identity Providers");
+            await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
         }
     }
 
@@ -275,8 +275,8 @@ public sealed class AdminTests(PlaywrightFixture fixture)
         {
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/SamlServiceProviders");
-            await Assertions.Expect(page.Locator("h1")).ToContainTextAsync("SAML Service Providers");
-            await Assertions.Expect(page.Locator("table")).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("SAML Service Providers");
+            await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
         }
     }
 
@@ -290,8 +290,8 @@ public sealed class AdminTests(PlaywrightFixture fixture)
         {
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/PersistedGrants");
-            await Assertions.Expect(page.Locator("h1")).ToContainTextAsync("Persisted Grants");
-            await Assertions.Expect(page.Locator("table")).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("Persisted Grants");
+            await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
         }
     }
 
@@ -305,8 +305,8 @@ public sealed class AdminTests(PlaywrightFixture fixture)
         {
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/DeviceFlowCodes");
-            await Assertions.Expect(page.Locator("h1")).ToContainTextAsync("Device Flow Codes");
-            await Assertions.Expect(page.Locator("table")).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("Device Flow Codes");
+            await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
         }
     }
 
@@ -320,8 +320,8 @@ public sealed class AdminTests(PlaywrightFixture fixture)
         {
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/ServerSideSessions");
-            await Assertions.Expect(page.Locator("h1")).ToContainTextAsync("Server-Side Sessions");
-            await Assertions.Expect(page.Locator("table")).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("Server-Side Sessions");
+            await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
         }
     }
 
@@ -335,8 +335,8 @@ public sealed class AdminTests(PlaywrightFixture fixture)
         {
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/Keys");
-            await Assertions.Expect(page.Locator("h1")).ToContainTextAsync("Keys");
-            await Assertions.Expect(page.Locator("table")).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("Keys");
+            await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
         }
     }
 
@@ -350,8 +350,8 @@ public sealed class AdminTests(PlaywrightFixture fixture)
         {
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/PushedAuthorizationRequests");
-            await Assertions.Expect(page.Locator("h1")).ToContainTextAsync("Pushed Authorization Requests");
-            await Assertions.Expect(page.Locator("table")).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("Pushed Authorization Requests");
+            await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
         }
     }
 
@@ -365,8 +365,8 @@ public sealed class AdminTests(PlaywrightFixture fixture)
         {
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/SamlSigninStates");
-            await Assertions.Expect(page.Locator("h1")).ToContainTextAsync("SAML Sign-In States");
-            await Assertions.Expect(page.Locator("table")).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("SAML Sign-In States");
+            await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
         }
     }
 
@@ -380,8 +380,8 @@ public sealed class AdminTests(PlaywrightFixture fixture)
         {
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/SamlLogoutSessions");
-            await Assertions.Expect(page.Locator("h1")).ToContainTextAsync("SAML Logout Sessions");
-            await Assertions.Expect(page.Locator("table")).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("SAML Logout Sessions");
+            await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
         }
     }
 
@@ -395,8 +395,8 @@ public sealed class AdminTests(PlaywrightFixture fixture)
         {
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/SamlLogoutSessionRequestIndices");
-            await Assertions.Expect(page.Locator("h1")).ToContainTextAsync("SAML Logout Session Request Indices");
-            await Assertions.Expect(page.Locator("table")).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("SAML Logout Session Request Indices");
+            await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
         }
     }
 
@@ -410,9 +410,9 @@ public sealed class AdminTests(PlaywrightFixture fixture)
         {
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/Users");
-            await Assertions.Expect(page.Locator("h1")).ToContainTextAsync("Users");
-            await Assertions.Expect(page.Locator("table")).ToBeVisibleAsync();
-            await Assertions.Expect(page.GetByText(email).First).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("Users");
+            await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(email);
         }
     }
 
@@ -425,9 +425,9 @@ public sealed class AdminTests(PlaywrightFixture fixture)
         await using (context)
         {
             await LoginAsync(page, email, password);
+            var userId = await fixture.GetUserIdAsync(email);
             await page.GotoAsync("/Admin/Users");
-            var detailsLink = page.Locator("tr", new PageLocatorOptions { HasText = email }).Locator("[id^='details-']").First;
-            await detailsLink.ClickAsync();
+            await page.ClickAsync($"#details-{userId}");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Users/Details"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
             await Assertions.Expect(page.Locator("#nav-claims")).ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("#nav-roles")).ToBeVisibleAsync();
@@ -446,9 +446,9 @@ public sealed class AdminTests(PlaywrightFixture fixture)
         {
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/Roles");
-            await Assertions.Expect(page.Locator("h1")).ToContainTextAsync("Roles");
-            await Assertions.Expect(page.Locator("table")).ToBeVisibleAsync();
-            await Assertions.Expect(page.GetByText("Admin").First).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("Roles");
+            await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync("Admin");
         }
     }
 
@@ -468,14 +468,14 @@ public sealed class AdminTests(PlaywrightFixture fixture)
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Details"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
 
             await page.GotoAsync("/Admin/Roles");
-            await Assertions.Expect(page.GetByText(roleName).First).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(roleName);
 
-            var deleteLink = page.Locator("tr", new PageLocatorOptions { HasText = roleName }).Locator("[id^='delete-']").First;
-            await deleteLink.ClickAsync();
+            var roleId = await fixture.GetRoleIdAsync(roleName);
+            await page.ClickAsync($"#delete-{roleId}");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("Delete"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
             await page.ClickAsync("#delete-submit");
             await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("Delete"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(roleName)).Not.ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).Not.ToContainTextAsync(roleName);
         }
     }
 
@@ -488,9 +488,9 @@ public sealed class AdminTests(PlaywrightFixture fixture)
         await using (context)
         {
             await LoginAsync(page, email, password);
+            var adminRoleId = await fixture.GetRoleIdAsync("Admin");
             await page.GotoAsync("/Admin/Roles");
-            var detailsLink = page.Locator("tr", new PageLocatorOptions { HasText = "Admin" }).Locator("[id^='details-']").First;
-            await detailsLink.ClickAsync();
+            await page.ClickAsync($"#details-{adminRoleId}");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Details"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
             await Assertions.Expect(page.Locator("#nav-claims")).ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("#nav-users")).ToBeVisibleAsync();

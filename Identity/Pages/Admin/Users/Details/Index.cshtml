@@ -4,7 +4,7 @@
     ViewData["Title"] = "User Details";
 }
 
-<h1>@Model.AppUser.UserName</h1>
+<h1 id="page-heading">@Model.AppUser.UserName</h1>
 
 <ul class="nav nav-tabs mb-3">
     <li class="nav-item">
@@ -34,7 +34,7 @@
     <dt class="col-sm-3">Email Confirmed</dt>
     <dd class="col-sm-9">@Model.AppUser.EmailConfirmed</dd>
     <dt class="col-sm-3">Phone Number</dt>
-    <dd class="col-sm-9">@Model.AppUser.PhoneNumber</dd>
+    <dd id="user-phone-number" class="col-sm-9">@Model.AppUser.PhoneNumber</dd>
     <dt class="col-sm-3">Phone Confirmed</dt>
     <dd class="col-sm-9">@Model.AppUser.PhoneNumberConfirmed</dd>
     <dt class="col-sm-3">Two-Factor Enabled</dt>

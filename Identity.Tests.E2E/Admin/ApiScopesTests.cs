@@ -20,7 +20,7 @@ public sealed class ApiScopesTests(PlaywrightFixture fixture)
         {
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/ApiScopes");
-            await Assertions.Expect(page.GetByText(name)).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(name);
         }
     }
 
@@ -55,7 +55,7 @@ public sealed class ApiScopesTests(PlaywrightFixture fixture)
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/ApiScopes");
             await page.ClickAsync($"#delete-{scopeId}");
-            await Assertions.Expect(page.Locator("h1")).ToContainTextAsync("Delete");
+            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("Delete");
             await page.ClickAsync("#delete-submit");
             await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("Delete"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
             await Assertions.Expect(page.Locator($"#delete-{scopeId}")).Not.ToBeVisibleAsync();
@@ -78,7 +78,7 @@ public sealed class ApiScopesTests(PlaywrightFixture fixture)
             await page.FillAsync("#claimtype-0", claimType);
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/ApiScopes/Details/ClaimTypes"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(claimType)).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(claimType);
         }
     }
 
@@ -99,7 +99,7 @@ public sealed class ApiScopesTests(PlaywrightFixture fixture)
             await page.ClickAsync("#claimtype-remove-0");
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/ApiScopes/Details/ClaimTypes"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(claimType)).Not.ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).Not.ToContainTextAsync(claimType);
         }
     }
 
@@ -121,7 +121,7 @@ public sealed class ApiScopesTests(PlaywrightFixture fixture)
             await page.FillAsync("#claimtype-0", updatedClaimType);
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/ApiScopes/Details/ClaimTypes"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(updatedClaimType)).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(updatedClaimType);
         }
     }
 
@@ -142,7 +142,7 @@ public sealed class ApiScopesTests(PlaywrightFixture fixture)
             await page.FillAsync("#property-value-0", "e2e-value");
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/ApiScopes/Details/Properties"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(key)).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(key);
         }
     }
 
@@ -163,7 +163,7 @@ public sealed class ApiScopesTests(PlaywrightFixture fixture)
             await page.ClickAsync("#property-remove-0");
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/ApiScopes/Details/Properties"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(key)).Not.ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).Not.ToContainTextAsync(key);
         }
     }
 
@@ -185,7 +185,7 @@ public sealed class ApiScopesTests(PlaywrightFixture fixture)
             await page.FillAsync("#property-value-0", updatedValue);
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/ApiScopes/Details/Properties"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(updatedValue)).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(updatedValue);
         }
     }
 

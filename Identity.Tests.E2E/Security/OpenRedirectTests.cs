@@ -57,7 +57,7 @@ public sealed class OpenRedirectTests(PlaywrightFixture fixture)
             await page.ClickAsync("button[type='submit']");
             await Assertions.Expect(page.Locator("#profile-form")).ToBeVisibleAsync(new LocatorAssertionsToBeVisibleOptions { Timeout = 60_000 });
 
-            Assert.DoesNotContain("/Account/Login", page.Url);
+            Assert.DoesNotContain("/Account/Login", page.Url, StringComparison.Ordinal);
         }
     }
 }

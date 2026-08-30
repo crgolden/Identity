@@ -32,7 +32,7 @@ public class ResetPasswordModelTests
         var lookupNormalizerMock = new Mock<ILookupNormalizer>(MockBehavior.Strict);
         var errors = new IdentityErrorDescriber();
         var services = new Mock<IServiceProvider>(MockBehavior.Loose);
-        var logger = new Mock<Microsoft.Extensions.Logging.ILogger<UserManager<IdentityUser<Guid>>>>();
+        var logger = Microsoft.Extensions.Logging.Abstractions.NullLogger<UserManager<IdentityUser<Guid>>>.Instance;
 
         var userManager = new UserManager<IdentityUser<Guid>>(
             storeMock.Object,
@@ -43,7 +43,7 @@ public class ResetPasswordModelTests
             lookupNormalizerMock.Object,
             errors,
             services.Object,
-            logger.Object);
+            logger);
 
         // Act
         var model = new ResetPasswordModel(userManager);
@@ -129,45 +129,17 @@ public class ResetPasswordModelTests
         userManagerMock.Verify(um => um.ResetPasswordAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
 
-    [Theory]
-    [InlineData(false, false)]
-    [InlineData(true, true)]
-    public async Task OnPostAsync_UserMissingOrResetSucceeds_RedirectsToConfirmation(bool userExists, bool resetSucceeds)
+    [Fact]
+    public async Task OnPostAsync_UnknownEmail_RedirectsToConfirmationWithoutResettingAPassword()
     {
         // Arrange
+        var unknownEmail = $"{Guid.NewGuid():N}@example.com";
         var userManagerMock = MockHelpers.MockUserManager();
-
-        IdentityUser<Guid>? foundUser = null;
-        if (userExists)
-        {
-            foundUser = new IdentityUser<Guid> { Id = Guid.NewGuid(), Email = "test@example.com", UserName = "test" };
-        }
-
         userManagerMock
-            .Setup(um => um.FindByEmailAsync(It.Is<string>(s => s == "test@example.com")))
-            .ReturnsAsync(foundUser);
+            .Setup(um => um.FindByEmailAsync(unknownEmail))
+            .ReturnsAsync((IdentityUser<Guid>?)null);
 
-        if (userExists)
-        {
-            var result = resetSucceeds
-                ? IdentityResult.Success
-                : IdentityResult.Failed(new IdentityError { Description = "failed" });
-
-            userManagerMock
-                .Setup(um => um.ResetPasswordAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>(), It.IsAny<string>()))
-                .ReturnsAsync(result);
-        }
-
-        var model = new ResetPasswordModel(userManagerMock.Object)
-        {
-            Input = new ResetPasswordModel.InputModel
-            {
-                Email = "test@example.com",
-                Password = "NewP@ssw0rd",
-                ConfirmPassword = "NewP@ssw0rd",
-                Code = "code"
-            }
-        };
+        var model = BuildResetPasswordModel(userManagerMock, unknownEmail, out _, out _);
 
         // Act
         var actionResult = await model.OnPostAsync();
@@ -175,16 +147,42 @@ public class ResetPasswordModelTests
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(actionResult);
         Assert.Equal("./ResetPasswordConfirmation", redirect.PageName);
-        userManagerMock.Verify(um => um.FindByEmailAsync("test@example.com"), Times.Once);
+        userManagerMock.Verify(um => um.FindByEmailAsync(unknownEmail), Times.Once);
+        userManagerMock.Verify(
+            um => um.ResetPasswordAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>(), It.IsAny<string>()),
+            Times.Never);
+    }
 
-        if (userExists)
+    [Fact]
+    public async Task OnPostAsync_ResetSucceeds_RedirectsToConfirmation()
+    {
+        // Arrange
+        var resettingEmail = $"{Guid.NewGuid():N}@example.com";
+        var resettingUser = new IdentityUser<Guid>
         {
-            userManagerMock.Verify(um => um.ResetPasswordAsync(foundUser!, "code", "NewP@ssw0rd"), Times.Once);
-        }
-        else
-        {
-            userManagerMock.Verify(um => um.ResetPasswordAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
-        }
+            Id = Guid.NewGuid(),
+            Email = resettingEmail,
+            UserName = resettingEmail
+        };
+
+        var userManagerMock = MockHelpers.MockUserManager();
+        userManagerMock
+            .Setup(um => um.FindByEmailAsync(resettingEmail))
+            .ReturnsAsync(resettingUser);
+        userManagerMock
+            .Setup(um => um.ResetPasswordAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(IdentityResult.Success);
+
+        var model = BuildResetPasswordModel(userManagerMock, resettingEmail, out var resetCode, out var newPassword);
+
+        // Act
+        var actionResult = await model.OnPostAsync();
+
+        // Assert
+        var redirect = Assert.IsType<RedirectToPageResult>(actionResult);
+        Assert.Equal("./ResetPasswordConfirmation", redirect.PageName);
+        userManagerMock.Verify(um => um.FindByEmailAsync(resettingEmail), Times.Once);
+        userManagerMock.Verify(um => um.ResetPasswordAsync(resettingUser, resetCode, newPassword), Times.Once);
     }
 
     [Fact]
@@ -236,5 +234,26 @@ public class ResetPasswordModelTests
         Assert.Contains("Err2", actualMessages);
         userManagerMock.Verify(um => um.FindByEmailAsync("user2@example.com"), Times.Once);
         userManagerMock.Verify(um => um.ResetPasswordAsync(foundUser, "code2", "AnotherP@ss1"), Times.Once);
+    }
+
+    private static ResetPasswordModel BuildResetPasswordModel(
+        Mock<UserManager<IdentityUser<Guid>>> userManagerMock,
+        string email,
+        out string resetCode,
+        out string newPassword)
+    {
+        resetCode = Guid.NewGuid().ToString("N");
+        newPassword = $"NewP@ss{Guid.NewGuid():N}";
+
+        return new ResetPasswordModel(userManagerMock.Object)
+        {
+            Input = new ResetPasswordModel.InputModel
+            {
+                Email = email,
+                Password = newPassword,
+                ConfirmPassword = newPassword,
+                Code = resetCode
+            }
+        };
     }
 }

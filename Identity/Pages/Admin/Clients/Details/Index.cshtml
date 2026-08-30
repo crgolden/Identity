@@ -6,7 +6,7 @@
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h1>Client Details</h1>
+    <h1 id="page-heading">Client Details</h1>
     <div>
         <a id="btn-edit" asp-page="/Admin/Clients/Edit/Index" asp-route-id="@Model.Client.Id" class="btn btn-primary">Edit</a>
         <a id="btn-delete" asp-page="/Admin/Clients/Delete" asp-route-id="@Model.Client.Id" class="btn btn-danger ms-1">Delete</a>

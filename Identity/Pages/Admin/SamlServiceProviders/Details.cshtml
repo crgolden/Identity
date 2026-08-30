@@ -4,13 +4,13 @@
     ViewData["Title"] = "SAML SP Details";
 }
 
-<h1>@Model.SamlServiceProvider.EntityId</h1>
+<h1 id="page-heading">@Model.SamlServiceProvider.EntityId</h1>
 
 <dl class="row">
     <dt class="col-sm-3">Entity ID</dt>
     <dd class="col-sm-9">@Model.SamlServiceProvider.EntityId</dd>
     <dt class="col-sm-3">Display Name</dt>
-    <dd class="col-sm-9">@Model.SamlServiceProvider.DisplayName</dd>
+    <dd id="sp-display-name" class="col-sm-9">@Model.SamlServiceProvider.DisplayName</dd>
     <dt class="col-sm-3">Description</dt>
     <dd class="col-sm-9">@Model.SamlServiceProvider.Description</dd>
     <dt class="col-sm-3">Enabled</dt>

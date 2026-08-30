@@ -13,7 +13,7 @@ public sealed class Disable2faTests(PlaywrightFixture fixture)
     public async Task Disable2fa_AfterSetup_SubsequentLogin_DoesNotRequire2fa()
     {
         var (email, password) = await fixture.CreateConfirmedUserAsync();
-        var capturedSharedKey = string.Empty;
+        string capturedSharedKey;
 
         var (setupCtx, setupPage) = await fixture.NewPageAsync();
         await using (setupCtx)
@@ -28,10 +28,11 @@ public sealed class Disable2faTests(PlaywrightFixture fixture)
             await setupPage.ClickAsync("#enable-authenticator");
             await Assertions.Expect(setupPage.Locator("#shared-key")).ToBeVisibleAsync(new LocatorAssertionsToBeVisibleOptions { Timeout = 60_000 });
 
-            var sharedKeyEl = setupPage.Locator("#shared-key");
-            capturedSharedKey = (await sharedKeyEl.TextContentAsync() ?? string.Empty)
-                .Replace(" ", string.Empty)
-                .Replace("-", string.Empty)
+            var sharedKeyText = await setupPage.Locator("#shared-key").TextContentAsync();
+            Assert.NotNull(sharedKeyText);
+            capturedSharedKey = sharedKeyText
+                .Replace(" ", string.Empty, StringComparison.Ordinal)
+                .Replace("-", string.Empty, StringComparison.Ordinal)
                 .ToUpperInvariant();
 
             var keyBytes = Base32Encoding.ToBytes(capturedSharedKey);
@@ -85,7 +86,7 @@ public sealed class Disable2faTests(PlaywrightFixture fixture)
             await verifyPage.ClickAsync("#login-submit");
 
             await Assertions.Expect(verifyPage).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            Assert.DoesNotContain("LoginWith2fa", verifyPage.Url);
+            Assert.DoesNotContain("LoginWith2fa", verifyPage.Url, StringComparison.Ordinal);
         }
     }
 }

@@ -139,7 +139,8 @@ try
             builder.Services
                 .Configure<IdentityPasskeyOptions>(identityPasskeyOptions =>
                 {
-                    identityPasskeyOptions.ValidateOrigin = context => ValueTask.FromResult(context.Origin == "https://localhost:7261");
+                    identityPasskeyOptions.ValidateOrigin = context =>
+        ValueTask.FromResult(string.Equals(context.Origin, "https://localhost:7261", StringComparison.Ordinal));
                 })
                 .AddDatabaseDeveloperPageExceptionFilter();
         }

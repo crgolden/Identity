@@ -13,34 +13,22 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ErrorModelTests
 {
-    public static TheoryData<MockBehavior> GetMockBehaviors() => new()
+    public static TheoryData<string?> ErrorIdsThatSkipTheInteractionService() => new()
     {
-        MockBehavior.Loose,
-        MockBehavior.Strict,
+        (string?)null,
+        string.Empty,
+        "   ",
     };
 
-    public static TheoryData<string?, bool> NoErrorIdCases() => new()
-    {
-        { null, true },
-        { null, false },
-        { string.Empty, true },
-        { string.Empty, false },
-        { "   ", true },
-        { "   ", false },
-    };
-
-    public static TheoryData<string, bool> NonEmptyErrorIdCases()
+    public static TheoryData<string> ErrorIdsThatReachTheInteractionService()
     {
         var longId = new string('x', 5000);
         var specialId = "err\0or\n\t☃-!@#$%^&*()";
-        return new TheoryData<string, bool>
+        return new TheoryData<string>
         {
-            { "error-123", true },
-            { "error-123", false },
-            { longId, true },
-            { longId, false },
-            { specialId, true },
-            { specialId, false },
+            $"error-{Guid.NewGuid():N}",
+            longId,
+            specialId,
         };
     }
 
@@ -57,126 +45,90 @@ public class ErrorModelTests
         { "©®™!@#$%^&*()", true },
     };
 
-    [Theory]
-    [MemberData(nameof(GetMockBehaviors))]
-    public void Constructor_ValidInteractionService_InitializesDefaults(MockBehavior mockBehavior)
+    [Fact]
+    public void Constructor_ValidInteractionService_InitializesDefaults()
     {
         // Arrange
-        var mockInteraction = new Mock<IIdentityServerInteractionService>(mockBehavior);
+        var mockInteraction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
 
         // Act
-        var exception = Record.Exception(() => new ErrorModel(mockInteraction.Object));
-        var model = exception is null ? new ErrorModel(mockInteraction.Object) : null;
+        var model = new ErrorModel(mockInteraction.Object);
 
         // Assert
-        Assert.Null(exception);
-        Assert.NotNull(model);
-        Assert.Null(model?.RequestId);
-        Assert.False(model?.ShowRequestId);
+        Assert.Null(model.RequestId);
+        Assert.False(model.ShowRequestId);
     }
 
     [Theory]
-    [MemberData(nameof(NoErrorIdCases))]
-    public async Task OnGetAsync_NullOrWhitespaceErrorId_SkipsInteractionService(string? errorId, bool setActivity)
+    [MemberData(nameof(ErrorIdsThatSkipTheInteractionService))]
+    public async Task OnGetAsync_BlankErrorIdWithCurrentActivity_UsesActivityIdAndSkipsInteractionService(string? errorId)
     {
         // Arrange
         var mockInteraction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
-        var model = new ErrorModel(mockInteraction.Object);
-        var httpContext = new DefaultHttpContext();
-        httpContext.TraceIdentifier = $"trace-{Guid.NewGuid():N}";
-        model.PageContext = new PageContext { HttpContext = httpContext };
+        var model = BuildModel(mockInteraction, out _);
+        using var activityScope = CurrentActivityScope.Start();
 
-        Activity? activity = null;
-        string expectedRequestId;
-        if (setActivity)
-        {
-            Activity.Current = null;
-            activity = new Activity("unit-test-activity");
-            activity.Start();
-            expectedRequestId = activity.Id ?? throw new InvalidOperationException("Activity.Id should be set after Start");
-        }
-        else
-        {
-            Activity.Current = null;
-            expectedRequestId = httpContext.TraceIdentifier;
-        }
+        // Act
+        await model.OnGetAsync(errorId);
 
-        try
-        {
-            // Act
-            await model.OnGetAsync(errorId);
-
-            // Assert
-            mockInteraction.Verify(
-                s => s.GetErrorContextAsync(It.IsAny<string?>(), It.IsAny<CancellationToken>()),
-                Times.Never,
-                "GetErrorContextAsync should not be called when errorId is null/empty/whitespace.");
-
-            Assert.Equal(expectedRequestId, model.RequestId);
-        }
-        finally
-        {
-            if (activity is not null)
-            {
-                activity.Stop();
-                Activity.Current = null;
-            }
-        }
+        // Assert
+        VerifyInteractionServiceNeverCalled(mockInteraction);
+        Assert.Equal(activityScope.ActivityId, model.RequestId);
     }
 
     [Theory]
-    [MemberData(nameof(NonEmptyErrorIdCases))]
-    public async Task OnGetAsync_ValidErrorId_CallsInteractionService(string errorId, bool setActivity)
+    [MemberData(nameof(ErrorIdsThatSkipTheInteractionService))]
+    public async Task OnGetAsync_BlankErrorIdWithNoCurrentActivity_UsesTraceIdentifierAndSkipsInteractionService(string? errorId)
     {
         // Arrange
         var mockInteraction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
-        mockInteraction
-            .Setup(s => s.GetErrorContextAsync(It.Is<string>(id => id == errorId), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((ErrorMessage?)null)
-            .Verifiable();
+        var model = BuildModel(mockInteraction, out var traceIdentifier);
+        Activity.Current = null;
 
-        var model = new ErrorModel(mockInteraction.Object);
+        // Act
+        await model.OnGetAsync(errorId);
 
-        var httpContext = new DefaultHttpContext();
-        httpContext.TraceIdentifier = $"trace-{Guid.NewGuid():N}";
-        model.PageContext = new PageContext { HttpContext = httpContext };
+        // Assert
+        VerifyInteractionServiceNeverCalled(mockInteraction);
+        Assert.Equal(traceIdentifier, model.RequestId);
+    }
 
-        Activity? activity = null;
-        string expectedRequestId;
-        if (setActivity)
-        {
-            Activity.Current = null;
-            activity = new Activity("unit-test-activity-nonempty");
-            activity.Start();
-            expectedRequestId = activity.Id ?? throw new InvalidOperationException("Activity.Id should be set after Start");
-        }
-        else
-        {
-            Activity.Current = null;
-            expectedRequestId = httpContext.TraceIdentifier;
-        }
+    [Theory]
+    [MemberData(nameof(ErrorIdsThatReachTheInteractionService))]
+    public async Task OnGetAsync_ErrorIdWithCurrentActivity_CallsInteractionServiceAndUsesActivityId(string errorId)
+    {
+        // Arrange
+        var mockInteraction = BuildInteractionServiceReturningNoErrorContext(errorId);
+        var model = BuildModel(mockInteraction, out _);
+        using var activityScope = CurrentActivityScope.Start();
 
-        try
-        {
-            // Act
-            var ex = await Record.ExceptionAsync(() => model.OnGetAsync(errorId));
+        // Act
+        var ex = await Record.ExceptionAsync(() => model.OnGetAsync(errorId));
 
-            // Assert
-            Assert.Null(ex);
+        // Assert
+        Assert.Null(ex);
+        mockInteraction.Verify(s => s.GetErrorContextAsync(errorId, It.IsAny<CancellationToken>()), Times.Once);
+        Assert.Equal(activityScope.ActivityId, model.RequestId);
+        Assert.True(model.ShowRequestId, "ShowRequestId should be true when RequestId is set.");
+    }
 
-            mockInteraction.Verify(s => s.GetErrorContextAsync(errorId, It.IsAny<CancellationToken>()), Times.Once);
+    [Theory]
+    [MemberData(nameof(ErrorIdsThatReachTheInteractionService))]
+    public async Task OnGetAsync_ErrorIdWithNoCurrentActivity_CallsInteractionServiceAndUsesTraceIdentifier(string errorId)
+    {
+        // Arrange
+        var mockInteraction = BuildInteractionServiceReturningNoErrorContext(errorId);
+        var model = BuildModel(mockInteraction, out var traceIdentifier);
+        Activity.Current = null;
 
-            Assert.Equal(expectedRequestId, model.RequestId);
-            Assert.True(model.ShowRequestId, "ShowRequestId should be true when RequestId is set.");
-        }
-        finally
-        {
-            if (activity is not null)
-            {
-                activity.Stop();
-                Activity.Current = null;
-            }
-        }
+        // Act
+        var ex = await Record.ExceptionAsync(() => model.OnGetAsync(errorId));
+
+        // Assert
+        Assert.Null(ex);
+        mockInteraction.Verify(s => s.GetErrorContextAsync(errorId, It.IsAny<CancellationToken>()), Times.Once);
+        Assert.Equal(traceIdentifier, model.RequestId);
+        Assert.True(model.ShowRequestId, "ShowRequestId should be true when RequestId is set.");
     }
 
     [Theory]
@@ -201,37 +153,110 @@ public class ErrorModelTests
     public async Task OnGetAsync_ValidErrorId_StartsOidcActivity()
     {
         // Arrange
-        var errorMessage = new ErrorMessage { Error = "access_denied", ErrorDescription = "User denied access." };
+        var oidcErrorId = $"error-{Guid.NewGuid():N}";
+        var oidcError = $"access_denied-{Guid.NewGuid():N}";
+        var errorMessage = new ErrorMessage { Error = oidcError, ErrorDescription = $"denied-{Guid.NewGuid():N}" };
         var mockInteraction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
         mockInteraction
-            .Setup(s => s.GetErrorContextAsync("error-abc", It.IsAny<CancellationToken>()))
+            .Setup(s => s.GetErrorContextAsync(oidcErrorId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(errorMessage);
 
-        var model = new ErrorModel(mockInteraction.Object);
-        model.PageContext = new PageContext { HttpContext = new DefaultHttpContext() };
+        var model = new ErrorModel(mockInteraction.Object)
+        {
+            PageContext = new PageContext { HttpContext = new DefaultHttpContext() }
+        };
         Activity.Current = null;
 
-        Activity? capturedActivity = null;
-        using var listener = new ActivityListener
-        {
-            ShouldListenTo = source => string.Equals(source.Name, nameof(Identity), StringComparison.Ordinal),
-            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
-            ActivityStarted = activity =>
-            {
-                if (string.Equals(activity.OperationName, "identity.error.oidc", StringComparison.Ordinal))
-                {
-                    capturedActivity = activity;
-                }
-            },
-        };
-        ActivitySource.AddActivityListener(listener);
+        using var oidcErrorActivity = OidcErrorActivityCapture.Start();
 
         // Act
-        await model.OnGetAsync("error-abc");
+        await model.OnGetAsync(oidcErrorId);
 
         // Assert
-        Assert.NotNull(capturedActivity);
-        Assert.Equal("access_denied", capturedActivity.GetTagItem("oidc.error"));
-        Assert.Equal("error-abc", capturedActivity.GetTagItem("oidc.error_id"));
+        Assert.NotNull(oidcErrorActivity.Captured);
+        Assert.Equal(oidcError, oidcErrorActivity.Captured.GetTagItem(ErrorModel.OidcErrorTagName));
+        Assert.Equal(oidcErrorId, oidcErrorActivity.Captured.GetTagItem(ErrorModel.OidcErrorIdTagName));
+    }
+
+    private static void VerifyInteractionServiceNeverCalled(Mock<IIdentityServerInteractionService> mockInteraction) =>
+        mockInteraction.Verify(
+            s => s.GetErrorContextAsync(It.IsAny<string?>(), It.IsAny<CancellationToken>()),
+            Times.Never,
+            "GetErrorContextAsync should not be called when errorId is null/empty/whitespace.");
+
+    private static Mock<IIdentityServerInteractionService> BuildInteractionServiceReturningNoErrorContext(string errorId)
+    {
+        var mockInteraction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
+        mockInteraction
+            .Setup(s => s.GetErrorContextAsync(errorId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ErrorMessage?)null)
+            .Verifiable();
+        return mockInteraction;
+    }
+
+    private static ErrorModel BuildModel(
+        Mock<IIdentityServerInteractionService> mockInteraction,
+        out string traceIdentifier)
+    {
+        traceIdentifier = $"trace-{Guid.NewGuid():N}";
+        var httpContext = new DefaultHttpContext { TraceIdentifier = traceIdentifier };
+        return new ErrorModel(mockInteraction.Object)
+        {
+            PageContext = new PageContext { HttpContext = httpContext }
+        };
+    }
+
+    private sealed class CurrentActivityScope : IDisposable
+    {
+        private readonly Activity _activity;
+
+        private CurrentActivityScope(Activity activity) => _activity = activity;
+
+        public string ActivityId =>
+            _activity.Id ?? throw new InvalidOperationException("Activity.Id should be set after Start.");
+
+        public static CurrentActivityScope Start()
+        {
+            Activity.Current = null;
+            var activity = new Activity($"unit-test-activity-{Guid.NewGuid():N}");
+            activity.Start();
+            return new CurrentActivityScope(activity);
+        }
+
+        public void Dispose()
+        {
+            _activity.Dispose();
+            Activity.Current = null;
+        }
+    }
+
+    private sealed class OidcErrorActivityCapture : IDisposable
+    {
+        private readonly ActivityListener _listener;
+
+        private OidcErrorActivityCapture() =>
+            _listener = new ActivityListener
+            {
+                ShouldListenTo = source => string.Equals(source.Name, nameof(Identity), StringComparison.Ordinal),
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStarted = started =>
+                {
+                    if (string.Equals(started.OperationName, ErrorModel.OidcErrorActivityName, StringComparison.Ordinal))
+                    {
+                        Captured = started;
+                    }
+                },
+            };
+
+        public Activity? Captured { get; private set; }
+
+        public static OidcErrorActivityCapture Start()
+        {
+            var capture = new OidcErrorActivityCapture();
+            ActivitySource.AddActivityListener(capture._listener);
+            return capture;
+        }
+
+        public void Dispose() => _listener.Dispose();
     }
 }

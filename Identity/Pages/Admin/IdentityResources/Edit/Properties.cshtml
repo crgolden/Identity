@@ -6,7 +6,7 @@
     var cancelHref = Url.Page("/Admin/IdentityResources/Details/Properties", new { id = Request.RouteValues["id"] });
 }
 
-<h1>Edit Properties</h1>
+<h1 id="page-heading">Edit Properties</h1>
 
 @await Html.PartialAsync("~/Pages/Admin/Shared/_EditPropertiesForm.cshtml", rows,
     new ViewDataDictionary(ViewData) { { "CancelHref", cancelHref }, { "EntityId", Request.RouteValues["id"] } })

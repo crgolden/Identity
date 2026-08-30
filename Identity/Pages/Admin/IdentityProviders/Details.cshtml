@@ -5,14 +5,14 @@
     ViewData["Title"] = "Identity Provider Details";
 }
 
-<h1>Identity Provider Details</h1>
+<h1 id="page-heading">Identity Provider Details</h1>
 
 <dl class="row">
     <dt class="col-sm-3">Scheme</dt>
     <dd class="col-sm-9">@Model.IdentityProvider.Scheme</dd>
 
     <dt class="col-sm-3">Display Name</dt>
-    <dd class="col-sm-9">@Model.IdentityProvider.DisplayName</dd>
+    <dd id="idp-display-name" class="col-sm-9">@Model.IdentityProvider.DisplayName</dd>
 
     <dt class="col-sm-3">Type</dt>
     <dd class="col-sm-9">@Model.IdentityProvider.Type</dd>

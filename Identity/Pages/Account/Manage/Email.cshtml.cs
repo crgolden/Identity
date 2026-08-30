@@ -73,7 +73,7 @@ public class EmailModel : PageModel
             return Page();
         }
 
-        if (!IsNullOrWhiteSpace(Input.NewEmail) && !string.Equals(Input.NewEmail, email))
+        if (!IsNullOrWhiteSpace(Input.NewEmail) && !string.Equals(Input.NewEmail, email, StringComparison.Ordinal))
         {
             var userId = await _userManager.GetUserIdAsync(user);
             var code = await _userManager.GenerateChangeEmailTokenAsync(user, Input.NewEmail);

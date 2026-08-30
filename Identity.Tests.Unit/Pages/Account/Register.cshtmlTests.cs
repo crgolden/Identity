@@ -140,65 +140,12 @@ public class RegisterModelTests
         userManagerMock.Verify(u => u.CreateAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>()), Times.Never);
     }
 
-    [Theory(DisplayName = "OnPostAsync_CreateSucceeds_RespectsRequireConfirmedAccount")]
-    [InlineData(true, "/confirmed-redirect")]
-    [InlineData(false, "/local-redirect")]
-    public async Task OnPostAsync_CreateSucceeds_RespectsRequireConfirmedAccount(bool requireConfirmed, string returnUrl)
+    [Fact]
+    public async Task OnPostAsync_CreateSucceedsAndConfirmationRequired_RedirectsToRegisterConfirmationWithoutSigningIn()
     {
         // Arrange
-        var identityOptions = new IdentityOptions();
-        identityOptions.SignIn.RequireConfirmedAccount = requireConfirmed;
-        var userManagerMock = MockHelpers.MockUserManager(identityOptions);
-        userManagerMock.SetupGet(u => u.SupportsUserEmail).Returns(true);
-        userManagerMock
-            .Setup(u => u.CreateAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>()))
-            .ReturnsAsync(IdentityResult.Success);
-
-        userManagerMock
-            .Setup(u => u.GetUserIdAsync(It.IsAny<IdentityUser<Guid>>()))
-            .ReturnsAsync("test-user-id");
-
-        userManagerMock
-            .Setup(u => u.GenerateEmailConfirmationTokenAsync(It.IsAny<IdentityUser<Guid>>()))
-            .ReturnsAsync("raw-token");
-
-        var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
-
-        signInManagerMock
-            .Setup(s => s.GetExternalAuthenticationSchemesAsync())
-            .ReturnsAsync([]);
-
-        signInManagerMock
-            .Setup(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<bool>(), It.IsAny<string>()))
-            .Returns(Task.CompletedTask)
-            .Verifiable();
-
-        var (senderFactory, senderMock) = CreateSenderFactoryWithMock();
-
-        var model = new RegisterModel(
-            userManagerMock.Object,
-            signInManagerMock.Object,
-            senderFactory,
-            CreateRecaptchaServiceMock().Object);
-
-        var ctx = new DefaultHttpContext();
-        ctx.Request.Scheme = "https";
-        model.PageContext = new PageContext { HttpContext = ctx };
-
-        var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
-        var urlRouteData = new RouteData();
-        urlRouteData.Values["page"] = "/Account/Register";
-        urlHelperMock.SetupGet(u => u.ActionContext).Returns(
-            new ActionContext(new DefaultHttpContext(), urlRouteData, new ActionDescriptor()));
-
-        urlHelperMock.Setup(u => u.RouteUrl(It.IsAny<UrlRouteContext>())).Returns("https://example/confirm");
-        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
-        model.Url = urlHelperMock.Object;
-        model.Input = new RegisterModel.InputModel
-        {
-            Email = "user@example.com",
-            Password = "P@ssw0rd!"
-        };
+        var returnUrl = $"/confirmed-redirect-{Guid.NewGuid():N}";
+        var (model, userManagerMock, signInManagerMock, senderMock) = BuildRegisterFixture(requireConfirmedAccount: true);
 
         // Act
         var actionResult = await model.OnPostAsync(returnUrl);
@@ -206,22 +153,30 @@ public class RegisterModelTests
         // Assert
         userManagerMock.Verify(u => u.CreateAsync(It.IsAny<IdentityUser<Guid>>(), It.Is<string>(p => p == model.Input.Password)), Times.Once);
         senderMock.Verify(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()), Times.Once);
+        var redirect = Assert.IsType<RedirectToPageResult>(actionResult);
+        Assert.Equal("RegisterConfirmation", redirect.PageName);
+        Assert.NotNull(redirect.RouteValues);
+        Assert.Equal(model.Input.Email, redirect.RouteValues["email"]);
+        Assert.Equal(returnUrl, redirect.RouteValues["returnUrl"]);
+        signInManagerMock.Verify(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<bool>(), It.IsAny<string>()), Times.Never);
+    }
 
-        if (requireConfirmed)
-        {
-            var redirect = Assert.IsType<RedirectToPageResult>(actionResult);
-            Assert.Equal("RegisterConfirmation", redirect.PageName);
-            Assert.NotNull(redirect.RouteValues);
-            Assert.Equal(model.Input.Email, redirect.RouteValues["email"]);
-            Assert.Equal(returnUrl, redirect.RouteValues["returnUrl"]);
-            signInManagerMock.Verify(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<bool>(), It.IsAny<string>()), Times.Never);
-        }
-        else
-        {
-            var local = Assert.IsType<LocalRedirectResult>(actionResult);
-            Assert.Equal(returnUrl, local.Url);
-            signInManagerMock.Verify(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), false, null), Times.Once);
-        }
+    [Fact]
+    public async Task OnPostAsync_CreateSucceedsAndConfirmationNotRequired_SignsInAndRedirectsLocally()
+    {
+        // Arrange
+        var returnUrl = $"/local-redirect-{Guid.NewGuid():N}";
+        var (model, userManagerMock, signInManagerMock, senderMock) = BuildRegisterFixture(requireConfirmedAccount: false);
+
+        // Act
+        var actionResult = await model.OnPostAsync(returnUrl);
+
+        // Assert
+        userManagerMock.Verify(u => u.CreateAsync(It.IsAny<IdentityUser<Guid>>(), It.Is<string>(p => p == model.Input.Password)), Times.Once);
+        senderMock.Verify(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()), Times.Once);
+        var local = Assert.IsType<LocalRedirectResult>(actionResult);
+        Assert.Equal(returnUrl, local.Url);
+        signInManagerMock.Verify(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), false, null), Times.Once);
     }
 
     [Fact]
@@ -337,6 +292,69 @@ public class RegisterModelTests
             .ReturnsAsync(score);
         mock.Setup(s => s.IsExempt(It.IsAny<string?>())).Returns(false);
         return mock;
+    }
+
+    private static (
+        RegisterModel Model,
+        Mock<UserManager<IdentityUser<Guid>>> UserManagerMock,
+        Mock<SignInManager<IdentityUser<Guid>>> SignInManagerMock,
+        Mock<ServiceBusSender> SenderMock) BuildRegisterFixture(bool requireConfirmedAccount)
+    {
+        var identityOptions = new IdentityOptions();
+        identityOptions.SignIn.RequireConfirmedAccount = requireConfirmedAccount;
+        var userManagerMock = MockHelpers.MockUserManager(identityOptions);
+        userManagerMock.SetupGet(u => u.SupportsUserEmail).Returns(true);
+        userManagerMock
+            .Setup(u => u.CreateAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>()))
+            .ReturnsAsync(IdentityResult.Success);
+
+        userManagerMock
+            .Setup(u => u.GetUserIdAsync(It.IsAny<IdentityUser<Guid>>()))
+            .ReturnsAsync(Guid.NewGuid().ToString());
+
+        userManagerMock
+            .Setup(u => u.GenerateEmailConfirmationTokenAsync(It.IsAny<IdentityUser<Guid>>()))
+            .ReturnsAsync(Guid.NewGuid().ToString("N"));
+
+        var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
+
+        signInManagerMock
+            .Setup(s => s.GetExternalAuthenticationSchemesAsync())
+            .ReturnsAsync([]);
+
+        signInManagerMock
+            .Setup(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<bool>(), It.IsAny<string>()))
+            .Returns(Task.CompletedTask)
+            .Verifiable();
+
+        var (senderFactory, senderMock) = CreateSenderFactoryWithMock();
+
+        var model = new RegisterModel(
+            userManagerMock.Object,
+            signInManagerMock.Object,
+            senderFactory,
+            CreateRecaptchaServiceMock().Object);
+
+        var ctx = new DefaultHttpContext();
+        ctx.Request.Scheme = "https";
+        model.PageContext = new PageContext { HttpContext = ctx };
+
+        var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
+        var urlRouteData = new RouteData();
+        urlRouteData.Values["page"] = "/Account/Register";
+        urlHelperMock.SetupGet(u => u.ActionContext).Returns(
+            new ActionContext(new DefaultHttpContext(), urlRouteData, new ActionDescriptor()));
+
+        urlHelperMock.Setup(u => u.RouteUrl(It.IsAny<UrlRouteContext>())).Returns("https://example/confirm");
+        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
+        model.Url = urlHelperMock.Object;
+        model.Input = new RegisterModel.InputModel
+        {
+            Email = $"{Guid.NewGuid():N}@example.com",
+            Password = $"P@ss{Guid.NewGuid():N}!"
+        };
+
+        return (model, userManagerMock, signInManagerMock, senderMock);
     }
 
     private class DummyAuthHandler : IAuthenticationHandler

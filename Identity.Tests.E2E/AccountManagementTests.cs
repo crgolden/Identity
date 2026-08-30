@@ -100,8 +100,8 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
             await page.WaitForLoadStateAsync();
 
             await page.GotoAsync("/Account/Manage/Index");
-            await page.WaitForURLAsync(url => url.Contains("/Account/Login"));
-            Assert.Contains("/Account/Login", page.Url);
+            await page.WaitForURLAsync(url => url.Contains("/Account/Login", StringComparison.Ordinal));
+            Assert.Contains("/Account/Login", page.Url, StringComparison.Ordinal);
         }
     }
 
@@ -139,7 +139,7 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
             await page2.FillAsync("input[name='Input.Password']", password);
             await page2.ClickAsync("#login-submit");
             await Assertions.Expect(page2).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            Assert.DoesNotContain("/Account/Login", page2.Url);
+            Assert.DoesNotContain("/Account/Login", page2.Url, StringComparison.Ordinal);
         }
     }
 
@@ -182,7 +182,7 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
             await page3.FillAsync("input[name='Input.Password']", password);
             await page3.ClickAsync("#login-submit");
             await Assertions.Expect(page3).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            Assert.DoesNotContain("/Account/Login", page3.Url);
+            Assert.DoesNotContain("/Account/Login", page3.Url, StringComparison.Ordinal);
         }
     }
 }

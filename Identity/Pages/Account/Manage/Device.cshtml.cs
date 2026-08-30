@@ -54,7 +54,7 @@ public class DeviceModel : ConsentPageModelBase
 
         ConsentResponse? grantedConsent = null;
 
-        if (Input.Button == "no")
+        if (string.Equals(Input.Button, "no", StringComparison.Ordinal))
         {
             grantedConsent = new ConsentResponse { Error = InteractionError.AccessDenied };
             await _events.RaiseAsync(
@@ -67,7 +67,7 @@ public class DeviceModel : ConsentPageModelBase
                 request.Client.ClientId,
                 request.ValidatedResources.ParsedScopes.Select(s => s.ParsedName));
         }
-        else if (Input.Button == "yes")
+        else if (string.Equals(Input.Button, "yes", StringComparison.Ordinal))
         {
             if (Input.ScopesConsented.Any())
             {
@@ -99,7 +99,7 @@ public class DeviceModel : ConsentPageModelBase
                     grantedConsent.RememberConsent);
                 var denied = request.ValidatedResources.ParsedScopes
                     .Select(s => s.ParsedName)
-                    .Except(grantedConsent.ScopesValuesConsented);
+                    .Except(grantedConsent.ScopesValuesConsented, StringComparer.Ordinal);
                 Telemetry.Metrics.ConsentDenied(request.Client.ClientId, denied);
             }
             else

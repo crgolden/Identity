@@ -23,13 +23,13 @@ public abstract class RoleUsersModelBase : PageModel
     public async Task<IActionResult> OnGetAsync(string id)
     {
         var role = await RoleManager.FindByIdAsync(id);
-        if (role is null)
+        if (role?.Name is null)
         {
             return NotFound();
         }
 
         AppRole = role;
-        Users = await UserManager.GetUsersInRoleAsync(role.Name!);
+        Users = await UserManager.GetUsersInRoleAsync(role.Name);
         return Page();
     }
 }

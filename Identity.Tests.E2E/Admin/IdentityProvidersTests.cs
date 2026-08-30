@@ -46,7 +46,7 @@ public sealed class IdentityProvidersTests(PlaywrightFixture fixture)
             await page.FillAsync("#IdentityProvider_DisplayName", updatedDisplayName);
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/IdentityProviders/Details"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(updatedDisplayName)).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#idp-display-name")).ToHaveTextAsync(updatedDisplayName);
         }
     }
 
@@ -63,11 +63,11 @@ public sealed class IdentityProvidersTests(PlaywrightFixture fixture)
             await CreateIdentityProviderAsync(page, scheme);
 
             await page.ClickAsync("#btn-delete");
-            await Assertions.Expect(page.Locator("h1")).ToContainTextAsync("Delete");
+            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("Delete");
             await page.ClickAsync("#delete-submit");
             await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("Delete"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
             await page.GotoAsync("/Admin/IdentityProviders");
-            await Assertions.Expect(page.GetByText(scheme)).Not.ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).Not.ToContainTextAsync(scheme);
         }
     }
 

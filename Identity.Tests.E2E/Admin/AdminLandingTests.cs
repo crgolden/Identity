@@ -40,7 +40,7 @@ public sealed class AdminLandingTests(PlaywrightFixture fixture)
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin");
             await page.ClickAsync($"#{cardId}");
-            await Assertions.Expect(page.Locator("h1")).ToHaveTextAsync(expectedHeading, new LocatorAssertionsToHaveTextOptions { Timeout = 60_000 });
+            await Assertions.Expect(page.Locator("#page-heading")).ToHaveTextAsync(expectedHeading, new LocatorAssertionsToHaveTextOptions { Timeout = 60_000 });
         }
     }
 

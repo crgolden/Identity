@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
 [Collection(UnitCollection.Name)]
@@ -51,9 +52,8 @@ public class DownloadPersonalDataModelTests
 
         // Assert
         var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
-        Assert.NotNull(notFoundResult.Value);
-        var message = notFoundResult.Value.ToString() ?? string.Empty;
-        Assert.Contains(userId, message);
+        var message = Assert.IsType<string>(notFoundResult.Value);
+        Assert.Contains(userId, message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -68,7 +68,7 @@ public class DownloadPersonalDataModelTests
         var passwordValidators = Enumerable.Empty<IPasswordValidator<IdentityUser<Guid>>>();
         var lookupNormalizerMock = new Mock<ILookupNormalizer>(MockBehavior.Strict);
         var serviceProviderMock = new Mock<IServiceProvider>(MockBehavior.Loose);
-        var userManagerLoggerMock = new Mock<ILogger<UserManager<IdentityUser<Guid>>>>();
+        var userManagerLogger = NullLogger<UserManager<IdentityUser<Guid>>>.Instance;
 
         var userManager = new UserManager<IdentityUser<Guid>>(
             storeMock.Object,
@@ -79,7 +79,7 @@ public class DownloadPersonalDataModelTests
             lookupNormalizerMock.Object,
             new IdentityErrorDescriber(),
             serviceProviderMock.Object,
-            userManagerLoggerMock.Object);
+            userManagerLogger);
 
         // Act
         var model = new DownloadPersonalDataModel(userManager);

@@ -83,7 +83,7 @@ public class ExternalLoginModel : PageModel
             return RedirectToPage("./Lockout");
         }
 
-        var externalEmail = info.Principal.HasClaim(c => string.Equals(c.Type, ClaimTypes.Email))
+        var externalEmail = info.Principal.HasClaim(c => string.Equals(c.Type, ClaimTypes.Email, StringComparison.Ordinal))
             ? info.Principal.FindFirstValue(ClaimTypes.Email)
             : null;
         if (IsNullOrWhiteSpace(externalEmail))

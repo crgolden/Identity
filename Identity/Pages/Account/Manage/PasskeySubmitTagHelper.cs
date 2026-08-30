@@ -34,7 +34,9 @@ public class PasskeySubmitTagHelper : TagHelper
 
         var tokens = _antiforgery.GetTokens(_httpContextAccessor.HttpContext);
         var buttonAttributes = output.Attributes
-            .Where(x => !string.Equals(x.Name, "operation") && !string.Equals(x.Name, "name") && !string.Equals(x.Name, "email-name"))
+            .Where(x => !string.Equals(x.Name, "operation", StringComparison.Ordinal)
+                        && !string.Equals(x.Name, "name", StringComparison.Ordinal)
+                        && !string.Equals(x.Name, "email-name", StringComparison.Ordinal))
             .ToList();
         var buttonContent = (await output.GetChildContentAsync(Default)).GetContent(Default);
         const string value = "<button type=\"submit\" name=\"__passkeySubmit\" ";

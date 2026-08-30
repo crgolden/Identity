@@ -11,14 +11,11 @@ using Moq;
 [Trait("Category", "Unit")]
 public class PasskeySubmitTagHelperTests
 {
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void Constructor_ValidDependencies_InitializesDefaults(bool useStrictMock)
+    [Fact]
+    public void Constructor_ValidDependencies_InitializesDefaults()
     {
         // Arrange
-        var behavior = useStrictMock ? MockBehavior.Strict : MockBehavior.Loose;
-        var httpContextAccessorMock = new Mock<IHttpContextAccessor>(behavior);
+        var httpContextAccessorMock = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
 
         // Act
         var helper = new PasskeySubmitTagHelper(httpContextAccessorMock.Object, Mock.Of<IAntiforgery>());

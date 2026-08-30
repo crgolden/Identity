@@ -96,7 +96,7 @@ public sealed class InputSanitizationTests
 
     private static bool IsLocalUrl(string url)
     {
-        if (string.IsNullOrEmpty(url))
+        if (string.IsNullOrWhiteSpace(url))
         {
             return false;
         }

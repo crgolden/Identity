@@ -24,8 +24,8 @@ public sealed class GrantsTests(PlaywrightFixture fixture)
 
             await page.GotoAsync("/Account/Manage/Grants");
             await page.WaitForURLAsync("**/Account/Manage/Grants**");
-            Assert.DoesNotContain("/Account/Login", page.Url);
-            Assert.DoesNotContain("/Error", page.Url);
+            Assert.DoesNotContain("/Account/Login", page.Url, StringComparison.Ordinal);
+            Assert.DoesNotContain("/Error", page.Url, StringComparison.Ordinal);
         }
     }
 }

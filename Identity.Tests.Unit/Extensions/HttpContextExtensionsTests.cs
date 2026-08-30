@@ -89,37 +89,14 @@ public class HttpContextExtensionsTests
             "application/json",
             out _);
 
-        long capturedValue = 0;
-        string? capturedTag = null;
-
-        using var meterListener = new MeterListener();
-        meterListener.InstrumentPublished = (instrument, listener) =>
-        {
-            if (string.Equals(instrument.Meter.Name, nameof(Identity), StringComparison.Ordinal) &&
-                string.Equals(instrument.Name, "identity.exceptions", StringComparison.Ordinal))
-            {
-                listener.EnableMeasurementEvents(instrument);
-            }
-        };
-        meterListener.SetMeasurementEventCallback<long>((instrument, measurement, tags, _) =>
-        {
-            capturedValue += measurement;
-            foreach (var tag in tags)
-            {
-                if (string.Equals(tag.Key, "exception.type", StringComparison.Ordinal))
-                {
-                    capturedTag = tag.Value?.ToString();
-                }
-            }
-        });
-        meterListener.Start();
+        using var exceptionCounter = ExceptionCounterCapture.Start();
 
         // Act
         await context.HandleException();
 
         // Assert
-        Assert.Equal(1, capturedValue);
-        Assert.Equal(nameof(InvalidOperationException), capturedTag);
+        Assert.Equal(1, exceptionCounter.Total);
+        Assert.Equal(nameof(InvalidOperationException), exceptionCounter.ExceptionType);
     }
 
     private static DefaultHttpContext BuildContext(
@@ -147,5 +124,46 @@ public class HttpContextExtensionsTests
 
         problemDetailsOut = mockProblemDetails;
         return context;
+    }
+
+    private sealed class ExceptionCounterCapture : IDisposable
+    {
+        private readonly MeterListener _listener = new();
+
+        private ExceptionCounterCapture()
+        {
+            _listener.InstrumentPublished = (instrument, listener) =>
+            {
+                if (string.Equals(instrument.Meter.Name, nameof(Identity), StringComparison.Ordinal) &&
+                    string.Equals(instrument.Name, Telemetry.Metrics.ExceptionCounterName, StringComparison.Ordinal))
+                {
+                    listener.EnableMeasurementEvents(instrument);
+                }
+            };
+            _listener.SetMeasurementEventCallback<long>((_, measurement, tags, _) =>
+            {
+                Total += measurement;
+                foreach (var tag in tags)
+                {
+                    if (string.Equals(tag.Key, Telemetry.Metrics.ExceptionTypeTagName, StringComparison.Ordinal))
+                    {
+                        ExceptionType = tag.Value?.ToString();
+                    }
+                }
+            });
+        }
+
+        public long Total { get; private set; }
+
+        public string? ExceptionType { get; private set; }
+
+        public static ExceptionCounterCapture Start()
+        {
+            var capture = new ExceptionCounterCapture();
+            capture._listener.Start();
+            return capture;
+        }
+
+        public void Dispose() => _listener.Dispose();
     }
 }

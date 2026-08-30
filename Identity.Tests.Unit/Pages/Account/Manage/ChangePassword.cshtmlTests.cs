@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
 
@@ -96,11 +97,11 @@ public class ChangePasswordModelTests
         var lookupNormalizer = new UpperInvariantLookupNormalizer();
         var errorDescriber = new IdentityErrorDescriber();
         var serviceProvider = new Mock<IServiceProvider>(MockBehavior.Loose).Object;
-        var userManagerLogger = new Mock<ILogger<UserManager<IdentityUser<Guid>>>>().Object;
+        var userManagerLogger = NullLogger<UserManager<IdentityUser<Guid>>>.Instance;
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(userStoreMock.Object, identityOptions, passwordHasher, userValidators, passwordValidators, lookupNormalizer, errorDescriber, serviceProvider, userManagerLogger);
         var httpContextAccessor = new Mock<IHttpContextAccessor>(MockBehavior.Strict).Object;
         var claimsFactory = new Mock<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>().Object;
-        var signInManagerLogger = new Mock<ILogger<SignInManager<IdentityUser<Guid>>>>().Object;
+        var signInManagerLogger = NullLogger<SignInManager<IdentityUser<Guid>>>.Instance;
         var schemes = new Mock<IAuthenticationSchemeProvider>(MockBehavior.Strict).Object;
         var confirmation = new Mock<IUserConfirmation<IdentityUser<Guid>>>().Object;
         var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(userManagerMock.Object, httpContextAccessor, claimsFactory, identityOptions, signInManagerLogger, schemes, confirmation);
@@ -127,7 +128,8 @@ public class ChangePasswordModelTests
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
-        Assert.Contains("some-user-id", notFound.Value?.ToString() ?? string.Empty, StringComparison.Ordinal);
+        var message = Assert.IsType<string>(notFound.Value);
+        Assert.Contains("some-user-id", message, StringComparison.Ordinal);
     }
 
     [Fact]

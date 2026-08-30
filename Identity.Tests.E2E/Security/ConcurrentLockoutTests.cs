@@ -33,11 +33,11 @@ public sealed class ConcurrentLockoutTests(PlaywrightFixture fixture)
             await verifyPage.FillAsync("input[name='Input.Password']", "BadPassword!Concurrent99");
             await verifyPage.ClickAsync("button[type='submit']");
             await verifyPage.WaitForURLAsync(
-                url => url.Contains("/Account/Lockout") || url.Contains("/Account/Login"),
+                url => url.Contains("/Account/Lockout", StringComparison.Ordinal) || url.Contains("/Account/Login", StringComparison.Ordinal),
                 new Microsoft.Playwright.PageWaitForURLOptions { Timeout = 10_000 });
 
             Assert.True(
-                verifyPage.Url.Contains("/Account/Lockout") || verifyPage.Url.Contains("/Account/Login"),
+                verifyPage.Url.Contains("/Account/Lockout", StringComparison.Ordinal) || verifyPage.Url.Contains("/Account/Login", StringComparison.Ordinal),
                 $"Unexpected URL after concurrent lockout attempts: {verifyPage.Url}");
         }
     }

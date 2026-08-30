@@ -25,7 +25,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.FillAsync("#claim-value-0", "e2e-value");
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Clients/Details/Claims"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(claimType)).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(claimType);
         }
     }
 
@@ -46,7 +46,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.ClickAsync("#claim-remove-0");
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Clients/Details/Claims"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(claimType)).Not.ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).Not.ToContainTextAsync(claimType);
         }
     }
 
@@ -68,7 +68,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.FillAsync("#claim-value-0", updatedValue);
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Clients/Details/Claims"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(updatedValue)).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(updatedValue);
         }
     }
 
@@ -88,7 +88,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.FillAsync("#corsorigin-0", origin);
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Clients/Details/CorsOrigins"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(origin)).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(origin);
         }
     }
 
@@ -109,7 +109,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.ClickAsync("#corsorigin-remove-0");
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Clients/Details/CorsOrigins"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(origin)).Not.ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).Not.ToContainTextAsync(origin);
         }
     }
 
@@ -131,7 +131,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.FillAsync("#corsorigin-0", updatedOrigin);
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Clients/Details/CorsOrigins"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(updatedOrigin)).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(updatedOrigin);
         }
     }
 
@@ -151,7 +151,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.FillAsync("#granttype-0", grantType);
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Clients/Details/GrantTypes"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(grantType)).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(grantType);
         }
     }
 
@@ -172,7 +172,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.ClickAsync("#granttype-remove-0");
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Clients/Details/GrantTypes"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(grantType)).Not.ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).Not.ToContainTextAsync(grantType);
         }
     }
 
@@ -194,7 +194,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.FillAsync("#granttype-0", updatedGrantType);
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Clients/Details/GrantTypes"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(updatedGrantType)).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(updatedGrantType);
         }
     }
 
@@ -214,7 +214,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.FillAsync("#idprestriction-0", provider);
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Clients/Details/IdPRestrictions"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(provider)).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(provider);
         }
     }
 
@@ -235,7 +235,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.ClickAsync("#idprestriction-remove-0");
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Clients/Details/IdPRestrictions"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(provider)).Not.ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).Not.ToContainTextAsync(provider);
         }
     }
 
@@ -257,7 +257,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.FillAsync("#idprestriction-0", updatedProvider);
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Clients/Details/IdPRestrictions"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(updatedProvider)).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(updatedProvider);
         }
     }
 
@@ -277,7 +277,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.FillAsync("#postlogoutredirecturi-0", uri);
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Clients/Details/PostLogoutRedirectUris"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(uri)).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(uri);
         }
     }
 
@@ -298,7 +298,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.ClickAsync("#postlogoutredirecturi-remove-0");
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Clients/Details/PostLogoutRedirectUris"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(uri)).Not.ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).Not.ToContainTextAsync(uri);
         }
     }
 
@@ -320,7 +320,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.FillAsync("#postlogoutredirecturi-0", updatedUri);
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Clients/Details/PostLogoutRedirectUris"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(updatedUri)).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(updatedUri);
         }
     }
 
@@ -341,7 +341,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.FillAsync("#property-value-0", "e2e-value");
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Clients/Details/Properties"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(key)).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(key);
         }
     }
 
@@ -362,7 +362,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.ClickAsync("#property-remove-0");
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Clients/Details/Properties"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(key)).Not.ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).Not.ToContainTextAsync(key);
         }
     }
 
@@ -384,7 +384,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.FillAsync("#property-value-0", updatedValue);
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Clients/Details/Properties"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(updatedValue)).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(updatedValue);
         }
     }
 
@@ -404,7 +404,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.FillAsync("#redirecturi-0", uri);
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Clients/Details/RedirectUris"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(uri)).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(uri);
         }
     }
 
@@ -425,7 +425,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.ClickAsync("#redirecturi-remove-0");
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Clients/Details/RedirectUris"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(uri)).Not.ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).Not.ToContainTextAsync(uri);
         }
     }
 
@@ -447,7 +447,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.FillAsync("#redirecturi-0", updatedUri);
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Clients/Details/RedirectUris"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(updatedUri)).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(updatedUri);
         }
     }
 
@@ -467,7 +467,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.FillAsync("#scope-0", scope);
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Clients/Details/Scopes"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(scope)).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(scope);
         }
     }
 
@@ -488,7 +488,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.ClickAsync("#scope-remove-0");
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Clients/Details/Scopes"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(scope)).Not.ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).Not.ToContainTextAsync(scope);
         }
     }
 
@@ -510,7 +510,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.FillAsync("#scope-0", updatedScope);
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Clients/Details/Scopes"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(updatedScope)).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(updatedScope);
         }
     }
 
@@ -531,7 +531,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.FillAsync("#secret-value-0", "e2e-secret-value");
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Clients/Details/Secrets"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(description)).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(description);
         }
     }
 
@@ -552,7 +552,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.ClickAsync("#secret-remove-0");
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Clients/Details/Secrets"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(description)).Not.ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).Not.ToContainTextAsync(description);
         }
     }
 
@@ -574,7 +574,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.FillAsync("#secret-description-0", updatedDescription);
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Clients/Details/Secrets"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(updatedDescription)).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(updatedDescription);
         }
     }
 

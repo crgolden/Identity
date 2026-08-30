@@ -14,6 +14,10 @@ public static class Telemetry
 
     public static class Metrics
     {
+        internal const string ExceptionCounterName = "identity.exceptions";
+
+        internal const string ExceptionTypeTagName = "exception.type";
+
         private static readonly Counter<long> ConsentGrantedCounter =
             Meter.CreateCounter<long>("identity.consent.granted", description: "Number of consent grants by users.");
 
@@ -24,7 +28,7 @@ public static class Telemetry
             Meter.CreateCounter<long>("identity.grants.revoked", description: "Number of client grants revoked by users.");
 
         private static readonly Counter<long> ExceptionCounter =
-            Meter.CreateCounter<long>("identity.exceptions", description: "Number of unhandled exceptions.");
+            Meter.CreateCounter<long>(ExceptionCounterName, description: "Number of unhandled exceptions.");
 
         public static void ConsentGranted(string clientId, IEnumerable<string> scopes, bool remember) =>
             ConsentGrantedCounter.Add(1, new TagList
@@ -45,6 +49,6 @@ public static class Telemetry
             GrantsRevokedCounter.Add(1, new TagList { { "client_id", clientId } });
 
         public static void ExceptionOccurred(string exceptionType) =>
-            ExceptionCounter.Add(1, new TagList { { "exception.type", exceptionType } });
+            ExceptionCounter.Add(1, new TagList { { ExceptionTypeTagName, exceptionType } });
     }
 }

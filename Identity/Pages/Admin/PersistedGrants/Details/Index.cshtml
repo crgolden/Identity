@@ -4,7 +4,7 @@
     ViewData["Title"] = "Persisted Grant Details";
 }
 
-<h1>Persisted Grant Details</h1>
+<h1 id="page-heading">Persisted Grant Details</h1>
 
 <dl class="row">
     <dt class="col-sm-3">Key</dt>
@@ -12,7 +12,7 @@
     <dt class="col-sm-3">Subject</dt>
     <dd class="col-sm-9">@Model.PersistedGrant.SubjectId</dd>
     <dt class="col-sm-3">Client</dt>
-    <dd class="col-sm-9">@Model.PersistedGrant.ClientId</dd>
+    <dd id="grant-client-id" class="col-sm-9">@Model.PersistedGrant.ClientId</dd>
     <dt class="col-sm-3">Type</dt>
     <dd class="col-sm-9">@Model.PersistedGrant.Type</dd>
     <dt class="col-sm-3">Created</dt>

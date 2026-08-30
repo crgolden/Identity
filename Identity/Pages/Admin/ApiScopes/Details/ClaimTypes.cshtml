@@ -4,7 +4,7 @@
     ViewData["Title"] = "API Scope Claim Types";
 }
 
-<h1>Claim Types: @Model.Scope.Name</h1>
+<h1 id="page-heading">Claim Types: @Model.Scope.Name</h1>
 
 @await Html.PartialAsync("~/Pages/Admin/Shared/_DetailsClaimTypesTable.cshtml",
     (Model.Scope.UserClaims ?? []).Select(c => new ClaimTypeRow(c.Id, c.Type)))

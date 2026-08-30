@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
 
@@ -117,7 +118,7 @@ public partial class ConfirmEmailModelTests
         var keyNormalizer = Mock.Of<ILookupNormalizer>();
         var errors = new IdentityErrorDescriber();
         var services = Mock.Of<IServiceProvider>();
-        var logger = Mock.Of<ILogger<UserManager<IdentityUser<Guid>>>>();
+        var logger = NullLogger<UserManager<IdentityUser<Guid>>>.Instance;
 
         var userManager = new UserManager<IdentityUser<Guid>>(
             store,

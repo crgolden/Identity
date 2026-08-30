@@ -13,6 +13,14 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 #pragma warning restore S4502
 public class ErrorModel : PageModel
 {
+    internal const string OidcErrorActivityName = "identity.error.oidc";
+
+    internal const string OidcErrorIdTagName = "oidc.error_id";
+
+    internal const string OidcErrorTagName = "oidc.error";
+
+    internal const string OidcErrorDescriptionTagName = "oidc.error_description";
+
     private readonly IIdentityServerInteractionService _interactionService;
 
     public ErrorModel(IIdentityServerInteractionService interactionService)
@@ -30,10 +38,10 @@ public class ErrorModel : PageModel
         if (!IsNullOrWhiteSpace(errorId))
         {
             var errorMessage = await _interactionService.GetErrorContextAsync(errorId, HttpContext.RequestAborted);
-            using var activity = Telemetry.StartActivity("identity.error.oidc");
-            activity?.SetTag("oidc.error_id", errorId);
-            activity?.SetTag("oidc.error", errorMessage?.Error);
-            activity?.SetTag("oidc.error_description", errorMessage?.ErrorDescription);
+            using var activity = Telemetry.StartActivity(OidcErrorActivityName);
+            activity?.SetTag(OidcErrorIdTagName, errorId);
+            activity?.SetTag(OidcErrorTagName, errorMessage?.Error);
+            activity?.SetTag(OidcErrorDescriptionTagName, errorMessage?.ErrorDescription);
         }
     }
 }

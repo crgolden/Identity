@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
 
@@ -36,7 +37,7 @@ public class PersonalDataModelTests
         var lookupNormalizerMock = new Mock<ILookupNormalizer>(MockBehavior.Strict);
         var errorDescriber = new IdentityErrorDescriber();
         var servicesMock = new Mock<IServiceProvider>(MockBehavior.Loose);
-        var userManagerLoggerMock = new Mock<ILogger<UserManager<IdentityUser<Guid>>>>();
+        var userManagerLogger = NullLogger<UserManager<IdentityUser<Guid>>>.Instance;
 
         var userManager = new UserManager<IdentityUser<Guid>>(
             userStoreMock.Object,
@@ -47,7 +48,7 @@ public class PersonalDataModelTests
             lookupNormalizerMock.Object,
             errorDescriber,
             servicesMock.Object,
-            userManagerLoggerMock.Object);
+            userManagerLogger);
 
         // Act
         PersonalDataModel? model = null;
@@ -72,7 +73,7 @@ public class PersonalDataModelTests
         var lookupNormalizerMock = new Mock<ILookupNormalizer>(MockBehavior.Strict);
         var errorDescriber = new IdentityErrorDescriber();
         var servicesMock = new Mock<IServiceProvider>(MockBehavior.Loose);
-        var userManagerLoggerMock = new Mock<ILogger<UserManager<IdentityUser<Guid>>>>();
+        var userManagerLogger = NullLogger<UserManager<IdentityUser<Guid>>>.Instance;
 
         var userManager = new UserManager<IdentityUser<Guid>>(
             userStoreMock.Object,
@@ -83,7 +84,7 @@ public class PersonalDataModelTests
             lookupNormalizerMock.Object,
             errorDescriber,
             servicesMock.Object,
-            userManagerLoggerMock.Object);
+            userManagerLogger);
 
         // Act
         var model1 = new PersonalDataModel(userManager);

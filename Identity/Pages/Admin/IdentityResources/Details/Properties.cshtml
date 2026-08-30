@@ -4,7 +4,7 @@
     ViewData["Title"] = "Identity Resource Properties";
 }
 
-<h1>Properties: @Model.Resource.Name</h1>
+<h1 id="page-heading">Properties: @Model.Resource.Name</h1>
 
 @await Html.PartialAsync("~/Pages/Admin/Shared/_DetailsPropertiesTable.cshtml",
     (Model.Resource.Properties ?? []).Select(p => new PropertyRow(p.Id, p.Key, p.Value)))

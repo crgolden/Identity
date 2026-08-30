@@ -55,7 +55,9 @@ public class LoginWith2faModel : PageModel
             throw new InvalidOperationException("Unable to load two-factor authentication user.");
         }
 
-        var authenticatorCode = Input.TwoFactorCode.Replace(" ", Empty).Replace("-", Empty);
+        var authenticatorCode = Input.TwoFactorCode
+            .Replace(" ", Empty, StringComparison.Ordinal)
+            .Replace("-", Empty, StringComparison.Ordinal);
 
         var result = await _signInManager.TwoFactorAuthenticatorSignInAsync(authenticatorCode, rememberMe, Input.RememberMachine);
 

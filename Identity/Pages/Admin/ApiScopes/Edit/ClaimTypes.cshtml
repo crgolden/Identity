@@ -6,7 +6,7 @@
     var cancelHref = Url.Page("/Admin/ApiScopes/Details/ClaimTypes", new { id = Request.RouteValues["id"] });
 }
 
-<h1>Edit Claim Types</h1>
+<h1 id="page-heading">Edit Claim Types</h1>
 
 @await Html.PartialAsync("~/Pages/Admin/Shared/_EditClaimTypesForm.cshtml", rows,
     new ViewDataDictionary(ViewData) { { "CancelHref", cancelHref }, { "EntityId", Request.RouteValues["id"] } })

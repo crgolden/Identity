@@ -133,26 +133,23 @@ public class LoginWith2faModelTests
         Assert.Null(model.ReturnUrl);
     }
 
-    [Theory]
-    [InlineData(1)]
-    [InlineData(3)]
-    public void Constructor_MultipleValidDependencies_NoExceptionAndIndependentDefaults(int instances)
+    [Fact]
+    public void Constructor_TwoInstances_InitializesDefaultsIndependently()
     {
         // Arrange
-        var signInManagerMocks = Enumerable.Range(0, instances).Select(_ => CreateSignInManagerMock()).ToList();
+        var firstSignInManagerMock = CreateSignInManagerMock();
+        var secondSignInManagerMock = CreateSignInManagerMock();
 
         // Act
-        var models = signInManagerMocks.Select(m => new LoginWith2faModel(m.Object)).ToList();
+        var firstModel = new LoginWith2faModel(firstSignInManagerMock.Object);
+        var secondModel = new LoginWith2faModel(secondSignInManagerMock.Object);
 
         // Assert
-        Assert.Equal(instances, models.Count);
-        foreach (var model in models)
-        {
-            Assert.NotNull(model);
-            Assert.NotNull(model.Input);
-            Assert.False(model.RememberMe);
-            Assert.Null(model.ReturnUrl);
-        }
+        Assert.NotSame(firstModel.Input, secondModel.Input);
+        Assert.False(firstModel.RememberMe);
+        Assert.False(secondModel.RememberMe);
+        Assert.Null(firstModel.ReturnUrl);
+        Assert.Null(secondModel.ReturnUrl);
     }
 
     [Fact]

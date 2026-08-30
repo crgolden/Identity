@@ -294,3 +294,28 @@ dotnet_diagnostic.sa1642.severity = none
 dotnet_diagnostic.sa1643.severity = none
 dotnet_diagnostic.sa1650.severity = none
 dotnet_diagnostic.sa1651.severity = none
+
+dotnet_diagnostic.CA1054.severity = warning
+dotnet_diagnostic.CA1055.severity = warning
+dotnet_diagnostic.CA1056.severity = warning
+dotnet_diagnostic.CA1307.severity = warning
+dotnet_diagnostic.CA1309.severity = warning
+dotnet_diagnostic.CA1310.severity = warning
+dotnet_diagnostic.CA1862.severity = warning
+dotnet_diagnostic.CA1308.severity = none  # the Gravatar spec requires a lowercase-trimmed address and a lowercase hex digest, the authenticator shared key is formatted lowercase, and the OTel deployment.environment attribute is a lowercase wire value; ToUpperInvariant would change each produced value
+
+# CA1054/CA1056: every site is an ASP.NET returnUrl / redirectUri - a RELATIVE local path bound by
+# model binding from the query string and validated with Url.IsLocalUrl(string), or a Duende
+# AuthorizationRequest value this app does not own. Uri cannot carry a relative path without
+# UriKind.Relative and model binding does not bind Uri, so converting breaks the auth flow.
+[Identity/Pages/**.cs]
+dotnet_diagnostic.CA1054.severity = none
+dotnet_diagnostic.CA1056.severity = none
+
+# Test signatures mirror the production handler they exercise; a test method parameter is not a
+# public API surface.
+[Identity.Tests.Unit/**.cs]
+dotnet_diagnostic.CA1054.severity = none
+
+[Identity.Tests.E2E/**.cs]
+dotnet_diagnostic.CA1054.severity = none

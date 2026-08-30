@@ -53,7 +53,9 @@ public class IndexModel : PageModel
         }
 
         var phoneNumber = await _userManager.GetPhoneNumberAsync(user);
-        if (!IsNullOrWhiteSpace(phoneNumber) && !IsNullOrWhiteSpace(Input?.PhoneNumber) && !string.Equals(Input.PhoneNumber, phoneNumber))
+        if (!IsNullOrWhiteSpace(phoneNumber)
+            && !IsNullOrWhiteSpace(Input?.PhoneNumber)
+            && !string.Equals(Input.PhoneNumber, phoneNumber, StringComparison.Ordinal))
         {
             var setPhoneResult = await _userManager.SetPhoneNumberAsync(user, Input.PhoneNumber);
             if (!setPhoneResult.Succeeded)

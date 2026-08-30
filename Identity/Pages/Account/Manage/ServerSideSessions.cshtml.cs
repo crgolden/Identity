@@ -45,7 +45,7 @@ public class ServerSideSessionsModel : PageModel
                 new SessionQuery
                 {
                     ResultsToken = Token,
-                    RequestPriorResults = Prev == "true",
+                    RequestPriorResults = string.Equals(Prev, "true", StringComparison.Ordinal),
                     DisplayName = DisplayNameFilter,
                     SessionId = SessionIdFilter,
                     SubjectId = SubjectIdFilter,

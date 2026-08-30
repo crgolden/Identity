@@ -20,7 +20,7 @@ public sealed class ApiResourcesTests(PlaywrightFixture fixture)
         {
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/ApiResources");
-            await Assertions.Expect(page.GetByText(name)).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(name);
         }
     }
 
@@ -56,7 +56,7 @@ public sealed class ApiResourcesTests(PlaywrightFixture fixture)
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/ApiResources");
             await page.ClickAsync($"#delete-{resourceId}");
-            await Assertions.Expect(page.Locator("h1")).ToContainTextAsync("Delete");
+            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("Delete");
             await page.ClickAsync("#delete-submit");
             await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("Delete"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
             await Assertions.Expect(page.Locator($"#delete-{resourceId}")).Not.ToBeVisibleAsync();
@@ -79,7 +79,7 @@ public sealed class ApiResourcesTests(PlaywrightFixture fixture)
             await page.FillAsync("#scope-0", scope);
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/ApiResources/Details/Scopes"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(scope)).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(scope);
         }
     }
 
@@ -100,7 +100,7 @@ public sealed class ApiResourcesTests(PlaywrightFixture fixture)
             await page.ClickAsync("#scope-remove-0");
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/ApiResources/Details/Scopes"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(scope)).Not.ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).Not.ToContainTextAsync(scope);
         }
     }
 
@@ -122,7 +122,7 @@ public sealed class ApiResourcesTests(PlaywrightFixture fixture)
             await page.FillAsync("#scope-0", updatedScope);
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/ApiResources/Details/Scopes"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(updatedScope)).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(updatedScope);
         }
     }
 
@@ -143,7 +143,7 @@ public sealed class ApiResourcesTests(PlaywrightFixture fixture)
             await page.FillAsync("#secret-value-0", "e2e-secret-value");
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/ApiResources/Details/Secrets"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(description)).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(description);
         }
     }
 
@@ -164,7 +164,7 @@ public sealed class ApiResourcesTests(PlaywrightFixture fixture)
             await page.ClickAsync("#secret-remove-0");
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/ApiResources/Details/Secrets"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(description)).Not.ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).Not.ToContainTextAsync(description);
         }
     }
 
@@ -186,7 +186,7 @@ public sealed class ApiResourcesTests(PlaywrightFixture fixture)
             await page.FillAsync("#secret-description-0", updatedDescription);
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/ApiResources/Details/Secrets"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(updatedDescription)).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(updatedDescription);
         }
     }
 
@@ -207,7 +207,7 @@ public sealed class ApiResourcesTests(PlaywrightFixture fixture)
             await page.FillAsync("#property-value-0", "e2e-value");
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/ApiResources/Details/Properties"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(key)).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(key);
         }
     }
 
@@ -228,7 +228,7 @@ public sealed class ApiResourcesTests(PlaywrightFixture fixture)
             await page.ClickAsync("#property-remove-0");
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/ApiResources/Details/Properties"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(key)).Not.ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).Not.ToContainTextAsync(key);
         }
     }
 
@@ -250,7 +250,7 @@ public sealed class ApiResourcesTests(PlaywrightFixture fixture)
             await page.FillAsync("#property-value-0", updatedValue);
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/ApiResources/Details/Properties"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(updatedValue)).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(updatedValue);
         }
     }
 
@@ -270,7 +270,7 @@ public sealed class ApiResourcesTests(PlaywrightFixture fixture)
             await page.FillAsync("#claimtype-0", claimType);
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/ApiResources/Details/ClaimTypes"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(claimType)).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(claimType);
         }
     }
 
@@ -291,7 +291,7 @@ public sealed class ApiResourcesTests(PlaywrightFixture fixture)
             await page.ClickAsync("#claimtype-remove-0");
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/ApiResources/Details/ClaimTypes"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(claimType)).Not.ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).Not.ToContainTextAsync(claimType);
         }
     }
 
@@ -313,7 +313,7 @@ public sealed class ApiResourcesTests(PlaywrightFixture fixture)
             await page.FillAsync("#claimtype-0", updatedClaimType);
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/ApiResources/Details/ClaimTypes"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(updatedClaimType)).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(updatedClaimType);
         }
     }
 

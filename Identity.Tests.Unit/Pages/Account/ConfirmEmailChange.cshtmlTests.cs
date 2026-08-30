@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
 [Collection(UnitCollection.Name)]
@@ -28,11 +29,11 @@ public class ConfirmEmailChangeModelTests
         var keyNormalizer = new Mock<ILookupNormalizer>(MockBehavior.Strict).Object;
         var errors = new IdentityErrorDescriber();
         var services = new Mock<IServiceProvider>(MockBehavior.Loose).Object;
-        var loggerUserManager = new Mock<ILogger<UserManager<IdentityUser<Guid>>>>().Object;
+        var loggerUserManager = NullLogger<UserManager<IdentityUser<Guid>>>.Instance;
         var userManager = new UserManager<IdentityUser<Guid>>(storeMock.Object, options, passwordHasher, userValidators, pwdValidators, keyNormalizer, errors, services, loggerUserManager);
         var httpContextAccessor = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
         var claimsFactory = new Mock<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>();
-        var loggerSignIn = new Mock<ILogger<SignInManager<IdentityUser<Guid>>>>().Object;
+        var loggerSignIn = NullLogger<SignInManager<IdentityUser<Guid>>>.Instance;
         var schemes = new Mock<IAuthenticationSchemeProvider>(MockBehavior.Strict).Object;
         var confirmation = new Mock<IUserConfirmation<IdentityUser<Guid>>>().Object;
         var signInManager = new SignInManager<IdentityUser<Guid>>(userManager, httpContextAccessor.Object, claimsFactory.Object, options, loggerSignIn, schemes, confirmation);

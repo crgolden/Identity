@@ -65,7 +65,9 @@ public class EnableAuthenticatorModel : PageModel
             return Page();
         }
 
-        var verificationCode = Input.Code.Replace(" ", Empty).Replace("-", Empty);
+        var verificationCode = Input.Code
+            .Replace(" ", Empty, StringComparison.Ordinal)
+            .Replace("-", Empty, StringComparison.Ordinal);
         var tokenProvider = _userManager.Options.Tokens.AuthenticatorTokenProvider;
         var is2faTokenValid = await _userManager.VerifyTwoFactorTokenAsync(user, tokenProvider, verificationCode);
         if (!is2faTokenValid)

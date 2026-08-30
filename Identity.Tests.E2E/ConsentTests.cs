@@ -24,19 +24,19 @@ public sealed class ConsentTests(PlaywrightFixture fixture)
             await LoginAsync(page, email, password);
             await page.GotoAsync(BuildAuthorizeUrl(clientId, RedirectUri, "deny-state"));
 
-            if (page.Url.Contains("localhost:9999"))
+            if (page.Url.Contains("localhost:9999", StringComparison.Ordinal))
             {
-                Assert.Contains("error=access_denied", page.Url);
+                Assert.Contains("error=access_denied", page.Url, StringComparison.Ordinal);
                 return;
             }
 
-            Assert.Contains("/Account/Manage/Consent", page.Url);
+            Assert.Contains("/Account/Manage/Consent", page.Url, StringComparison.Ordinal);
 
             var request = await page.RunAndWaitForRequestAsync(
                 async () => await page.ClickAsync("#consent-deny"),
-                r => r.Url.Contains("localhost:9999"));
+                r => r.Url.Contains("localhost:9999", StringComparison.Ordinal));
 
-            Assert.Contains("error=access_denied", request.Url);
+            Assert.Contains("error=access_denied", request.Url, StringComparison.Ordinal);
         }
     }
 
@@ -53,13 +53,13 @@ public sealed class ConsentTests(PlaywrightFixture fixture)
             await LoginAsync(page, email, password);
             await page.GotoAsync(BuildAuthorizeUrl(clientId, RedirectUri, "allow-state"));
 
-            if (page.Url.Contains("localhost:9999"))
+            if (page.Url.Contains("localhost:9999", StringComparison.Ordinal))
             {
-                Assert.Contains("code=", page.Url);
+                Assert.Contains("code=", page.Url, StringComparison.Ordinal);
                 return;
             }
 
-            Assert.Contains("/Account/Manage/Consent", page.Url);
+            Assert.Contains("/Account/Manage/Consent", page.Url, StringComparison.Ordinal);
             var checkboxes = await page.QuerySelectorAllAsync("input[id^='scope_']:not([disabled])");
             foreach (var checkbox in checkboxes)
             {
@@ -68,10 +68,10 @@ public sealed class ConsentTests(PlaywrightFixture fixture)
 
             var request = await page.RunAndWaitForRequestAsync(
                 async () => await page.ClickAsync("#consent-allow"),
-                r => r.Url.Contains("localhost:9999"),
+                r => r.Url.Contains("localhost:9999", StringComparison.Ordinal),
                 new PageRunAndWaitForRequestOptions { Timeout = 15_000 });
 
-            Assert.Contains("code=", request.Url);
+            Assert.Contains("code=", request.Url, StringComparison.Ordinal);
         }
     }
 
@@ -88,7 +88,7 @@ public sealed class ConsentTests(PlaywrightFixture fixture)
             await LoginAsync(page, email, password);
             await page.GotoAsync(BuildAuthorizeUrl(clientId, RedirectUri, "noscope-state"));
 
-            if (!page.Url.Contains("/Account/Manage/Consent"))
+            if (!page.Url.Contains("/Account/Manage/Consent", StringComparison.Ordinal))
             {
                 return;
             }
@@ -104,9 +104,9 @@ public sealed class ConsentTests(PlaywrightFixture fixture)
 
             await page.RunAndWaitForResponseAsync(
                 () => page.ClickAsync("#consent-allow"),
-                r => r.Url.Contains("/Account/Manage/Consent") && r.Request.Method == "POST");
+                r => r.Url.Contains("/Account/Manage/Consent", StringComparison.Ordinal) && r.Request.Method == "POST");
 
-            Assert.Contains("/Account/Manage/Consent", page.Url);
+            Assert.Contains("/Account/Manage/Consent", page.Url, StringComparison.Ordinal);
             await Assertions.Expect(page.Locator("#validation-errors")).ToContainTextAsync(
                 ConsentOptions.MustChooseOneErrorMessage,
                 new LocatorAssertionsToContainTextOptions { Timeout = 15_000 });

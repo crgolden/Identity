@@ -22,7 +22,7 @@ public sealed class UsersTests(PlaywrightFixture fixture)
 
             await page.ClickAsync("#nav-claims");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Users/Details/Claims"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.Locator("table")).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
         }
     }
 
@@ -39,7 +39,7 @@ public sealed class UsersTests(PlaywrightFixture fixture)
 
             await page.ClickAsync("#nav-roles");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Users/Details/Roles"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.Locator("[id^='user-role-']", new PageLocatorOptions { HasText = "Admin" })).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-list")).ToContainTextAsync("Admin");
         }
     }
 
@@ -56,7 +56,7 @@ public sealed class UsersTests(PlaywrightFixture fixture)
 
             await page.ClickAsync("#nav-logins");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Users/Details/Logins"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.Locator("table")).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
         }
     }
 
@@ -73,7 +73,7 @@ public sealed class UsersTests(PlaywrightFixture fixture)
 
             await page.ClickAsync("#nav-passkeys");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Users/Details/Passkeys"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.Locator("table")).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
         }
     }
 
@@ -94,7 +94,7 @@ public sealed class UsersTests(PlaywrightFixture fixture)
             await page.FillAsync("#AppUser_PhoneNumber", phoneNumber);
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Users/Details/(?!Claims|Roles|Logins|Passkeys)"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(phoneNumber)).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#user-phone-number")).ToHaveTextAsync(phoneNumber);
         }
     }
 
@@ -118,7 +118,7 @@ public sealed class UsersTests(PlaywrightFixture fixture)
             await page.FillAsync("#claim-value-0", "e2e-value");
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Users/Details/Claims"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(claimType)).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(claimType);
         }
     }
 
@@ -140,7 +140,7 @@ public sealed class UsersTests(PlaywrightFixture fixture)
             await page.ClickAsync("#claim-remove-0");
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Users/Details/Claims"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(claimType)).Not.ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).Not.ToContainTextAsync(claimType);
         }
     }
 
@@ -163,7 +163,7 @@ public sealed class UsersTests(PlaywrightFixture fixture)
             await page.FillAsync("#claim-value-0", updatedValue);
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Users/Details/Claims"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(updatedValue)).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(updatedValue);
         }
     }
 
@@ -187,7 +187,7 @@ public sealed class UsersTests(PlaywrightFixture fixture)
             await page.FillAsync($"#role-{await RoleRowIndexAsync(page, string.Empty)}", roleName);
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Users/Details/Roles"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.Locator("[id^='user-role-']", new PageLocatorOptions { HasText = roleName })).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-list")).ToContainTextAsync(roleName);
         }
     }
 
@@ -210,7 +210,7 @@ public sealed class UsersTests(PlaywrightFixture fixture)
             await page.ClickAsync($"#role-remove-{await RoleRowIndexAsync(page, roleName)}");
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Users/Details/Roles"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.Locator("[id^='user-role-']", new PageLocatorOptions { HasText = roleName })).Not.ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-list")).Not.ToContainTextAsync(roleName);
         }
     }
 
@@ -235,8 +235,8 @@ public sealed class UsersTests(PlaywrightFixture fixture)
             await page.FillAsync($"#role-{await RoleRowIndexAsync(page, roleName)}", updatedRoleName);
             await page.ClickAsync("#save-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Users/Details/Roles"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.Locator("[id^='user-role-']", new PageLocatorOptions { HasText = updatedRoleName })).ToBeVisibleAsync();
-            await Assertions.Expect(page.Locator("[id^='user-role-']", new PageLocatorOptions { HasText = roleName })).Not.ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-list")).ToContainTextAsync(updatedRoleName);
+            await Assertions.Expect(page.Locator("#page-list")).Not.ToContainTextAsync(roleName);
         }
     }
 
@@ -275,7 +275,8 @@ public sealed class UsersTests(PlaywrightFixture fixture)
     {
         var input = page.Locator($"input[id^='role-'][value='{value}']");
         await Assertions.Expect(input).ToHaveCountAsync(1, new LocatorAssertionsToHaveCountOptions { Timeout = 15_000 });
-        var id = await input.GetAttributeAsync("id") ?? string.Empty;
+        var id = await input.GetAttributeAsync("id");
+        Assert.NotNull(id);
         return int.Parse(id["role-".Length..], CultureInfo.InvariantCulture);
     }
 

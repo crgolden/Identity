@@ -4,7 +4,7 @@
     ViewData["Title"] = "Identity Resource Claim Types";
 }
 
-<h1>Claim Types: @Model.Resource.Name</h1>
+<h1 id="page-heading">Claim Types: @Model.Resource.Name</h1>
 
 @await Html.PartialAsync("~/Pages/Admin/Shared/_DetailsClaimTypesTable.cshtml",
     (Model.Resource.UserClaims ?? []).Select(c => new ClaimTypeRow(c.Id, c.Type)))

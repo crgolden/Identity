@@ -4,7 +4,7 @@
     ViewData["Title"] = "User Claims";
 }
 
-<h1>@Model.AppUser.UserName — Claims</h1>
+<h1 id="page-heading">@Model.AppUser.UserName — Claims</h1>
 
 <ul class="nav nav-tabs mb-3">
     <li class="nav-item">
@@ -25,7 +25,7 @@
 </ul>
 
 <div class="table-responsive">
-    <table class="table table-bordered table-hover table-sm">
+    <table id="page-table" class="table table-bordered table-hover table-sm">
         <thead>
             <tr>
                 <th>Type</th>

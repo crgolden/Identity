@@ -44,7 +44,7 @@ public class ExternalLoginsModel : PageModel
 
         CurrentLogins = await _userManager.GetLoginsAsync(user);
         OtherLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync())
-            .Where(x => CurrentLogins.All(y => !string.Equals(x.Name, y.LoginProvider)))
+            .Where(x => CurrentLogins.All(y => !string.Equals(x.Name, y.LoginProvider, StringComparison.Ordinal)))
             .ToList();
 
         string? passwordHash = null;

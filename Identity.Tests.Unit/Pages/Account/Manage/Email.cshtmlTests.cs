@@ -158,7 +158,7 @@ public class EmailModelTests
         Assert.Equal(returnedEmail, capturedMessage.To);
         var capturedBody = capturedMessage.Body.ToString();
         var expectedEncodedUrl = HtmlEncoder.Default.Encode(fixedCallbackUrl);
-        Assert.Contains(expectedEncodedUrl, capturedBody);
+        Assert.Contains(expectedEncodedUrl, capturedBody, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -225,7 +225,8 @@ public class EmailModelTests
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
-        Assert.Contains("Unable to load user with ID 'missing-user-id'", notFound.Value?.ToString() ?? string.Empty);
+        var message = Assert.IsType<string>(notFound.Value);
+        Assert.Contains("Unable to load user with ID 'missing-user-id'", message, StringComparison.Ordinal);
     }
 
     private static IAzureClientFactory<ServiceBusClient> CreateSenderFactory()

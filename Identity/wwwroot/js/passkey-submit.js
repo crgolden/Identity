@@ -95,28 +95,13 @@ customElements.define('passkey-submit', class extends HTMLElement {
             const credential = await this.obtainCredential(useConditionalMediation, signal);
             let credentialJson = "";
             try {
-                credentialJson = JSON.stringify(credential);
-
-                // Chrome's toJSON() may encode binary fields (rawId, attestationObject, etc.)
-                // as standard base64 (+/) rather than base64url (-_). Normalize here.
-                credentialJson = credentialJson.replaceAll('+', '-').replaceAll('/', '_');
-
-                // Chrome's toJSON() omits clientExtensionResults when empty, but
-                // ASP.NET Core Identity requires it even as an empty object.
-                const parsed = JSON.parse(credentialJson);
-                if (!parsed.clientExtensionResults) {
-                    parsed.clientExtensionResults = {};
-                    credentialJson = JSON.stringify(parsed);
-                }
+                credentialJson = this.toBase64UrlAlphabet(JSON.stringify(credential));
+                credentialJson = this.withClientExtensionResults(credentialJson);
             } catch (error) {
                 if (error.name !== 'TypeError') {
                     throw error;
                 }
 
-                // Some password managers do not implement PublicKeyCredential.prototype.toJSON correctly,
-                // which is required for JSON.stringify() to work.
-                // e.g. https://www.1password.community/discussions/1password/typeerror-illegal-invocation-in-chrome-browser/47399
-                // Try and serialize the credential to JSON manually.
                 credentialJson = JSON.stringify({
                     authenticatorAttachment: credential.authenticatorAttachment,
                     clientExtensionResults: credential.getClientExtensionResults(),
@@ -138,13 +123,10 @@ customElements.define('passkey-submit', class extends HTMLElement {
             formData.append(`${this.attrs.name}.CredentialJson`, credentialJson);
         } catch (error) {
             if (error.name === 'AbortError') {
-                // The user explicitly canceled the operation - return without error.
                 return;
             }
             console.error(error);
             if (useConditionalMediation) {
-                // An error occurred during conditional mediation, which is not user-initiated.
-                // We log the error in the console but do not relay it to the user.
                 return;
             }
             const errorMessage = error.name === 'NotAllowedError'
@@ -156,22 +138,36 @@ customElements.define('passkey-submit', class extends HTMLElement {
         this.internals.form.submit();
     }
 
+    toBase64UrlAlphabet(value) {
+        return value.replaceAll('+', '-').replaceAll('/', '_');
+    }
+
+    stripBase64Padding(value) {
+        return value.split('=')[0];
+    }
+
+    withClientExtensionResults(credentialJson) {
+        const parsed = JSON.parse(credentialJson);
+        if (parsed.clientExtensionResults) {
+            return credentialJson;
+        }
+        parsed.clientExtensionResults = {};
+        return JSON.stringify(parsed);
+    }
+
     convertToBase64(o) {
         if (!o) {
             return undefined;
         }
 
-        // Normalize Array to Uint8Array
         if (Array.isArray(o)) {
             o = Uint8Array.from(o);
         }
 
-        // Normalize ArrayBuffer to Uint8Array
         if (o instanceof ArrayBuffer) {
             o = new Uint8Array(o);
         }
 
-        // Convert Uint8Array to base64
         if (o instanceof Uint8Array) {
             let str = '';
             for (let i = 0; i < o.byteLength; i++) {
@@ -184,15 +180,13 @@ customElements.define('passkey-submit', class extends HTMLElement {
             throw new TypeError('Could not convert to base64 string');
         }
 
-        // Convert base64 to base64url; split on '=' to strip padding without a regex
-        o = o.replaceAll('+', '-').replaceAll('/', '_').split('=')[0];
-
-        return o;
+        return this.stripBase64Padding(this.toBase64UrlAlphabet(o));
     }
 
     async tryAutofillPasskey() {
         if (browserSupportsPasskeys && this.attrs.operation === 'Request' && await PublicKeyCredential.isConditionalMediationAvailable?.()) {
-            await this.obtainAndSubmitCredential(/* useConditionalMediation */ true);
+            const useConditionalMediation = true;
+            await this.obtainAndSubmitCredential(useConditionalMediation);
         }
     }
 });

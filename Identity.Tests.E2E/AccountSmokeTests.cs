@@ -33,7 +33,7 @@ public sealed class AccountSmokeTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("#login-submit");
             await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            Assert.DoesNotContain("/Account/Login", page.Url);
+            Assert.DoesNotContain("/Account/Login", page.Url, StringComparison.Ordinal);
 
             await page.GotoAsync("/Account/Manage/DeletePersonalData");
             await page.FillAsync("input[name='Input.Password']", password);

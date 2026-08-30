@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
 [Collection(UnitCollection.Name)]
@@ -24,7 +25,7 @@ public class RegisterConfirmationModelTests
         var keyNormalizer = new Mock<ILookupNormalizer>(MockBehavior.Strict).Object;
         var errors = new IdentityErrorDescriber();
         var services = new Mock<IServiceProvider>(MockBehavior.Loose).Object;
-        var logger = new Mock<ILogger<UserManager<IdentityUser<Guid>>>>().Object;
+        var logger = NullLogger<UserManager<IdentityUser<Guid>>>.Instance;
         var userManager = new UserManager<IdentityUser<Guid>>(userStore, options, passwordHasher, userValidators, passwordValidators, keyNormalizer, errors, services, logger);
 
         // Act

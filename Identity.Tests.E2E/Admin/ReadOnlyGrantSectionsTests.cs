@@ -22,17 +22,17 @@ public sealed class ReadOnlyGrantSectionsTests(PlaywrightFixture fixture)
             await LoginAsync(page, adminEmail, adminPassword);
             await page.GotoAsync("/Admin/PersistedGrants");
 
-            var row = page.Locator("tr", new PageLocatorOptions { HasText = clientId });
-            await row.Locator("[id^='details-']").First.ClickAsync();
+            var grantKey = await fixture.GetPersistedGrantKeyAsync(clientId);
+            await page.ClickAsync($"[id='details-{grantKey}']");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/PersistedGrants/Details"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            await Assertions.Expect(page.GetByText(clientId)).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#grant-client-id")).ToHaveTextAsync(clientId);
 
             await page.ClickAsync("#btn-delete");
-            await Assertions.Expect(page.Locator("h1")).ToContainTextAsync("Delete");
+            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("Delete");
             await page.ClickAsync("#delete-submit");
             await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("Delete"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
             await page.GotoAsync("/Admin/PersistedGrants");
-            await Assertions.Expect(page.GetByText(clientId)).Not.ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#page-table")).Not.ToContainTextAsync(clientId);
         }
     }
 
@@ -48,7 +48,7 @@ public sealed class ReadOnlyGrantSectionsTests(PlaywrightFixture fixture)
             await LoginAsync(page, email, password);
             await page.GotoAsync(BuildAuthorizeUrl(clientId, RedirectUri, "e2e-grant-state"));
 
-            if (page.Url.Contains("localhost:9999"))
+            if (page.Url.Contains("localhost:9999", StringComparison.Ordinal))
             {
                 return clientId;
             }
@@ -61,7 +61,7 @@ public sealed class ReadOnlyGrantSectionsTests(PlaywrightFixture fixture)
 
             await page.RunAndWaitForRequestAsync(
                 async () => await page.ClickAsync("#consent-allow"),
-                r => r.Url.Contains("localhost:9999"),
+                r => r.Url.Contains("localhost:9999", StringComparison.Ordinal),
                 new PageRunAndWaitForRequestOptions { Timeout = 15_000 });
         }
 

@@ -21,6 +21,7 @@ public sealed class PlaywrightFixture : IAsyncLifetime
     private readonly IdentityWebApplicationFactory? _factory;
     private IPlaywright? _playwright;
     private IBrowser? _browser;
+    private string? _baseAddress;
     private bool _started;
 
     public PlaywrightFixture()
@@ -29,8 +30,6 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         {
             _factory = new IdentityWebApplicationFactory();
         }
-
-        BaseAddress = Empty;
     }
 
     public static bool IsSmoke => SmokeBaseUrl is not null;
@@ -41,7 +40,8 @@ public sealed class PlaywrightFixture : IAsyncLifetime
     public EmailCaptureSender Email =>
         _factory?.EmailCapture ?? throw new InvalidOperationException("Email capture is not available in smoke mode.");
 
-    public string BaseAddress { get; private set; }
+    public string BaseAddress =>
+        _baseAddress ?? throw new InvalidOperationException("BaseAddress is not available until InitializeAsync has run.");
 
     public async ValueTask InitializeAsync()
     {
@@ -50,14 +50,14 @@ public sealed class PlaywrightFixture : IAsyncLifetime
             return;
         }
 
-        if (IsSmoke)
+        if (SmokeBaseUrl is { } smokeBaseUrl)
         {
-            BaseAddress = SmokeBaseUrl!;
+            _baseAddress = smokeBaseUrl;
         }
         else
         {
-            _factory!.CreateClient();
-            BaseAddress = _factory.ServerAddress;
+            Factory.CreateClient();
+            _baseAddress = Factory.ServerAddress;
         }
 
         var exitCode = Program.Main(["install", "chromium"]);
@@ -91,7 +91,7 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         const string password = "Test@123456!";
         var email = $"e2e-{Guid.NewGuid()}@test.invalid";
 
-        await using var scope = _factory!.Services.CreateAsyncScope();
+        await using var scope = Factory.Services.CreateAsyncScope();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser<Guid>>>();
         var user = new IdentityUser<Guid>
         {
@@ -114,7 +114,7 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         const string password = "Test@Admin123!";
         var email = $"e2e-admin-{Guid.NewGuid()}@test.invalid";
 
-        await using var scope = _factory!.Services.CreateAsyncScope();
+        await using var scope = Factory.Services.CreateAsyncScope();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser<Guid>>>();
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
 
@@ -153,7 +153,7 @@ public sealed class PlaywrightFixture : IAsyncLifetime
 
     public async Task<int> SeedClientAsync(string clientId = "e2e-admin-client")
     {
-        await using var scope = _factory!.Services.CreateAsyncScope();
+        await using var scope = Factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
         var existing = await db.Clients.FirstOrDefaultAsync(c => c.ClientId == clientId);
@@ -177,7 +177,7 @@ public sealed class PlaywrightFixture : IAsyncLifetime
 
     public async Task<int> SeedApiResourceAsync(string name = "e2e-api-resource")
     {
-        await using var scope = _factory!.Services.CreateAsyncScope();
+        await using var scope = Factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
         var existing = await db.ApiResources.FirstOrDefaultAsync(r => r.Name == name);
@@ -198,7 +198,7 @@ public sealed class PlaywrightFixture : IAsyncLifetime
 
     public async Task<int> SeedApiScopeAsync(string name = "e2e-api-scope")
     {
-        await using var scope = _factory!.Services.CreateAsyncScope();
+        await using var scope = Factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
         var existing = await db.ApiScopes.FirstOrDefaultAsync(s => s.Name == name);
@@ -219,7 +219,7 @@ public sealed class PlaywrightFixture : IAsyncLifetime
 
     public async Task<int> SeedIdentityResourceAsync(string name = "e2e-identity-resource")
     {
-        await using var scope = _factory!.Services.CreateAsyncScope();
+        await using var scope = Factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
         var existing = await db.IdentityResources.FirstOrDefaultAsync(r => r.Name == name);
@@ -238,6 +238,24 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         return identityResource.Id;
     }
 
+    public async Task<Guid> GetRoleIdAsync(string roleName)
+    {
+        await using var scope = Factory.Services.CreateAsyncScope();
+        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
+        var role = await roleManager.FindByNameAsync(roleName)
+            ?? throw new InvalidOperationException($"Role '{roleName}' not found.");
+        return role.Id;
+    }
+
+    public async Task<string> GetPersistedGrantKeyAsync(string clientId)
+    {
+        await using var scope = Factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var grant = await db.PersistedGrants.FirstOrDefaultAsync(g => g.ClientId == clientId)
+            ?? throw new InvalidOperationException($"No persisted grant found for client '{clientId}'.");
+        return grant.Key;
+    }
+
     public async Task ConfirmUserEmailAsync(string email)
     {
         if (IsSmoke)
@@ -250,7 +268,7 @@ public sealed class PlaywrightFixture : IAsyncLifetime
             return;
         }
 
-        await using var scope = _factory!.Services.CreateAsyncScope();
+        await using var scope = Factory.Services.CreateAsyncScope();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser<Guid>>>();
         var user = await userManager.FindByEmailAsync(email)
             ?? throw new InvalidOperationException($"User '{email}' not found.");
@@ -276,7 +294,7 @@ public sealed class PlaywrightFixture : IAsyncLifetime
             return (Guid)scalar;
         }
 
-        await using var scope = _factory!.Services.CreateAsyncScope();
+        await using var scope = Factory.Services.CreateAsyncScope();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser<Guid>>>();
         var user = await userManager.FindByEmailAsync(email)
             ?? throw new InvalidOperationException($"User '{email}' not found.");
@@ -295,7 +313,7 @@ public sealed class PlaywrightFixture : IAsyncLifetime
             return;
         }
 
-        await using var scope = _factory!.Services.CreateAsyncScope();
+        await using var scope = Factory.Services.CreateAsyncScope();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser<Guid>>>();
         var user = await userManager.FindByEmailAsync(email);
         if (user is not null)
@@ -385,9 +403,9 @@ public sealed class PlaywrightFixture : IAsyncLifetime
 
     private async Task CleanupDatabaseAsync()
     {
-        await using var scope = _factory!.Services.CreateAsyncScope();
+        await using var scope = Factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        if (!db.Database.GetDbConnection().Database.EndsWith("Test"))
+        if (!db.Database.GetDbConnection().Database.EndsWith("Test", StringComparison.Ordinal))
         {
             return;
         }

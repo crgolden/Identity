@@ -37,7 +37,7 @@ public sealed class PasswordResetTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Password']", newPassword);
             await page.ClickAsync("#login-submit");
             await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            Assert.DoesNotContain("/Account/Login", page.Url);
+            Assert.DoesNotContain("/Account/Login", page.Url, StringComparison.Ordinal);
         }
     }
 

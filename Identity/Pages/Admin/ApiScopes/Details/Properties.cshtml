@@ -4,7 +4,7 @@
     ViewData["Title"] = "API Scope Properties";
 }
 
-<h1>Properties: @Model.Scope.Name</h1>
+<h1 id="page-heading">Properties: @Model.Scope.Name</h1>
 
 @await Html.PartialAsync("~/Pages/Admin/Shared/_DetailsPropertiesTable.cshtml",
     (Model.Scope.Properties ?? []).Select(p => new PropertyRow(p.Id, p.Key, p.Value)))

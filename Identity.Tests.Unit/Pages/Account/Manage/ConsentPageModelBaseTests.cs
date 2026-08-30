@@ -49,7 +49,7 @@ public class ConsentPageModelBaseTests
         var vm = TestableBase.CallCreateScopeViewModel(parsed, apiScope, true);
 
         // Assert
-        Assert.EndsWith(":tenant1", vm.DisplayName);
+        Assert.EndsWith(":tenant1", vm.DisplayName, StringComparison.Ordinal);
         Assert.True(vm.Checked);
     }
 

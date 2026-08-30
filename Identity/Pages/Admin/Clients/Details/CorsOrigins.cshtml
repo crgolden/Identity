@@ -6,7 +6,7 @@
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h1>Client CORS Origins</h1>
+    <h1 id="page-heading">Client CORS Origins</h1>
     <div>
         <a id="btn-edit" asp-page="/Admin/Clients/Edit/CorsOrigins" asp-route-id="@Model.Client.Id" class="btn btn-primary">Edit</a>
         <a id="btn-back" asp-page="./Index" asp-route-id="@Model.Client.Id" class="btn btn-outline-secondary ms-1">Back</a>
@@ -14,7 +14,7 @@
 </div>
 
 <div class="table-responsive">
-    <table class="table table-bordered table-hover table-sm">
+    <table id="page-table" class="table table-bordered table-hover table-sm">
         <thead>
             <tr><th>Origin</th></tr>
         </thead>

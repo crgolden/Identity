@@ -15,7 +15,7 @@ public static class HttpContextExtensions
             activity.SetStatus(ActivityStatusCode.Error, exception.Message);
             activity.AddEvent(new ActivityEvent("exception", tags: new ActivityTagsCollection
             {
-                { "exception.type", exception.GetType().FullName },
+                { Telemetry.Metrics.ExceptionTypeTagName, exception.GetType().FullName },
                 { "exception.message", exception.Message },
             }));
         }

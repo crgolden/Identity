@@ -1618,6 +1618,9 @@ The fleet-wide rule (why positional/class selectors are banned, how loop indices
 
 | Element | `id` |
 |---|---|
+| Page `<h1>` | `page-heading` — carried by every page under `Identity/Pages/Admin/`, so no test reaches for `Locator("h1")` |
+| The page's primary data table | `page-table` — one per page, including the two `Pages/Admin/Shared/_Details*Table.cshtml` partials |
+| The page's primary list (`Users/Details/Roles`) | `page-list` |
 | Nav link to Admin section | `admin-nav` |
 | "New" / "Create" link on Index | `btn-create` |
 | Submit button on Create | `create-submit` |
@@ -1632,6 +1635,10 @@ The fleet-wide rule (why positional/class selectors are banned, how loop indices
 | Add row button (collection Edit) | `btn-add-row` (shared across all collections on a page — there is only ever one add button) |
 | Collection row field (collection Edit) | `{field}-{index}` (e.g. `scope-0`, `claim-type-0`, `claim-value-0`, `secret-description-0`) — field name is collection-specific, not generic |
 | Remove row button (collection Edit) | `{field}-remove-{index}` (e.g. `scope-remove-0`, `claim-remove-0`) — **not** a generic `btn-remove-{index}`; each collection's remove button is prefixed with that collection's own field id |
+
+`page-heading`, `page-table` and `page-list` are page-scoped generic ids in the same family as `btn-edit` and `save-submit`: exactly one per page, so a test that has already navigated to a page names the element without naming its markup. A value that appears *inside* one of them is asserted with `ToContainTextAsync`/`ToHaveTextAsync` on the container — selection by id, text as the assertion — never with `GetByText`, which selects by copy. Where a single field is the subject rather than a collection, the field carries its own id (`user-phone-number`, `role-name`, `grant-client-id`, `idp-display-name`, `sp-display-name`) and the assertion is `ToHaveTextAsync`, which is stricter than a substring match over a whole table.
+
+Reaching one specific row uses the **entity key**, resolved from the database first: `PlaywrightFixture.GetUserIdAsync`, `GetRoleIdAsync` and `GetPersistedGrantKeyAsync` exist for exactly that, and replace the `Locator("tr", new PageLocatorOptions { HasText = … }).Locator("[id^='details-']").First` shape. One case cannot use a `#id` selector: `PersistedGrant.Key` is Duende's Base64 SHA-256 handle and can contain `+`, `/` and `=`, which are not legal in a CSS `#` id selector — `ReadOnlyGrantSectionsTests` therefore selects `[id='details-{key}']`, the attribute form of the same id.
 
 Collection row ids are index-based (`{index}` = the row's position in the bound list, 0-based) and come from a single server-rendered `@for` loop — clicking "Add"/"Remove" posts to an `OnPostAddRowAsync`/`OnPostRemoveRowAsync` page handler that mutates the bound list and returns `Page()`, so the same loop renders both pre-existing and freshly-added rows with no separate client-side templating step. There is no JavaScript involved in this pattern (`Identity/wwwroot/js/admin-collection.js`, which previously did this via a `<template>` clone, was removed — a CI run traced 57 failing Add/Remove/Update tests to that file intermittently being served with an empty body under load, which a server-only round trip can't fail in the same way). Every Add/Remove button carries an explicit `asp-route-id` rather than relying on the browser reusing the current URL, since after a round trip that URL still carries the previous `?handler=` query value.
 
@@ -1669,6 +1676,7 @@ A handful of sections deliberately stay at an Index-loads-only assertion because
 
 Current test infrastructure:
 - `PlaywrightFixture.CreateAdminUserAsync()` — creates a confirmed user and assigns the `Admin` role
+- `PlaywrightFixture.GetUserIdAsync(email)`, `GetRoleIdAsync(roleName)`, `GetPersistedGrantKeyAsync(clientId)` — entity-key lookups, so a test that means *this* row clicks `#details-{key}` instead of matching row text
 - `PlaywrightFixture.SeedClientAsync(clientId)`, `SeedApiResourceAsync(name)`, `SeedApiScopeAsync(name)`, `SeedIdentityResourceAsync(name)` — find-or-create seed helpers via `IConfigurationDbContext`. `IdentityProvider`/`SamlServiceProvider` have no seed method since their scenarios are Create-driven (the UI Create flow itself produces the row).
 - No per-test cleanup: none of the `Admin/*.cs` test classes have an `IAsyncLifetime`/`DisposeAsync`. Seeded config entities and test users are removed only by `PlaywrightFixture.CleanupDatabaseAsync()` at the end of the whole suite, and only when running in CI (`CI && _started`) — local runs accumulate test data across runs. Every test that mutates shared, by-name-looked-up state (the `Admin` role, the `Admin` user) creates its own uniquely `Guid`-suffixed row instead.
 
@@ -1699,7 +1707,12 @@ CI also publishes the same TRX outcomes to Azure DevOps and Azure Monitor:
 | Azure DevOps | `https://dev.azure.com/crgolden/`, project `Identity` — published inline by the CI workflow |
 | Azure Monitor | Shared Application Insights `crgolden` — `PlaywrightTestRun`/`PlaywrightTestCase` customEvents posted inline by the CI workflow |
 
-CI uses the `AZURE_DEVOPS_EXT_PAT` secret and the `PLAYWRIGHT_APPINSIGHTS_CONNECTION_STRING` variable (set both in the repo's Actions settings). The publish + telemetry logic is inline in the "Publish Playwright results" steps of `.github/workflows/main_crgolden-identity.yml` — there are no standalone scripts.
+CI uses the `AZURE_DEVOPS_EXT_PAT` secret (set it in the repo's Actions settings). The publish logic is inline in the "Report E2E results" and "Report smoke results" steps of `.github/workflows/main_crgolden-identity.yml` — there are no standalone scripts.
+
+Two workflow decisions that are not obvious from reading the YAML:
+
+- **The ADO publish calls `Invoke-RestMethod` against explicit URLs rather than `az devops invoke`.** The CLI extension cannot disambiguate duplicate resource names in the ADO manifest ([azure-devops-cli-extension#1012](https://github.com/Azure/azure-devops-cli-extension/issues/1012)), so the runs/results/attachments endpoints are addressed directly.
+- **`actions/checkout` sets `fetch-depth: 0` for SonarCloud, not for the build.** A shallow clone costs Sonar the history it uses to attribute issues to changesets and to compute new-code metrics.
 
 Provision or repair the workbook (from the Tools workspace):
 
@@ -1750,9 +1763,15 @@ $env:SONAR_TOKEN = "<token>"
   "-Dsonar.sources=Identity" `
   "-Dsonar.tests=Identity.Tests.Unit,Identity.Tests.E2E" `
   "-Dsonar.exclusions=**/bin/**,**/obj/**" `
+  "-Dsonar.coverage.exclusions=**/Program.cs" `
   "-Dsonar.cs.opencover.reportsPaths=coverage.opencover.xml" `
   "-Dsonar.cs.vscoveragexml.reportsPaths=coverage-e2e.xml"
 ```
+
+The exclusion arguments must stay byte-for-byte identical to the ones
+`.github/workflows/main_crgolden-identity.yml` passes to `dotnet-sonarscanner begin`. They are the same
+policy written twice, and this copy had already lost `sonar.coverage.exclusions` while the section above
+claimed `Program.cs` was excluded by it.
 
 Required coverage files: `coverage.opencover.xml` (unit, OpenCover), `coverage-e2e.xml` (E2E, VS Coverage).
 

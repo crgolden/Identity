@@ -225,6 +225,25 @@ Login:
 
 Both endpoints validate antiforgery tokens. In development, origin validation is relaxed to `https://localhost:7261`.
 
+#### Four browser quirks `wwwroot/js/passkey-submit.js` exists to absorb
+
+The `<passkey-submit>` custom element does more than call `navigator.credentials`; each of the following is a
+workaround for a real browser or password-manager defect, and none of them is obvious from the code alone.
+
+- **Chrome's `PublicKeyCredential.toJSON()` emits standard base64 (`+`, `/`) for binary fields** — `rawId`,
+  `attestationObject` and friends — where the WebAuthn JSON mapping specifies base64url (`-`, `_`). The
+  serialized credential is therefore re-alphabetized before it is posted, or ASP.NET Core Identity rejects it.
+- **Chrome's `toJSON()` omits `clientExtensionResults` when the object is empty**, while ASP.NET Core Identity
+  requires the property to be present. The element re-adds it as `{}`.
+- **Some password managers do not implement `PublicKeyCredential.prototype.toJSON` correctly**, so
+  `JSON.stringify(credential)` throws a `TypeError`
+  ([1Password report](https://www.1password.community/discussions/1password/typeerror-illegal-invocation-in-chrome-browser/47399)).
+  Only `TypeError` is caught; the element then builds the JSON field by field. Any other error still propagates.
+- **A failure during conditional mediation is not user-initiated**, so it is logged to the console and swallowed
+  rather than surfaced as a form error — the user never asked for that prompt and has nothing to act on. A
+  user-initiated attempt reports its error through the form's `Error` field. `AbortError` is a deliberate
+  cancellation on either path and returns silently.
+
 ### TOTP two-factor authentication
 
 - Users enable TOTP via `/Account/Manage/EnableAuthenticator`, which displays a QR code (rendered client-side via `davidshimjs-qrcodejs`).
@@ -280,7 +299,7 @@ token it already holds at `/bff/callback` and copies a short allowlist of claims
 
 Reach for a dedicated identity resource only when a claim genuinely must ride the ID token — and even
 then, **never hang it off `profile`**, which every client requests, so a claim placed there is handed to
-all of them. That was the `churches.mod` defect (`AGENTS/PARKING_LOT.md` §8b-i), **fixed 2026-08-22**:
+all of them. That was the `churches.mod` defect, **fixed 2026-08-22**:
 the Churches BFF now reads it from the access token, and the `profile` attachment was deleted from
 LocalDB, production, and `Tools/Identity/IdentityResources.sql`. `profile` carries only its fourteen
 standard OIDC claims again, and `churches.mod` survives as an `ApiScopeClaim` on the `directory` scope

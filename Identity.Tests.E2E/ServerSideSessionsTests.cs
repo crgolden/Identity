@@ -24,8 +24,8 @@ public sealed class ServerSideSessionsTests(PlaywrightFixture fixture)
 
             await page.GotoAsync("/Account/Manage/ServerSideSessions");
             await page.WaitForURLAsync("**/Account/Manage/ServerSideSessions**");
-            Assert.DoesNotContain("/Account/Login", page.Url);
-            Assert.DoesNotContain("/Error", page.Url);
+            Assert.DoesNotContain("/Account/Login", page.Url, StringComparison.Ordinal);
+            Assert.DoesNotContain("/Error", page.Url, StringComparison.Ordinal);
         }
     }
 }

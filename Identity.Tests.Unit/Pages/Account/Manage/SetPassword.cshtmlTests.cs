@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
 
@@ -29,7 +30,7 @@ public class SetPasswordModelTests
         var keyNormalizer = new UpperInvariantLookupNormalizer();
         var identityErrorDescriber = new IdentityErrorDescriber();
         var services = new Mock<IServiceProvider>(MockBehavior.Loose).Object;
-        var userManagerLogger = new Mock<ILogger<UserManager<IdentityUser<Guid>>>>().Object;
+        var userManagerLogger = NullLogger<UserManager<IdentityUser<Guid>>>.Instance;
 
         var userManager = new UserManager<IdentityUser<Guid>>(
             userStoreMock.Object,
@@ -44,7 +45,7 @@ public class SetPasswordModelTests
 
         var httpContextAccessor = new Mock<IHttpContextAccessor>(MockBehavior.Strict).Object;
         var claimsFactory = new Mock<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>().Object;
-        var signInLogger = new Mock<ILogger<SignInManager<IdentityUser<Guid>>>>().Object;
+        var signInLogger = NullLogger<SignInManager<IdentityUser<Guid>>>.Instance;
         var schemeProvider = new Mock<IAuthenticationSchemeProvider>(MockBehavior.Strict).Object;
         var userConfirmation = new Mock<IUserConfirmation<IdentityUser<Guid>>>().Object;
 
@@ -145,50 +146,35 @@ public class SetPasswordModelTests
         // Assert
         var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
         var value = Assert.IsType<string>(notFoundResult.Value);
-        Assert.Contains(expectedId, value);
-        Assert.Contains("Unable to load user with ID", value);
+        Assert.Contains(expectedId, value, StringComparison.Ordinal);
+        Assert.Contains("Unable to load user with ID", value, StringComparison.Ordinal);
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task OnGetAsync_ExistingUser_BehavesBasedOnHasPassword(bool hasPassword)
+    [Fact]
+    public async Task OnGetAsync_UserAlreadyHasPassword_RedirectsToChangePassword()
     {
         // Arrange
-        var mockUserManager = MockHelpers.MockUserManager();
-
-        var mockSignInManager = MockHelpers.MockSignInManager(mockUserManager.Object);
-
-        var user = new IdentityUser<Guid>();
-        mockUserManager
-            .Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
-            .ReturnsAsync(user);
-        mockUserManager
-            .Setup(um => um.HasPasswordAsync(user))
-            .ReturnsAsync(hasPassword);
-
-        var model = new SetPasswordModel(mockUserManager.Object, mockSignInManager.Object);
-        model.PageContext = new PageContext
-        {
-            HttpContext = new DefaultHttpContext
-            {
-                User = new ClaimsPrincipal(new ClaimsIdentity())
-            }
-        };
+        var model = BuildOnGetModel(userHasPassword: true);
 
         // Act
         var result = await model.OnGetAsync();
 
         // Assert
-        if (hasPassword)
-        {
-            var redirect = Assert.IsType<RedirectToPageResult>(result);
-            Assert.Equal("./ChangePassword", redirect.PageName);
-        }
-        else
-        {
-            Assert.IsType<PageResult>(result);
-        }
+        var redirect = Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal("./ChangePassword", redirect.PageName);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_UserHasNoPassword_ReturnsPage()
+    {
+        // Arrange
+        var model = BuildOnGetModel(userHasPassword: false);
+
+        // Act
+        var result = await model.OnGetAsync();
+
+        // Assert
+        Assert.IsType<PageResult>(result);
     }
 
     [Fact]
@@ -238,5 +224,30 @@ public class SetPasswordModelTests
         // Assert
         Assert.IsType<RedirectToPageResult>(result);
         signInManagerMock.Verify(s => s.RefreshSignInAsync(user), Times.Once);
+    }
+
+    private static SetPasswordModel BuildOnGetModel(bool userHasPassword)
+    {
+        var mockUserManager = MockHelpers.MockUserManager();
+        var mockSignInManager = MockHelpers.MockSignInManager(mockUserManager.Object);
+
+        var signedInUser = new IdentityUser<Guid>();
+        mockUserManager
+            .Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
+            .ReturnsAsync(signedInUser);
+        mockUserManager
+            .Setup(um => um.HasPasswordAsync(signedInUser))
+            .ReturnsAsync(userHasPassword);
+
+        return new SetPasswordModel(mockUserManager.Object, mockSignInManager.Object)
+        {
+            PageContext = new PageContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal(new ClaimsIdentity())
+                }
+            }
+        };
     }
 }

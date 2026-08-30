@@ -16,14 +16,14 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ManageNavPagesTests
 {
-    public static TheoryData<object?, bool, string?, string?> DeletePersonalDataCases() => new()
+    public static TheoryData<object?, string?, string?> DeletePersonalDataCases() => new()
     {
-        { "DeletePersonalData", true, "/some/path/Irrelevant.cshtml", "active" },
-        { "deletepersonaldata", true, "/some/path/Irrelevant.cshtml", "active" },
-        { "SomethingElse", true, "/Areas/Identity/Pages/Account/Manage/DeletePersonalData.cshtml", null },
-        { null, false, "/Areas/Identity/Pages/Account/Manage/DeletePersonalData.cshtml", "active" },
-        { 123, true, "/Areas/Identity/Pages/Account/Manage/DeletePersonalData.cshtml", "active" },
-        { null, false, null, null },
+        { "DeletePersonalData", "/some/path/Irrelevant.cshtml", "active" },
+        { "deletepersonaldata", "/some/path/Irrelevant.cshtml", "active" },
+        { "SomethingElse", "/Areas/Identity/Pages/Account/Manage/DeletePersonalData.cshtml", null },
+        { null, "/Areas/Identity/Pages/Account/Manage/DeletePersonalData.cshtml", "active" },
+        { 123, "/Areas/Identity/Pages/Account/Manage/DeletePersonalData.cshtml", "active" },
+        { null, null, null },
     };
 
     public static TheoryData<object?, string?, string, string?> PageNavTestData()
@@ -178,11 +178,10 @@ public class ManageNavPagesTests
         var actionContext = new ActionContext(httpContext, new RouteData(), actionDescriptor);
 
         var metadataProvider = new EmptyModelMetadataProvider();
-        var viewData = new ViewDataDictionary(metadataProvider, new ModelStateDictionary());
-        if (activePage is not null)
+        var viewData = new ViewDataDictionary(metadataProvider, new ModelStateDictionary())
         {
-            viewData["ActivePage"] = activePage;
-        }
+            ["ActivePage"] = activePage
+        };
 
         var mockView = new Mock<IView>(MockBehavior.Strict);
         var tempData = new TempDataDictionary(httpContext, Mock.Of<ITempDataProvider>());
@@ -223,32 +222,23 @@ public class ManageNavPagesTests
 #pragma warning disable xUnit1045
     [Theory]
     [MemberData(nameof(DeletePersonalDataCases))]
-    public void DeletePersonalDataNavClass_VariousViewContexts_ReturnsExpected(object? activePageValue, bool hasActivePage, string? displayName, string? expected)
+    public void DeletePersonalDataNavClass_VariousViewContexts_ReturnsExpected(object? activePageValue, string? displayName, string? expected)
     {
         // Arrange
         var viewContext = new ViewContext
         {
             ActionDescriptor = new ActionDescriptor { DisplayName = displayName },
             ViewData = new ViewDataDictionary(new EmptyModelMetadataProvider(), new ModelStateDictionary())
+            {
+                ["ActivePage"] = activePageValue
+            }
         };
-
-        if (hasActivePage)
-        {
-            viewContext.ViewData["ActivePage"] = activePageValue;
-        }
 
         // Act
         var result = ManageNavPages.DeletePersonalDataNavClass(viewContext);
 
         // Assert
-        if (expected is null)
-        {
-            Assert.Null(result);
-        }
-        else
-        {
-            Assert.Equal(expected, result);
-        }
+        Assert.Equal(expected, result);
     }
 #pragma warning restore xUnit1045
 
@@ -315,14 +305,11 @@ public class ManageNavPagesTests
         Assert.NotEmpty(actual);
         Assert.Equal(expected, actual);
         Assert.Equal(expectedLength, actual.Length);
-        Assert.DoesNotContain(" ", actual);
-        Assert.DoesNotContain("\t", actual);
-        Assert.DoesNotContain("\n", actual);
-        Assert.DoesNotContain("\r", actual);
-        foreach (var c in actual)
-        {
-            Assert.False(char.IsControl(c), $"Unexpected control character U+{(int)c:X4} in PersonalData value.");
-        }
+        Assert.DoesNotContain(" ", actual, StringComparison.Ordinal);
+        Assert.DoesNotContain("\t", actual, StringComparison.Ordinal);
+        Assert.DoesNotContain("\n", actual, StringComparison.Ordinal);
+        Assert.DoesNotContain("\r", actual, StringComparison.Ordinal);
+        Assert.DoesNotContain(actual.ToCharArray(), char.IsControl);
     }
 
     [Fact]
@@ -347,11 +334,10 @@ public class ManageNavPagesTests
     public void EmailNavClass_VariousActivePageAndDisplayName_ReturnsExpected(object? activePageValue, string? displayName, string? expected)
     {
         // Arrange
-        var viewData = new ViewDataDictionary(new EmptyModelMetadataProvider(), new ModelStateDictionary());
-        if (activePageValue != null)
+        var viewData = new ViewDataDictionary(new EmptyModelMetadataProvider(), new ModelStateDictionary())
         {
-            viewData["ActivePage"] = activePageValue;
-        }
+            ["ActivePage"] = activePageValue
+        };
 
         var actionDescriptor = new ActionDescriptor
         {
@@ -368,14 +354,7 @@ public class ManageNavPagesTests
         var result = ManageNavPages.EmailNavClass(viewContext);
 
         // Assert
-        if (expected is null)
-        {
-            Assert.Null(result);
-        }
-        else
-        {
-            Assert.Equal(expected, result);
-        }
+        Assert.Equal(expected, result);
     }
 #pragma warning restore xUnit1045
 
@@ -395,14 +374,7 @@ public class ManageNavPagesTests
         var result = ManageNavPages.ExternalLoginsNavClass(viewContext);
 
         // Assert
-        if (expected is null)
-        {
-            Assert.Null(result);
-        }
-        else
-        {
-            Assert.Equal(expected, result);
-        }
+        Assert.Equal(expected, result);
     }
 
     [Fact]
@@ -471,11 +443,10 @@ public class ManageNavPagesTests
         var routeData = new RouteData();
         var actionContext = new ActionContext(httpContext, routeData, actionDescriptor);
 
-        var viewData = new ViewDataDictionary(new EmptyModelMetadataProvider(), new ModelStateDictionary());
-        if (activePage != null)
+        var viewData = new ViewDataDictionary(new EmptyModelMetadataProvider(), new ModelStateDictionary())
         {
-            viewData["ActivePage"] = activePage;
-        }
+            ["ActivePage"] = activePage
+        };
 
         var tempData = new TempDataDictionary(httpContext, Mock.Of<ITempDataProvider>());
         var viewMock = new Mock<IView>(MockBehavior.Strict);
@@ -664,25 +635,20 @@ public class ManageNavPagesTests
         Assert.Equal("Passkeys", value);
     }
 
-    [Theory]
-    [InlineData(1)]
-    [InlineData(3)]
-    [InlineData(10)]
-    public void Passkeys_Property_IsStableAcrossAccesses(int readCount)
+    [Fact]
+    public void Passkeys_Property_IsStableAcrossAccesses()
     {
         // Arrange
 
         // Act
         var first = ManageNavPages.Passkeys;
-        for (var i = 0; i < readCount; i++)
-        {
-            var current = ManageNavPages.Passkeys;
+        var second = ManageNavPages.Passkeys;
+        var third = ManageNavPages.Passkeys;
 
-            // Assert
-            Assert.NotNull(current);
-            Assert.Equal("Passkeys", current);
-            Assert.Same(first, current);
-        }
+        // Assert
+        Assert.Equal("Passkeys", first);
+        Assert.Same(first, second);
+        Assert.Same(first, third);
     }
 
     [Theory]
@@ -696,12 +662,10 @@ public class ManageNavPagesTests
         // Arrange
         var metadataProvider = new EmptyModelMetadataProvider();
         var modelState = new ModelStateDictionary();
-        var viewData = new ViewDataDictionary(metadataProvider, modelState);
-
-        if (activePage != null)
+        var viewData = new ViewDataDictionary(metadataProvider, modelState)
         {
-            viewData["ActivePage"] = activePage;
-        }
+            ["ActivePage"] = activePage
+        };
 
         var actionDescriptor = new ActionDescriptor
         {
@@ -718,14 +682,7 @@ public class ManageNavPagesTests
         var result = ManageNavPages.DownloadPersonalDataNavClass(viewContext);
 
         // Assert
-        if (expected == null)
-        {
-            Assert.Null(result);
-        }
-        else
-        {
-            Assert.Equal(expected, result);
-        }
+        Assert.Equal(expected, result);
     }
 
     [Theory]

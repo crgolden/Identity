@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
 [Collection(UnitCollection.Name)]
@@ -34,7 +35,7 @@ public class GenerateRecoveryCodesModelTests
             keyNormalizerMock.Object,
             new IdentityErrorDescriber(),
             services.Object,
-            new Mock<ILogger<UserManager<IdentityUser<Guid>>>>().Object);
+            NullLogger<UserManager<IdentityUser<Guid>>>.Instance);
 
         // Act
         var model = new GenerateRecoveryCodesModel(userManagerMock.Object);

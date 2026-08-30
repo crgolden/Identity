@@ -22,7 +22,7 @@ public sealed class LoginTests(PlaywrightFixture fixture)
             await page.ClickAsync("#login-submit");
 
             await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
-            Assert.DoesNotContain("/Account/Login", page.Url);
+            Assert.DoesNotContain("/Account/Login", page.Url, StringComparison.Ordinal);
         }
     }
 
@@ -61,7 +61,7 @@ public sealed class LoginTests(PlaywrightFixture fixture)
                 await page.FillAsync("input[name='Input.Password']", "BadPassword!99");
 
                 var postResponse = page.WaitForResponseAsync(
-                    res => res.Request.Method == "POST" && res.Url.Contains("/Account/Login"));
+                    res => res.Request.Method == "POST" && res.Url.Contains("/Account/Login", StringComparison.Ordinal));
                 await page.ClickAsync("#login-submit");
                 await postResponse;
 
@@ -75,7 +75,7 @@ public sealed class LoginTests(PlaywrightFixture fixture)
                 }
             }
 
-            Assert.Contains("/Account/Lockout", page.Url);
+            Assert.Contains("/Account/Lockout", page.Url, StringComparison.Ordinal);
         }
     }
 }

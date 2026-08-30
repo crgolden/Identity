@@ -48,7 +48,7 @@ public class LoginWithRecoveryCodeModel : PageModel
             throw new InvalidOperationException("Unable to load two-factor authentication user.");
         }
 
-        var recoveryCode = Input.RecoveryCode.Replace(" ", Empty);
+        var recoveryCode = Input.RecoveryCode.Replace(" ", Empty, StringComparison.Ordinal);
 
         var result = await _signInManager.TwoFactorRecoveryCodeSignInAsync(recoveryCode);
 
