@@ -111,7 +111,6 @@ try
                 .SetSampler(new AlwaysOnSampler())
                 .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation()
-                .AddSqlClientInstrumentation()
                 .AddSource(nameof(Identity))
                 .AddSource(IdentityServerConstants.Tracing.Basic)
                 .AddSource(IdentityServerConstants.Tracing.Cache)
