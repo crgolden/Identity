@@ -1700,25 +1700,11 @@ Each retained folder contains:
 
 CI uploads the retained failure artifacts as `identity-playwright-artifacts`, separately from the existing `test-results` TRX artifact.
 
-CI also publishes the same TRX outcomes to Azure DevOps and Azure Monitor:
+GitHub Actions artifacts are the only reporting destination. The workflow steps that used to mirror the same TRX outcomes to Azure DevOps test runs and Azure Monitor custom events are retired and removed.
 
-| Target | Configuration |
-|---|---|
-| Azure DevOps | `https://dev.azure.com/crgolden/`, project `Identity` — published inline by the CI workflow |
-| Azure Monitor | Shared Application Insights `crgolden` — `PlaywrightTestRun`/`PlaywrightTestCase` customEvents posted inline by the CI workflow |
+One workflow decision that is not obvious from reading the YAML:
 
-CI uses the `AZURE_DEVOPS_EXT_PAT` secret (set it in the repo's Actions settings). The publish logic is inline in the "Report E2E results" and "Report smoke results" steps of `.github/workflows/main_crgolden-identity.yml` — there are no standalone scripts.
-
-Two workflow decisions that are not obvious from reading the YAML:
-
-- **The ADO publish calls `Invoke-RestMethod` against explicit URLs rather than `az devops invoke`.** The CLI extension cannot disambiguate duplicate resource names in the ADO manifest ([azure-devops-cli-extension#1012](https://github.com/Azure/azure-devops-cli-extension/issues/1012)), so the runs/results/attachments endpoints are addressed directly.
 - **`actions/checkout` sets `fetch-depth: 0` for SonarCloud, not for the build.** A shallow clone costs Sonar the history it uses to attribute issues to changesets and to compute new-code metrics.
-
-Provision or repair the workbook (from the Tools workspace):
-
-```powershell
-pwsh -File Tools\Azure\Monitor\Ensure-PlaywrightMonitor.ps1
-```
 
 ### Downloading CI artifacts locally
 
@@ -1739,13 +1725,6 @@ The run ID and job ID appear in the GitHub Actions run URL and in `gh run view <
 - `*-playwright-artifacts/` — matches any `<name>-playwright-artifacts` artifact download folder (and all subdirectories)
 
 Do not add specific folder names to `.gitignore` for these artifacts; use the patterns above so they remain valid if the artifact name changes.
-
-For local script validation against an existing TRX:
-
-```powershell
-.\scripts\Publish-PlaywrightResultsToAzureDevOps.ps1 -AppName Identity -SuiteName E2E -TestResultsDirectory .\Identity.Tests.E2E\bin\Debug\net10.0\TestResults -DryRun
-.\scripts\Send-PlaywrightTelemetry.ps1 -AppName Identity -SuiteName E2E -TestResultsDirectory .\Identity.Tests.E2E\bin\Debug\net10.0\TestResults -ConnectionString "InstrumentationKey=00000000-0000-0000-0000-000000000000" -DryRun
-```
 
 Do not run Git commands when implementing or verifying Playwright reporting changes.
 

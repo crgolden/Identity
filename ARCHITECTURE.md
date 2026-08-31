@@ -563,7 +563,7 @@ The database is always deployed before the application to ensure schema readines
 
 ### Smoke job (`windows-latest`, after deploy, `main` only)
 
-Downloads the published test binaries and runs the `Category=Smoke` suite against the deployed site (`SMOKE_BASE_URL`), then reports results to Azure DevOps and Azure Monitor.
+Downloads the published test binaries and runs the `Category=Smoke` suite against the deployed site (`SMOKE_BASE_URL`), then uploads the results and failure artifacts.
 
 ### Mutation job (`windows-latest`, `schedule` or `workflow_dispatch`)
 
