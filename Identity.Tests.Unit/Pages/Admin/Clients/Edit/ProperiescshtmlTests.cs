@@ -18,7 +18,7 @@ public class ProperiescshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = "test", Properties = [new ClientProperty { Id = ExistingEntityId, Key = "k", Value = "v", ClientId = ExistingEntityId }] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), Properties = [new ClientProperty { Id = ExistingEntityId, Key = "k", Value = "v", ClientId = ExistingEntityId }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -46,7 +46,7 @@ public class ProperiescshtmlTests
     [Fact]
     public async Task OnPostAsync_AddsNewProperty_WhenValid()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = "test", Properties = [] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), Properties = [] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -81,7 +81,7 @@ public class ProperiescshtmlTests
     public async Task OnPostAsync_RemovesProperty_WhenNotPosted()
     {
         var existing = new ClientProperty { Id = ExistingEntityId, Key = "old", Value = "val", ClientId = ExistingEntityId };
-        var client = new Client { Id = ExistingEntityId, ClientId = "test", Properties = [existing] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), Properties = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -97,7 +97,7 @@ public class ProperiescshtmlTests
     public async Task OnPostAsync_UpdatesExistingProperty_WhenPostedWithId()
     {
         var existing = new ClientProperty { Id = ExistingEntityId, Key = "env", Value = "staging", ClientId = ExistingEntityId };
-        var client = new Client { Id = ExistingEntityId, ClientId = "test", Properties = [existing] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), Properties = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -115,7 +115,7 @@ public class ProperiescshtmlTests
     [Fact]
     public async Task OnPostAddRowAsync_AddsBlankRow_WhenFound()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = "test" };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -143,7 +143,7 @@ public class ProperiescshtmlTests
     [Fact]
     public async Task OnPostRemoveRowAsync_RemovesRow_WhenValidIndex()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = "test" };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);

@@ -17,6 +17,8 @@ using Moq;
 [Trait("Category", "Unit")]
 public class GrantsIndexModelTests
 {
+    private static readonly string ExistingClientName = TestValues.NewClientName();
+
     [Fact]
     public async Task OnGetAsync_NoGrants_SetsEmptyViewModel()
     {
@@ -82,7 +84,7 @@ public class GrantsIndexModelTests
     {
         // Arrange
         var grant = new Grant { ClientId = "c1", Scopes = ["openid", "profile"], CreationTime = DateTime.UtcNow };
-        var client = new Client { ClientId = "c1", ClientName = "My App" };
+        var client = new Client { ClientId = "c1", ClientName = ExistingClientName };
 
         var mockInteraction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
         mockInteraction.Setup(x => x.GetAllUserGrantsAsync(It.IsAny<CancellationToken>())).ReturnsAsync([grant]);
@@ -111,7 +113,7 @@ public class GrantsIndexModelTests
         var grants = model.View.Grants.ToList();
         var onlyGrant = Assert.Single(grants);
         Assert.Equal("c1", onlyGrant.ClientId);
-        Assert.Equal("My App", onlyGrant.ClientName);
+        Assert.Equal(ExistingClientName, onlyGrant.ClientName);
         Assert.Contains("Your user identifier", onlyGrant.IdentityGrantNames);
         Assert.Contains("Profile", onlyGrant.ApiGrantNames);
     }
@@ -146,7 +148,7 @@ public class GrantsIndexModelTests
         // Arrange
         var grant1 = new Grant { ClientId = "c1", Scopes = ["openid"], CreationTime = DateTime.UtcNow };
         var grant2 = new Grant { ClientId = "c2-missing", Scopes = ["profile"], CreationTime = DateTime.UtcNow };
-        var client1 = new Client { ClientId = "c1", ClientName = "Client One" };
+        var client1 = new Client { ClientId = "c1", ClientName = TestValues.NewClientName() };
 
         var mockInteraction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
         mockInteraction.Setup(x => x.GetAllUserGrantsAsync(It.IsAny<CancellationToken>())).ReturnsAsync([grant1, grant2]);

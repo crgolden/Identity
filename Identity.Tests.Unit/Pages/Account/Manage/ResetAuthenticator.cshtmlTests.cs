@@ -153,7 +153,7 @@ public class ResetAuthenticatorModelTests
         var resettingUser = new IdentityUser<Guid>
         {
             Id = Guid.NewGuid(),
-            UserName = $"{Guid.NewGuid():N}@example.com"
+            UserName = TestValues.NewEmailAddress()
         };
 
         var mockUserManager = MockHelpers.MockUserManager();

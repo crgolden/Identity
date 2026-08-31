@@ -18,7 +18,7 @@ public class RedirectUriscshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = "test", RedirectUris = [new ClientRedirectUri { Id = ExistingEntityId, RedirectUri = "https://example.com/callback", ClientId = ExistingEntityId }] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), RedirectUris = [new ClientRedirectUri { Id = ExistingEntityId, RedirectUri = "https://example.com/callback", ClientId = ExistingEntityId }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -46,7 +46,7 @@ public class RedirectUriscshtmlTests
     [Fact]
     public async Task OnPostAsync_AddsNewUri_WhenValid()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = "test", RedirectUris = [] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), RedirectUris = [] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -81,7 +81,7 @@ public class RedirectUriscshtmlTests
     public async Task OnPostAsync_RemovesUri_WhenNotPosted()
     {
         var existing = new ClientRedirectUri { Id = ExistingEntityId, RedirectUri = "https://old.com/callback", ClientId = ExistingEntityId };
-        var client = new Client { Id = ExistingEntityId, ClientId = "test", RedirectUris = [existing] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), RedirectUris = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -97,7 +97,7 @@ public class RedirectUriscshtmlTests
     public async Task OnPostAsync_UpdatesExistingRedirectUri_WhenPostedWithId()
     {
         var existing = new ClientRedirectUri { Id = ExistingEntityId, RedirectUri = "https://old.com/callback", ClientId = ExistingEntityId };
-        var client = new Client { Id = ExistingEntityId, ClientId = "test", RedirectUris = [existing] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), RedirectUris = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -115,7 +115,7 @@ public class RedirectUriscshtmlTests
     [Fact]
     public async Task OnPostAddRowAsync_AddsBlankRow_WhenFound()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = "test" };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -143,7 +143,7 @@ public class RedirectUriscshtmlTests
     [Fact]
     public async Task OnPostRemoveRowAsync_RemovesRow_WhenValidIndex()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = "test" };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);

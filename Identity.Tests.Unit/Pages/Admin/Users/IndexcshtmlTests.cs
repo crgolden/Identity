@@ -10,6 +10,12 @@ using Moq;
 [Trait("Category", "Unit")]
 public class IndexcshtmlTests
 {
+    private static readonly string FirstUserNameAlphabetically =
+        TestValues.NewTokenFromFirstHalfOfAlphabet(9);
+
+    private static readonly string LastUserNameAlphabetically =
+        TestValues.NewTokenFromSecondHalfOfAlphabet(9);
+
     [Fact]
     public void IsPageModel()
     {
@@ -22,8 +28,8 @@ public class IndexcshtmlTests
     {
         var data = new[]
         {
-            new IdentityUser<Guid> { UserName = "z-user" },
-            new IdentityUser<Guid> { UserName = "a-user" },
+            new IdentityUser<Guid> { UserName = LastUserNameAlphabetically },
+            new IdentityUser<Guid> { UserName = FirstUserNameAlphabetically },
         };
         var mockSet = MockDbSetHelper.BuildMockDbSet(data);
         var um = MockHelpers.MockUserManager();
@@ -32,7 +38,7 @@ public class IndexcshtmlTests
         var model = new IndexModel(um.Object);
         await model.OnGetAsync();
 
-        Assert.Equal(2, model.Users.Count);
-        Assert.Equal("a-user", model.Users[0].UserName);
+        Assert.Equal(data.Length, model.Users.Count);
+        Assert.Equal(FirstUserNameAlphabetically, model.Users[0].UserName);
     }
 }

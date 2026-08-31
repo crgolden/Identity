@@ -18,7 +18,7 @@ public class ProperiescshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var resource = new ApiResource { Id = ExistingEntityId, Name = "my-api", Properties = [new ApiResourceProperty { Id = ExistingEntityId, Key = "k", Value = "v" }] };
+        var resource = new ApiResource { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), Properties = [new ApiResourceProperty { Id = ExistingEntityId, Key = "k", Value = "v" }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
@@ -43,7 +43,7 @@ public class ProperiescshtmlTests
     [Fact]
     public async Task OnPostAsync_AddsNewProperty()
     {
-        var resource = new ApiResource { Id = ExistingEntityId, Name = "my-api", Properties = [] };
+        var resource = new ApiResource { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), Properties = [] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
@@ -73,7 +73,7 @@ public class ProperiescshtmlTests
     public async Task OnPostAsync_RemovesAbsentProperty()
     {
         var existing = new ApiResourceProperty { Id = ExistingEntityId, Key = "old", Value = "val", ApiResourceId = ExistingEntityId };
-        var resource = new ApiResource { Id = ExistingEntityId, Name = "my-api", Properties = [existing] };
+        var resource = new ApiResource { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), Properties = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
@@ -88,7 +88,7 @@ public class ProperiescshtmlTests
     [Fact]
     public async Task OnPostAddRowAsync_AddsBlankRow_WhenFound()
     {
-        var resource = new ApiResource { Id = ExistingEntityId, Name = "my-api" };
+        var resource = new ApiResource { Id = ExistingEntityId, Name = TestValues.NewApiResourceName() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
@@ -114,7 +114,7 @@ public class ProperiescshtmlTests
     [Fact]
     public async Task OnPostRemoveRowAsync_RemovesRow_WhenValidIndex()
     {
-        var resource = new ApiResource { Id = ExistingEntityId, Name = "my-api" };
+        var resource = new ApiResource { Id = ExistingEntityId, Name = TestValues.NewApiResourceName() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);

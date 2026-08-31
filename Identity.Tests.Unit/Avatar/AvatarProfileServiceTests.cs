@@ -20,7 +20,7 @@ public class AvatarProfileServiceTests
     {
         // Arrange
         var googlePhotoUrl = $"https://lh3.googleusercontent.com/{Guid.NewGuid()}";
-        var emailAddress = $"{Guid.NewGuid()}@example.com";
+        var emailAddress = TestValues.NewEmailAddress();
         var user = new IdentityUser<Guid> { Id = Guid.NewGuid(), Email = emailAddress, UserName = emailAddress };
         var context = ProfileContextFor(user);
         var avatarService = new Mock<IAvatarService>(MockBehavior.Strict);
@@ -48,7 +48,7 @@ public class AvatarProfileServiceTests
     {
         // Arrange
         var gravatarUrl = new Uri($"https://gravatar.com/avatar/{Guid.NewGuid():N}");
-        var emailAddress = $"{Guid.NewGuid()}@example.com";
+        var emailAddress = TestValues.NewEmailAddress();
         var user = new IdentityUser<Guid> { Id = Guid.NewGuid(), Email = emailAddress, UserName = emailAddress };
         var context = ProfileContextFor(user);
         var avatarService = new Mock<IAvatarService>(MockBehavior.Strict);
@@ -73,7 +73,7 @@ public class AvatarProfileServiceTests
         // Arrange
         var legacyUrl = $"https://0.gravatar.com/avatar/{Guid.NewGuid():N}";
         var recomputed = new Uri($"https://gravatar.com/avatar/{Guid.NewGuid():N}?s=2048&d=identicon");
-        var emailAddress = $"{Guid.NewGuid()}@example.com";
+        var emailAddress = TestValues.NewEmailAddress();
         var user = new IdentityUser<Guid> { Id = Guid.NewGuid(), Email = emailAddress, UserName = emailAddress };
         var context = ProfileContextFor(user);
         var avatarService = new Mock<IAvatarService>(MockBehavior.Strict);
@@ -100,7 +100,7 @@ public class AvatarProfileServiceTests
     public async Task GetProfileDataAsync_AddsNoPictureWhenTheClientDidNotRequestIt()
     {
         // Arrange
-        var emailAddress = $"{Guid.NewGuid()}@example.com";
+        var emailAddress = TestValues.NewEmailAddress();
         var user = new IdentityUser<Guid> { Id = Guid.NewGuid(), Email = emailAddress, UserName = emailAddress };
         var context = ProfileContextFor(user, [EmailClaimType]);
         var avatarService = new Mock<IAvatarService>(MockBehavior.Strict);

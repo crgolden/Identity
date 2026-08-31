@@ -11,16 +11,19 @@ using Moq;
 [Trait("Category", "Unit")]
 public class LoginscshtmlTests
 {
+    private static readonly string ExistingUserId = TestValues.NewUserId().ToString();
+    private static readonly string MissingUserId = TestValues.NewUserId().ToString();
+
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var user = new IdentityUser<Guid> { UserName = "alice" };
+        var user = new IdentityUser<Guid> { UserName = TestValues.NewUserName() };
         var um = MockHelpers.MockUserManager();
-        um.Setup(m => m.FindByIdAsync("1")).ReturnsAsync(user);
+        um.Setup(m => m.FindByIdAsync(ExistingUserId)).ReturnsAsync(user);
         um.Setup(m => m.GetLoginsAsync(user)).ReturnsAsync([new UserLoginInfo("google", "key-1", "Google")]);
 
         var model = new LoginsModel(um.Object);
-        var result = await model.OnGetAsync("1");
+        var result = await model.OnGetAsync(ExistingUserId);
 
         Assert.IsType<PageResult>(result);
         var onlyLogin = Assert.Single(model.Logins);
@@ -31,8 +34,8 @@ public class LoginscshtmlTests
     public async Task OnGetAsync_ReturnsNotFound_WhenMissing()
     {
         var um = MockHelpers.MockUserManager();
-        um.Setup(m => m.FindByIdAsync("99")).ReturnsAsync((IdentityUser<Guid>?)null);
+        um.Setup(m => m.FindByIdAsync(MissingUserId)).ReturnsAsync((IdentityUser<Guid>?)null);
 
-        Assert.IsType<NotFoundResult>(await new LoginsModel(um.Object).OnGetAsync("99"));
+        Assert.IsType<NotFoundResult>(await new LoginsModel(um.Object).OnGetAsync(MissingUserId));
     }
 }

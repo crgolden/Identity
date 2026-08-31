@@ -18,7 +18,7 @@ public class RedirectUriscshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = "test", RedirectUris = [new ClientRedirectUri { Id = ExistingEntityId, RedirectUri = "https://example.com/callback", ClientId = ExistingEntityId }] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), RedirectUris = [new ClientRedirectUri { Id = ExistingEntityId, RedirectUri = "https://example.com/callback", ClientId = ExistingEntityId }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);

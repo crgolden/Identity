@@ -11,6 +11,8 @@ using Moq;
 [Trait("Category", "Unit")]
 public class DeletecshtmlTests
 {
+    private static readonly string MissingUserId = TestValues.NewUserId().ToString();
+
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
@@ -31,7 +33,7 @@ public class DeletecshtmlTests
         var rm = MockHelpers.MockRoleManager();
         rm.Setup(m => m.FindByIdAsync(It.IsAny<string>())).ReturnsAsync((IdentityRole<Guid>?)null);
 
-        Assert.IsType<NotFoundResult>(await new DeleteModel(rm.Object).OnGetAsync("missing"));
+        Assert.IsType<NotFoundResult>(await new DeleteModel(rm.Object).OnGetAsync(MissingUserId));
     }
 
     [Fact]
@@ -55,6 +57,6 @@ public class DeletecshtmlTests
         var rm = MockHelpers.MockRoleManager();
         rm.Setup(m => m.FindByIdAsync(It.IsAny<string>())).ReturnsAsync((IdentityRole<Guid>?)null);
 
-        Assert.IsType<NotFoundResult>(await new DeleteModel(rm.Object).OnPostAsync("missing"));
+        Assert.IsType<NotFoundResult>(await new DeleteModel(rm.Object).OnPostAsync(MissingUserId));
     }
 }

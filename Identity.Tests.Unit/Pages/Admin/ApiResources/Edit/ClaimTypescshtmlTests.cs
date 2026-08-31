@@ -18,7 +18,7 @@ public class ClaimTypescshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var resource = new ApiResource { Id = ExistingEntityId, Name = "my-api", UserClaims = [new ApiResourceClaim { Id = ExistingEntityId, Type = "sub" }] };
+        var resource = new ApiResource { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), UserClaims = [new ApiResourceClaim { Id = ExistingEntityId, Type = "sub" }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
@@ -43,7 +43,7 @@ public class ClaimTypescshtmlTests
     [Fact]
     public async Task OnPostAsync_AddsNewClaimType()
     {
-        var resource = new ApiResource { Id = ExistingEntityId, Name = "my-api", UserClaims = [] };
+        var resource = new ApiResource { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), UserClaims = [] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
@@ -73,7 +73,7 @@ public class ClaimTypescshtmlTests
     public async Task OnPostAsync_RemovesAbsentClaimType()
     {
         var existing = new ApiResourceClaim { Id = ExistingEntityId, Type = "sub", ApiResourceId = ExistingEntityId };
-        var resource = new ApiResource { Id = ExistingEntityId, Name = "my-api", UserClaims = [existing] };
+        var resource = new ApiResource { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), UserClaims = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
@@ -88,7 +88,7 @@ public class ClaimTypescshtmlTests
     [Fact]
     public async Task OnPostAddRowAsync_AddsBlankRow_WhenFound()
     {
-        var resource = new ApiResource { Id = ExistingEntityId, Name = "my-api" };
+        var resource = new ApiResource { Id = ExistingEntityId, Name = TestValues.NewApiResourceName() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
@@ -114,7 +114,7 @@ public class ClaimTypescshtmlTests
     [Fact]
     public async Task OnPostRemoveRowAsync_RemovesRow_WhenValidIndex()
     {
-        var resource = new ApiResource { Id = ExistingEntityId, Name = "my-api" };
+        var resource = new ApiResource { Id = ExistingEntityId, Name = TestValues.NewApiResourceName() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);

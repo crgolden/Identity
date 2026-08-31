@@ -58,7 +58,7 @@ public class IndexcshtmlTests
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<ApiScope>());
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
-        var model = new IndexModel(ctx.Object) { Scope = new ApiScope { Name = "x" } };
+        var model = new IndexModel(ctx.Object) { Scope = new ApiScope { Name = TestValues.NewApiResourceName() } };
         Assert.IsType<NotFoundResult>(await model.OnPostAsync(MissingEntityId));
     }
 }

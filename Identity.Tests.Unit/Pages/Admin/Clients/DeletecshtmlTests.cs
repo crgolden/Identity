@@ -18,7 +18,7 @@ public class DeletecshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = "test" };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -46,7 +46,7 @@ public class DeletecshtmlTests
     [Fact]
     public async Task OnPostAsync_DeletesAndRedirects_WhenFound()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = "test" };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);

@@ -18,7 +18,7 @@ public class PostLogoutRedirectUriscshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = "test", PostLogoutRedirectUris = [new ClientPostLogoutRedirectUri { Id = ExistingEntityId, PostLogoutRedirectUri = "https://example.com/logout", ClientId = ExistingEntityId }] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), PostLogoutRedirectUris = [new ClientPostLogoutRedirectUri { Id = ExistingEntityId, PostLogoutRedirectUri = "https://example.com/logout", ClientId = ExistingEntityId }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -46,7 +46,7 @@ public class PostLogoutRedirectUriscshtmlTests
     [Fact]
     public async Task OnPostAsync_AddsNewUri_WhenValid()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = "test", PostLogoutRedirectUris = [] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), PostLogoutRedirectUris = [] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -81,7 +81,7 @@ public class PostLogoutRedirectUriscshtmlTests
     public async Task OnPostAsync_RemovesUri_WhenNotPosted()
     {
         var existing = new ClientPostLogoutRedirectUri { Id = ExistingEntityId, PostLogoutRedirectUri = "https://old.com/logout", ClientId = ExistingEntityId };
-        var client = new Client { Id = ExistingEntityId, ClientId = "test", PostLogoutRedirectUris = [existing] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), PostLogoutRedirectUris = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -97,7 +97,7 @@ public class PostLogoutRedirectUriscshtmlTests
     public async Task OnPostAsync_UpdatesExistingPostLogoutRedirectUri_WhenPostedWithId()
     {
         var existing = new ClientPostLogoutRedirectUri { Id = ExistingEntityId, PostLogoutRedirectUri = "https://old.com/logout", ClientId = ExistingEntityId };
-        var client = new Client { Id = ExistingEntityId, ClientId = "test", PostLogoutRedirectUris = [existing] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), PostLogoutRedirectUris = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -115,7 +115,7 @@ public class PostLogoutRedirectUriscshtmlTests
     [Fact]
     public async Task OnPostAddRowAsync_AddsBlankRow_WhenFound()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = "test" };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -143,7 +143,7 @@ public class PostLogoutRedirectUriscshtmlTests
     [Fact]
     public async Task OnPostRemoveRowAsync_RemovesRow_WhenValidIndex()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = "test" };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);

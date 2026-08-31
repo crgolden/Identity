@@ -36,7 +36,7 @@ public class LoginWithRecoveryCodeModelTests
     public async Task OnGetAsync_TwoFactorUserExists_SetsReturnUrlAndReturnsPage(string? returnUrl)
     {
         // Arrange
-        var twoFactorUser = new IdentityUser<Guid> { Id = Guid.NewGuid(), UserName = "testuser" };
+        var twoFactorUser = new IdentityUser<Guid> { Id = Guid.NewGuid(), UserName = TestValues.NewUserName() };
         var signInManagerMock = CreateSignInManagerMock();
 
         signInManagerMock

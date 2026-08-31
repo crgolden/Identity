@@ -23,7 +23,7 @@ public class IndexcshtmlTests
     {
         var data = new[]
         {
-            new ApiResource { Name = "z-api" },
+            new ApiResource { Name = TestValues.NewApiResourceName() },
             new ApiResource { Name = "a-api" },
         };
         var mockSet = MockDbSetHelper.BuildMockDbSet(data);

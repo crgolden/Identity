@@ -134,7 +134,7 @@ public class ResetPasswordModelTests
     public async Task OnPostAsync_UnknownEmail_RedirectsToConfirmationWithoutResettingAPassword()
     {
         // Arrange
-        var unknownEmail = $"{Guid.NewGuid():N}@example.com";
+        var unknownEmail = TestValues.NewEmailAddress();
         var userManagerMock = MockHelpers.MockUserManager();
         userManagerMock
             .Setup(um => um.FindByEmailAsync(unknownEmail))
@@ -158,7 +158,7 @@ public class ResetPasswordModelTests
     public async Task OnPostAsync_ResetSucceeds_RedirectsToConfirmation()
     {
         // Arrange
-        var resettingEmail = $"{Guid.NewGuid():N}@example.com";
+        var resettingEmail = TestValues.NewEmailAddress();
         var resettingUser = new IdentityUser<Guid>
         {
             Id = Guid.NewGuid(),

@@ -18,7 +18,7 @@ public class ClaimTypescshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var resource = new ApiResource { Id = ExistingEntityId, Name = "my-api", UserClaims = [new ApiResourceClaim { Id = ExistingEntityId, Type = "sub" }] };
+        var resource = new ApiResource { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), UserClaims = [new ApiResourceClaim { Id = ExistingEntityId, Type = "sub" }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);

@@ -12,19 +12,24 @@ using Moq;
 [Trait("Category", "Unit")]
 public class IndexcshtmlTests
 {
+    private static readonly string ExistingClientId = TestValues.NewClientIdentifier();
+
+    private static readonly string ExistingKey = TestValues.NewUserId().ToString();
+    private static readonly string MissingKey = TestValues.NewUserId().ToString();
+
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var code = new DeviceFlowCodes { DeviceCode = "d1", ClientId = "client" };
+        var code = new DeviceFlowCodes { DeviceCode = ExistingKey, ClientId = ExistingClientId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([code]);
         var ctx = new Mock<IPersistedGrantDbContext>();
         ctx.Setup(c => c.DeviceFlowCodes).Returns(mockSet.Object);
 
         var model = new IndexModel(ctx.Object);
-        var result = await model.OnGetAsync("d1");
+        var result = await model.OnGetAsync(ExistingKey);
 
         Assert.IsType<PageResult>(result);
-        Assert.Equal("client", model.DeviceFlowCode.ClientId);
+        Assert.Equal(ExistingClientId, model.DeviceFlowCode.ClientId);
     }
 
     [Fact]
@@ -35,6 +40,6 @@ public class IndexcshtmlTests
         ctx.Setup(c => c.DeviceFlowCodes).Returns(mockSet.Object);
 
         var model = new IndexModel(ctx.Object);
-        Assert.IsType<NotFoundResult>(await model.OnGetAsync("missing"));
+        Assert.IsType<NotFoundResult>(await model.OnGetAsync(MissingKey));
     }
 }

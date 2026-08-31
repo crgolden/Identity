@@ -18,7 +18,7 @@ public class SecretscshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var resource = new ApiResource { Id = ExistingEntityId, Name = "my-api", Secrets = [new ApiResourceSecret { Id = ExistingEntityId, Description = "prod" }] };
+        var resource = new ApiResource { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), Secrets = [new ApiResourceSecret { Id = ExistingEntityId, Description = "prod" }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
@@ -43,7 +43,7 @@ public class SecretscshtmlTests
     [Fact]
     public async Task OnPostAsync_AddsNewSecret()
     {
-        var resource = new ApiResource { Id = ExistingEntityId, Name = "my-api", Secrets = [] };
+        var resource = new ApiResource { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), Secrets = [] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
@@ -73,7 +73,7 @@ public class SecretscshtmlTests
     public async Task OnPostAsync_RemovesAbsentSecret()
     {
         var existing = new ApiResourceSecret { Id = ExistingEntityId, Description = "old", ApiResourceId = ExistingEntityId };
-        var resource = new ApiResource { Id = ExistingEntityId, Name = "my-api", Secrets = [existing] };
+        var resource = new ApiResource { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), Secrets = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
@@ -88,7 +88,7 @@ public class SecretscshtmlTests
     [Fact]
     public async Task OnPostAddRowAsync_AddsBlankRowWithDefaultType_WhenFound()
     {
-        var resource = new ApiResource { Id = ExistingEntityId, Name = "my-api" };
+        var resource = new ApiResource { Id = ExistingEntityId, Name = TestValues.NewApiResourceName() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
@@ -115,7 +115,7 @@ public class SecretscshtmlTests
     [Fact]
     public async Task OnPostRemoveRowAsync_RemovesRow_WhenValidIndex()
     {
-        var resource = new ApiResource { Id = ExistingEntityId, Name = "my-api" };
+        var resource = new ApiResource { Id = ExistingEntityId, Name = TestValues.NewApiResourceName() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);

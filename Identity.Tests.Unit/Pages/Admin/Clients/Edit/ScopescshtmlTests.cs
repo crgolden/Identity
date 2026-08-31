@@ -18,7 +18,7 @@ public class ScopescshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = "test", AllowedScopes = [new ClientScope { Id = ExistingEntityId, Scope = "openid", ClientId = ExistingEntityId }] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), AllowedScopes = [new ClientScope { Id = ExistingEntityId, Scope = "openid", ClientId = ExistingEntityId }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -46,7 +46,7 @@ public class ScopescshtmlTests
     [Fact]
     public async Task OnPostAsync_AddsNewScope_WhenValid()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = "test", AllowedScopes = [] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), AllowedScopes = [] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -81,7 +81,7 @@ public class ScopescshtmlTests
     public async Task OnPostAsync_RemovesScope_WhenNotPosted()
     {
         var existing = new ClientScope { Id = ExistingEntityId, Scope = "openid", ClientId = ExistingEntityId };
-        var client = new Client { Id = ExistingEntityId, ClientId = "test", AllowedScopes = [existing] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), AllowedScopes = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -97,7 +97,7 @@ public class ScopescshtmlTests
     public async Task OnPostAsync_UpdatesExistingScope_WhenPostedWithId()
     {
         var existing = new ClientScope { Id = ExistingEntityId, Scope = "openid", ClientId = ExistingEntityId };
-        var client = new Client { Id = ExistingEntityId, ClientId = "test", AllowedScopes = [existing] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), AllowedScopes = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -115,7 +115,7 @@ public class ScopescshtmlTests
     [Fact]
     public async Task OnPostAddRowAsync_AddsBlankRow_WhenFound()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = "test" };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -143,7 +143,7 @@ public class ScopescshtmlTests
     [Fact]
     public async Task OnPostRemoveRowAsync_RemovesRow_WhenValidIndex()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = "test" };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);

@@ -18,6 +18,9 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ConsentIndexModelTests
 {
+    private static readonly string ExistingClientId = TestValues.NewClientIdentifier();
+    private static readonly string ExistingClientName = TestValues.NewClientName();
+
     [Fact]
     public void Constructor_ValidDependencies_CreatesPageModel()
     {
@@ -75,7 +78,7 @@ public class ConsentIndexModelTests
         // Assert
         Assert.IsType<PageResult>(result);
         Assert.Equal("https://example.com", model.Input.ReturnUrl);
-        Assert.Equal("Client One", model.View.ClientName);
+        Assert.Equal(ExistingClientName, model.View.ClientName);
         Assert.NotEmpty(model.View.IdentityScopes);
     }
 
@@ -92,7 +95,7 @@ public class ConsentIndexModelTests
 
         // Assert
         Assert.IsType<PageResult>(result);
-        Assert.Equal("client1", model.View.ClientName);
+        Assert.Equal(ExistingClientId, model.View.ClientName);
         Assert.Contains(model.View.ApiScopes, s => string.Equals(s.Value, "api.read", StringComparison.Ordinal));
         Assert.Contains(model.View.ApiScopes, s => s.Resources.Any(r => string.Equals(r.DisplayName, "API One", StringComparison.Ordinal)));
         Assert.Contains(model.View.ApiScopes, s => string.Equals(s.Value, "offline_access", StringComparison.Ordinal));
@@ -105,7 +108,7 @@ public class ConsentIndexModelTests
         var parsed = new[] { new ParsedScopeValue("unknown.scope") };
         var request = new AuthorizationRequest
         {
-            Client = new Client { ClientId = "client1", ClientName = "Client One" },
+            Client = new Client { ClientId = ExistingClientId, ClientName = ExistingClientName },
             ValidatedResources = new ResourceValidationResult(new Resources(), parsed),
         };
         var interaction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
@@ -250,7 +253,7 @@ public class ConsentIndexModelTests
 
     private static AuthorizationRequest BuildRequest() => new()
     {
-        Client = new Client { ClientId = "client1", ClientName = "Client One" },
+        Client = new Client { ClientId = ExistingClientId, ClientName = ExistingClientName },
         ValidatedResources = new ResourceValidationResult(),
     };
 
@@ -260,7 +263,7 @@ public class ConsentIndexModelTests
         resources.IdentityResources.Add(new IdentityResources.OpenId());
         return new AuthorizationRequest
         {
-            Client = new Client { ClientId = "client1", ClientName = "Client One" },
+            Client = new Client { ClientId = ExistingClientId, ClientName = ExistingClientName },
             ValidatedResources = new ResourceValidationResult(resources),
         };
     }
@@ -275,7 +278,7 @@ public class ConsentIndexModelTests
         var parsed = new[] { new ParsedScopeValue("api.read", "api.read", "tenant1") };
         var request = new AuthorizationRequest
         {
-            Client = new Client { ClientId = "client1" },
+            Client = new Client { ClientId = ExistingClientId },
             ValidatedResources = new ResourceValidationResult(resources, parsed),
         };
         request.Parameters.Add(OidcConstants.AuthorizeRequest.Resource, "api1");

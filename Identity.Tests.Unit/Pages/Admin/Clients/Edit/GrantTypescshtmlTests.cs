@@ -18,7 +18,7 @@ public class GrantTypescshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = "test", AllowedGrantTypes = [new ClientGrantType { Id = ExistingEntityId, GrantType = "authorization_code", ClientId = ExistingEntityId }] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), AllowedGrantTypes = [new ClientGrantType { Id = ExistingEntityId, GrantType = "authorization_code", ClientId = ExistingEntityId }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -46,7 +46,7 @@ public class GrantTypescshtmlTests
     [Fact]
     public async Task OnPostAsync_AddsNewGrantType_WhenValid()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = "test", AllowedGrantTypes = [] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), AllowedGrantTypes = [] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -81,7 +81,7 @@ public class GrantTypescshtmlTests
     public async Task OnPostAsync_RemovesGrantType_WhenNotPosted()
     {
         var existing = new ClientGrantType { Id = ExistingEntityId, GrantType = "implicit", ClientId = ExistingEntityId };
-        var client = new Client { Id = ExistingEntityId, ClientId = "test", AllowedGrantTypes = [existing] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), AllowedGrantTypes = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -97,7 +97,7 @@ public class GrantTypescshtmlTests
     public async Task OnPostAsync_UpdatesExistingGrantType_WhenPostedWithId()
     {
         var existing = new ClientGrantType { Id = ExistingEntityId, GrantType = "implicit", ClientId = ExistingEntityId };
-        var client = new Client { Id = ExistingEntityId, ClientId = "test", AllowedGrantTypes = [existing] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), AllowedGrantTypes = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -115,7 +115,7 @@ public class GrantTypescshtmlTests
     [Fact]
     public async Task OnPostAddRowAsync_AddsBlankRow_WhenFound()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = "test" };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -143,7 +143,7 @@ public class GrantTypescshtmlTests
     [Fact]
     public async Task OnPostRemoveRowAsync_RemovesRow_WhenValidIndex()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = "test" };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);

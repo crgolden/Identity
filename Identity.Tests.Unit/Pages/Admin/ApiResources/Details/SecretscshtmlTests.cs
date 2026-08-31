@@ -18,7 +18,7 @@ public class SecretscshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var resource = new ApiResource { Id = ExistingEntityId, Name = "my-api", Secrets = [new ApiResourceSecret { Id = ExistingEntityId, Description = "prod" }] };
+        var resource = new ApiResource { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), Secrets = [new ApiResourceSecret { Id = ExistingEntityId, Description = "prod" }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);

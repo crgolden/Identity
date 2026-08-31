@@ -14,6 +14,9 @@ using Moq;
 [Trait("Category", "Unit")]
 public class CibaIndexModelTests
 {
+    private static readonly string ExistingKey = TestValues.NewUserId().ToString();
+    private static readonly string MissingKey = TestValues.NewUserId().ToString();
+
     [Fact]
     public async Task OnGetAsync_NullId_RedirectsToError()
     {
@@ -35,13 +38,13 @@ public class CibaIndexModelTests
         // Arrange
         var mockService = new Mock<IBackchannelAuthenticationInteractionService>(MockBehavior.Strict);
         mockService
-            .Setup(x => x.GetLoginRequestByInternalIdAsync("invalid-id", It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetLoginRequestByInternalIdAsync(MissingKey, It.IsAny<CancellationToken>()))
             .ReturnsAsync((BackchannelUserLoginRequest?)null);
 
         var model = CreateModel(mockService.Object);
 
         // Act
-        var result = await model.OnGetAsync("invalid-id");
+        var result = await model.OnGetAsync(MissingKey);
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
@@ -55,13 +58,13 @@ public class CibaIndexModelTests
         var loginRequest = new BackchannelUserLoginRequest();
         var mockService = new Mock<IBackchannelAuthenticationInteractionService>(MockBehavior.Strict);
         mockService
-            .Setup(x => x.GetLoginRequestByInternalIdAsync("valid-id", It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetLoginRequestByInternalIdAsync(ExistingKey, It.IsAny<CancellationToken>()))
             .ReturnsAsync(loginRequest);
 
         var model = CreateModel(mockService.Object);
 
         // Act
-        var result = await model.OnGetAsync("valid-id");
+        var result = await model.OnGetAsync(ExistingKey);
 
         // Assert
         Assert.IsType<PageResult>(result);

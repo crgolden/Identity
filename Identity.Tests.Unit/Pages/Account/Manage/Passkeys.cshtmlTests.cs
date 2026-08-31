@@ -303,7 +303,7 @@ public sealed class PasskeysModelTests
             attestationObject: [7, 8, 9],
             clientDataJson: [10, 11, 12])
         {
-            Name = "Test passkey",
+            Name = TestValues.NewApiResourceName(),
         };
 
     private static PasskeyAttestationResult BuildSuccessfulAttestation()

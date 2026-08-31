@@ -11,6 +11,8 @@ using Moq;
 [Trait("Category", "Unit")]
 public class IndexcshtmlTests
 {
+    private static readonly string MissingUserId = TestValues.NewUserId().ToString();
+
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
@@ -31,6 +33,6 @@ public class IndexcshtmlTests
         var rm = MockHelpers.MockRoleManager();
         rm.Setup(m => m.FindByIdAsync(It.IsAny<string>())).ReturnsAsync((IdentityRole<Guid>?)null);
 
-        Assert.IsType<NotFoundResult>(await new IndexModel(rm.Object).OnGetAsync("missing"));
+        Assert.IsType<NotFoundResult>(await new IndexModel(rm.Object).OnGetAsync(MissingUserId));
     }
 }

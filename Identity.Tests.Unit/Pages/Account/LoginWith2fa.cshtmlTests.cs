@@ -101,7 +101,7 @@ public class LoginWith2faModelTests
     {
         // Arrange
         var signInManagerMock = CreateSignInManagerMock();
-        var user = new IdentityUser<Guid> { Id = Guid.NewGuid(), UserName = "testuser" };
+        var user = new IdentityUser<Guid> { Id = Guid.NewGuid(), UserName = TestValues.NewUserName() };
         signInManagerMock
             .Setup(s => s.GetTwoFactorAuthenticationUserAsync())
             .ReturnsAsync(user);

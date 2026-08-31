@@ -18,7 +18,7 @@ public class ClaimTypescshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var scope = new ApiScope { Id = ExistingEntityId, Name = "api1", UserClaims = [new ApiScopeClaim { Type = "sub" }] };
+        var scope = new ApiScope { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), UserClaims = [new ApiScopeClaim { Type = "sub" }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([scope]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
@@ -40,7 +40,7 @@ public class ClaimTypescshtmlTests
     [Fact]
     public async Task OnPostAsync_AddsNewClaimType()
     {
-        var scope = new ApiScope { Id = ExistingEntityId, Name = "api1", UserClaims = [] };
+        var scope = new ApiScope { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), UserClaims = [] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([scope]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
@@ -70,7 +70,7 @@ public class ClaimTypescshtmlTests
     public async Task OnPostAsync_RemovesAbsentClaimType()
     {
         var existing = new ApiScopeClaim { Id = ExistingEntityId, Type = "sub", ScopeId = ExistingEntityId };
-        var scope = new ApiScope { Id = ExistingEntityId, Name = "api1", UserClaims = [existing] };
+        var scope = new ApiScope { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), UserClaims = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([scope]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
@@ -83,7 +83,7 @@ public class ClaimTypescshtmlTests
     [Fact]
     public async Task OnPostAddRowAsync_AddsBlankRow_WhenFound()
     {
-        var scope = new ApiScope { Id = ExistingEntityId, Name = "api1" };
+        var scope = new ApiScope { Id = ExistingEntityId, Name = TestValues.NewApiResourceName() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([scope]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
@@ -109,7 +109,7 @@ public class ClaimTypescshtmlTests
     [Fact]
     public async Task OnPostRemoveRowAsync_RemovesRow_WhenValidIndex()
     {
-        var scope = new ApiScope { Id = ExistingEntityId, Name = "api1" };
+        var scope = new ApiScope { Id = ExistingEntityId, Name = TestValues.NewApiResourceName() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([scope]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);

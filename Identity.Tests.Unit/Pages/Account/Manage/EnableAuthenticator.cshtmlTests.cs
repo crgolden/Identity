@@ -1,6 +1,5 @@
 namespace Identity.Tests.Unit.Pages.Account.Manage;
 
-using System.Globalization;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using Identity.Pages.Account.Manage;
@@ -132,9 +131,9 @@ public partial class EnableAuthenticatorModelTests
         // Arrange
         var freshlyGeneratedCodes = new[]
         {
-            Guid.NewGuid().ToString("N"),
-            Guid.NewGuid().ToString("N"),
-            Guid.NewGuid().ToString("N")
+            TestValues.NewRecoveryCode(),
+            TestValues.NewRecoveryCode(),
+            TestValues.NewRecoveryCode()
         };
         var userManagerMock = MockUserManagerForVerifiedAuthenticator(
             existingRecoveryCount: 0,
@@ -163,7 +162,7 @@ public partial class EnableAuthenticatorModelTests
         var remainingRecoveryCount = Random.Shared.Next(1, 11);
         var userManagerMock = MockUserManagerForVerifiedAuthenticator(
             remainingRecoveryCount,
-            [Guid.NewGuid().ToString("N")]);
+            [TestValues.NewRecoveryCode()]);
 
         var model = new EnableAuthenticatorModel(userManagerMock.Object, UrlEncoder.Default)
         {
@@ -207,8 +206,7 @@ public partial class EnableAuthenticatorModelTests
         Assert.Equal($"Unable to load user with ID '{expectedId}'.", notFound.Value);
     }
 
-    private static string BuildVerificationCode() =>
-        Random.Shared.Next(0, 1000000).ToString("D6", CultureInfo.InvariantCulture);
+    private static string BuildVerificationCode() => TestValues.NewVerificationCode();
 
     private static Mock<UserManager<IdentityUser<Guid>>> MockUserManagerForVerifiedAuthenticator(
         int existingRecoveryCount,
@@ -217,9 +215,9 @@ public partial class EnableAuthenticatorModelTests
         var userManagerMock = MockHelpers.MockUserManager();
         var enablingUser = new IdentityUser<Guid>
         {
-            Id = Guid.NewGuid(),
-            UserName = $"{Guid.NewGuid():N}@example.com",
-            Email = $"{Guid.NewGuid():N}@example.com"
+            Id = TestValues.NewUserId(),
+            UserName = TestValues.NewUserName(),
+            Email = TestValues.NewEmailAddress()
         };
 
         userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(enablingUser);
@@ -237,7 +235,7 @@ public partial class EnableAuthenticatorModelTests
         userManagerMock.Setup(um => um.GenerateNewTwoFactorRecoveryCodesAsync(It.IsAny<IdentityUser<Guid>>(), 10))
             .ReturnsAsync(freshlyGeneratedCodes);
         userManagerMock.Setup(um => um.GetAuthenticatorKeyAsync(It.IsAny<IdentityUser<Guid>>()))
-            .ReturnsAsync(Guid.NewGuid().ToString("N").ToUpperInvariant());
+            .ReturnsAsync(TestValues.NewAuthenticatorKey());
         userManagerMock.Setup(um => um.GetEmailAsync(It.IsAny<IdentityUser<Guid>>()))
             .ReturnsAsync(enablingUser.Email);
         userManagerMock.Setup(um => um.ResetAuthenticatorKeyAsync(It.IsAny<IdentityUser<Guid>>()))

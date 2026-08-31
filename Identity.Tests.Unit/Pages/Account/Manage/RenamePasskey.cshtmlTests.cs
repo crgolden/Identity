@@ -137,7 +137,7 @@ public sealed class RenamePasskeyModelTests
         userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(MockHelpers.TestUser());
         userManager.Setup(m => m.GetPasskeyAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<byte[]>())).ReturnsAsync((UserPasskeyInfo?)null);
         userManager.Setup(m => m.GetUserId(It.IsAny<ClaimsPrincipal>())).Returns("user-7");
-        model.Input = new RenamePasskeyModel.InputModel { CredentialId = ValidCredentialId, Name = "x" };
+        model.Input = new RenamePasskeyModel.InputModel { CredentialId = ValidCredentialId, Name = TestValues.NewApiResourceName() };
 
         // Act
         var result = await model.OnPostAsync();
@@ -157,7 +157,7 @@ public sealed class RenamePasskeyModelTests
         userManager.Setup(m => m.GetPasskeyAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<byte[]>())).ReturnsAsync(BuildPasskey("Old name"));
         userManager.Setup(m => m.AddOrUpdatePasskeyAsync(user, It.IsAny<UserPasskeyInfo>())).ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "fail" }));
         userManager.Setup(m => m.GetUserIdAsync(user)).ReturnsAsync("uid-1");
-        model.Input = new RenamePasskeyModel.InputModel { CredentialId = ValidCredentialId, Name = "New name" };
+        model.Input = new RenamePasskeyModel.InputModel { CredentialId = ValidCredentialId, Name = TestValues.NewApiResourceName() };
 
         // Act
         var exception = await Record.ExceptionAsync(() => model.OnPostAsync());

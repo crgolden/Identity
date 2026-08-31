@@ -64,7 +64,7 @@ public class GravatarServiceTests
     public async Task GetAvatarUrlAsync_BuildsTheDocumentedImageUrl()
     {
         // Arrange
-        var emailAddress = $"{Guid.NewGuid()}@example.com";
+        var emailAddress = TestValues.NewEmailAddress();
         var service = new GravatarService();
 
         // Act
@@ -80,7 +80,7 @@ public class GravatarServiceTests
     public async Task GetAvatarUrlAsync_ResolvesAnImageForAnAddressWithNoGravatarAccount()
     {
         // Arrange
-        var registeredAddress = $"{Guid.NewGuid()}@example.com";
+        var registeredAddress = TestValues.NewEmailAddress();
         var unregisteredAddress = $"{Guid.NewGuid()}@example.invalid";
         var service = new GravatarService();
 
@@ -99,7 +99,7 @@ public class GravatarServiceTests
     public async Task GetAvatarUrlAsync_ConstructsWithNoCollaboratorAndMakesNoOutboundCall()
     {
         // Arrange
-        var emailAddress = $"{Guid.NewGuid()}@example.com";
+        var emailAddress = TestValues.NewEmailAddress();
         var service = new GravatarService();
 
         // Act
@@ -113,7 +113,7 @@ public class GravatarServiceTests
     public async Task GetAvatarUrlAsync_HonoursCancellation()
     {
         // Arrange
-        var emailAddress = $"{Guid.NewGuid()}@example.com";
+        var emailAddress = TestValues.NewEmailAddress();
         var service = new GravatarService();
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync();

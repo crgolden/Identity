@@ -46,7 +46,7 @@ public class IndexcshtmlTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
-        var model = new IndexModel(ctx.Object) { Resource = new IdentityResource { Name = "openid-updated", DisplayName = "OpenID" } };
+        var model = new IndexModel(ctx.Object) { Resource = new IdentityResource { Name = "openid-updated", DisplayName = TestValues.NewClientName() } };
         var result = await model.OnPostAsync(ExistingEntityId);
         Assert.Equal("openid-updated", resource.Name);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
@@ -59,7 +59,7 @@ public class IndexcshtmlTests
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<IdentityResource>());
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
-        var model = new IndexModel(ctx.Object) { Resource = new IdentityResource { Name = "x" } };
+        var model = new IndexModel(ctx.Object) { Resource = new IdentityResource { Name = TestValues.NewApiResourceName() } };
         Assert.IsType<NotFoundResult>(await model.OnPostAsync(MissingEntityId));
     }
 }

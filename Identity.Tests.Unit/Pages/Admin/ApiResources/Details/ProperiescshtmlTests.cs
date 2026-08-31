@@ -18,7 +18,7 @@ public class ProperiescshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var resource = new ApiResource { Id = ExistingEntityId, Name = "my-api", Properties = [new ApiResourceProperty { Id = ExistingEntityId, Key = "k", Value = "v" }] };
+        var resource = new ApiResource { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), Properties = [new ApiResourceProperty { Id = ExistingEntityId, Key = "k", Value = "v" }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);

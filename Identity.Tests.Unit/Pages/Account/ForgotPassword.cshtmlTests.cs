@@ -42,7 +42,7 @@ public class ForgotPasswordModelTests
     public async Task OnPostAsync_UnknownEmail_RedirectsToConfirmationWithoutSendingEmail()
     {
         // Arrange
-        var unknownEmail = $"{Guid.NewGuid():N}@example.com";
+        var unknownEmail = TestValues.NewEmailAddress();
         var userManagerMock = MockHelpers.MockUserManager();
 
         var (factory, senderMock) = CreateSenderFactoryWithMock();
@@ -68,7 +68,7 @@ public class ForgotPasswordModelTests
     public async Task OnPostAsync_UnconfirmedEmail_RedirectsToConfirmationWithoutSendingEmail()
     {
         // Arrange
-        var unconfirmedEmail = $"{Guid.NewGuid():N}@example.com";
+        var unconfirmedEmail = TestValues.NewEmailAddress();
         var userManagerMock = MockHelpers.MockUserManager();
 
         var (factory, senderMock) = CreateSenderFactoryWithMock();

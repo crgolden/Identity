@@ -351,7 +351,7 @@ public class RegisterModelTests
         model.Url = urlHelperMock.Object;
         model.Input = new RegisterModel.InputModel
         {
-            Email = $"{Guid.NewGuid():N}@example.com",
+            Email = TestValues.NewEmailAddress(),
             Password = $"P@ss{Guid.NewGuid():N}!"
         };
 

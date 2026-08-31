@@ -39,7 +39,7 @@ public class CreatecshtmlTests
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
 
-        var model = new CreateModel(ctx.Object) { Client = new Client { ClientId = "test-client" } };
+        var model = new CreateModel(ctx.Object) { Client = new Client { ClientId = TestValues.NewClientIdentifier() } };
         var result = await model.OnPostAsync();
 
         var redirect = Assert.IsType<RedirectToPageResult>(result);

@@ -18,7 +18,7 @@ public class ProperiescshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var scope = new ApiScope { Id = ExistingEntityId, Name = "api1", Properties = [new ApiScopeProperty { Key = "k", Value = "v" }] };
+        var scope = new ApiScope { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), Properties = [new ApiScopeProperty { Key = "k", Value = "v" }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([scope]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);

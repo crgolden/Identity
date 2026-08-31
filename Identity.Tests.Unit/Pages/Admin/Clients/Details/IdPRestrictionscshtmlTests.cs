@@ -18,7 +18,7 @@ public class IdPRestrictionscshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = "test", IdentityProviderRestrictions = [new ClientIdPRestriction { Id = ExistingEntityId, Provider = "Google", ClientId = ExistingEntityId }] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), IdentityProviderRestrictions = [new ClientIdPRestriction { Id = ExistingEntityId, Provider = "Google", ClientId = ExistingEntityId }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);

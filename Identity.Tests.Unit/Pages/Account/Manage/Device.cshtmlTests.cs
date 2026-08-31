@@ -17,6 +17,9 @@ using Moq;
 [Trait("Category", "Unit")]
 public class DeviceIndexModelTests
 {
+    private static readonly string ExistingClientId = TestValues.NewClientIdentifier();
+    private static readonly string ExistingClientName = TestValues.NewClientName();
+
     [Fact]
     public void Constructor_ValidDependencies_CreatesPageModel()
     {
@@ -78,7 +81,7 @@ public class DeviceIndexModelTests
         // Assert
         Assert.IsType<PageResult>(result);
         Assert.Equal("device-code", model.Input.UserCode);
-        Assert.Equal("Client One", model.View.ClientName);
+        Assert.Equal(ExistingClientName, model.View.ClientName);
         Assert.NotEmpty(model.View.IdentityScopes);
     }
 
@@ -97,7 +100,7 @@ public class DeviceIndexModelTests
 
         // Assert
         Assert.IsType<PageResult>(result);
-        Assert.Equal("client1", model.View.ClientName);
+        Assert.Equal(ExistingClientId, model.View.ClientName);
         Assert.Contains(model.View.ApiScopes, s => string.Equals(s.Value, "api.read", StringComparison.Ordinal));
         Assert.Contains(model.View.ApiScopes, s => string.Equals(s.Value, "offline_access", StringComparison.Ordinal));
     }
@@ -219,7 +222,7 @@ public class DeviceIndexModelTests
 
     private static DeviceFlowAuthorizationRequest BuildRequest() => new()
     {
-        Client = new Client { ClientId = "client1", ClientName = "Client One" },
+        Client = new Client { ClientId = ExistingClientId, ClientName = ExistingClientName },
         ValidatedResources = new ResourceValidationResult(),
     };
 
@@ -229,7 +232,7 @@ public class DeviceIndexModelTests
         resources.IdentityResources.Add(new IdentityResources.OpenId());
         return new DeviceFlowAuthorizationRequest
         {
-            Client = new Client { ClientId = "client1", ClientName = "Client One" },
+            Client = new Client { ClientId = ExistingClientId, ClientName = ExistingClientName },
             ValidatedResources = new ResourceValidationResult(resources),
         };
     }
@@ -244,7 +247,7 @@ public class DeviceIndexModelTests
         var parsed = new[] { new ParsedScopeValue("api.read") };
         return new DeviceFlowAuthorizationRequest
         {
-            Client = new Client { ClientId = "client1" },
+            Client = new Client { ClientId = ExistingClientId },
             ValidatedResources = new ResourceValidationResult(resources, parsed),
         };
     }

@@ -77,7 +77,7 @@ public class PasskeySubmitTagHelperTests
         var helper = new PasskeySubmitTagHelper(httpAccessorMock.Object, antiforgeryMock.Object)
         {
             Operation = 0,
-            Name = "theName",
+            Name = TestValues.NewApiResourceName(),
             EmailName = null
         };
 

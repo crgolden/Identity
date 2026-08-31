@@ -18,7 +18,7 @@ public class ProperiescshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var scope = new ApiScope { Id = ExistingEntityId, Name = "api1", Properties = [new ApiScopeProperty { Key = "k", Value = "v" }] };
+        var scope = new ApiScope { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), Properties = [new ApiScopeProperty { Key = "k", Value = "v" }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([scope]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
@@ -40,7 +40,7 @@ public class ProperiescshtmlTests
     [Fact]
     public async Task OnPostAsync_AddsNewProperty()
     {
-        var scope = new ApiScope { Id = ExistingEntityId, Name = "api1", Properties = [] };
+        var scope = new ApiScope { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), Properties = [] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([scope]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
@@ -70,7 +70,7 @@ public class ProperiescshtmlTests
     public async Task OnPostAsync_RemovesAbsentProperty()
     {
         var existing = new ApiScopeProperty { Id = ExistingEntityId, Key = "k", Value = "v", ScopeId = ExistingEntityId };
-        var scope = new ApiScope { Id = ExistingEntityId, Name = "api1", Properties = [existing] };
+        var scope = new ApiScope { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), Properties = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([scope]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
@@ -83,7 +83,7 @@ public class ProperiescshtmlTests
     [Fact]
     public async Task OnPostAddRowAsync_AddsBlankRow_WhenFound()
     {
-        var scope = new ApiScope { Id = ExistingEntityId, Name = "api1" };
+        var scope = new ApiScope { Id = ExistingEntityId, Name = TestValues.NewApiResourceName() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([scope]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
@@ -109,7 +109,7 @@ public class ProperiescshtmlTests
     [Fact]
     public async Task OnPostRemoveRowAsync_RemovesRow_WhenValidIndex()
     {
-        var scope = new ApiScope { Id = ExistingEntityId, Name = "api1" };
+        var scope = new ApiScope { Id = ExistingEntityId, Name = TestValues.NewApiResourceName() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([scope]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);

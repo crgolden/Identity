@@ -12,6 +12,8 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ClaimscshtmlTests
 {
+    private static readonly string MissingUserId = TestValues.NewUserId().ToString();
+
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
@@ -34,7 +36,7 @@ public class ClaimscshtmlTests
         var rm = MockHelpers.MockRoleManager();
         rm.Setup(m => m.FindByIdAsync(It.IsAny<string>())).ReturnsAsync((IdentityRole<Guid>?)null);
 
-        Assert.IsType<NotFoundResult>(await new ClaimsModel(rm.Object).OnGetAsync("missing"));
+        Assert.IsType<NotFoundResult>(await new ClaimsModel(rm.Object).OnGetAsync(MissingUserId));
     }
 
     [Fact]
@@ -63,7 +65,7 @@ public class ClaimscshtmlTests
         var rm = MockHelpers.MockRoleManager();
         rm.Setup(m => m.FindByIdAsync(It.IsAny<string>())).ReturnsAsync((IdentityRole<Guid>?)null);
 
-        Assert.IsType<NotFoundResult>(await new ClaimsModel(rm.Object).OnPostAsync("missing"));
+        Assert.IsType<NotFoundResult>(await new ClaimsModel(rm.Object).OnPostAsync(MissingUserId));
     }
 
     [Fact]
@@ -87,7 +89,7 @@ public class ClaimscshtmlTests
         rm.Setup(m => m.FindByIdAsync(It.IsAny<string>())).ReturnsAsync((IdentityRole<Guid>?)null);
 
         var model = new ClaimsModel(rm.Object) { Claims = [] };
-        Assert.IsType<NotFoundResult>(await model.OnPostAddRowAsync("missing"));
+        Assert.IsType<NotFoundResult>(await model.OnPostAddRowAsync(MissingUserId));
     }
 
     [Fact]
@@ -111,6 +113,6 @@ public class ClaimscshtmlTests
         rm.Setup(m => m.FindByIdAsync(It.IsAny<string>())).ReturnsAsync((IdentityRole<Guid>?)null);
 
         var model = new ClaimsModel(rm.Object) { Claims = [] };
-        Assert.IsType<NotFoundResult>(await model.OnPostRemoveRowAsync("missing", 0));
+        Assert.IsType<NotFoundResult>(await model.OnPostRemoveRowAsync(MissingUserId, 0));
     }
 }

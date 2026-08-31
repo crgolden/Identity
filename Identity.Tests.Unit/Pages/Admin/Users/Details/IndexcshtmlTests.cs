@@ -11,26 +11,31 @@ using Moq;
 [Trait("Category", "Unit")]
 public class IndexcshtmlTests
 {
+    private static readonly string ExistingUserName = TestValues.NewUserName();
+
+    private static readonly string ExistingUserId = TestValues.NewUserId().ToString();
+    private static readonly string MissingUserId = TestValues.NewUserId().ToString();
+
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var user = new IdentityUser<Guid> { UserName = "alice" };
+        var user = new IdentityUser<Guid> { UserName = ExistingUserName };
         var um = MockHelpers.MockUserManager();
-        um.Setup(m => m.FindByIdAsync("1")).ReturnsAsync(user);
+        um.Setup(m => m.FindByIdAsync(ExistingUserId)).ReturnsAsync(user);
 
         var model = new IndexModel(um.Object);
-        var result = await model.OnGetAsync("1");
+        var result = await model.OnGetAsync(ExistingUserId);
 
         Assert.IsType<PageResult>(result);
-        Assert.Equal("alice", model.AppUser.UserName);
+        Assert.Equal(ExistingUserName, model.AppUser.UserName);
     }
 
     [Fact]
     public async Task OnGetAsync_ReturnsNotFound_WhenMissing()
     {
         var um = MockHelpers.MockUserManager();
-        um.Setup(m => m.FindByIdAsync("99")).ReturnsAsync((IdentityUser<Guid>?)null);
+        um.Setup(m => m.FindByIdAsync(MissingUserId)).ReturnsAsync((IdentityUser<Guid>?)null);
 
-        Assert.IsType<NotFoundResult>(await new IndexModel(um.Object).OnGetAsync("99"));
+        Assert.IsType<NotFoundResult>(await new IndexModel(um.Object).OnGetAsync(MissingUserId));
     }
 }

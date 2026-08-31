@@ -49,7 +49,7 @@ public class EditcshtmlTests
         ctx.Setup(c => c.IdentityProviders).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
 
-        var model = new EditModel(ctx.Object) { IdentityProvider = new IdentityProvider { Scheme = "google-updated", DisplayName = "Google" } };
+        var model = new EditModel(ctx.Object) { IdentityProvider = new IdentityProvider { Scheme = "google-updated", DisplayName = TestValues.NewClientName() } };
         var result = await model.OnPostAsync(ExistingEntityId);
 
         Assert.Equal("google-updated", provider.Scheme);

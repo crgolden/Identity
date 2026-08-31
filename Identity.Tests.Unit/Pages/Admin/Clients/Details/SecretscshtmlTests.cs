@@ -18,7 +18,7 @@ public class SecretscshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = "test", ClientSecrets = [new ClientSecret { Id = ExistingEntityId, Value = "hashed", Type = "SharedSecret", ClientId = ExistingEntityId }] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), ClientSecrets = [new ClientSecret { Id = ExistingEntityId, Value = "hashed", Type = "SharedSecret", ClientId = ExistingEntityId }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);

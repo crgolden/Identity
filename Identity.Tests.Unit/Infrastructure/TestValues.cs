@@ -32,6 +32,19 @@ internal static class TestValues
 
     internal static string NewRequestId() => LowercaseToken(12);
 
+    internal static string NewClientIdentifier() => $"client-{LowercaseToken(10)}";
+
+    internal static string NewClientName() => $"{LowercaseToken(5)} {LowercaseToken(7)}";
+
+    internal static string NewApiResourceName() => $"api-{LowercaseToken(8)}";
+
+    internal static string NewRecoveryCode() => Guid.NewGuid().ToString("N");
+
+    internal static string NewAuthenticatorKey() => Guid.NewGuid().ToString("N").ToUpperInvariant();
+
+    internal static string NewVerificationCode() =>
+        Random.Shared.Next(0, 1_000_000).ToString("D6", System.Globalization.CultureInfo.InvariantCulture);
+
     internal static string NewTokenFromFirstHalfOfAlphabet(int length) =>
         string.Concat(Enumerable.Range(0, length).Select(_ => (char)Random.Shared.Next('a', 'n')));
 

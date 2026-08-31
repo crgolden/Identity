@@ -18,7 +18,7 @@ public class SecretscshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = "test", ClientSecrets = [new ClientSecret { Id = ExistingEntityId, Value = "hashed", Type = "SharedSecret", ClientId = ExistingEntityId }] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), ClientSecrets = [new ClientSecret { Id = ExistingEntityId, Value = "hashed", Type = "SharedSecret", ClientId = ExistingEntityId }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -46,7 +46,7 @@ public class SecretscshtmlTests
     [Fact]
     public async Task OnPostAsync_AddsNewSecret_WhenValid()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = "test", ClientSecrets = [] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), ClientSecrets = [] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -81,7 +81,7 @@ public class SecretscshtmlTests
     public async Task OnPostAsync_UpdatesExistingSecret_WhenPostedWithId()
     {
         var existing = new ClientSecret { Id = ExistingEntityId, Value = "hashed", Type = "SharedSecret", Description = "old", ClientId = ExistingEntityId };
-        var client = new Client { Id = ExistingEntityId, ClientId = "test", ClientSecrets = [existing] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), ClientSecrets = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -101,7 +101,7 @@ public class SecretscshtmlTests
     public async Task OnPostAsync_RemovesSecret_WhenNotPosted()
     {
         var existing = new ClientSecret { Id = ExistingEntityId, Value = "hashed", Type = "SharedSecret", ClientId = ExistingEntityId };
-        var client = new Client { Id = ExistingEntityId, ClientId = "test", ClientSecrets = [existing] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), ClientSecrets = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -116,7 +116,7 @@ public class SecretscshtmlTests
     [Fact]
     public async Task OnPostAddRowAsync_AddsBlankRowWithDefaultType_WhenFound()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = "test" };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -145,7 +145,7 @@ public class SecretscshtmlTests
     [Fact]
     public async Task OnPostRemoveRowAsync_RemovesRow_WhenValidIndex()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = "test" };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);

@@ -11,6 +11,9 @@ using Moq;
 [Trait("Category", "Unit")]
 public class IndexcshtmlTests
 {
+    private static readonly string FirstSubjectAlphabetically = TestValues.NewTokenFromFirstHalfOfAlphabet(9);
+    private static readonly string LastSubjectAlphabetically = TestValues.NewTokenFromSecondHalfOfAlphabet(9);
+
     [Fact]
     public void IsPageModel()
     {
@@ -23,8 +26,18 @@ public class IndexcshtmlTests
     {
         var data = new[]
         {
-            new PersistedGrant { Key = "b", SubjectId = "b", ClientId = "z" },
-            new PersistedGrant { Key = "a", SubjectId = "a", ClientId = "a" },
+            new PersistedGrant
+            {
+                Key = TestValues.NewRequestId(),
+                SubjectId = LastSubjectAlphabetically,
+                ClientId = TestValues.NewClientIdentifier(),
+            },
+            new PersistedGrant
+            {
+                Key = TestValues.NewRequestId(),
+                SubjectId = FirstSubjectAlphabetically,
+                ClientId = TestValues.NewClientIdentifier(),
+            },
         };
         var mockSet = MockDbSetHelper.BuildMockDbSet(data);
         var ctx = new Mock<IPersistedGrantDbContext>();
@@ -33,7 +46,7 @@ public class IndexcshtmlTests
         var model = new IndexModel(ctx.Object);
         await model.OnGetAsync();
 
-        Assert.Equal(2, model.PersistedGrants.Count);
-        Assert.Equal("a", model.PersistedGrants[0].SubjectId);
+        Assert.Equal(data.Length, model.PersistedGrants.Count);
+        Assert.Equal(FirstSubjectAlphabetically, model.PersistedGrants[0].SubjectId);
     }
 }

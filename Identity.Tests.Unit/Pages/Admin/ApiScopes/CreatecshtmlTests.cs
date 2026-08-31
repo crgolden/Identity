@@ -25,7 +25,7 @@ public class CreatecshtmlTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiScopes.Add(It.IsAny<ApiScope>()));
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
-        var model = new CreateModel(ctx.Object) { Scope = new ApiScope { Name = "api1" } };
+        var model = new CreateModel(ctx.Object) { Scope = new ApiScope { Name = TestValues.NewApiResourceName() } };
         var result = await model.OnPostAsync();
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("./Details/Index", redirect.PageName);

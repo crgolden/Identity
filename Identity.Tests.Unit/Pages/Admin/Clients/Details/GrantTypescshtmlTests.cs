@@ -18,7 +18,7 @@ public class GrantTypescshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = "test", AllowedGrantTypes = [new ClientGrantType { Id = ExistingEntityId, GrantType = "authorization_code", ClientId = ExistingEntityId }] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), AllowedGrantTypes = [new ClientGrantType { Id = ExistingEntityId, GrantType = "authorization_code", ClientId = ExistingEntityId }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);

@@ -18,7 +18,7 @@ public class ScopescshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var resource = new ApiResource { Id = ExistingEntityId, Name = "my-api", Scopes = [new ApiResourceScope { Id = ExistingEntityId, Scope = "my-api.read" }] };
+        var resource = new ApiResource { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), Scopes = [new ApiResourceScope { Id = ExistingEntityId, Scope = "my-api.read" }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);

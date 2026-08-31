@@ -49,7 +49,7 @@ public class IndexcshtmlTests
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
 
-        var model = new IndexModel(ctx.Object) { Resource = new ApiResource { Name = "updated-api", DisplayName = "Updated" } };
+        var model = new IndexModel(ctx.Object) { Resource = new ApiResource { Name = "updated-api", DisplayName = TestValues.NewClientName() } };
         var result = await model.OnPostAsync(ExistingEntityId);
 
         Assert.Equal("updated-api", resource.Name);
@@ -64,7 +64,7 @@ public class IndexcshtmlTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
 
-        var model = new IndexModel(ctx.Object) { Resource = new ApiResource { Name = "x" } };
+        var model = new IndexModel(ctx.Object) { Resource = new ApiResource { Name = TestValues.NewApiResourceName() } };
         Assert.IsType<NotFoundResult>(await model.OnPostAsync(MissingEntityId));
     }
 }

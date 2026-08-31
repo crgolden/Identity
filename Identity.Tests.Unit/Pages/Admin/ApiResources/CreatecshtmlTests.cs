@@ -25,7 +25,7 @@ public class CreatecshtmlTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources.Add(It.IsAny<ApiResource>()));
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
-        var model = new CreateModel(ctx.Object) { Resource = new ApiResource { Name = "my-api" } };
+        var model = new CreateModel(ctx.Object) { Resource = new ApiResource { Name = TestValues.NewApiResourceName() } };
 
         var result = await model.OnPostAsync();
 
