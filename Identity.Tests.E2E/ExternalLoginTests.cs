@@ -46,14 +46,14 @@ public sealed class ExternalLoginTests(PlaywrightFixture fixture)
         var claims = await userManager.GetClaimsAsync(user);
         Assert.DoesNotContain(claims, c => c.Type == ClaimTypes.NameIdentifier);
         Assert.Contains(claims, c => c.Type == ClaimTypes.Email && c.Value == email);
-        Assert.Contains(claims, c => c.Type == "email_verified" && c.Value == "true");
-        Assert.Contains(claims, c => c.Type == "name" && c.Value == "Chris Golden");
-        Assert.Contains(claims, c => c.Type == "picture" && c.Value == "https://example.test/avatar.jpg");
-        Assert.Contains(claims, c => c.Type == ClaimTypes.GivenName && c.Value == "Chris");
-        Assert.Contains(claims, c => c.Type == ClaimTypes.Surname && c.Value == "Golden");
+        Assert.Contains(claims, c => string.Equals(c.Type, "email_verified", StringComparison.Ordinal) && string.Equals(c.Value, "true", StringComparison.Ordinal));
+        Assert.Contains(claims, c => string.Equals(c.Type, "name", StringComparison.Ordinal) && string.Equals(c.Value, "Chris Golden", StringComparison.Ordinal));
+        Assert.Contains(claims, c => string.Equals(c.Type, "picture", StringComparison.Ordinal) && string.Equals(c.Value, "https://example.test/avatar.jpg", StringComparison.Ordinal));
+        Assert.Contains(claims, c => c.Type == ClaimTypes.GivenName && string.Equals(c.Value, "Chris", StringComparison.Ordinal));
+        Assert.Contains(claims, c => c.Type == ClaimTypes.Surname && string.Equals(c.Value, "Golden", StringComparison.Ordinal));
 
         var logins = await userManager.GetLoginsAsync(user);
-        Assert.Contains(logins, l => l.LoginProvider == "GoogleOpenIdConnect");
+        Assert.Contains(logins, l => string.Equals(l.LoginProvider, "GoogleOpenIdConnect", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -113,7 +113,7 @@ public sealed class ExternalLoginTests(PlaywrightFixture fixture)
         var user = await userManager.FindByEmailAsync(email);
         Assert.NotNull(user);
         var logins = await userManager.GetLoginsAsync(user);
-        Assert.DoesNotContain(logins, l => l.LoginProvider == "GoogleOpenIdConnect");
+        Assert.DoesNotContain(logins, l => string.Equals(l.LoginProvider, "GoogleOpenIdConnect", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -161,12 +161,12 @@ public sealed class ExternalLoginTests(PlaywrightFixture fixture)
         Assert.NotNull(user);
 
         var claims = await userManager.GetClaimsAsync(user);
-        Assert.Contains(claims, c => c.Type == ClaimTypes.GivenName && c.Value == "PreExistingGivenName");
-        Assert.DoesNotContain(claims, c => c.Type == ClaimTypes.GivenName && c.Value == "GoogleGivenName");
-        Assert.Contains(claims, c => c.Type == ClaimTypes.Surname && c.Value == "GoogleSurname");
+        Assert.Contains(claims, c => c.Type == ClaimTypes.GivenName && string.Equals(c.Value, "PreExistingGivenName", StringComparison.Ordinal));
+        Assert.DoesNotContain(claims, c => c.Type == ClaimTypes.GivenName && string.Equals(c.Value, "GoogleGivenName", StringComparison.Ordinal));
+        Assert.Contains(claims, c => c.Type == ClaimTypes.Surname && string.Equals(c.Value, "GoogleSurname", StringComparison.Ordinal));
 
         var logins = await userManager.GetLoginsAsync(user);
-        Assert.Contains(logins, l => l.LoginProvider == "GoogleOpenIdConnect");
+        Assert.Contains(logins, l => string.Equals(l.LoginProvider, "GoogleOpenIdConnect", StringComparison.Ordinal));
     }
 
     private async Task SetGoogleClaimsAsync(IPage page, FakeGoogleClaims claims)

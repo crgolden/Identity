@@ -57,14 +57,15 @@ public sealed class ExternalLoginModelTests
     {
         // Arrange
         var harness = CreateModel();
+        var remoteFailureReason = TestValues.NewFailureReason();
 
         // Act
-        var result = await harness.Model.OnGetCallbackAsync("/return", "provider failure");
+        var result = await harness.Model.OnGetCallbackAsync("/return", remoteFailureReason);
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("./Login", redirect.PageName);
-        Assert.Contains("provider failure", harness.Model.ErrorMessage, StringComparison.Ordinal);
+        Assert.Contains(remoteFailureReason, harness.Model.ErrorMessage, StringComparison.Ordinal);
         harness.SignIn.Verify(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>()), Times.Never);
     }
 
@@ -137,10 +138,11 @@ public sealed class ExternalLoginModelTests
     {
         // Arrange
         var harness = CreateModel();
-        harness.SignIn.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>())).ReturnsAsync(BuildLoginInfo("found@example.com"));
+        var externalEmail = TestValues.NewEmailAddress();
+        harness.SignIn.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>())).ReturnsAsync(BuildLoginInfo(externalEmail));
         harness.SignIn.Setup(s => s.ExternalLoginSignInAsync(It.IsAny<string>(), It.IsAny<string>(), false, true)).ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Failed);
         harness.SignIn.Setup(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<bool>(), It.IsAny<string?>())).Returns(Task.CompletedTask);
-        harness.UserMgr.Setup(u => u.FindByEmailAsync("found@example.com")).ReturnsAsync((IdentityUser<Guid>?)null);
+        harness.UserMgr.Setup(u => u.FindByEmailAsync(externalEmail)).ReturnsAsync((IdentityUser<Guid>?)null);
         harness.UserMgr.Setup(m => m.CreateAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync(IdentityResult.Success);
         harness.UserMgr.Setup(m => m.AddLoginAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<ExternalLoginInfo>())).ReturnsAsync(IdentityResult.Success);
 
@@ -161,10 +163,11 @@ public sealed class ExternalLoginModelTests
     {
         // Arrange
         var harness = CreateModel(requireConfirmedAccount: true);
-        harness.SignIn.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>())).ReturnsAsync(BuildLoginInfo("found@example.com", emailVerified: true));
+        var externalEmail = TestValues.NewEmailAddress();
+        harness.SignIn.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>())).ReturnsAsync(BuildLoginInfo(externalEmail, emailVerified: true));
         harness.SignIn.Setup(s => s.ExternalLoginSignInAsync(It.IsAny<string>(), It.IsAny<string>(), false, true)).ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Failed);
         harness.SignIn.Setup(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<bool>(), It.IsAny<string?>())).Returns(Task.CompletedTask);
-        harness.UserMgr.Setup(u => u.FindByEmailAsync("found@example.com")).ReturnsAsync((IdentityUser<Guid>?)null);
+        harness.UserMgr.Setup(u => u.FindByEmailAsync(externalEmail)).ReturnsAsync((IdentityUser<Guid>?)null);
         harness.UserMgr.Setup(m => m.CreateAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync(IdentityResult.Success);
         harness.UserMgr.Setup(m => m.AddLoginAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<ExternalLoginInfo>())).ReturnsAsync(IdentityResult.Success);
         harness.UserMgr.Setup(m => m.IsEmailConfirmedAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync(true);
@@ -185,9 +188,10 @@ public sealed class ExternalLoginModelTests
     {
         // Arrange
         var harness = CreateModel(requireConfirmedAccount: true);
-        harness.SignIn.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>())).ReturnsAsync(BuildLoginInfo("found@example.com", emailVerified: false));
+        var externalEmail = TestValues.NewEmailAddress();
+        harness.SignIn.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>())).ReturnsAsync(BuildLoginInfo(externalEmail, emailVerified: false));
         harness.SignIn.Setup(s => s.ExternalLoginSignInAsync(It.IsAny<string>(), It.IsAny<string>(), false, true)).ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Failed);
-        harness.UserMgr.Setup(u => u.FindByEmailAsync("found@example.com")).ReturnsAsync((IdentityUser<Guid>?)null);
+        harness.UserMgr.Setup(u => u.FindByEmailAsync(externalEmail)).ReturnsAsync((IdentityUser<Guid>?)null);
         harness.UserMgr.Setup(m => m.CreateAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync(IdentityResult.Success);
         harness.UserMgr.Setup(m => m.AddLoginAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<ExternalLoginInfo>())).ReturnsAsync(IdentityResult.Success);
 
@@ -205,9 +209,10 @@ public sealed class ExternalLoginModelTests
     {
         // Arrange
         var harness = CreateModel();
-        harness.SignIn.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>())).ReturnsAsync(BuildLoginInfo("found@example.com"));
+        var externalEmail = TestValues.NewEmailAddress();
+        harness.SignIn.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>())).ReturnsAsync(BuildLoginInfo(externalEmail));
         harness.SignIn.Setup(s => s.ExternalLoginSignInAsync(It.IsAny<string>(), It.IsAny<string>(), false, true)).ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Failed);
-        harness.UserMgr.Setup(u => u.FindByEmailAsync("found@example.com")).ReturnsAsync(new IdentityUser<Guid> { Email = "found@example.com" });
+        harness.UserMgr.Setup(u => u.FindByEmailAsync(externalEmail)).ReturnsAsync(new IdentityUser<Guid> { Email = externalEmail });
 
         // Act
         var result = await harness.Model.OnGetCallbackAsync("/local", null);
@@ -215,7 +220,7 @@ public sealed class ExternalLoginModelTests
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("./Login", redirect.PageName);
-        Assert.Contains("found@example.com", harness.Model.ErrorMessage, StringComparison.Ordinal);
+        Assert.Contains(externalEmail, harness.Model.ErrorMessage, StringComparison.Ordinal);
         Assert.Contains("Display", harness.Model.ErrorMessage, StringComparison.Ordinal);
         harness.UserMgr.Verify(m => m.CreateAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
     }
@@ -259,7 +264,7 @@ public sealed class ExternalLoginModelTests
         var harness = CreateModel();
         harness.SignIn.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>())).ReturnsAsync(BuildLoginInfo());
         harness.Model.ModelState.AddModelError("Test", "error");
-        harness.Model.Input = new ExternalLoginModel.InputModel { Email = "user@example.com" };
+        harness.Model.Input = new ExternalLoginModel.InputModel { Email = TestValues.NewEmailAddress() };
 
         // Act
         var result = await harness.Model.OnPostConfirmationAsync("/return");
@@ -276,9 +281,10 @@ public sealed class ExternalLoginModelTests
     {
         // Arrange
         var harness = CreateModel();
-        harness.SignIn.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>())).ReturnsAsync(BuildLoginInfo());
-        harness.UserMgr.Setup(u => u.FindByEmailAsync("user@example.com")).ReturnsAsync(new IdentityUser<Guid> { Email = "user@example.com" });
-        harness.Model.Input = new ExternalLoginModel.InputModel { Email = "user@example.com" };
+        var existingEmail = TestValues.NewEmailAddress();
+        harness.SignIn.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>())).ReturnsAsync(BuildLoginInfo(existingEmail));
+        harness.UserMgr.Setup(u => u.FindByEmailAsync(existingEmail)).ReturnsAsync(new IdentityUser<Guid> { Email = existingEmail });
+        harness.Model.Input = new ExternalLoginModel.InputModel { Email = existingEmail };
 
         // Act
         var result = await harness.Model.OnPostConfirmationAsync("/return");
@@ -286,7 +292,7 @@ public sealed class ExternalLoginModelTests
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("./Login", redirect.PageName);
-        Assert.Contains("user@example.com", harness.Model.ErrorMessage, StringComparison.Ordinal);
+        Assert.Contains(existingEmail, harness.Model.ErrorMessage, StringComparison.Ordinal);
         harness.UserMgr.Verify(m => m.CreateAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
     }
 
@@ -313,7 +319,7 @@ public sealed class ExternalLoginModelTests
         var harness = CreateModel();
         harness.SignIn.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>())).ReturnsAsync(BuildLoginInfo());
         harness.UserMgr.Setup(m => m.CreateAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "create failed" }));
-        harness.Model.Input = new ExternalLoginModel.InputModel { Email = "user@example.com" };
+        harness.Model.Input = new ExternalLoginModel.InputModel { Email = TestValues.NewEmailAddress() };
 
         // Act
         var result = await harness.Model.OnPostConfirmationAsync("/return");
@@ -331,7 +337,7 @@ public sealed class ExternalLoginModelTests
         harness.SignIn.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>())).ReturnsAsync(BuildLoginInfo());
         harness.UserMgr.Setup(m => m.CreateAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync(IdentityResult.Success);
         harness.UserMgr.Setup(m => m.AddLoginAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<ExternalLoginInfo>())).ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "add login failed" }));
-        harness.Model.Input = new ExternalLoginModel.InputModel { Email = "user@example.com" };
+        harness.Model.Input = new ExternalLoginModel.InputModel { Email = TestValues.NewEmailAddress() };
 
         // Act
         var result = await harness.Model.OnPostConfirmationAsync("/return");
@@ -349,7 +355,8 @@ public sealed class ExternalLoginModelTests
         harness.SignIn.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>())).ReturnsAsync(BuildLoginInfo());
         harness.UserMgr.Setup(m => m.CreateAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync(IdentityResult.Success);
         harness.UserMgr.Setup(m => m.AddLoginAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<ExternalLoginInfo>())).ReturnsAsync(IdentityResult.Success);
-        harness.Model.Input = new ExternalLoginModel.InputModel { Email = "user@example.com" };
+        var confirmingEmail = TestValues.NewEmailAddress();
+        harness.Model.Input = new ExternalLoginModel.InputModel { Email = confirmingEmail };
 
         // Act
         var result = await harness.Model.OnPostConfirmationAsync("/local");
@@ -357,7 +364,7 @@ public sealed class ExternalLoginModelTests
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("./RegisterConfirmation", redirect.PageName);
-        Assert.Equal("user@example.com", redirect.RouteValues?["email"]);
+        Assert.Equal(confirmingEmail, redirect.RouteValues?["email"]);
         harness.Sender.Verify(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()), Times.Once);
         harness.SignIn.Verify(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<bool>(), It.IsAny<string?>()), Times.Never);
     }
@@ -371,7 +378,7 @@ public sealed class ExternalLoginModelTests
         harness.SignIn.Setup(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<bool>(), It.IsAny<string?>())).Returns(Task.CompletedTask);
         harness.UserMgr.Setup(m => m.CreateAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync(IdentityResult.Success);
         harness.UserMgr.Setup(m => m.AddLoginAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<ExternalLoginInfo>())).ReturnsAsync(IdentityResult.Success);
-        harness.Model.Input = new ExternalLoginModel.InputModel { Email = "user@example.com" };
+        harness.Model.Input = new ExternalLoginModel.InputModel { Email = TestValues.NewEmailAddress() };
 
         // Act
         var result = await harness.Model.OnPostConfirmationAsync("/local");
@@ -391,7 +398,7 @@ public sealed class ExternalLoginModelTests
         harness.SignIn.Setup(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<bool>(), It.IsAny<string?>())).Returns(Task.CompletedTask);
         harness.UserMgr.Setup(m => m.CreateAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync(IdentityResult.Success);
         harness.UserMgr.Setup(m => m.AddLoginAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<ExternalLoginInfo>())).ReturnsAsync(IdentityResult.Success);
-        harness.Model.Input = new ExternalLoginModel.InputModel { Email = "user@example.com" };
+        harness.Model.Input = new ExternalLoginModel.InputModel { Email = TestValues.NewEmailAddress() };
 
         // Act
         var result = await harness.Model.OnPostConfirmationAsync("http://evil.example");
@@ -410,7 +417,7 @@ public sealed class ExternalLoginModelTests
         harness.SignIn.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>())).ReturnsAsync(BuildLoginInfo());
         harness.UserMgr.Setup(m => m.CreateAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync(IdentityResult.Success);
         harness.UserMgr.Setup(m => m.AddLoginAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<ExternalLoginInfo>())).ReturnsAsync(IdentityResult.Success);
-        harness.Model.Input = new ExternalLoginModel.InputModel { Email = "user@example.com" };
+        harness.Model.Input = new ExternalLoginModel.InputModel { Email = TestValues.NewEmailAddress() };
 
         // Act
         var result = await harness.Model.OnPostConfirmationAsync("/local");

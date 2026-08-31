@@ -17,7 +17,7 @@ public class ResendEmailConfirmationModelTests
     {
         yield return [string.Empty];
         yield return ["   "];
-        yield return ["user@example.com"];
+        yield return [TestValues.NewEmailAddress()];
         yield return [new string('a', 1024)];
         yield return ["special!@#$%^&*()\t\n\"<>[];:\\'/"];
     }
@@ -32,11 +32,11 @@ public class ResendEmailConfirmationModelTests
 
         var model = new ResendEmailConfirmationModel(mockUserManager.Object, factory)
         {
-            Input = new ResendEmailConfirmationModel.InputModel { Email = "doesnotmatter@example.com" }
+            Input = new ResendEmailConfirmationModel.InputModel { Email = TestValues.NewEmailAddress() }
         };
 
         model.PageContext = new PageContext { HttpContext = new DefaultHttpContext() };
-        model.ModelState.AddModelError("someKey", "some error");
+        model.ModelState.AddModelError(TestValues.NewClaimType(), TestValues.NewFailureReason());
 
         // Act
         var result = await model.OnPostAsync();

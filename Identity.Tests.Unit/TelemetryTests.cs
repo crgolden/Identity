@@ -37,7 +37,7 @@ public sealed class TelemetryTests
         Telemetry.Metrics.ConsentGranted("client1", ["scope1"], remember: true);
 
         // Assert
-        Assert.Contains(capturedTags, t => t.Key == "client_id" && "client1".Equals(t.Value));
+        Assert.Contains(capturedTags, t => string.Equals(t.Key, "client_id", StringComparison.Ordinal) && "client1".Equals(t.Value));
     }
 
     [Fact]
@@ -53,7 +53,7 @@ public sealed class TelemetryTests
         Telemetry.Metrics.ConsentGranted("client1", ["scope1"], remember: true);
 
         // Assert
-        Assert.Contains(capturedTags, t => t.Key == "remember" && true.Equals(t.Value));
+        Assert.Contains(capturedTags, t => string.Equals(t.Key, "remember", StringComparison.Ordinal) && true.Equals(t.Value));
     }
 
     [Fact]
@@ -69,7 +69,7 @@ public sealed class TelemetryTests
         Telemetry.Metrics.ConsentGranted("client1", ["scope1", "scope2"], remember: false);
 
         // Assert
-        Assert.Contains(capturedTags, t => t.Key == "scope_count" && 2.Equals(t.Value));
+        Assert.Contains(capturedTags, t => string.Equals(t.Key, "scope_count", StringComparison.Ordinal) && 2.Equals(t.Value));
     }
 
     [Fact]
@@ -85,7 +85,7 @@ public sealed class TelemetryTests
         Telemetry.Metrics.ConsentGranted("client1", [], remember: false);
 
         // Assert
-        Assert.Contains(capturedTags, t => t.Key == "scope_count" && 0.Equals(t.Value));
+        Assert.Contains(capturedTags, t => string.Equals(t.Key, "scope_count", StringComparison.Ordinal) && 0.Equals(t.Value));
     }
 
     [Fact]
@@ -134,7 +134,7 @@ public sealed class TelemetryTests
         Telemetry.Metrics.ConsentDenied("client2", ["openid"]);
 
         // Assert
-        Assert.Contains(capturedTags, t => t.Key == "client_id" && "client2".Equals(t.Value));
+        Assert.Contains(capturedTags, t => string.Equals(t.Key, "client_id", StringComparison.Ordinal) && "client2".Equals(t.Value));
     }
 
     [Fact]
@@ -150,7 +150,7 @@ public sealed class TelemetryTests
         Telemetry.Metrics.ConsentDenied("client2", ["openid", "profile", "email"]);
 
         // Assert
-        Assert.Contains(capturedTags, t => t.Key == "scope_count" && 3.Equals(t.Value));
+        Assert.Contains(capturedTags, t => string.Equals(t.Key, "scope_count", StringComparison.Ordinal) && 3.Equals(t.Value));
     }
 
     [Fact]
@@ -166,7 +166,7 @@ public sealed class TelemetryTests
         Telemetry.Metrics.ConsentDenied("client2", []);
 
         // Assert
-        Assert.Contains(capturedTags, t => t.Key == "scope_count" && 0.Equals(t.Value));
+        Assert.Contains(capturedTags, t => string.Equals(t.Key, "scope_count", StringComparison.Ordinal) && 0.Equals(t.Value));
     }
 
     [Fact]
@@ -198,7 +198,7 @@ public sealed class TelemetryTests
         Telemetry.Metrics.GrantsRevoked("client3");
 
         // Assert
-        Assert.Contains(capturedTags, t => t.Key == "client_id" && "client3".Equals(t.Value));
+        Assert.Contains(capturedTags, t => string.Equals(t.Key, "client_id", StringComparison.Ordinal) && "client3".Equals(t.Value));
     }
 
     [Fact]
@@ -220,7 +220,7 @@ public sealed class TelemetryTests
 
         // Assert
         Assert.Equal(1, captured);
-        Assert.Contains(capturedTags, t => t.Key == "client_id" && t.Value is null);
+        Assert.Contains(capturedTags, t => string.Equals(t.Key, "client_id", StringComparison.Ordinal) && t.Value is null);
     }
 
     private static MeterListener MakeListener(

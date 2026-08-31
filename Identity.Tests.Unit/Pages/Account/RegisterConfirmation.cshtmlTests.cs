@@ -90,7 +90,7 @@ public class RegisterConfirmationModelTests
     public async Task OnGetAsync_UserFound_SetsPropertiesAndDoesNotGenerateConfirmationUrl_UrlContentBehavior(string? returnUrl)
     {
         // Arrange
-        var testEmail = "found@example.com";
+        var testEmail = TestValues.NewEmailAddress();
         var user = new IdentityUser<Guid>();
         var mockUserManager = MockHelpers.MockUserManager();
         mockUserManager.Setup(m => m.FindByEmailAsync(It.Is<string>(s => s == testEmail))).ReturnsAsync(user);

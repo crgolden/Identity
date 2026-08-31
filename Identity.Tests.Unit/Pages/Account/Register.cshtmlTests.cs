@@ -129,7 +129,7 @@ public class RegisterModelTests
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
         model.Url = urlHelperMock.Object;
-        model.ModelState.AddModelError("someKey", "some error");
+        model.ModelState.AddModelError(TestValues.NewClaimType(), TestValues.NewFailureReason());
 
         // Act
         var result = await model.OnPostAsync("/return");
@@ -202,7 +202,7 @@ public class RegisterModelTests
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
         model.Url = urlHelperMock.Object;
-        model.Input = new RegisterModel.InputModel { Email = "user@example.com", Password = "P@ssw0rd!" };
+        model.Input = new RegisterModel.InputModel { Email = TestValues.NewEmailAddress(), Password = TestValues.NewPassword() };
 
         var result = await model.OnPostAsync("/return");
 
@@ -222,16 +222,17 @@ public class RegisterModelTests
             .ReturnsAsync(IdentityResult.Success);
         userManagerMock
             .Setup(u => u.GetUserIdAsync(It.IsAny<IdentityUser<Guid>>()))
-            .ReturnsAsync("test-user-id");
+            .ReturnsAsync(TestValues.NewUserId().ToString());
         userManagerMock
             .Setup(u => u.GenerateEmailConfirmationTokenAsync(It.IsAny<IdentityUser<Guid>>()))
-            .ReturnsAsync("raw-token");
+            .ReturnsAsync(TestValues.NewProviderKey());
 
         var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
         signInManagerMock.Setup(s => s.GetExternalAuthenticationSchemesAsync()).ReturnsAsync([]);
 
+        var exemptSmokeTestEmail = TestValues.NewEmailAddress();
         var recaptchaServiceMock = CreateRecaptchaServiceMock(score: 0.0m);
-        recaptchaServiceMock.Setup(s => s.IsExempt("smoke@example.com")).Returns(true);
+        recaptchaServiceMock.Setup(s => s.IsExempt(exemptSmokeTestEmail)).Returns(true);
 
         var model = new RegisterModel(
             userManagerMock.Object,
@@ -251,7 +252,7 @@ public class RegisterModelTests
         urlHelperMock.Setup(u => u.RouteUrl(It.IsAny<UrlRouteContext>())).Returns("https://example/confirm");
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
         model.Url = urlHelperMock.Object;
-        model.Input = new RegisterModel.InputModel { Email = "smoke@example.com", Password = "P@ssw0rd!" };
+        model.Input = new RegisterModel.InputModel { Email = exemptSmokeTestEmail, Password = TestValues.NewPassword() };
 
         await model.OnPostAsync("/return");
 

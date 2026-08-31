@@ -206,7 +206,7 @@ public class ChangePasswordModelTests
         // Assert
         Assert.IsType<PageResult>(result);
         Assert.False(model.ModelState.IsValid);
-        Assert.Contains(model.ModelState.Values.SelectMany(v => v.Errors), e => e.ErrorMessage == "Password too weak.");
+        Assert.Contains(model.ModelState.Values.SelectMany(v => v.Errors), e => string.Equals(e.ErrorMessage, "Password too weak.", StringComparison.Ordinal));
     }
 
     [Fact]

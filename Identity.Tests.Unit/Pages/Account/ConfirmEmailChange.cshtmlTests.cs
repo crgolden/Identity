@@ -68,9 +68,9 @@ public class ConfirmEmailChangeModelTests
     public async Task OnGetAsync_UserNotFound_ReturnsNotFound()
     {
         // Arrange
-        const string userId = "missing-user";
-        const string email = "user@example.com";
-        const string token = "tok";
+        var userId = TestValues.NewUserId().ToString();
+        var email = TestValues.NewEmailAddress();
+        var token = TestValues.NewProviderKey();
         var encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
         var userManagerMock = MockHelpers.MockUserManager();
         userManagerMock.Setup(um => um.FindByIdAsync(It.Is<string>(s => s == userId))).ReturnsAsync((IdentityUser<Guid>?)null);
@@ -89,9 +89,9 @@ public class ConfirmEmailChangeModelTests
     public async Task OnGetAsync_ChangeEmailFails_ReturnsPageAndSetsStatusMessage()
     {
         // Arrange
-        const string userId = "user-1";
-        const string email = "new@example.com";
-        const string token = "change-token";
+        var userId = TestValues.NewUserId().ToString();
+        var email = TestValues.NewEmailAddress();
+        var token = TestValues.NewProviderKey();
         var encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
         var user = new IdentityUser<Guid>
         {
@@ -115,9 +115,9 @@ public class ConfirmEmailChangeModelTests
     public async Task OnGetAsync_SetUserNameFails_ReturnsPageAndSetsStatusMessage()
     {
         // Arrange
-        const string userId = "user-2";
-        const string email = "newuser@example.com";
-        const string token = "token-2";
+        var userId = TestValues.NewUserId().ToString();
+        var email = TestValues.NewEmailAddress();
+        var token = TestValues.NewProviderKey();
         var encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
         var user = new IdentityUser<Guid>
         {
@@ -142,9 +142,9 @@ public class ConfirmEmailChangeModelTests
     public async Task OnGetAsync_AllOperationsSucceed_RefreshesSignInAndSetsSuccessMessage()
     {
         // Arrange
-        const string userId = "user-3";
-        const string email = "ok@example.com";
-        const string token = "ok-token";
+        var userId = TestValues.NewUserId().ToString();
+        var email = TestValues.NewEmailAddress();
+        var token = TestValues.NewProviderKey();
         var encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
         var user = new IdentityUser<Guid>
         {

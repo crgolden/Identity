@@ -93,9 +93,9 @@ public class ConsentIndexModelTests
         // Assert
         Assert.IsType<PageResult>(result);
         Assert.Equal("client1", model.View.ClientName);
-        Assert.Contains(model.View.ApiScopes, s => s.Value == "api.read");
-        Assert.Contains(model.View.ApiScopes, s => s.Resources.Any(r => r.DisplayName == "API One"));
-        Assert.Contains(model.View.ApiScopes, s => s.Value == "offline_access");
+        Assert.Contains(model.View.ApiScopes, s => string.Equals(s.Value, "api.read", StringComparison.Ordinal));
+        Assert.Contains(model.View.ApiScopes, s => s.Resources.Any(r => string.Equals(r.DisplayName, "API One", StringComparison.Ordinal)));
+        Assert.Contains(model.View.ApiScopes, s => string.Equals(s.Value, "offline_access", StringComparison.Ordinal));
     }
 
     [Fact]

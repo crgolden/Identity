@@ -308,7 +308,12 @@ public sealed class PasskeysModelTests
 
     private static PasskeyAttestationResult BuildSuccessfulAttestation()
     {
-        var entity = new PasskeyUserEntity { Id = "user-1", Name = "user@example.com", DisplayName = "User" };
+        var entity = new PasskeyUserEntity
+        {
+            Id = TestValues.NewUserId().ToString(),
+            Name = TestValues.NewEmailAddress(),
+            DisplayName = TestValues.NewGivenName()
+        };
         return PasskeyAttestationResult.Success(BuildPasskey(), entity);
     }
 

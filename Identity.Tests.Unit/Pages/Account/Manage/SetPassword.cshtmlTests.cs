@@ -199,7 +199,7 @@ public class SetPasswordModelTests
         // Assert
         Assert.IsType<PageResult>(result);
         Assert.False(model.ModelState.IsValid);
-        Assert.Contains(model.ModelState.Values, v => v.Errors.Any(e => e.ErrorMessage == "Password too weak."));
+        Assert.Contains(model.ModelState.Values, v => v.Errors.Any(e => string.Equals(e.ErrorMessage, "Password too weak.", StringComparison.Ordinal)));
     }
 
     [Fact]

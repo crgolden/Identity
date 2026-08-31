@@ -104,7 +104,7 @@ public sealed class ConsentTests(PlaywrightFixture fixture)
 
             await page.RunAndWaitForResponseAsync(
                 () => page.ClickAsync("#consent-allow"),
-                r => r.Url.Contains("/Account/Manage/Consent", StringComparison.Ordinal) && r.Request.Method == "POST");
+                r => r.Url.Contains("/Account/Manage/Consent", StringComparison.Ordinal) && string.Equals(r.Request.Method, "POST", StringComparison.Ordinal));
 
             Assert.Contains("/Account/Manage/Consent", page.Url, StringComparison.Ordinal);
             await Assertions.Expect(page.Locator("#validation-errors")).ToContainTextAsync(

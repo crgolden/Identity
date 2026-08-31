@@ -27,7 +27,7 @@ public class ForgotPasswordModelTests
         model.PageContext = new PageContext { HttpContext = new DefaultHttpContext() };
         model.ModelState.AddModelError("Email", "Required");
 
-        model.Input = new ForgotPasswordModel.InputModel { Email = "user@example.com" };
+        model.Input = new ForgotPasswordModel.InputModel { Email = TestValues.NewEmailAddress() };
 
         // Act
         var result = await model.OnPostAsync();

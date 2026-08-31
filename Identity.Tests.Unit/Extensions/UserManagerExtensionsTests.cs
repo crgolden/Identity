@@ -24,9 +24,9 @@ public sealed class UserManagerExtensionsTests
 
         var principal = new ClaimsPrincipal(new ClaimsIdentity(
         [
-            new Claim(ClaimTypes.Email, "user@example.com"),
-            new Claim(ClaimTypes.GivenName, "Chris"),
-            new Claim("picture", "https://example.com/pic.jpg")
+            new Claim(ClaimTypes.Email, TestValues.NewEmailAddress()),
+            new Claim(ClaimTypes.GivenName, TestValues.NewGivenName()),
+            new Claim("picture", TestValues.NewPictureUrl())
         ]));
 
         // Act
@@ -44,9 +44,11 @@ public sealed class UserManagerExtensionsTests
         // Arrange
         var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
         var userManager = MockHelpers.MockUserManager();
+        var emailAlreadyOnTheUser = TestValues.NewEmailAddress();
+        var emailOfferedByTheProvider = TestValues.NewEmailAddress();
         userManager.Setup(m => m.GetClaimsAsync(user)).ReturnsAsync(
         [
-            new Claim(ClaimTypes.Email, "already-set@example.com")
+            new Claim(ClaimTypes.Email, emailAlreadyOnTheUser)
         ]);
         userManager
             .Setup(m => m.AddClaimsAsync(user, It.IsAny<IEnumerable<Claim>>()))
@@ -55,8 +57,8 @@ public sealed class UserManagerExtensionsTests
 
         var principal = new ClaimsPrincipal(new ClaimsIdentity(
         [
-            new Claim(ClaimTypes.Email, "from-google@example.com"),
-            new Claim(ClaimTypes.GivenName, "Chris")
+            new Claim(ClaimTypes.Email, emailOfferedByTheProvider),
+            new Claim(ClaimTypes.GivenName, TestValues.NewGivenName())
         ]));
 
         // Act
@@ -131,12 +133,12 @@ public sealed class UserManagerExtensionsTests
         var userManager = MockHelpers.MockUserManager();
         userManager.Setup(m => m.GetClaimsAsync(user)).ReturnsAsync(
         [
-            new Claim(ClaimTypes.Email, "already-set@example.com")
+            new Claim(ClaimTypes.Email, TestValues.NewEmailAddress())
         ]);
 
         var principal = new ClaimsPrincipal(new ClaimsIdentity(
         [
-            new Claim(ClaimTypes.Email, "from-google@example.com")
+            new Claim(ClaimTypes.Email, TestValues.NewEmailAddress())
         ]));
 
         // Act

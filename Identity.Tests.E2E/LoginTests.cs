@@ -61,7 +61,7 @@ public sealed class LoginTests(PlaywrightFixture fixture)
                 await page.FillAsync("input[name='Input.Password']", "BadPassword!99");
 
                 var postResponse = page.WaitForResponseAsync(
-                    res => res.Request.Method == "POST" && res.Url.Contains("/Account/Login", StringComparison.Ordinal));
+                    res => string.Equals(res.Request.Method, "POST", StringComparison.Ordinal) && res.Url.Contains("/Account/Login", StringComparison.Ordinal));
                 await page.ClickAsync("#login-submit");
                 await postResponse;
 

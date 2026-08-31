@@ -71,36 +71,60 @@ public class ReCAPTCHAServiceTests
     [Fact]
     public void IsExempt_AdminEmail_ReturnsTrue()
     {
-        var service = CreateService(responseScore: 0.9m, adminEmail: "admin@example.com");
-        Assert.True(service.IsExempt("admin@example.com"));
+        var configuredAdminEmail = TestValues.NewEmailAddress();
+        var service = CreateService(responseScore: 0.9m, adminEmail: configuredAdminEmail);
+        Assert.True(service.IsExempt(configuredAdminEmail));
     }
 
     [Fact]
     public void IsExempt_AdminEmailCaseInsensitive_ReturnsTrue()
     {
-        var service = CreateService(responseScore: 0.9m, adminEmail: "admin@example.com");
-        Assert.True(service.IsExempt("ADMIN@EXAMPLE.COM"));
+        var configuredAdminEmail = TestValues.NewEmailAddress();
+        var service = CreateService(responseScore: 0.9m, adminEmail: configuredAdminEmail);
+        Assert.True(service.IsExempt(configuredAdminEmail.ToUpperInvariant()));
     }
 
     [Fact]
     public void IsExempt_TestEmail_ReturnsTrue()
     {
-        var service = CreateService(responseScore: 0.9m, testEmail: "smoke@example.com");
-        Assert.True(service.IsExempt("smoke@example.com"));
+        var configuredTestEmail = TestValues.NewEmailAddress();
+        var service = CreateService(responseScore: 0.9m, testEmail: configuredTestEmail);
+        Assert.True(service.IsExempt(configuredTestEmail));
     }
 
     [Fact]
     public void IsExempt_NullEmail_ReturnsFalse()
     {
-        var service = CreateService(responseScore: 0.9m, adminEmail: "admin@example.com");
+        var service = CreateService(responseScore: 0.9m, adminEmail: TestValues.NewEmailAddress());
         Assert.False(service.IsExempt(null));
     }
 
     [Fact]
     public void IsExempt_UnknownEmail_ReturnsFalse()
     {
-        var service = CreateService(responseScore: 0.9m, adminEmail: "admin@example.com", testEmail: "smoke@example.com");
-        Assert.False(service.IsExempt("other@example.com"));
+        var service = CreateService(
+            responseScore: 0.9m,
+            adminEmail: TestValues.NewEmailAddress(),
+            testEmail: TestValues.NewEmailAddress());
+        Assert.False(service.IsExempt(TestValues.NewEmailAddress()));
+    }
+
+    [Fact]
+    public void IsExempt_TestEmailNotConfigured_ReturnsFalseForEveryCaller()
+    {
+        var service = CreateService(responseScore: 0.9m, adminEmail: TestValues.NewEmailAddress(), testEmail: null);
+        Assert.False(
+            service.IsExempt(TestValues.NewEmailAddress()),
+            "an unconfigured TestEmail must exempt nobody, or a null option silently disables the CAPTCHA");
+    }
+
+    [Fact]
+    public void IsExempt_AdminEmailNotConfigured_ReturnsFalseForEveryCaller()
+    {
+        var service = CreateService(responseScore: 0.9m, adminEmail: null, testEmail: TestValues.NewEmailAddress());
+        Assert.False(
+            service.IsExempt(TestValues.NewEmailAddress()),
+            "an unconfigured AdminEmail must exempt nobody, or a null option silently disables the CAPTCHA");
     }
 
     private static ReCAPTCHAService CreateService(

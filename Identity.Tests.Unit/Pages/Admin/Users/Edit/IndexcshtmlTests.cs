@@ -37,15 +37,20 @@ public class IndexcshtmlTests
     [Fact]
     public async Task OnPostAsync_UpdatesAndRedirects_WhenFound()
     {
-        var user = new IdentityUser<Guid> { UserName = "alice", Email = "alice@example.com" };
+        var existingUserName = TestValues.NewUserName();
+        var updatedUserName = TestValues.NewUserName();
+        var user = new IdentityUser<Guid> { UserName = existingUserName, Email = TestValues.NewEmailAddress() };
         var um = MockHelpers.MockUserManager();
         um.Setup(m => m.FindByIdAsync("1")).ReturnsAsync(user);
         um.Setup(m => m.UpdateAsync(user)).ReturnsAsync(IdentityResult.Success);
 
-        var model = new IndexModel(um.Object) { AppUser = new IdentityUser<Guid> { UserName = "alice-updated", Email = "new@example.com" } };
+        var model = new IndexModel(um.Object)
+        {
+            AppUser = new IdentityUser<Guid> { UserName = updatedUserName, Email = TestValues.NewEmailAddress() }
+        };
         var result = await model.OnPostAsync("1");
 
-        Assert.Equal("alice-updated", user.UserName);
+        Assert.Equal(updatedUserName, user.UserName);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("/Admin/Users/Details/Index", redirect.PageName);
     }

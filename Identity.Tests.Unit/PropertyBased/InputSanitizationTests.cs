@@ -61,9 +61,9 @@ public sealed class InputSanitizationTests
     [Fact]
     public void GravatarHash_EmailWhitespaceTrimmed()
     {
-        var email = "  test@example.com  ";
-        var trimmed = "test@example.com";
-        Assert.Equal(ComputeGravatarHash(email), ComputeGravatarHash(trimmed));
+        var trimmed = TestValues.NewEmailAddress();
+        var paddedWithWhitespace = $"  {trimmed}  ";
+        Assert.Equal(ComputeGravatarHash(paddedWithWhitespace), ComputeGravatarHash(trimmed));
     }
 
     [Theory]

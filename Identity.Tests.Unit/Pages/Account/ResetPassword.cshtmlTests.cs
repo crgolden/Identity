@@ -109,16 +109,17 @@ public class ResetPasswordModelTests
         // Arrange
         var userManagerMock = MockHelpers.MockUserManager();
 
+        var newPassword = TestValues.NewPassword();
         var model = new ResetPasswordModel(userManagerMock.Object);
         model.Input = new ResetPasswordModel.InputModel
         {
-            Email = "user@example.com",
-            Password = "Password1!",
-            ConfirmPassword = "Password1!",
-            Code = "code"
+            Email = TestValues.NewEmailAddress(),
+            Password = newPassword,
+            ConfirmPassword = newPassword,
+            Code = TestValues.NewProviderKey()
         };
 
-        model.ModelState.AddModelError("Email", "Required");
+        model.ModelState.AddModelError(nameof(ResetPasswordModel.InputModel.Email), TestValues.NewFailureReason());
 
         // Act
         var result = await model.OnPostAsync();
@@ -191,16 +192,26 @@ public class ResetPasswordModelTests
         // Arrange
         var userManagerMock = MockHelpers.MockUserManager();
 
-        var foundUser = new IdentityUser<Guid> { Id = Guid.NewGuid(), Email = "user2@example.com", UserName = "user2" };
+        var resettingEmail = TestValues.NewEmailAddress();
+        var resetCode = TestValues.NewProviderKey();
+        var newPassword = TestValues.NewPassword();
+        var firstError = TestValues.NewFailureReason();
+        var secondError = TestValues.NewFailureReason();
+        var foundUser = new IdentityUser<Guid>
+        {
+            Id = Guid.NewGuid(),
+            Email = resettingEmail,
+            UserName = TestValues.NewUserName()
+        };
 
         userManagerMock
-            .Setup(um => um.FindByEmailAsync(It.Is<string>(s => s == "user2@example.com")))
+            .Setup(um => um.FindByEmailAsync(It.Is<string>(s => s == resettingEmail)))
             .ReturnsAsync(foundUser);
 
         var errors = new[]
         {
-            new IdentityError { Description = "Err1" },
-            new IdentityError { Description = "Err2" }
+            new IdentityError { Description = firstError },
+            new IdentityError { Description = secondError }
         };
         var failedResult = IdentityResult.Failed(errors);
 
@@ -212,10 +223,10 @@ public class ResetPasswordModelTests
         {
             Input = new ResetPasswordModel.InputModel
             {
-                Email = "user2@example.com",
-                Password = "AnotherP@ss1",
-                ConfirmPassword = "AnotherP@ss1",
-                Code = "code2"
+                Email = resettingEmail,
+                Password = newPassword,
+                ConfirmPassword = newPassword,
+                Code = resetCode
             }
         };
 
@@ -230,10 +241,10 @@ public class ResetPasswordModelTests
         var entry = model.ModelState[string.Empty];
         Assert.NotNull(entry);
         var actualMessages = entry.Errors.Select(e => e.ErrorMessage).ToArray();
-        Assert.Contains("Err1", actualMessages);
-        Assert.Contains("Err2", actualMessages);
-        userManagerMock.Verify(um => um.FindByEmailAsync("user2@example.com"), Times.Once);
-        userManagerMock.Verify(um => um.ResetPasswordAsync(foundUser, "code2", "AnotherP@ss1"), Times.Once);
+        Assert.Contains(firstError, actualMessages);
+        Assert.Contains(secondError, actualMessages);
+        userManagerMock.Verify(um => um.FindByEmailAsync(resettingEmail), Times.Once);
+        userManagerMock.Verify(um => um.ResetPasswordAsync(foundUser, resetCode, newPassword), Times.Once);
     }
 
     private static ResetPasswordModel BuildResetPasswordModel(
