@@ -27,4 +27,17 @@ internal static class TestValues
     internal static string NewPictureUrl() => $"https://{LowercaseToken(10)}.example/{LowercaseToken(8)}.jpg";
 
     internal static Guid NewUserId() => Guid.NewGuid();
+
+    internal static int NewEntityId() => Random.Shared.Next(1, 100_000);
+
+    internal static string NewRequestId() => LowercaseToken(12);
+
+    internal static string NewTokenFromFirstHalfOfAlphabet(int length) =>
+        string.Concat(Enumerable.Range(0, length).Select(_ => (char)Random.Shared.Next('a', 'n')));
+
+    internal static string NewTokenFromSecondHalfOfAlphabet(int length) =>
+        string.Concat(Enumerable.Range(0, length).Select(_ => (char)Random.Shared.Next('n', 'z' + 1)));
+
+    internal static DateTime NewUtcDateTime() =>
+        DateTime.UtcNow.AddMinutes(-Random.Shared.Next(1, 100_000));
 }

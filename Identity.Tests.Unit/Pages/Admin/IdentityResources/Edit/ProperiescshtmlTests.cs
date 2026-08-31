@@ -12,15 +12,18 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ProperiescshtmlTests
 {
+    private static readonly int ExistingEntityId = TestValues.NewEntityId();
+    private static readonly int MissingEntityId = ExistingEntityId + 1;
+
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var resource = new IdentityResource { Id = 1, Name = "openid", Properties = [new IdentityResourceProperty { Key = "k", Value = "v" }] };
+        var resource = new IdentityResource { Id = ExistingEntityId, Name = "openid", Properties = [new IdentityResourceProperty { Key = "k", Value = "v" }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         var model = new PropertiesModel(ctx.Object);
-        var result = await model.OnGetAsync(1);
+        var result = await model.OnGetAsync(ExistingEntityId);
         Assert.IsType<PageResult>(result);
         Assert.Single(model.Properties);
     }
@@ -32,13 +35,13 @@ public class ProperiescshtmlTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         var model = new PropertiesModel(ctx.Object);
-        Assert.IsType<NotFoundResult>(await model.OnGetAsync(99));
+        Assert.IsType<NotFoundResult>(await model.OnGetAsync(MissingEntityId));
     }
 
     [Fact]
     public async Task OnPostAsync_AddsNewProperty()
     {
-        var resource = new IdentityResource { Id = 1, Name = "openid", Properties = [] };
+        var resource = new IdentityResource { Id = ExistingEntityId, Name = "openid", Properties = [] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
@@ -47,7 +50,7 @@ public class ProperiescshtmlTests
         {
             Properties = [new IdentityResourceProperty { Id = 0, Key = "k", Value = "v" }],
         };
-        var result = await model.OnPostAsync(1);
+        var result = await model.OnPostAsync(ExistingEntityId);
         var onlyProperty = Assert.Single(resource.Properties);
         Assert.Equal("k", onlyProperty.Key);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
@@ -61,33 +64,33 @@ public class ProperiescshtmlTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         var model = new PropertiesModel(ctx.Object) { Properties = [] };
-        Assert.IsType<NotFoundResult>(await model.OnPostAsync(99));
+        Assert.IsType<NotFoundResult>(await model.OnPostAsync(MissingEntityId));
     }
 
     [Fact]
     public async Task OnPostAsync_RemovesAbsentProperty()
     {
-        var existing = new IdentityResourceProperty { Id = 1, Key = "k", Value = "v", IdentityResourceId = 1 };
-        var resource = new IdentityResource { Id = 1, Name = "openid", Properties = [existing] };
+        var existing = new IdentityResourceProperty { Id = ExistingEntityId, Key = "k", Value = "v", IdentityResourceId = ExistingEntityId };
+        var resource = new IdentityResource { Id = ExistingEntityId, Name = "openid", Properties = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new PropertiesModel(ctx.Object) { Properties = [] };
-        await model.OnPostAsync(1);
+        await model.OnPostAsync(ExistingEntityId);
         Assert.Empty(resource.Properties);
     }
 
     [Fact]
     public async Task OnPostAddRowAsync_AddsBlankRow_WhenFound()
     {
-        var resource = new IdentityResource { Id = 1, Name = "openid" };
+        var resource = new IdentityResource { Id = ExistingEntityId, Name = "openid" };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
 
         var model = new PropertiesModel(ctx.Object) { Properties = [] };
-        var result = await model.OnPostAddRowAsync(1);
+        var result = await model.OnPostAddRowAsync(ExistingEntityId);
 
         Assert.IsType<PageResult>(result);
         Assert.Single(model.Properties);
@@ -101,19 +104,19 @@ public class ProperiescshtmlTests
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
 
         var model = new PropertiesModel(ctx.Object) { Properties = [] };
-        Assert.IsType<NotFoundResult>(await model.OnPostAddRowAsync(99));
+        Assert.IsType<NotFoundResult>(await model.OnPostAddRowAsync(MissingEntityId));
     }
 
     [Fact]
     public async Task OnPostRemoveRowAsync_RemovesRow_WhenValidIndex()
     {
-        var resource = new IdentityResource { Id = 1, Name = "openid" };
+        var resource = new IdentityResource { Id = ExistingEntityId, Name = "openid" };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
 
-        var model = new PropertiesModel(ctx.Object) { Properties = [new IdentityResourceProperty { Id = 1, Key = "k", Value = "v" }] };
-        var result = await model.OnPostRemoveRowAsync(1, 0);
+        var model = new PropertiesModel(ctx.Object) { Properties = [new IdentityResourceProperty { Id = ExistingEntityId, Key = "k", Value = "v" }] };
+        var result = await model.OnPostRemoveRowAsync(ExistingEntityId, 0);
 
         Assert.IsType<PageResult>(result);
         Assert.Empty(model.Properties);
@@ -127,6 +130,6 @@ public class ProperiescshtmlTests
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
 
         var model = new PropertiesModel(ctx.Object) { Properties = [] };
-        Assert.IsType<NotFoundResult>(await model.OnPostRemoveRowAsync(99, 0));
+        Assert.IsType<NotFoundResult>(await model.OnPostRemoveRowAsync(MissingEntityId, 0));
     }
 }

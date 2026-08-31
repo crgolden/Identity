@@ -12,16 +12,19 @@ using Moq;
 [Trait("Category", "Unit")]
 public class DeletecshtmlTests
 {
+    private static readonly int ExistingEntityId = TestValues.NewEntityId();
+    private static readonly int MissingEntityId = ExistingEntityId + 1;
+
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var session = new SamlLogoutSession { Id = 1, LogoutId = "logout1" };
+        var session = new SamlLogoutSession { Id = ExistingEntityId, LogoutId = "logout1" };
         var mockSet = MockDbSetHelper.BuildMockDbSet([session]);
         var ctx = new Mock<IPersistedGrantDbContext>();
         ctx.Setup(c => c.SamlLogoutSessions).Returns(mockSet.Object);
 
         var model = new DeleteModel(ctx.Object);
-        var result = await model.OnGetAsync(1);
+        var result = await model.OnGetAsync(ExistingEntityId);
 
         Assert.IsType<PageResult>(result);
         Assert.Equal("logout1", model.SamlLogoutSession.LogoutId);
@@ -35,20 +38,20 @@ public class DeletecshtmlTests
         ctx.Setup(c => c.SamlLogoutSessions).Returns(mockSet.Object);
 
         var model = new DeleteModel(ctx.Object);
-        Assert.IsType<NotFoundResult>(await model.OnGetAsync(99));
+        Assert.IsType<NotFoundResult>(await model.OnGetAsync(MissingEntityId));
     }
 
     [Fact]
     public async Task OnPostAsync_Deletes_WhenFound()
     {
-        var session = new SamlLogoutSession { Id = 1 };
+        var session = new SamlLogoutSession { Id = ExistingEntityId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([session]);
         var ctx = new Mock<IPersistedGrantDbContext>();
         ctx.Setup(c => c.SamlLogoutSessions).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
 
         var model = new DeleteModel(ctx.Object);
-        var result = await model.OnPostAsync(1);
+        var result = await model.OnPostAsync(ExistingEntityId);
 
         ctx.Verify(c => c.SamlLogoutSessions.Remove(session), Times.Once);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
@@ -63,6 +66,6 @@ public class DeletecshtmlTests
         ctx.Setup(c => c.SamlLogoutSessions).Returns(mockSet.Object);
 
         var model = new DeleteModel(ctx.Object);
-        Assert.IsType<NotFoundResult>(await model.OnPostAsync(99));
+        Assert.IsType<NotFoundResult>(await model.OnPostAsync(MissingEntityId));
     }
 }

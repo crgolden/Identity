@@ -12,15 +12,18 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ClaimTypescshtmlTests
 {
+    private static readonly int ExistingEntityId = TestValues.NewEntityId();
+    private static readonly int MissingEntityId = ExistingEntityId + 1;
+
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var resource = new IdentityResource { Id = 1, Name = "openid", UserClaims = [new IdentityResourceClaim { Type = "sub" }] };
+        var resource = new IdentityResource { Id = ExistingEntityId, Name = "openid", UserClaims = [new IdentityResourceClaim { Type = "sub" }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         var model = new ClaimTypesModel(ctx.Object);
-        var result = await model.OnGetAsync(1);
+        var result = await model.OnGetAsync(ExistingEntityId);
         Assert.IsType<PageResult>(result);
         Assert.Single(model.Resource.UserClaims);
     }
@@ -32,6 +35,6 @@ public class ClaimTypescshtmlTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         var model = new ClaimTypesModel(ctx.Object);
-        Assert.IsType<NotFoundResult>(await model.OnGetAsync(99));
+        Assert.IsType<NotFoundResult>(await model.OnGetAsync(MissingEntityId));
     }
 }

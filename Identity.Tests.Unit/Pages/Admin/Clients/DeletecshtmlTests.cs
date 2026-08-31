@@ -12,19 +12,22 @@ using Moq;
 [Trait("Category", "Unit")]
 public class DeletecshtmlTests
 {
+    private static readonly int ExistingEntityId = TestValues.NewEntityId();
+    private static readonly int MissingEntityId = ExistingEntityId + 1;
+
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var client = new Client { Id = 1, ClientId = "test" };
+        var client = new Client { Id = ExistingEntityId, ClientId = "test" };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
 
         var model = new DeleteModel(ctx.Object);
-        var result = await model.OnGetAsync(1);
+        var result = await model.OnGetAsync(ExistingEntityId);
 
         Assert.IsType<PageResult>(result);
-        Assert.Equal(1, model.Client.Id);
+        Assert.Equal(ExistingEntityId, model.Client.Id);
     }
 
     [Fact]
@@ -35,7 +38,7 @@ public class DeletecshtmlTests
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
 
         var model = new DeleteModel(ctx.Object);
-        var result = await model.OnGetAsync(99);
+        var result = await model.OnGetAsync(MissingEntityId);
 
         Assert.IsType<NotFoundResult>(result);
     }
@@ -43,14 +46,14 @@ public class DeletecshtmlTests
     [Fact]
     public async Task OnPostAsync_DeletesAndRedirects_WhenFound()
     {
-        var client = new Client { Id = 1, ClientId = "test" };
+        var client = new Client { Id = ExistingEntityId, ClientId = "test" };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
 
         var model = new DeleteModel(ctx.Object);
-        var result = await model.OnPostAsync(1);
+        var result = await model.OnPostAsync(ExistingEntityId);
 
         ctx.Verify(c => c.Clients.Remove(It.IsAny<Client>()), Times.Once);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
@@ -65,7 +68,7 @@ public class DeletecshtmlTests
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
 
         var model = new DeleteModel(ctx.Object);
-        var result = await model.OnPostAsync(99);
+        var result = await model.OnPostAsync(MissingEntityId);
 
         Assert.IsType<NotFoundResult>(result);
     }

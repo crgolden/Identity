@@ -12,16 +12,19 @@ using Moq;
 [Trait("Category", "Unit")]
 public class EditcshtmlTests
 {
+    private static readonly int ExistingEntityId = TestValues.NewEntityId();
+    private static readonly int MissingEntityId = ExistingEntityId + 1;
+
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var sp = new SamlServiceProvider { Id = 1, EntityId = "urn:sp" };
+        var sp = new SamlServiceProvider { Id = ExistingEntityId, EntityId = "urn:sp" };
         var mockSet = MockDbSetHelper.BuildMockDbSet([sp]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.SamlServiceProviders).Returns(mockSet.Object);
 
         var model = new EditModel(ctx.Object);
-        var result = await model.OnGetAsync(1);
+        var result = await model.OnGetAsync(ExistingEntityId);
 
         Assert.IsType<PageResult>(result);
         Assert.Equal("urn:sp", model.SamlServiceProvider.EntityId);
@@ -34,20 +37,20 @@ public class EditcshtmlTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.SamlServiceProviders).Returns(mockSet.Object);
 
-        Assert.IsType<NotFoundResult>(await new EditModel(ctx.Object).OnGetAsync(99));
+        Assert.IsType<NotFoundResult>(await new EditModel(ctx.Object).OnGetAsync(MissingEntityId));
     }
 
     [Fact]
     public async Task OnPostAsync_UpdatesAndRedirects_WhenValid()
     {
-        var sp = new SamlServiceProvider { Id = 1, EntityId = "urn:sp" };
+        var sp = new SamlServiceProvider { Id = ExistingEntityId, EntityId = "urn:sp" };
         var mockSet = MockDbSetHelper.BuildMockDbSet([sp]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.SamlServiceProviders).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
 
         var model = new EditModel(ctx.Object) { SamlServiceProvider = new SamlServiceProvider { EntityId = "urn:sp-updated", Enabled = true } };
-        var result = await model.OnPostAsync(1);
+        var result = await model.OnPostAsync(ExistingEntityId);
 
         Assert.Equal("urn:sp-updated", sp.EntityId);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
@@ -62,6 +65,6 @@ public class EditcshtmlTests
         ctx.Setup(c => c.SamlServiceProviders).Returns(mockSet.Object);
 
         var model = new EditModel(ctx.Object) { SamlServiceProvider = new SamlServiceProvider { EntityId = "urn:x" } };
-        Assert.IsType<NotFoundResult>(await model.OnPostAsync(99));
+        Assert.IsType<NotFoundResult>(await model.OnPostAsync(MissingEntityId));
     }
 }

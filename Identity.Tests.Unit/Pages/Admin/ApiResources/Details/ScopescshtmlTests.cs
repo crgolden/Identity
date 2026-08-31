@@ -12,16 +12,19 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ScopescshtmlTests
 {
+    private static readonly int ExistingEntityId = TestValues.NewEntityId();
+    private static readonly int MissingEntityId = ExistingEntityId + 1;
+
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var resource = new ApiResource { Id = 1, Name = "my-api", Scopes = [new ApiResourceScope { Id = 1, Scope = "my-api.read" }] };
+        var resource = new ApiResource { Id = ExistingEntityId, Name = "my-api", Scopes = [new ApiResourceScope { Id = ExistingEntityId, Scope = "my-api.read" }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
 
         var model = new ScopesModel(ctx.Object);
-        var result = await model.OnGetAsync(1);
+        var result = await model.OnGetAsync(ExistingEntityId);
 
         Assert.IsType<PageResult>(result);
         Assert.Single(model.Scopes);
@@ -34,6 +37,6 @@ public class ScopescshtmlTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
 
-        Assert.IsType<NotFoundResult>(await new ScopesModel(ctx.Object).OnGetAsync(99));
+        Assert.IsType<NotFoundResult>(await new ScopesModel(ctx.Object).OnGetAsync(MissingEntityId));
     }
 }

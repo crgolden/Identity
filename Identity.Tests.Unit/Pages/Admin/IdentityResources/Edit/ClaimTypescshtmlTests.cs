@@ -12,15 +12,18 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ClaimTypescshtmlTests
 {
+    private static readonly int ExistingEntityId = TestValues.NewEntityId();
+    private static readonly int MissingEntityId = ExistingEntityId + 1;
+
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var resource = new IdentityResource { Id = 1, Name = "openid", UserClaims = [new IdentityResourceClaim { Type = "sub" }] };
+        var resource = new IdentityResource { Id = ExistingEntityId, Name = "openid", UserClaims = [new IdentityResourceClaim { Type = "sub" }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         var model = new ClaimTypesModel(ctx.Object);
-        var result = await model.OnGetAsync(1);
+        var result = await model.OnGetAsync(ExistingEntityId);
         Assert.IsType<PageResult>(result);
         Assert.Single(model.ClaimTypes);
     }
@@ -32,13 +35,13 @@ public class ClaimTypescshtmlTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         var model = new ClaimTypesModel(ctx.Object);
-        Assert.IsType<NotFoundResult>(await model.OnGetAsync(99));
+        Assert.IsType<NotFoundResult>(await model.OnGetAsync(MissingEntityId));
     }
 
     [Fact]
     public async Task OnPostAsync_AddsNewClaimType()
     {
-        var resource = new IdentityResource { Id = 1, Name = "openid", UserClaims = [] };
+        var resource = new IdentityResource { Id = ExistingEntityId, Name = "openid", UserClaims = [] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
@@ -47,7 +50,7 @@ public class ClaimTypescshtmlTests
         {
             ClaimTypes = [new IdentityResourceClaim { Id = 0, Type = "sub" }],
         };
-        var result = await model.OnPostAsync(1);
+        var result = await model.OnPostAsync(ExistingEntityId);
         var onlyUserClaim = Assert.Single(resource.UserClaims);
         Assert.Equal("sub", onlyUserClaim.Type);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
@@ -61,33 +64,33 @@ public class ClaimTypescshtmlTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         var model = new ClaimTypesModel(ctx.Object) { ClaimTypes = [] };
-        Assert.IsType<NotFoundResult>(await model.OnPostAsync(99));
+        Assert.IsType<NotFoundResult>(await model.OnPostAsync(MissingEntityId));
     }
 
     [Fact]
     public async Task OnPostAsync_RemovesAbsentClaimType()
     {
-        var existing = new IdentityResourceClaim { Id = 1, Type = "sub", IdentityResourceId = 1 };
-        var resource = new IdentityResource { Id = 1, Name = "openid", UserClaims = [existing] };
+        var existing = new IdentityResourceClaim { Id = ExistingEntityId, Type = "sub", IdentityResourceId = ExistingEntityId };
+        var resource = new IdentityResource { Id = ExistingEntityId, Name = "openid", UserClaims = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new ClaimTypesModel(ctx.Object) { ClaimTypes = [] };
-        await model.OnPostAsync(1);
+        await model.OnPostAsync(ExistingEntityId);
         Assert.Empty(resource.UserClaims);
     }
 
     [Fact]
     public async Task OnPostAddRowAsync_AddsBlankRow_WhenFound()
     {
-        var resource = new IdentityResource { Id = 1, Name = "openid" };
+        var resource = new IdentityResource { Id = ExistingEntityId, Name = "openid" };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
 
         var model = new ClaimTypesModel(ctx.Object) { ClaimTypes = [] };
-        var result = await model.OnPostAddRowAsync(1);
+        var result = await model.OnPostAddRowAsync(ExistingEntityId);
 
         Assert.IsType<PageResult>(result);
         Assert.Single(model.ClaimTypes);
@@ -101,19 +104,19 @@ public class ClaimTypescshtmlTests
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
 
         var model = new ClaimTypesModel(ctx.Object) { ClaimTypes = [] };
-        Assert.IsType<NotFoundResult>(await model.OnPostAddRowAsync(99));
+        Assert.IsType<NotFoundResult>(await model.OnPostAddRowAsync(MissingEntityId));
     }
 
     [Fact]
     public async Task OnPostRemoveRowAsync_RemovesRow_WhenValidIndex()
     {
-        var resource = new IdentityResource { Id = 1, Name = "openid" };
+        var resource = new IdentityResource { Id = ExistingEntityId, Name = "openid" };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
 
-        var model = new ClaimTypesModel(ctx.Object) { ClaimTypes = [new IdentityResourceClaim { Id = 1, Type = "sub" }] };
-        var result = await model.OnPostRemoveRowAsync(1, 0);
+        var model = new ClaimTypesModel(ctx.Object) { ClaimTypes = [new IdentityResourceClaim { Id = ExistingEntityId, Type = "sub" }] };
+        var result = await model.OnPostRemoveRowAsync(ExistingEntityId, 0);
 
         Assert.IsType<PageResult>(result);
         Assert.Empty(model.ClaimTypes);
@@ -127,6 +130,6 @@ public class ClaimTypescshtmlTests
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
 
         var model = new ClaimTypesModel(ctx.Object) { ClaimTypes = [] };
-        Assert.IsType<NotFoundResult>(await model.OnPostRemoveRowAsync(99, 0));
+        Assert.IsType<NotFoundResult>(await model.OnPostRemoveRowAsync(MissingEntityId, 0));
     }
 }

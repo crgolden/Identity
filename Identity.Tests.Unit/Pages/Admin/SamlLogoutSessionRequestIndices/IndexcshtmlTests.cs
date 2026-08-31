@@ -21,10 +21,19 @@ public class IndexcshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsSorted()
     {
+        var lowerId = TestValues.NewEntityId();
         var data = new[]
         {
-            new SamlLogoutSessionRequestIndex { Id = 2, RequestId = "r2" },
-            new SamlLogoutSessionRequestIndex { Id = 1, RequestId = "r1" },
+            new SamlLogoutSessionRequestIndex
+            {
+                Id = lowerId + 1,
+                RequestId = TestValues.NewTokenFromFirstHalfOfAlphabet(9),
+            },
+            new SamlLogoutSessionRequestIndex
+            {
+                Id = lowerId,
+                RequestId = TestValues.NewTokenFromSecondHalfOfAlphabet(9),
+            },
         };
         var mockSet = MockDbSetHelper.BuildMockDbSet(data);
         var ctx = new Mock<IPersistedGrantDbContext>();
@@ -33,7 +42,7 @@ public class IndexcshtmlTests
         var model = new IndexModel(ctx.Object);
         await model.OnGetAsync();
 
-        Assert.Equal(2, model.SamlLogoutSessionRequestIndices.Count);
-        Assert.Equal(1, model.SamlLogoutSessionRequestIndices[0].Id);
+        Assert.Equal(data.Length, model.SamlLogoutSessionRequestIndices.Count);
+        Assert.Equal(lowerId, model.SamlLogoutSessionRequestIndices[0].Id);
     }
 }

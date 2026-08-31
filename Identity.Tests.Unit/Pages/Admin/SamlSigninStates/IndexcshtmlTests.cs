@@ -21,10 +21,12 @@ public class IndexcshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsSortedDescending()
     {
+        var expiringEarlier = TestValues.NewUtcDateTime();
+        var expiringLaterId = TestValues.NewEntityId();
         var data = new[]
         {
-            new SamlSigninState { Id = 1, ExpiresAtUtc = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new SamlSigninState { Id = 2, ExpiresAtUtc = new DateTime(2024, 6, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new SamlSigninState { Id = TestValues.NewEntityId(), ExpiresAtUtc = expiringEarlier },
+            new SamlSigninState { Id = expiringLaterId, ExpiresAtUtc = expiringEarlier.AddDays(1) },
         };
         var mockSet = MockDbSetHelper.BuildMockDbSet(data);
         var ctx = new Mock<IPersistedGrantDbContext>();
@@ -33,7 +35,7 @@ public class IndexcshtmlTests
         var model = new IndexModel(ctx.Object);
         await model.OnGetAsync();
 
-        Assert.Equal(2, model.SamlSigninStates.Count);
-        Assert.Equal(2, model.SamlSigninStates[0].Id);
+        Assert.Equal(data.Length, model.SamlSigninStates.Count);
+        Assert.Equal(expiringLaterId, model.SamlSigninStates[0].Id);
     }
 }

@@ -12,16 +12,19 @@ using Moq;
 [Trait("Category", "Unit")]
 public class CorsOriginscshtmlTests
 {
+    private static readonly int ExistingEntityId = TestValues.NewEntityId();
+    private static readonly int MissingEntityId = ExistingEntityId + 1;
+
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var client = new Client { Id = 1, ClientId = "test", AllowedCorsOrigins = [new ClientCorsOrigin { Id = 1, Origin = "https://example.com", ClientId = 1 }] };
+        var client = new Client { Id = ExistingEntityId, ClientId = "test", AllowedCorsOrigins = [new ClientCorsOrigin { Id = ExistingEntityId, Origin = "https://example.com", ClientId = ExistingEntityId }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
 
         var model = new CorsOriginsModel(ctx.Object);
-        var result = await model.OnGetAsync(1);
+        var result = await model.OnGetAsync(ExistingEntityId);
 
         Assert.IsType<PageResult>(result);
         Assert.Single(model.Client.AllowedCorsOrigins);
@@ -35,7 +38,7 @@ public class CorsOriginscshtmlTests
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
 
         var model = new CorsOriginsModel(ctx.Object);
-        var result = await model.OnGetAsync(99);
+        var result = await model.OnGetAsync(MissingEntityId);
 
         Assert.IsType<NotFoundResult>(result);
     }

@@ -12,16 +12,19 @@ using Moq;
 [Trait("Category", "Unit")]
 public class IndexcshtmlTests
 {
+    private static readonly int ExistingEntityId = TestValues.NewEntityId();
+    private static readonly int MissingEntityId = ExistingEntityId + 1;
+
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var par = new PushedAuthorizationRequest { Id = 1, ReferenceValueHash = "hash" };
+        var par = new PushedAuthorizationRequest { Id = ExistingEntityId, ReferenceValueHash = "hash" };
         var mockSet = MockDbSetHelper.BuildMockDbSet([par]);
         var ctx = new Mock<IPersistedGrantDbContext>();
         ctx.Setup(c => c.PushedAuthorizationRequests).Returns(mockSet.Object);
 
         var model = new IndexModel(ctx.Object);
-        var result = await model.OnGetAsync(1);
+        var result = await model.OnGetAsync(ExistingEntityId);
 
         Assert.IsType<PageResult>(result);
         Assert.Equal("hash", model.PushedAuthorizationRequest.ReferenceValueHash);
@@ -35,6 +38,6 @@ public class IndexcshtmlTests
         ctx.Setup(c => c.PushedAuthorizationRequests).Returns(mockSet.Object);
 
         var model = new IndexModel(ctx.Object);
-        Assert.IsType<NotFoundResult>(await model.OnGetAsync(99));
+        Assert.IsType<NotFoundResult>(await model.OnGetAsync(MissingEntityId));
     }
 }

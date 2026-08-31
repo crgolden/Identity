@@ -12,16 +12,19 @@ using Moq;
 [Trait("Category", "Unit")]
 public class SecretscshtmlTests
 {
+    private static readonly int ExistingEntityId = TestValues.NewEntityId();
+    private static readonly int MissingEntityId = ExistingEntityId + 1;
+
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var client = new Client { Id = 1, ClientId = "test", ClientSecrets = [new ClientSecret { Id = 1, Value = "hashed", Type = "SharedSecret", ClientId = 1 }] };
+        var client = new Client { Id = ExistingEntityId, ClientId = "test", ClientSecrets = [new ClientSecret { Id = ExistingEntityId, Value = "hashed", Type = "SharedSecret", ClientId = ExistingEntityId }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
 
         var model = new SecretsModel(ctx.Object);
-        var result = await model.OnGetAsync(1);
+        var result = await model.OnGetAsync(ExistingEntityId);
 
         Assert.IsType<PageResult>(result);
         Assert.Single(model.Client.ClientSecrets);
@@ -35,7 +38,7 @@ public class SecretscshtmlTests
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
 
         var model = new SecretsModel(ctx.Object);
-        var result = await model.OnGetAsync(99);
+        var result = await model.OnGetAsync(MissingEntityId);
 
         Assert.IsType<NotFoundResult>(result);
     }

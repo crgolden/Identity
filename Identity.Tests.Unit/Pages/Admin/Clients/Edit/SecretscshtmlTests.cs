@@ -12,16 +12,19 @@ using Moq;
 [Trait("Category", "Unit")]
 public class SecretscshtmlTests
 {
+    private static readonly int ExistingEntityId = TestValues.NewEntityId();
+    private static readonly int MissingEntityId = ExistingEntityId + 1;
+
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var client = new Client { Id = 1, ClientId = "test", ClientSecrets = [new ClientSecret { Id = 1, Value = "hashed", Type = "SharedSecret", ClientId = 1 }] };
+        var client = new Client { Id = ExistingEntityId, ClientId = "test", ClientSecrets = [new ClientSecret { Id = ExistingEntityId, Value = "hashed", Type = "SharedSecret", ClientId = ExistingEntityId }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
 
         var model = new SecretsModel(ctx.Object);
-        var result = await model.OnGetAsync(1);
+        var result = await model.OnGetAsync(ExistingEntityId);
 
         Assert.IsType<PageResult>(result);
         Assert.Single(model.Secrets);
@@ -35,7 +38,7 @@ public class SecretscshtmlTests
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
 
         var model = new SecretsModel(ctx.Object);
-        var result = await model.OnGetAsync(99);
+        var result = await model.OnGetAsync(MissingEntityId);
 
         Assert.IsType<NotFoundResult>(result);
     }
@@ -43,7 +46,7 @@ public class SecretscshtmlTests
     [Fact]
     public async Task OnPostAsync_AddsNewSecret_WhenValid()
     {
-        var client = new Client { Id = 1, ClientId = "test", ClientSecrets = [] };
+        var client = new Client { Id = ExistingEntityId, ClientId = "test", ClientSecrets = [] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -53,7 +56,7 @@ public class SecretscshtmlTests
         {
             Secrets = [new ClientSecret { Id = 0, Value = "secret123", Type = "SharedSecret" }],
         };
-        var result = await model.OnPostAsync(1);
+        var result = await model.OnPostAsync(ExistingEntityId);
 
         var onlyClientSecret = Assert.Single(client.ClientSecrets);
         Assert.Equal("secret123", onlyClientSecret.Value);
@@ -69,7 +72,7 @@ public class SecretscshtmlTests
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
 
         var model = new SecretsModel(ctx.Object) { Secrets = [] };
-        var result = await model.OnPostAsync(99);
+        var result = await model.OnPostAsync(MissingEntityId);
 
         Assert.IsType<NotFoundResult>(result);
     }
@@ -77,8 +80,8 @@ public class SecretscshtmlTests
     [Fact]
     public async Task OnPostAsync_UpdatesExistingSecret_WhenPostedWithId()
     {
-        var existing = new ClientSecret { Id = 1, Value = "hashed", Type = "SharedSecret", Description = "old", ClientId = 1 };
-        var client = new Client { Id = 1, ClientId = "test", ClientSecrets = [existing] };
+        var existing = new ClientSecret { Id = ExistingEntityId, Value = "hashed", Type = "SharedSecret", Description = "old", ClientId = ExistingEntityId };
+        var client = new Client { Id = ExistingEntityId, ClientId = "test", ClientSecrets = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -86,9 +89,9 @@ public class SecretscshtmlTests
 
         var model = new SecretsModel(ctx.Object)
         {
-            Secrets = [new ClientSecret { Id = 1, Type = "SharedSecret", Description = "updated" }],
+            Secrets = [new ClientSecret { Id = ExistingEntityId, Type = "SharedSecret", Description = "updated" }],
         };
-        await model.OnPostAsync(1);
+        await model.OnPostAsync(ExistingEntityId);
 
         Assert.Equal("updated", existing.Description);
         Assert.Equal("hashed", existing.Value);
@@ -97,15 +100,15 @@ public class SecretscshtmlTests
     [Fact]
     public async Task OnPostAsync_RemovesSecret_WhenNotPosted()
     {
-        var existing = new ClientSecret { Id = 1, Value = "hashed", Type = "SharedSecret", ClientId = 1 };
-        var client = new Client { Id = 1, ClientId = "test", ClientSecrets = [existing] };
+        var existing = new ClientSecret { Id = ExistingEntityId, Value = "hashed", Type = "SharedSecret", ClientId = ExistingEntityId };
+        var client = new Client { Id = ExistingEntityId, ClientId = "test", ClientSecrets = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
 
         var model = new SecretsModel(ctx.Object) { Secrets = [] };
-        await model.OnPostAsync(1);
+        await model.OnPostAsync(ExistingEntityId);
 
         Assert.Empty(client.ClientSecrets);
     }
@@ -113,13 +116,13 @@ public class SecretscshtmlTests
     [Fact]
     public async Task OnPostAddRowAsync_AddsBlankRowWithDefaultType_WhenFound()
     {
-        var client = new Client { Id = 1, ClientId = "test" };
+        var client = new Client { Id = ExistingEntityId, ClientId = "test" };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
 
         var model = new SecretsModel(ctx.Object) { Secrets = [] };
-        var result = await model.OnPostAddRowAsync(1);
+        var result = await model.OnPostAddRowAsync(ExistingEntityId);
 
         Assert.IsType<PageResult>(result);
         var onlySecret = Assert.Single(model.Secrets);
@@ -134,7 +137,7 @@ public class SecretscshtmlTests
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
 
         var model = new SecretsModel(ctx.Object) { Secrets = [] };
-        var result = await model.OnPostAddRowAsync(99);
+        var result = await model.OnPostAddRowAsync(MissingEntityId);
 
         Assert.IsType<NotFoundResult>(result);
     }
@@ -142,13 +145,13 @@ public class SecretscshtmlTests
     [Fact]
     public async Task OnPostRemoveRowAsync_RemovesRow_WhenValidIndex()
     {
-        var client = new Client { Id = 1, ClientId = "test" };
+        var client = new Client { Id = ExistingEntityId, ClientId = "test" };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
 
-        var model = new SecretsModel(ctx.Object) { Secrets = [new ClientSecret { Id = 1, Value = "hashed", Type = "SharedSecret" }] };
-        var result = await model.OnPostRemoveRowAsync(1, 0);
+        var model = new SecretsModel(ctx.Object) { Secrets = [new ClientSecret { Id = ExistingEntityId, Value = "hashed", Type = "SharedSecret" }] };
+        var result = await model.OnPostRemoveRowAsync(ExistingEntityId, 0);
 
         Assert.IsType<PageResult>(result);
         Assert.Empty(model.Secrets);
@@ -162,7 +165,7 @@ public class SecretscshtmlTests
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
 
         var model = new SecretsModel(ctx.Object) { Secrets = [] };
-        var result = await model.OnPostRemoveRowAsync(99, 0);
+        var result = await model.OnPostRemoveRowAsync(MissingEntityId, 0);
 
         Assert.IsType<NotFoundResult>(result);
     }

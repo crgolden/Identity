@@ -12,16 +12,19 @@ using Moq;
 [Trait("Category", "Unit")]
 public class IndexcshtmlTests
 {
+    private static readonly int ExistingEntityId = TestValues.NewEntityId();
+    private static readonly int MissingEntityId = ExistingEntityId + 1;
+
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var session = new SamlLogoutSession { Id = 1, LogoutId = "logout1" };
+        var session = new SamlLogoutSession { Id = ExistingEntityId, LogoutId = "logout1" };
         var mockSet = MockDbSetHelper.BuildMockDbSet([session]);
         var ctx = new Mock<IPersistedGrantDbContext>();
         ctx.Setup(c => c.SamlLogoutSessions).Returns(mockSet.Object);
 
         var model = new IndexModel(ctx.Object);
-        var result = await model.OnGetAsync(1);
+        var result = await model.OnGetAsync(ExistingEntityId);
 
         Assert.IsType<PageResult>(result);
         Assert.Equal("logout1", model.SamlLogoutSession.LogoutId);
@@ -35,6 +38,6 @@ public class IndexcshtmlTests
         ctx.Setup(c => c.SamlLogoutSessions).Returns(mockSet.Object);
 
         var model = new IndexModel(ctx.Object);
-        Assert.IsType<NotFoundResult>(await model.OnGetAsync(99));
+        Assert.IsType<NotFoundResult>(await model.OnGetAsync(MissingEntityId));
     }
 }

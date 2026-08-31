@@ -21,10 +21,12 @@ public class IndexcshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsClientsOrderedByClientId()
     {
+        var firstAlphabetically = TestValues.NewTokenFromFirstHalfOfAlphabet(9);
+        var lastAlphabetically = TestValues.NewTokenFromSecondHalfOfAlphabet(9);
         var clients = new[]
         {
-            new Client { Id = 1, ClientId = "beta" },
-            new Client { Id = 2, ClientId = "alpha" },
+            new Client { Id = TestValues.NewEntityId(), ClientId = lastAlphabetically },
+            new Client { Id = TestValues.NewEntityId(), ClientId = firstAlphabetically },
         };
         var mockSet = MockDbSetHelper.BuildMockDbSet(clients);
         var ctx = new Mock<IConfigurationDbContext>();
@@ -33,9 +35,9 @@ public class IndexcshtmlTests
         var model = new IndexModel(ctx.Object);
         await model.OnGetAsync();
 
-        Assert.Equal(2, model.Clients.Count);
-        Assert.Equal("alpha", model.Clients[0].ClientId);
-        Assert.Equal("beta", model.Clients[1].ClientId);
+        Assert.Equal(clients.Length, model.Clients.Count);
+        Assert.Equal(firstAlphabetically, model.Clients[0].ClientId);
+        Assert.Equal(lastAlphabetically, model.Clients[1].ClientId);
     }
 
     [Fact]

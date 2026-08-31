@@ -12,16 +12,19 @@ using Moq;
 [Trait("Category", "Unit")]
 public class DetailscshtmlTests
 {
+    private static readonly int ExistingEntityId = TestValues.NewEntityId();
+    private static readonly int MissingEntityId = ExistingEntityId + 1;
+
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var sp = new SamlServiceProvider { Id = 1, EntityId = "urn:sp" };
+        var sp = new SamlServiceProvider { Id = ExistingEntityId, EntityId = "urn:sp" };
         var mockSet = MockDbSetHelper.BuildMockDbSet([sp]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.SamlServiceProviders).Returns(mockSet.Object);
 
         var model = new DetailsModel(ctx.Object);
-        var result = await model.OnGetAsync(1);
+        var result = await model.OnGetAsync(ExistingEntityId);
 
         Assert.IsType<PageResult>(result);
         Assert.Equal("urn:sp", model.SamlServiceProvider.EntityId);
@@ -34,6 +37,6 @@ public class DetailscshtmlTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.SamlServiceProviders).Returns(mockSet.Object);
 
-        Assert.IsType<NotFoundResult>(await new DetailsModel(ctx.Object).OnGetAsync(99));
+        Assert.IsType<NotFoundResult>(await new DetailsModel(ctx.Object).OnGetAsync(MissingEntityId));
     }
 }

@@ -12,16 +12,19 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ScopescshtmlTests
 {
+    private static readonly int ExistingEntityId = TestValues.NewEntityId();
+    private static readonly int MissingEntityId = ExistingEntityId + 1;
+
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var client = new Client { Id = 1, ClientId = "test", AllowedScopes = [new ClientScope { Id = 1, Scope = "openid", ClientId = 1 }] };
+        var client = new Client { Id = ExistingEntityId, ClientId = "test", AllowedScopes = [new ClientScope { Id = ExistingEntityId, Scope = "openid", ClientId = ExistingEntityId }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
 
         var model = new ScopesModel(ctx.Object);
-        var result = await model.OnGetAsync(1);
+        var result = await model.OnGetAsync(ExistingEntityId);
 
         Assert.IsType<PageResult>(result);
         Assert.Single(model.Client.AllowedScopes);
@@ -35,7 +38,7 @@ public class ScopescshtmlTests
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
 
         var model = new ScopesModel(ctx.Object);
-        var result = await model.OnGetAsync(99);
+        var result = await model.OnGetAsync(MissingEntityId);
 
         Assert.IsType<NotFoundResult>(result);
     }

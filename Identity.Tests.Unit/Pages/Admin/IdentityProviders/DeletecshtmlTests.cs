@@ -12,16 +12,19 @@ using Moq;
 [Trait("Category", "Unit")]
 public class DeletecshtmlTests
 {
+    private static readonly int ExistingEntityId = TestValues.NewEntityId();
+    private static readonly int MissingEntityId = ExistingEntityId + 1;
+
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var provider = new IdentityProvider { Id = 1, Scheme = "google" };
+        var provider = new IdentityProvider { Id = ExistingEntityId, Scheme = "google" };
         var mockSet = MockDbSetHelper.BuildMockDbSet([provider]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityProviders).Returns(mockSet.Object);
 
         var model = new DeleteModel(ctx.Object);
-        var result = await model.OnGetAsync(1);
+        var result = await model.OnGetAsync(ExistingEntityId);
 
         Assert.IsType<PageResult>(result);
         Assert.Equal("google", model.IdentityProvider.Scheme);
@@ -34,20 +37,20 @@ public class DeletecshtmlTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityProviders).Returns(mockSet.Object);
 
-        Assert.IsType<NotFoundResult>(await new DeleteModel(ctx.Object).OnGetAsync(99));
+        Assert.IsType<NotFoundResult>(await new DeleteModel(ctx.Object).OnGetAsync(MissingEntityId));
     }
 
     [Fact]
     public async Task OnPostAsync_Deletes_WhenFound()
     {
-        var provider = new IdentityProvider { Id = 1, Scheme = "google" };
+        var provider = new IdentityProvider { Id = ExistingEntityId, Scheme = "google" };
         var mockSet = MockDbSetHelper.BuildMockDbSet([provider]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityProviders).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
 
         var model = new DeleteModel(ctx.Object);
-        var result = await model.OnPostAsync(1);
+        var result = await model.OnPostAsync(ExistingEntityId);
 
         ctx.Verify(c => c.IdentityProviders.Remove(provider), Times.Once);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
@@ -61,6 +64,6 @@ public class DeletecshtmlTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityProviders).Returns(mockSet.Object);
 
-        Assert.IsType<NotFoundResult>(await new DeleteModel(ctx.Object).OnPostAsync(99));
+        Assert.IsType<NotFoundResult>(await new DeleteModel(ctx.Object).OnPostAsync(MissingEntityId));
     }
 }

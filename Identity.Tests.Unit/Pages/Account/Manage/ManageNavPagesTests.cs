@@ -16,6 +16,8 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ManageNavPagesTests
 {
+    private const string WhitespaceActivePage = "   ";
+
     public static TheoryData<object?, string?, string?> DeletePersonalDataCases() => new()
     {
         { "DeletePersonalData", "/some/path/Irrelevant.cshtml", "active" },
@@ -28,20 +30,23 @@ public class ManageNavPagesTests
 
     public static TheoryData<object?, string?, string, string?> PageNavTestData()
     {
-        var longStr = new string('a', 600);
+        var page = TestValues.NewTokenFromFirstHalfOfAlphabet(8);
+        var differentPage = TestValues.NewTokenFromSecondHalfOfAlphabet(8);
+        var punctuatedPage = $"{TestValues.LowercaseToken(6)}_name!@#$";
+        var overlongPage = new string('a', 600);
         return new TheoryData<object?, string?, string, string?>
         {
-            { "Index", "/Areas/Identity/Pages/Account/Manage/Index.cshtml", "Index", "active" },
-            { "index", "/Some/Path/Index.cshtml", "Index", "active" },
-            { string.Empty, "/Any/Path/Ignore.cshtml", string.Empty, "active" },
-            { null, "/Areas/Identity/Pages/Account/Manage/ChangePassword.cshtml", "ChangePassword", "active" },
-            { 123, "/some/path/Custom-Page.cshtml", "Custom-Page", "active" },
-            { "OtherPage", "/path/Index.cshtml", "Index", null },
-            { null, null, "Index", null },
-            { null, "/x/y/special_name!@#$.cshtml", "special_name!@#$", "active" },
-            { "   ", "/ignored/path.cshtml", "   ", "active" },
-            { longStr, "/ignored/long.cshtml", longStr, "active" },
-            { null, "PlainName.cshtml", "PlainName", "active" },
+            { page, PathEndingIn(page), page, "active" },
+            { page.ToUpperInvariant(), PathEndingIn(page), page, "active" },
+            { string.Empty, PathEndingIn(differentPage), string.Empty, "active" },
+            { null, PathEndingIn(page), page, "active" },
+            { TestValues.NewEntityId(), PathEndingIn(page), page, "active" },
+            { differentPage, PathEndingIn(page), page, null },
+            { null, null, page, null },
+            { null, PathEndingIn(punctuatedPage), punctuatedPage, "active" },
+            { WhitespaceActivePage, PathEndingIn(differentPage), WhitespaceActivePage, "active" },
+            { overlongPage, PathEndingIn(differentPage), overlongPage, "active" },
+            { null, $"{page}.cshtml", page, "active" },
         };
     }
 
@@ -777,4 +782,7 @@ public class ManageNavPagesTests
 
         return new ViewContext(actionContext, viewMock.Object, viewData, tempData, writer, htmlHelperOptions);
     }
+
+    private static string PathEndingIn(string page) =>
+        $"/{TestValues.LowercaseToken(5)}/{TestValues.LowercaseToken(6)}/{page}.cshtml";
 }

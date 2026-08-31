@@ -12,19 +12,22 @@ using Moq;
 [Trait("Category", "Unit")]
 public class IndexcshtmlTests
 {
+    private static readonly int ExistingEntityId = TestValues.NewEntityId();
+    private static readonly int MissingEntityId = ExistingEntityId + 1;
+
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var client = new Client { Id = 1, ClientId = "test" };
+        var client = new Client { Id = ExistingEntityId, ClientId = "test" };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
 
         var model = new IndexModel(ctx.Object);
-        var result = await model.OnGetAsync(1);
+        var result = await model.OnGetAsync(ExistingEntityId);
 
         Assert.IsType<PageResult>(result);
-        Assert.Equal(1, model.Client.Id);
+        Assert.Equal(ExistingEntityId, model.Client.Id);
     }
 
     [Fact]
@@ -35,7 +38,7 @@ public class IndexcshtmlTests
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
 
         var model = new IndexModel(ctx.Object);
-        var result = await model.OnGetAsync(99);
+        var result = await model.OnGetAsync(MissingEntityId);
 
         Assert.IsType<NotFoundResult>(result);
     }
@@ -46,21 +49,21 @@ public class IndexcshtmlTests
         var ctx = new Mock<IConfigurationDbContext>();
         var model = new IndexModel(ctx.Object);
         model.ModelState.AddModelError("ClientId", "Required");
-        var result = await model.OnPostAsync(1);
+        var result = await model.OnPostAsync(ExistingEntityId);
         Assert.IsType<PageResult>(result);
     }
 
     [Fact]
     public async Task OnPostAsync_UpdatesAndRedirects_WhenValid()
     {
-        var client = new Client { Id = 1, ClientId = "old" };
+        var client = new Client { Id = ExistingEntityId, ClientId = "old" };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
 
         var model = new IndexModel(ctx.Object) { Client = new Client { ClientId = "new" } };
-        var result = await model.OnPostAsync(1);
+        var result = await model.OnPostAsync(ExistingEntityId);
 
         Assert.Equal("new", client.ClientId);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
@@ -75,7 +78,7 @@ public class IndexcshtmlTests
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
 
         var model = new IndexModel(ctx.Object) { Client = new Client { ClientId = "x" } };
-        var result = await model.OnPostAsync(99);
+        var result = await model.OnPostAsync(MissingEntityId);
 
         Assert.IsType<NotFoundResult>(result);
     }

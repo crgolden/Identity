@@ -12,15 +12,18 @@ using Moq;
 [Trait("Category", "Unit")]
 public class IndexcshtmlTests
 {
+    private static readonly int ExistingEntityId = TestValues.NewEntityId();
+    private static readonly int MissingEntityId = ExistingEntityId + 1;
+
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var resource = new IdentityResource { Id = 1, Name = "openid" };
+        var resource = new IdentityResource { Id = ExistingEntityId, Name = "openid" };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         var model = new IndexModel(ctx.Object);
-        var result = await model.OnGetAsync(1);
+        var result = await model.OnGetAsync(ExistingEntityId);
         Assert.IsType<PageResult>(result);
         Assert.Equal("openid", model.Resource.Name);
     }
@@ -32,19 +35,19 @@ public class IndexcshtmlTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         var model = new IndexModel(ctx.Object);
-        Assert.IsType<NotFoundResult>(await model.OnGetAsync(99));
+        Assert.IsType<NotFoundResult>(await model.OnGetAsync(MissingEntityId));
     }
 
     [Fact]
     public async Task OnPostAsync_UpdatesAndRedirects_WhenValid()
     {
-        var resource = new IdentityResource { Id = 1, Name = "openid" };
+        var resource = new IdentityResource { Id = ExistingEntityId, Name = "openid" };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new IndexModel(ctx.Object) { Resource = new IdentityResource { Name = "openid-updated", DisplayName = "OpenID" } };
-        var result = await model.OnPostAsync(1);
+        var result = await model.OnPostAsync(ExistingEntityId);
         Assert.Equal("openid-updated", resource.Name);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("/Admin/IdentityResources/Details/Index", redirect.PageName);
@@ -57,6 +60,6 @@ public class IndexcshtmlTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         var model = new IndexModel(ctx.Object) { Resource = new IdentityResource { Name = "x" } };
-        Assert.IsType<NotFoundResult>(await model.OnPostAsync(99));
+        Assert.IsType<NotFoundResult>(await model.OnPostAsync(MissingEntityId));
     }
 }

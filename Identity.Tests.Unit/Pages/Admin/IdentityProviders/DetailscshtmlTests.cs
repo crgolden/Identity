@@ -12,16 +12,19 @@ using Moq;
 [Trait("Category", "Unit")]
 public class DetailscshtmlTests
 {
+    private static readonly int ExistingEntityId = TestValues.NewEntityId();
+    private static readonly int MissingEntityId = ExistingEntityId + 1;
+
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var provider = new IdentityProvider { Id = 1, Scheme = "google" };
+        var provider = new IdentityProvider { Id = ExistingEntityId, Scheme = "google" };
         var mockSet = MockDbSetHelper.BuildMockDbSet([provider]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityProviders).Returns(mockSet.Object);
 
         var model = new DetailsModel(ctx.Object);
-        var result = await model.OnGetAsync(1);
+        var result = await model.OnGetAsync(ExistingEntityId);
 
         Assert.IsType<PageResult>(result);
         Assert.Equal("google", model.IdentityProvider.Scheme);
@@ -34,6 +37,6 @@ public class DetailscshtmlTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityProviders).Returns(mockSet.Object);
 
-        Assert.IsType<NotFoundResult>(await new DetailsModel(ctx.Object).OnGetAsync(99));
+        Assert.IsType<NotFoundResult>(await new DetailsModel(ctx.Object).OnGetAsync(MissingEntityId));
     }
 }

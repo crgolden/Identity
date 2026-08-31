@@ -12,16 +12,19 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ProperiescshtmlTests
 {
+    private static readonly int ExistingEntityId = TestValues.NewEntityId();
+    private static readonly int MissingEntityId = ExistingEntityId + 1;
+
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var client = new Client { Id = 1, ClientId = "test", Properties = [new ClientProperty { Id = 1, Key = "k", Value = "v", ClientId = 1 }] };
+        var client = new Client { Id = ExistingEntityId, ClientId = "test", Properties = [new ClientProperty { Id = ExistingEntityId, Key = "k", Value = "v", ClientId = ExistingEntityId }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
 
         var model = new PropertiesModel(ctx.Object);
-        var result = await model.OnGetAsync(1);
+        var result = await model.OnGetAsync(ExistingEntityId);
 
         Assert.IsType<PageResult>(result);
         Assert.Single(model.Client.Properties);
@@ -35,7 +38,7 @@ public class ProperiescshtmlTests
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
 
         var model = new PropertiesModel(ctx.Object);
-        var result = await model.OnGetAsync(99);
+        var result = await model.OnGetAsync(MissingEntityId);
 
         Assert.IsType<NotFoundResult>(result);
     }

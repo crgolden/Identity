@@ -12,15 +12,18 @@ using Moq;
 [Trait("Category", "Unit")]
 public class IndexcshtmlTests
 {
+    private static readonly int ExistingEntityId = TestValues.NewEntityId();
+    private static readonly int MissingEntityId = ExistingEntityId + 1;
+
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var scope = new ApiScope { Id = 1, Name = "api1" };
+        var scope = new ApiScope { Id = ExistingEntityId, Name = "api1" };
         var mockSet = MockDbSetHelper.BuildMockDbSet([scope]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
         var model = new IndexModel(ctx.Object);
-        var result = await model.OnGetAsync(1);
+        var result = await model.OnGetAsync(ExistingEntityId);
         Assert.IsType<PageResult>(result);
         Assert.Equal("api1", model.Scope.Name);
     }
@@ -31,19 +34,19 @@ public class IndexcshtmlTests
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<ApiScope>());
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
-        Assert.IsType<NotFoundResult>(await new IndexModel(ctx.Object).OnGetAsync(99));
+        Assert.IsType<NotFoundResult>(await new IndexModel(ctx.Object).OnGetAsync(MissingEntityId));
     }
 
     [Fact]
     public async Task OnPostAsync_UpdatesAndRedirects_WhenValid()
     {
-        var scope = new ApiScope { Id = 1, Name = "api1" };
+        var scope = new ApiScope { Id = ExistingEntityId, Name = "api1" };
         var mockSet = MockDbSetHelper.BuildMockDbSet([scope]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new IndexModel(ctx.Object) { Scope = new ApiScope { Name = "api1-updated" } };
-        var result = await model.OnPostAsync(1);
+        var result = await model.OnPostAsync(ExistingEntityId);
         Assert.Equal("api1-updated", scope.Name);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("/Admin/ApiScopes/Details/Index", redirect.PageName);
@@ -56,6 +59,6 @@ public class IndexcshtmlTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
         var model = new IndexModel(ctx.Object) { Scope = new ApiScope { Name = "x" } };
-        Assert.IsType<NotFoundResult>(await model.OnPostAsync(99));
+        Assert.IsType<NotFoundResult>(await model.OnPostAsync(MissingEntityId));
     }
 }

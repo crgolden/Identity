@@ -12,16 +12,19 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ClaimTypescshtmlTests
 {
+    private static readonly int ExistingEntityId = TestValues.NewEntityId();
+    private static readonly int MissingEntityId = ExistingEntityId + 1;
+
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var resource = new ApiResource { Id = 1, Name = "my-api", UserClaims = [new ApiResourceClaim { Id = 1, Type = "sub" }] };
+        var resource = new ApiResource { Id = ExistingEntityId, Name = "my-api", UserClaims = [new ApiResourceClaim { Id = ExistingEntityId, Type = "sub" }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
 
         var model = new ClaimTypesModel(ctx.Object);
-        var result = await model.OnGetAsync(1);
+        var result = await model.OnGetAsync(ExistingEntityId);
 
         Assert.IsType<PageResult>(result);
         Assert.Single(model.ClaimTypes);
@@ -34,20 +37,20 @@ public class ClaimTypescshtmlTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
 
-        Assert.IsType<NotFoundResult>(await new ClaimTypesModel(ctx.Object).OnGetAsync(99));
+        Assert.IsType<NotFoundResult>(await new ClaimTypesModel(ctx.Object).OnGetAsync(MissingEntityId));
     }
 
     [Fact]
     public async Task OnPostAsync_AddsNewClaimType()
     {
-        var resource = new ApiResource { Id = 1, Name = "my-api", UserClaims = [] };
+        var resource = new ApiResource { Id = ExistingEntityId, Name = "my-api", UserClaims = [] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
 
         var model = new ClaimTypesModel(ctx.Object) { ClaimTypes = [new ApiResourceClaim { Id = 0, Type = "email" }] };
-        var result = await model.OnPostAsync(1);
+        var result = await model.OnPostAsync(ExistingEntityId);
 
         var onlyUserClaim = Assert.Single(resource.UserClaims);
         Assert.Equal("email", onlyUserClaim.Type);
@@ -63,21 +66,21 @@ public class ClaimTypescshtmlTests
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
 
         var model = new ClaimTypesModel(ctx.Object) { ClaimTypes = [] };
-        Assert.IsType<NotFoundResult>(await model.OnPostAsync(99));
+        Assert.IsType<NotFoundResult>(await model.OnPostAsync(MissingEntityId));
     }
 
     [Fact]
     public async Task OnPostAsync_RemovesAbsentClaimType()
     {
-        var existing = new ApiResourceClaim { Id = 1, Type = "sub", ApiResourceId = 1 };
-        var resource = new ApiResource { Id = 1, Name = "my-api", UserClaims = [existing] };
+        var existing = new ApiResourceClaim { Id = ExistingEntityId, Type = "sub", ApiResourceId = ExistingEntityId };
+        var resource = new ApiResource { Id = ExistingEntityId, Name = "my-api", UserClaims = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
 
         var model = new ClaimTypesModel(ctx.Object) { ClaimTypes = [] };
-        await model.OnPostAsync(1);
+        await model.OnPostAsync(ExistingEntityId);
 
         Assert.Empty(resource.UserClaims);
     }
@@ -85,13 +88,13 @@ public class ClaimTypescshtmlTests
     [Fact]
     public async Task OnPostAddRowAsync_AddsBlankRow_WhenFound()
     {
-        var resource = new ApiResource { Id = 1, Name = "my-api" };
+        var resource = new ApiResource { Id = ExistingEntityId, Name = "my-api" };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
 
         var model = new ClaimTypesModel(ctx.Object) { ClaimTypes = [] };
-        var result = await model.OnPostAddRowAsync(1);
+        var result = await model.OnPostAddRowAsync(ExistingEntityId);
 
         Assert.IsType<PageResult>(result);
         Assert.Single(model.ClaimTypes);
@@ -105,19 +108,19 @@ public class ClaimTypescshtmlTests
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
 
         var model = new ClaimTypesModel(ctx.Object) { ClaimTypes = [] };
-        Assert.IsType<NotFoundResult>(await model.OnPostAddRowAsync(99));
+        Assert.IsType<NotFoundResult>(await model.OnPostAddRowAsync(MissingEntityId));
     }
 
     [Fact]
     public async Task OnPostRemoveRowAsync_RemovesRow_WhenValidIndex()
     {
-        var resource = new ApiResource { Id = 1, Name = "my-api" };
+        var resource = new ApiResource { Id = ExistingEntityId, Name = "my-api" };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
 
-        var model = new ClaimTypesModel(ctx.Object) { ClaimTypes = [new ApiResourceClaim { Id = 1, Type = "sub" }] };
-        var result = await model.OnPostRemoveRowAsync(1, 0);
+        var model = new ClaimTypesModel(ctx.Object) { ClaimTypes = [new ApiResourceClaim { Id = ExistingEntityId, Type = "sub" }] };
+        var result = await model.OnPostRemoveRowAsync(ExistingEntityId, 0);
 
         Assert.IsType<PageResult>(result);
         Assert.Empty(model.ClaimTypes);
@@ -131,6 +134,6 @@ public class ClaimTypescshtmlTests
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
 
         var model = new ClaimTypesModel(ctx.Object) { ClaimTypes = [] };
-        Assert.IsType<NotFoundResult>(await model.OnPostRemoveRowAsync(99, 0));
+        Assert.IsType<NotFoundResult>(await model.OnPostRemoveRowAsync(MissingEntityId, 0));
     }
 }

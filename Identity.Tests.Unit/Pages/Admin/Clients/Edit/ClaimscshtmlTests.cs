@@ -12,16 +12,19 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ClaimscshtmlTests
 {
+    private static readonly int ExistingEntityId = TestValues.NewEntityId();
+    private static readonly int MissingEntityId = ExistingEntityId + 1;
+
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var client = new Client { Id = 1, ClientId = "test", Claims = [new ClientClaim { Id = 1, Type = "role", Value = "admin", ClientId = 1 }] };
+        var client = new Client { Id = ExistingEntityId, ClientId = "test", Claims = [new ClientClaim { Id = ExistingEntityId, Type = "role", Value = "admin", ClientId = ExistingEntityId }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
 
         var model = new ClaimsModel(ctx.Object);
-        var result = await model.OnGetAsync(1);
+        var result = await model.OnGetAsync(ExistingEntityId);
 
         Assert.IsType<PageResult>(result);
         Assert.Single(model.Claims);
@@ -35,7 +38,7 @@ public class ClaimscshtmlTests
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
 
         var model = new ClaimsModel(ctx.Object);
-        var result = await model.OnGetAsync(99);
+        var result = await model.OnGetAsync(MissingEntityId);
 
         Assert.IsType<NotFoundResult>(result);
     }
@@ -43,7 +46,7 @@ public class ClaimscshtmlTests
     [Fact]
     public async Task OnPostAsync_AddsNewClaim_WhenValid()
     {
-        var client = new Client { Id = 1, ClientId = "test", Claims = [] };
+        var client = new Client { Id = ExistingEntityId, ClientId = "test", Claims = [] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -53,7 +56,7 @@ public class ClaimscshtmlTests
         {
             Claims = [new ClientClaim { Id = 0, Type = "role", Value = "admin" }],
         };
-        var result = await model.OnPostAsync(1);
+        var result = await model.OnPostAsync(ExistingEntityId);
 
         var onlyClaim = Assert.Single(client.Claims);
         Assert.Equal("role", onlyClaim.Type);
@@ -69,7 +72,7 @@ public class ClaimscshtmlTests
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
 
         var model = new ClaimsModel(ctx.Object) { Claims = [] };
-        var result = await model.OnPostAsync(99);
+        var result = await model.OnPostAsync(MissingEntityId);
 
         Assert.IsType<NotFoundResult>(result);
     }
@@ -77,15 +80,15 @@ public class ClaimscshtmlTests
     [Fact]
     public async Task OnPostAsync_RemovesClaim_WhenNotPosted()
     {
-        var existing = new ClientClaim { Id = 1, Type = "role", Value = "admin", ClientId = 1 };
-        var client = new Client { Id = 1, ClientId = "test", Claims = [existing] };
+        var existing = new ClientClaim { Id = ExistingEntityId, Type = "role", Value = "admin", ClientId = ExistingEntityId };
+        var client = new Client { Id = ExistingEntityId, ClientId = "test", Claims = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
 
         var model = new ClaimsModel(ctx.Object) { Claims = [] };
-        await model.OnPostAsync(1);
+        await model.OnPostAsync(ExistingEntityId);
 
         Assert.Empty(client.Claims);
     }
@@ -93,8 +96,8 @@ public class ClaimscshtmlTests
     [Fact]
     public async Task OnPostAsync_UpdatesExistingClaim_WhenPostedWithId()
     {
-        var existing = new ClientClaim { Id = 1, Type = "role", Value = "user", ClientId = 1 };
-        var client = new Client { Id = 1, ClientId = "test", Claims = [existing] };
+        var existing = new ClientClaim { Id = ExistingEntityId, Type = "role", Value = "user", ClientId = ExistingEntityId };
+        var client = new Client { Id = ExistingEntityId, ClientId = "test", Claims = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -102,9 +105,9 @@ public class ClaimscshtmlTests
 
         var model = new ClaimsModel(ctx.Object)
         {
-            Claims = [new ClientClaim { Id = 1, Type = "role", Value = "admin" }],
+            Claims = [new ClientClaim { Id = ExistingEntityId, Type = "role", Value = "admin" }],
         };
-        await model.OnPostAsync(1);
+        await model.OnPostAsync(ExistingEntityId);
 
         Assert.Equal("admin", existing.Value);
     }
@@ -112,13 +115,13 @@ public class ClaimscshtmlTests
     [Fact]
     public async Task OnPostAddRowAsync_AddsBlankRow_WhenFound()
     {
-        var client = new Client { Id = 1, ClientId = "test" };
+        var client = new Client { Id = ExistingEntityId, ClientId = "test" };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
 
         var model = new ClaimsModel(ctx.Object) { Claims = [] };
-        var result = await model.OnPostAddRowAsync(1);
+        var result = await model.OnPostAddRowAsync(ExistingEntityId);
 
         Assert.IsType<PageResult>(result);
         Assert.Single(model.Claims);
@@ -132,7 +135,7 @@ public class ClaimscshtmlTests
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
 
         var model = new ClaimsModel(ctx.Object) { Claims = [] };
-        var result = await model.OnPostAddRowAsync(99);
+        var result = await model.OnPostAddRowAsync(MissingEntityId);
 
         Assert.IsType<NotFoundResult>(result);
     }
@@ -140,13 +143,13 @@ public class ClaimscshtmlTests
     [Fact]
     public async Task OnPostRemoveRowAsync_RemovesRow_WhenValidIndex()
     {
-        var client = new Client { Id = 1, ClientId = "test" };
+        var client = new Client { Id = ExistingEntityId, ClientId = "test" };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
 
-        var model = new ClaimsModel(ctx.Object) { Claims = [new ClientClaim { Id = 1, Type = "role", Value = "admin" }] };
-        var result = await model.OnPostRemoveRowAsync(1, 0);
+        var model = new ClaimsModel(ctx.Object) { Claims = [new ClientClaim { Id = ExistingEntityId, Type = "role", Value = "admin" }] };
+        var result = await model.OnPostRemoveRowAsync(ExistingEntityId, 0);
 
         Assert.IsType<PageResult>(result);
         Assert.Empty(model.Claims);
@@ -160,7 +163,7 @@ public class ClaimscshtmlTests
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
 
         var model = new ClaimsModel(ctx.Object) { Claims = [] };
-        var result = await model.OnPostRemoveRowAsync(99, 0);
+        var result = await model.OnPostRemoveRowAsync(MissingEntityId, 0);
 
         Assert.IsType<NotFoundResult>(result);
     }

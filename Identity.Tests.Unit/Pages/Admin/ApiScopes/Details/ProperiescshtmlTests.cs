@@ -12,15 +12,18 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ProperiescshtmlTests
 {
+    private static readonly int ExistingEntityId = TestValues.NewEntityId();
+    private static readonly int MissingEntityId = ExistingEntityId + 1;
+
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var scope = new ApiScope { Id = 1, Name = "api1", Properties = [new ApiScopeProperty { Key = "k", Value = "v" }] };
+        var scope = new ApiScope { Id = ExistingEntityId, Name = "api1", Properties = [new ApiScopeProperty { Key = "k", Value = "v" }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([scope]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
         var model = new PropertiesModel(ctx.Object);
-        var result = await model.OnGetAsync(1);
+        var result = await model.OnGetAsync(ExistingEntityId);
         Assert.IsType<PageResult>(result);
         Assert.Single(model.Scope.Properties);
     }
@@ -31,6 +34,6 @@ public class ProperiescshtmlTests
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<ApiScope>());
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
-        Assert.IsType<NotFoundResult>(await new PropertiesModel(ctx.Object).OnGetAsync(99));
+        Assert.IsType<NotFoundResult>(await new PropertiesModel(ctx.Object).OnGetAsync(MissingEntityId));
     }
 }
