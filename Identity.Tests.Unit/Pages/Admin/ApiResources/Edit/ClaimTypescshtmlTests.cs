@@ -49,8 +49,8 @@ public class ClaimTypescshtmlTests
         var model = new ClaimTypesModel(ctx.Object) { ClaimTypes = [new ApiResourceClaim { Id = 0, Type = "email" }] };
         var result = await model.OnPostAsync(1);
 
-        Assert.Single(resource.UserClaims);
-        Assert.Equal("email", resource.UserClaims[0].Type);
+        var onlyUserClaim = Assert.Single(resource.UserClaims);
+        Assert.Equal("email", onlyUserClaim.Type);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("/Admin/ApiResources/Details/ClaimTypes", redirect.PageName);
     }

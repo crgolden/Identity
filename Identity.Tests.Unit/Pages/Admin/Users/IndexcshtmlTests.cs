@@ -14,7 +14,7 @@ public class IndexcshtmlTests
     public void IsPageModel()
     {
         var um = MockHelpers.MockUserManager();
-        Assert.IsAssignableFrom<PageModel>(new IndexModel(um.Object));
+        Assert.IsType<PageModel>(new IndexModel(um.Object), exactMatch: false);
     }
 
     [Fact]

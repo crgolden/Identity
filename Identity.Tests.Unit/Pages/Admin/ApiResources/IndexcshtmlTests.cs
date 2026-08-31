@@ -15,7 +15,7 @@ public class IndexcshtmlTests
     public void IsPageModel()
     {
         var ctx = new Mock<IConfigurationDbContext>();
-        Assert.IsAssignableFrom<PageModel>(new IndexModel(ctx.Object));
+        Assert.IsType<PageModel>(new IndexModel(ctx.Object), exactMatch: false);
     }
 
     [Fact]

@@ -49,8 +49,8 @@ public class SecretscshtmlTests
         var model = new SecretsModel(ctx.Object) { Secrets = [new ApiResourceSecret { Id = 0, Description = "new", Value = "secret", Type = "SharedSecret" }] };
         var result = await model.OnPostAsync(1);
 
-        Assert.Single(resource.Secrets);
-        Assert.Equal("new", resource.Secrets[0].Description);
+        var onlySecret = Assert.Single(resource.Secrets);
+        Assert.Equal("new", onlySecret.Description);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("/Admin/ApiResources/Details/Secrets", redirect.PageName);
     }
@@ -94,8 +94,8 @@ public class SecretscshtmlTests
         var result = await model.OnPostAddRowAsync(1);
 
         Assert.IsType<PageResult>(result);
-        Assert.Single(model.Secrets);
-        Assert.Equal("SharedSecret", model.Secrets[0].Type);
+        var onlySecret = Assert.Single(model.Secrets);
+        Assert.Equal("SharedSecret", onlySecret.Type);
     }
 
     [Fact]

@@ -12,7 +12,7 @@ public class IndexcshtmlTests
     [Fact]
     public void IsPageModel()
     {
-        Assert.IsAssignableFrom<PageModel>(new IndexModel(MockHelpers.MockRoleManager().Object));
+        Assert.IsType<PageModel>(new IndexModel(MockHelpers.MockRoleManager().Object), exactMatch: false);
     }
 
     [Fact]

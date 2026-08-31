@@ -55,8 +55,8 @@ public class GrantTypescshtmlTests
         };
         var result = await model.OnPostAsync(1);
 
-        Assert.Single(client.AllowedGrantTypes);
-        Assert.Equal("client_credentials", client.AllowedGrantTypes[0].GrantType);
+        var onlyGrantType = Assert.Single(client.AllowedGrantTypes);
+        Assert.Equal("client_credentials", onlyGrantType.GrantType);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("/Admin/Clients/Details/GrantTypes", redirect.PageName);
     }

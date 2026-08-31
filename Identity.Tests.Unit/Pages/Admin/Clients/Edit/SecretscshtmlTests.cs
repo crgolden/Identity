@@ -55,8 +55,8 @@ public class SecretscshtmlTests
         };
         var result = await model.OnPostAsync(1);
 
-        Assert.Single(client.ClientSecrets);
-        Assert.Equal("secret123", client.ClientSecrets[0].Value);
+        var onlyClientSecret = Assert.Single(client.ClientSecrets);
+        Assert.Equal("secret123", onlyClientSecret.Value);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("/Admin/Clients/Details/Secrets", redirect.PageName);
     }
@@ -122,8 +122,8 @@ public class SecretscshtmlTests
         var result = await model.OnPostAddRowAsync(1);
 
         Assert.IsType<PageResult>(result);
-        Assert.Single(model.Secrets);
-        Assert.Equal("SharedSecret", model.Secrets[0].Type);
+        var onlySecret = Assert.Single(model.Secrets);
+        Assert.Equal("SharedSecret", onlySecret.Type);
     }
 
     [Fact]

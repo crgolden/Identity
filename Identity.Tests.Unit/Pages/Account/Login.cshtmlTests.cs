@@ -85,17 +85,19 @@ public class LoginModelTests
         await model.OnGetAsync();
 
         // Assert
-        Assert.Single(model.ExternalLogins);
-        Assert.Equal("Google", model.ExternalLogins[0].Name);
+        var onlyExternalLogin = Assert.Single(model.ExternalLogins);
+        Assert.Equal("Google", onlyExternalLogin.Name);
     }
 
     [Fact]
     public async Task OnPostAsync_PasswordSignIn_Succeeded_ReturnsLocalRedirect()
     {
         // Arrange
+        var signInEmail = TestValues.NewEmailAddress();
+        var signInPassword = TestValues.NewPassword();
         var signInManagerMock = CreateSignInManagerMock();
         signInManagerMock
-            .Setup(s => s.PasswordSignInAsync("user@example.com", "pass", false, true))
+            .Setup(s => s.PasswordSignInAsync(signInEmail, signInPassword, false, true))
             .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Success);
 
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
@@ -106,7 +108,7 @@ public class LoginModelTests
         {
             Url = urlHelperMock.Object,
             PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
-            Input = new LoginModel.InputModel { Email = "user@example.com", Password = "pass" }
+            Input = new LoginModel.InputModel { Email = signInEmail, Password = signInPassword }
         };
 
         // Act
@@ -133,7 +135,7 @@ public class LoginModelTests
         {
             Url = urlHelperMock.Object,
             PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
-            Input = new LoginModel.InputModel { Email = "user@example.com", Password = "pass" }
+            Input = new LoginModel.InputModel { Email = TestValues.NewEmailAddress(), Password = TestValues.NewPassword() }
         };
 
         // Act
@@ -160,7 +162,7 @@ public class LoginModelTests
         {
             Url = urlHelperMock.Object,
             PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
-            Input = new LoginModel.InputModel { Email = "user@example.com", Password = "pass" }
+            Input = new LoginModel.InputModel { Email = TestValues.NewEmailAddress(), Password = TestValues.NewPassword() }
         };
 
         // Act
@@ -187,7 +189,7 @@ public class LoginModelTests
         {
             Url = urlHelperMock.Object,
             PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
-            Input = new LoginModel.InputModel { Email = "user@example.com", Password = "pass" }
+            Input = new LoginModel.InputModel { Email = TestValues.NewEmailAddress(), Password = TestValues.NewPassword() }
         };
 
         // Act
@@ -246,8 +248,8 @@ public class LoginModelTests
             Input = new LoginModel.InputModel
             {
                 Passkey = null,
-                Email = "user@example.com",
-                Password = "pw",
+                Email = TestValues.NewEmailAddress(),
+                Password = TestValues.NewPassword(),
                 RememberMe = false
             }
         };
@@ -275,7 +277,7 @@ public class LoginModelTests
         {
             Url = urlHelperMock.Object,
             PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
-            Input = new LoginModel.InputModel { Email = "user@example.com", Password = "pass" }
+            Input = new LoginModel.InputModel { Email = TestValues.NewEmailAddress(), Password = TestValues.NewPassword() }
         };
 
         var result = await model.OnPostAsync();
@@ -318,13 +320,15 @@ public class LoginModelTests
     [Fact]
     public async Task OnPostAsync_SmokeTestEmail_SkipsRecaptchaAndSucceeds()
     {
+        var exemptSmokeTestEmail = TestValues.NewEmailAddress();
+        var smokeTestPassword = TestValues.NewPassword();
         var signInManagerMock = CreateSignInManagerMock();
         signInManagerMock
-            .Setup(s => s.PasswordSignInAsync("smoke@example.com", "pass", false, true))
+            .Setup(s => s.PasswordSignInAsync(exemptSmokeTestEmail, smokeTestPassword, false, true))
             .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Success);
 
         var recaptchaServiceMock = CreateRecaptchaServiceMock(score: 0.0m);
-        recaptchaServiceMock.Setup(s => s.IsExempt("smoke@example.com")).Returns(true);
+        recaptchaServiceMock.Setup(s => s.IsExempt(exemptSmokeTestEmail)).Returns(true);
 
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
@@ -334,7 +338,7 @@ public class LoginModelTests
         {
             Url = urlHelperMock.Object,
             PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
-            Input = new LoginModel.InputModel { Email = "smoke@example.com", Password = "pass" }
+            Input = new LoginModel.InputModel { Email = exemptSmokeTestEmail, Password = smokeTestPassword }
         };
 
         var result = await model.OnPostAsync();
@@ -356,30 +360,7 @@ public class LoginModelTests
         {
             Url = urlHelperMock.Object,
             PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
-            Input = new LoginModel.InputModel { Email = "other@example.com", Password = "pass" }
-        };
-
-        var result = await model.OnPostAsync();
-
-        Assert.IsType<PageResult>(result);
-        Assert.False(model.ModelState.IsValid);
-        recaptchaServiceMock.Verify(s => s.VerifyAsync(It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task OnPostAsync_SmokeTestEmailNull_RunsRecaptchaAndRejects()
-    {
-        var signInManagerMock = CreateSignInManagerMock();
-        var recaptchaServiceMock = CreateRecaptchaServiceMock(score: 0.0m);
-
-        var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
-        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
-
-        var model = new LoginModel(signInManagerMock.Object, recaptchaServiceMock.Object)
-        {
-            Url = urlHelperMock.Object,
-            PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
-            Input = new LoginModel.InputModel { Email = "user@example.com", Password = "pass" }
+            Input = new LoginModel.InputModel { Email = TestValues.NewEmailAddress(), Password = TestValues.NewPassword() }
         };
 
         var result = await model.OnPostAsync();
@@ -392,13 +373,15 @@ public class LoginModelTests
     [Fact]
     public async Task OnPostAsync_AdminEmail_SkipsRecaptchaAndSucceeds()
     {
+        var exemptAdminEmail = TestValues.NewEmailAddress();
+        var adminPassword = TestValues.NewPassword();
         var signInManagerMock = CreateSignInManagerMock();
         signInManagerMock
-            .Setup(s => s.PasswordSignInAsync("admin@example.com", "pass", false, true))
+            .Setup(s => s.PasswordSignInAsync(exemptAdminEmail, adminPassword, false, true))
             .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Success);
 
         var recaptchaServiceMock = CreateRecaptchaServiceMock(score: 0.0m);
-        recaptchaServiceMock.Setup(s => s.IsExempt("admin@example.com")).Returns(true);
+        recaptchaServiceMock.Setup(s => s.IsExempt(exemptAdminEmail)).Returns(true);
 
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
         urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
@@ -408,7 +391,7 @@ public class LoginModelTests
         {
             Url = urlHelperMock.Object,
             PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
-            Input = new LoginModel.InputModel { Email = "admin@example.com", Password = "pass" }
+            Input = new LoginModel.InputModel { Email = exemptAdminEmail, Password = adminPassword }
         };
 
         var result = await model.OnPostAsync();

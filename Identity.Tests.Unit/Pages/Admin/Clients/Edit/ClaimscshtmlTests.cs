@@ -55,8 +55,8 @@ public class ClaimscshtmlTests
         };
         var result = await model.OnPostAsync(1);
 
-        Assert.Single(client.Claims);
-        Assert.Equal("role", client.Claims[0].Type);
+        var onlyClaim = Assert.Single(client.Claims);
+        Assert.Equal("role", onlyClaim.Type);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("/Admin/Clients/Details/Claims", redirect.PageName);
     }

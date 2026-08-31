@@ -48,8 +48,8 @@ public class ProperiescshtmlTests
             Properties = [new IdentityResourceProperty { Id = 0, Key = "k", Value = "v" }],
         };
         var result = await model.OnPostAsync(1);
-        Assert.Single(resource.Properties);
-        Assert.Equal("k", resource.Properties[0].Key);
+        var onlyProperty = Assert.Single(resource.Properties);
+        Assert.Equal("k", onlyProperty.Key);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("/Admin/IdentityResources/Details/Properties", redirect.PageName);
     }

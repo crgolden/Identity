@@ -55,8 +55,8 @@ public class PostLogoutRedirectUriscshtmlTests
         };
         var result = await model.OnPostAsync(1);
 
-        Assert.Single(client.PostLogoutRedirectUris);
-        Assert.Equal("https://new.com/logout", client.PostLogoutRedirectUris[0].PostLogoutRedirectUri);
+        var onlyPostLogoutRedirectUri = Assert.Single(client.PostLogoutRedirectUris);
+        Assert.Equal("https://new.com/logout", onlyPostLogoutRedirectUri.PostLogoutRedirectUri);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("/Admin/Clients/Details/PostLogoutRedirectUris", redirect.PageName);
     }

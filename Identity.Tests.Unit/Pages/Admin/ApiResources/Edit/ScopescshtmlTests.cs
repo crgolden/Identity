@@ -49,8 +49,8 @@ public class ScopescshtmlTests
         var model = new ScopesModel(ctx.Object) { Scopes = [new ApiResourceScope { Id = 0, Scope = "my-api.write" }] };
         var result = await model.OnPostAsync(1);
 
-        Assert.Single(resource.Scopes);
-        Assert.Equal("my-api.write", resource.Scopes[0].Scope);
+        var onlyScope = Assert.Single(resource.Scopes);
+        Assert.Equal("my-api.write", onlyScope.Scope);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("/Admin/ApiResources/Details/Scopes", redirect.PageName);
     }

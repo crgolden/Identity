@@ -52,8 +52,7 @@ public partial class EnableAuthenticatorModelTests
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
-        Assert.IsType<string>(notFound.Value);
-        var message = (string)notFound.Value;
+        var message = Assert.IsType<string>(notFound.Value);
         Assert.Contains(expectedId, message, StringComparison.Ordinal);
     }
 
@@ -69,7 +68,7 @@ public partial class EnableAuthenticatorModelTests
         userManagerMock.Setup(um => um.GetAuthenticatorKeyAsync(It.IsAny<IdentityUser<Guid>>()))
             .ReturnsAsync("ABCDEFG");
         userManagerMock.Setup(um => um.GetEmailAsync(It.IsAny<IdentityUser<Guid>>()))
-            .ReturnsAsync("email@example.com");
+            .ReturnsAsync(TestValues.NewEmailAddress());
         userManagerMock.Setup(um => um.ResetAuthenticatorKeyAsync(It.IsAny<IdentityUser<Guid>>()))
             .ReturnsAsync(IdentityResult.Success);
 
@@ -96,7 +95,7 @@ public partial class EnableAuthenticatorModelTests
         userManagerMock.Setup(um => um.GetAuthenticatorKeyAsync(It.IsAny<IdentityUser<Guid>>()))
             .ReturnsAsync("ABCDEFG");
         userManagerMock.Setup(um => um.GetEmailAsync(It.IsAny<IdentityUser<Guid>>()))
-            .ReturnsAsync("email@example.com");
+            .ReturnsAsync(TestValues.NewEmailAddress());
         userManagerMock.Setup(um => um.ResetAuthenticatorKeyAsync(It.IsAny<IdentityUser<Guid>>()))
             .ReturnsAsync(IdentityResult.Success);
 

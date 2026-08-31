@@ -55,8 +55,8 @@ public class ProperiescshtmlTests
         };
         var result = await model.OnPostAsync(1);
 
-        Assert.Single(client.Properties);
-        Assert.Equal("env", client.Properties[0].Key);
+        var onlyProperty = Assert.Single(client.Properties);
+        Assert.Equal("env", onlyProperty.Key);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("/Admin/Clients/Details/Properties", redirect.PageName);
     }

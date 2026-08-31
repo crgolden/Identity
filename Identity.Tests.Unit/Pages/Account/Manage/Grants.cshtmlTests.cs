@@ -109,11 +109,11 @@ public class GrantsIndexModelTests
 
         // Assert
         var grants = model.View.Grants.ToList();
-        Assert.Single(grants);
-        Assert.Equal("c1", grants[0].ClientId);
-        Assert.Equal("My App", grants[0].ClientName);
-        Assert.Contains("Your user identifier", grants[0].IdentityGrantNames);
-        Assert.Contains("Profile", grants[0].ApiGrantNames);
+        var onlyGrant = Assert.Single(grants);
+        Assert.Equal("c1", onlyGrant.ClientId);
+        Assert.Equal("My App", onlyGrant.ClientName);
+        Assert.Contains("Your user identifier", onlyGrant.IdentityGrantNames);
+        Assert.Contains("Profile", onlyGrant.ApiGrantNames);
     }
 
     [Fact]
@@ -174,8 +174,8 @@ public class GrantsIndexModelTests
         await model.OnGetAsync();
 
         // Assert
-        Assert.Single(model.View.Grants);
-        Assert.Equal("c1", model.View.Grants.First().ClientId);
+        var onlyGrant = Assert.Single(model.View.Grants);
+        Assert.Equal("c1", onlyGrant.ClientId);
     }
 
     [Fact]

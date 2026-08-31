@@ -47,8 +47,8 @@ public class ProperiescshtmlTests
             Properties = [new ApiScopeProperty { Id = 0, Key = "k", Value = "v" }],
         };
         var result = await model.OnPostAsync(1);
-        Assert.Single(scope.Properties);
-        Assert.Equal("k", scope.Properties[0].Key);
+        var onlyProperty = Assert.Single(scope.Properties);
+        Assert.Equal("k", onlyProperty.Key);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("/Admin/ApiScopes/Details/Properties", redirect.PageName);
     }

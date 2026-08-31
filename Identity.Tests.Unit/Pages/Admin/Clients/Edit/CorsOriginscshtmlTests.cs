@@ -55,8 +55,8 @@ public class CorsOriginscshtmlTests
         };
         var result = await model.OnPostAsync(1);
 
-        Assert.Single(client.AllowedCorsOrigins);
-        Assert.Equal("https://new.com", client.AllowedCorsOrigins[0].Origin);
+        var onlyCorsOrigin = Assert.Single(client.AllowedCorsOrigins);
+        Assert.Equal("https://new.com", onlyCorsOrigin.Origin);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("/Admin/Clients/Details/CorsOrigins", redirect.PageName);
     }

@@ -55,8 +55,8 @@ public class IdPRestrictionscshtmlTests
         };
         var result = await model.OnPostAsync(1);
 
-        Assert.Single(client.IdentityProviderRestrictions);
-        Assert.Equal("Facebook", client.IdentityProviderRestrictions[0].Provider);
+        var onlyProviderRestriction = Assert.Single(client.IdentityProviderRestrictions);
+        Assert.Equal("Facebook", onlyProviderRestriction.Provider);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("/Admin/Clients/Details/IdPRestrictions", redirect.PageName);
     }

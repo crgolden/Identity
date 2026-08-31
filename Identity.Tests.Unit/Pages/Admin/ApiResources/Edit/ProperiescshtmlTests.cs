@@ -49,8 +49,8 @@ public class ProperiescshtmlTests
         var model = new PropertiesModel(ctx.Object) { Properties = [new ApiResourceProperty { Id = 0, Key = "env", Value = "prod" }] };
         var result = await model.OnPostAsync(1);
 
-        Assert.Single(resource.Properties);
-        Assert.Equal("env", resource.Properties[0].Key);
+        var onlyProperty = Assert.Single(resource.Properties);
+        Assert.Equal("env", onlyProperty.Key);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("/Admin/ApiResources/Details/Properties", redirect.PageName);
     }

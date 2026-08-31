@@ -47,8 +47,8 @@ public class ClaimTypescshtmlTests
             ClaimTypes = [new ApiScopeClaim { Id = 0, Type = "sub" }],
         };
         var result = await model.OnPostAsync(1);
-        Assert.Single(scope.UserClaims);
-        Assert.Equal("sub", scope.UserClaims[0].Type);
+        var onlyUserClaim = Assert.Single(scope.UserClaims);
+        Assert.Equal("sub", onlyUserClaim.Type);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("/Admin/ApiScopes/Details/ClaimTypes", redirect.PageName);
     }

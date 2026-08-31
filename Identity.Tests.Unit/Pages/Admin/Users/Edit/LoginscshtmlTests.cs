@@ -23,8 +23,8 @@ public class LoginscshtmlTests
         var result = await model.OnGetAsync("1");
 
         Assert.IsType<PageResult>(result);
-        Assert.Single(model.Logins);
-        Assert.Equal("google", model.Logins[0].LoginProvider);
+        var onlyLogin = Assert.Single(model.Logins);
+        Assert.Equal("google", onlyLogin.LoginProvider);
     }
 
     [Fact]

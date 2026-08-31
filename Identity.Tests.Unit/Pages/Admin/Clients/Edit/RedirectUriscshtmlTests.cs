@@ -55,8 +55,8 @@ public class RedirectUriscshtmlTests
         };
         var result = await model.OnPostAsync(1);
 
-        Assert.Single(client.RedirectUris);
-        Assert.Equal("https://new.com/callback", client.RedirectUris[0].RedirectUri);
+        var onlyRedirectUri = Assert.Single(client.RedirectUris);
+        Assert.Equal("https://new.com/callback", onlyRedirectUri.RedirectUri);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("/Admin/Clients/Details/RedirectUris", redirect.PageName);
     }

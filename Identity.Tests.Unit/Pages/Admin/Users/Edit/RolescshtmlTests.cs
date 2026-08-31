@@ -23,8 +23,8 @@ public class RolescshtmlTests
         var result = await model.OnGetAsync("1");
 
         Assert.IsType<PageResult>(result);
-        Assert.Single(model.Roles);
-        Assert.Equal("Admin", model.Roles[0]);
+        var onlyRole = Assert.Single(model.Roles);
+        Assert.Equal("Admin", onlyRole);
     }
 
     [Fact]

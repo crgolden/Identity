@@ -55,8 +55,8 @@ public class ScopescshtmlTests
         };
         var result = await model.OnPostAsync(1);
 
-        Assert.Single(client.AllowedScopes);
-        Assert.Equal("profile", client.AllowedScopes[0].Scope);
+        var onlyAllowedScope = Assert.Single(client.AllowedScopes);
+        Assert.Equal("profile", onlyAllowedScope.Scope);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("/Admin/Clients/Details/Scopes", redirect.PageName);
     }

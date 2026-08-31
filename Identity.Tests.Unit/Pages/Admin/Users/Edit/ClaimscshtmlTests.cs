@@ -24,8 +24,8 @@ public class ClaimscshtmlTests
         var result = await model.OnGetAsync("1");
 
         Assert.IsType<PageResult>(result);
-        Assert.Single(model.Claims);
-        Assert.Equal("role", model.Claims[0].Type);
+        var onlyClaim = Assert.Single(model.Claims);
+        Assert.Equal("role", onlyClaim.Type);
     }
 
     [Fact]

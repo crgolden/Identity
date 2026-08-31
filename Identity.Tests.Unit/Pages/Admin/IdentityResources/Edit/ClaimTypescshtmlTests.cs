@@ -48,8 +48,8 @@ public class ClaimTypescshtmlTests
             ClaimTypes = [new IdentityResourceClaim { Id = 0, Type = "sub" }],
         };
         var result = await model.OnPostAsync(1);
-        Assert.Single(resource.UserClaims);
-        Assert.Equal("sub", resource.UserClaims[0].Type);
+        var onlyUserClaim = Assert.Single(resource.UserClaims);
+        Assert.Equal("sub", onlyUserClaim.Type);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal("/Admin/IdentityResources/Details/ClaimTypes", redirect.PageName);
     }

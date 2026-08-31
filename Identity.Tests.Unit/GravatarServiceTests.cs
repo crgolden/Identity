@@ -122,7 +122,7 @@ public class GravatarServiceTests
         var exception = await Record.ExceptionAsync(() => service.GetAvatarUrlAsync(emailAddress, cts.Token));
 
         // Assert
-        Assert.IsAssignableFrom<OperationCanceledException>(exception);
+        Assert.IsType<OperationCanceledException>(exception, exactMatch: false);
     }
 
     [Fact]
