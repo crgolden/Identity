@@ -4,15 +4,17 @@ namespace Identity.CAPTCHA;
 public sealed class ReCAPTCHAOptions
 #pragma warning restore S101
 {
+    internal const decimal DefaultScoreThreshold = 0.5m;
+
     public string? SiteKey { get; set; }
 
     public string? SecretKey { get; set; }
 
-    public decimal ScoreThreshold { get; set; } = 0.5m;
+    public decimal ScoreThreshold { get; set; } = DefaultScoreThreshold;
 
     public Uri? VerifyEndpoint { get; set; }
 
-    public string? AdminEmail { get; set; }
+    public ICollection<string> TestEmails { get; set; } = [];
 
-    public string? TestEmail { get; set; }
+    public string? SyntheticMarkerSecret { get; set; }
 }

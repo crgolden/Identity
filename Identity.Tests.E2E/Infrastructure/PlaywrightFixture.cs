@@ -1,6 +1,7 @@
 namespace Identity.Tests.E2E.Infrastructure;
 
 using Duende.IdentityServer.EntityFramework.Entities;
+using Identity.CAPTCHA;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +19,7 @@ public sealed class PlaywrightFixture : IAsyncLifetime
     private static readonly string? InitialCatalog = Environment.GetEnvironmentVariable("SqlConnectionStringBuilder__InitialCatalog");
     private static readonly string? UserID = Environment.GetEnvironmentVariable("SqlConnectionStringBuilder__UserID");
     private static readonly string? Password = Environment.GetEnvironmentVariable("SqlConnectionStringBuilder__Password");
+    private static readonly string? SyntheticMarker = Environment.GetEnvironmentVariable("ReCAPTCHASyntheticMarkerSecret");
     private readonly IdentityWebApplicationFactory? _factory;
     private IPlaywright? _playwright;
     private IBrowser? _browser;
@@ -329,11 +331,25 @@ public sealed class PlaywrightFixture : IAsyncLifetime
             throw new InvalidOperationException("Browser is not initialized. Ensure InitializeAsync has been awaited.");
         }
 
-        var (session, page) = await PlaywrightArtifactRecorder.CreateSessionAsync(_browser, "Identity", suiteName, new BrowserNewContextOptions
+        var contextOptions = new BrowserNewContextOptions
         {
             BaseURL = BaseAddress,
             IgnoreHTTPSErrors = true
-        });
+        };
+        if (IsSmoke)
+        {
+            if (IsNullOrWhiteSpace(SyntheticMarker))
+            {
+                throw new InvalidOperationException("ReCAPTCHASyntheticMarkerSecret is not set. Smoke tests against a deployed server require the synthetic marker to pass reCAPTCHA monitor-only enforcement.");
+            }
+
+            contextOptions.ExtraHTTPHeaders = new Dictionary<string, string>
+            {
+                [ReCAPTCHAService.SyntheticMarkerHeaderName] = SyntheticMarker
+            };
+        }
+
+        var (session, page) = await PlaywrightArtifactRecorder.CreateSessionAsync(_browser, "Identity", suiteName, contextOptions);
 
         await page.Context.AddInitScriptAsync("window.grecaptcha = { ready: cb => cb(), execute: () => Promise.resolve('e2e-test-token') };");
         await page.Context.RouteAsync("https://www.google.com/recaptcha/**", route => route.AbortAsync());

@@ -93,8 +93,10 @@ Setting a local User Secret under the secret name instead of the configuration k
 | `ElasticsearchPassword` | same | Elasticsearch password |
 | `ReCAPTCHASiteKey` | same | Google reCAPTCHA v3 site key |
 | `ReCAPTCHASecretKey` | same | Google reCAPTCHA v3 secret key |
-| `AdminEmail` | same | Admin-role account email |
-| `TestEmail` | same | E2E/smoke test account email |
+| `ReCAPTCHASyntheticMarkerSecret` | same | Synthetic-traffic marker; requests carrying it in `X-Synthetic-Marker` for a `ReCAPTCHATestEmails` account get monitor-only reCAPTCHA enforcement |
+| `TestEmail` | `ReCAPTCHATestEmails:0` (app) and `TestEmail` (smoke env var) | E2E/smoke test account email |
+
+Identity no longer reads `AdminEmail` — the Key Vault secret survives because Infrastructure still uses it; the admin account goes through ordinary reCAPTCHA scoring.
 
 The Azure Service Bus namespace is supplied as the `ServiceBusNamespace` **configuration** value, same as the secrets above.
 

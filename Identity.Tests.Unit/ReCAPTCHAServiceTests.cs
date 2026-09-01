@@ -1,5 +1,6 @@
 namespace Identity.Tests.Unit;
 
+using System.Globalization;
 using System.Net;
 using CAPTCHA;
 using Identity;
@@ -13,129 +14,219 @@ using Moq.Protected;
 public class ReCAPTCHAServiceTests
 {
     [Fact]
-    public async Task VerifyAsync_NullToken_ReturnsZero()
+    public async Task VerifyAsync_NullToken_FailsWithZeroScore()
     {
-        var service = CreateService(responseScore: 0.9m);
-        var result = await service.VerifyAsync(null, TestContext.Current.CancellationToken);
-        Assert.Equal(0m, result);
+        var (service, _) = CreateService(responseScore: TestValues.NewScoreAtOrAboveDefaultThreshold());
+        var verdict = await service.VerifyAsync(CAPTCHAActions.Login, TestValues.NewEmailAddress(), null, null, TestContext.Current.CancellationToken);
+        Assert.False(verdict.Passed);
+        Assert.Equal(0m, verdict.Score);
+        Assert.False(verdict.MonitorOnly);
     }
 
     [Fact]
-    public async Task VerifyAsync_EmptyToken_ReturnsZero()
+    public async Task VerifyAsync_EmptyToken_FailsWithZeroScore()
     {
-        var service = CreateService(responseScore: 0.9m);
-        var result = await service.VerifyAsync(string.Empty, TestContext.Current.CancellationToken);
-        Assert.Equal(0m, result);
+        var (service, _) = CreateService(responseScore: TestValues.NewScoreAtOrAboveDefaultThreshold());
+        var verdict = await service.VerifyAsync(CAPTCHAActions.Login, TestValues.NewEmailAddress(), string.Empty, null, TestContext.Current.CancellationToken);
+        Assert.False(verdict.Passed);
+        Assert.Equal(0m, verdict.Score);
     }
 
     [Fact]
-    public async Task VerifyAsync_NullSecretKey_ReturnsZero()
+    public async Task VerifyAsync_NullSecretKey_FailsWithZeroScore()
     {
-        var service = CreateService(responseScore: 0.9m, secretKey: null);
-        var result = await service.VerifyAsync("valid-token", TestContext.Current.CancellationToken);
-        Assert.Equal(0m, result);
+        var submittedRecaptchaToken = TestValues.NewRecaptchaToken();
+        var (service, _) = CreateService(responseScore: TestValues.NewScoreAtOrAboveDefaultThreshold(), secretKeyConfigured: false);
+        var verdict = await service.VerifyAsync(CAPTCHAActions.Login, TestValues.NewEmailAddress(), submittedRecaptchaToken, null, TestContext.Current.CancellationToken);
+        Assert.False(verdict.Passed);
+        Assert.Equal(0m, verdict.Score);
     }
 
     [Fact]
-    public async Task VerifyAsync_SuccessResponseHighScore_ReturnsScore()
+    public async Task VerifyAsync_ScoreAtOrAboveThreshold_Passes()
     {
-        var service = CreateService(responseScore: 0.9m);
-        var result = await service.VerifyAsync("valid-token", TestContext.Current.CancellationToken);
-        Assert.Equal(0.9m, result);
+        var scoreAtOrAboveThreshold = TestValues.NewScoreAtOrAboveDefaultThreshold();
+        var submittedRecaptchaToken = TestValues.NewRecaptchaToken();
+        var (service, _) = CreateService(responseScore: scoreAtOrAboveThreshold);
+        var verdict = await service.VerifyAsync(CAPTCHAActions.Login, TestValues.NewEmailAddress(), submittedRecaptchaToken, null, TestContext.Current.CancellationToken);
+        Assert.True(verdict.Passed);
+        Assert.Equal(scoreAtOrAboveThreshold, verdict.Score);
+        Assert.False(verdict.MonitorOnly);
     }
 
     [Fact]
-    public async Task VerifyAsync_SuccessResponseLowScore_ReturnsScore()
+    public async Task VerifyAsync_ScoreBelowThreshold_FailsClosed()
     {
-        var service = CreateService(responseScore: 0.1m);
-        var result = await service.VerifyAsync("valid-token", TestContext.Current.CancellationToken);
-        Assert.Equal(0.1m, result);
+        var scoreBelowThreshold = TestValues.NewScoreBelowDefaultThreshold();
+        var submittedRecaptchaToken = TestValues.NewRecaptchaToken();
+        var (service, _) = CreateService(responseScore: scoreBelowThreshold);
+        var verdict = await service.VerifyAsync(CAPTCHAActions.Login, TestValues.NewEmailAddress(), submittedRecaptchaToken, null, TestContext.Current.CancellationToken);
+        Assert.False(verdict.Passed);
+        Assert.Equal(scoreBelowThreshold, verdict.Score);
+        Assert.False(verdict.MonitorOnly);
     }
 
     [Fact]
-    public async Task VerifyAsync_ApiReturnsFalseSuccess_ReturnsZero()
+    public async Task VerifyAsync_ApiReturnsFalseSuccess_Fails()
     {
-        var service = CreateService(responseScore: 0.9m, success: false);
-        var result = await service.VerifyAsync("valid-token", TestContext.Current.CancellationToken);
-        Assert.Equal(0m, result);
+        var submittedRecaptchaToken = TestValues.NewRecaptchaToken();
+        var (service, _) = CreateService(responseScore: TestValues.NewScoreAtOrAboveDefaultThreshold(), success: false);
+        var verdict = await service.VerifyAsync(CAPTCHAActions.Login, TestValues.NewEmailAddress(), submittedRecaptchaToken, null, TestContext.Current.CancellationToken);
+        Assert.False(verdict.Passed);
+        Assert.Equal(0m, verdict.Score);
     }
 
     [Fact]
-    public async Task VerifyAsync_HttpFailure_ReturnsZero()
+    public async Task VerifyAsync_HttpFailure_Fails()
     {
-        var service = CreateService(responseScore: 0.9m, httpStatusCode: HttpStatusCode.ServiceUnavailable);
-        var result = await service.VerifyAsync("valid-token", TestContext.Current.CancellationToken);
-        Assert.Equal(0m, result);
+        var submittedRecaptchaToken = TestValues.NewRecaptchaToken();
+        var (service, _) = CreateService(responseScore: TestValues.NewScoreAtOrAboveDefaultThreshold(), httpStatusCode: HttpStatusCode.ServiceUnavailable);
+        var verdict = await service.VerifyAsync(CAPTCHAActions.Login, TestValues.NewEmailAddress(), submittedRecaptchaToken, null, TestContext.Current.CancellationToken);
+        Assert.False(verdict.Passed);
+        Assert.Equal(0m, verdict.Score);
     }
 
     [Fact]
-    public void IsExempt_AdminEmail_ReturnsTrue()
-    {
-        var configuredAdminEmail = TestValues.NewEmailAddress();
-        var service = CreateService(responseScore: 0.9m, adminEmail: configuredAdminEmail);
-        Assert.True(service.IsExempt(configuredAdminEmail));
-    }
-
-    [Fact]
-    public void IsExempt_AdminEmailCaseInsensitive_ReturnsTrue()
-    {
-        var configuredAdminEmail = TestValues.NewEmailAddress();
-        var service = CreateService(responseScore: 0.9m, adminEmail: configuredAdminEmail);
-        Assert.True(service.IsExempt(configuredAdminEmail.ToUpperInvariant()));
-    }
-
-    [Fact]
-    public void IsExempt_TestEmail_ReturnsTrue()
+    public async Task VerifyAsync_MarkerAndTestEmail_LowScore_PassesMonitorOnly()
     {
         var configuredTestEmail = TestValues.NewEmailAddress();
-        var service = CreateService(responseScore: 0.9m, testEmail: configuredTestEmail);
-        Assert.True(service.IsExempt(configuredTestEmail));
+        var configuredSyntheticMarkerSecret = TestValues.NewSyntheticMarker();
+        var scoreBelowThreshold = TestValues.NewScoreBelowDefaultThreshold();
+        var submittedRecaptchaToken = TestValues.NewRecaptchaToken();
+        var (service, _) = CreateService(
+            responseScore: scoreBelowThreshold,
+            testEmails: [configuredTestEmail],
+            syntheticMarkerSecret: configuredSyntheticMarkerSecret);
+        var verdict = await service.VerifyAsync(CAPTCHAActions.Login, configuredTestEmail, submittedRecaptchaToken, configuredSyntheticMarkerSecret, TestContext.Current.CancellationToken);
+        Assert.True(verdict.Passed);
+        Assert.Equal(scoreBelowThreshold, verdict.Score);
+        Assert.True(verdict.MonitorOnly);
     }
 
     [Fact]
-    public void IsExempt_NullEmail_ReturnsFalse()
+    public async Task VerifyAsync_MarkerAndTestEmailDifferentCase_PassesMonitorOnly()
     {
-        var service = CreateService(responseScore: 0.9m, adminEmail: TestValues.NewEmailAddress());
-        Assert.False(service.IsExempt(null));
+        var configuredTestEmail = TestValues.NewEmailAddress();
+        var configuredSyntheticMarkerSecret = TestValues.NewSyntheticMarker();
+        var submittedRecaptchaToken = TestValues.NewRecaptchaToken();
+        var (service, _) = CreateService(
+            responseScore: TestValues.NewScoreBelowDefaultThreshold(),
+            testEmails: [configuredTestEmail],
+            syntheticMarkerSecret: configuredSyntheticMarkerSecret);
+        var verdict = await service.VerifyAsync(CAPTCHAActions.Login, configuredTestEmail.ToUpperInvariant(), submittedRecaptchaToken, configuredSyntheticMarkerSecret, TestContext.Current.CancellationToken);
+        Assert.True(verdict.Passed);
+        Assert.True(verdict.MonitorOnly);
     }
 
     [Fact]
-    public void IsExempt_UnknownEmail_ReturnsFalse()
+    public async Task VerifyAsync_MarkerAndTestEmail_HighScore_StillReportsMonitorOnly()
     {
-        var service = CreateService(
-            responseScore: 0.9m,
-            adminEmail: TestValues.NewEmailAddress(),
-            testEmail: TestValues.NewEmailAddress());
-        Assert.False(service.IsExempt(TestValues.NewEmailAddress()));
+        var configuredTestEmail = TestValues.NewEmailAddress();
+        var configuredSyntheticMarkerSecret = TestValues.NewSyntheticMarker();
+        var scoreAtOrAboveThreshold = TestValues.NewScoreAtOrAboveDefaultThreshold();
+        var submittedRecaptchaToken = TestValues.NewRecaptchaToken();
+        var (service, _) = CreateService(
+            responseScore: scoreAtOrAboveThreshold,
+            testEmails: [configuredTestEmail],
+            syntheticMarkerSecret: configuredSyntheticMarkerSecret);
+        var verdict = await service.VerifyAsync(CAPTCHAActions.Login, configuredTestEmail, submittedRecaptchaToken, configuredSyntheticMarkerSecret, TestContext.Current.CancellationToken);
+        Assert.True(verdict.Passed);
+        Assert.True(
+            verdict.MonitorOnly,
+            "a marked-synthetic request is monitor-only regardless of score, or the observed score distribution is censored to failures");
     }
 
     [Fact]
-    public void IsExempt_TestEmailNotConfigured_ReturnsFalseForEveryCaller()
+    public async Task VerifyAsync_MarkerWithoutTestEmail_LowScore_Fails()
     {
-        var service = CreateService(responseScore: 0.9m, adminEmail: TestValues.NewEmailAddress(), testEmail: null);
+        var configuredTestEmail = TestValues.NewEmailAddress();
+        var configuredSyntheticMarkerSecret = TestValues.NewSyntheticMarker();
+        var submittedRecaptchaToken = TestValues.NewRecaptchaToken();
+        var (service, _) = CreateService(
+            responseScore: TestValues.NewScoreBelowDefaultThreshold(),
+            testEmails: [configuredTestEmail],
+            syntheticMarkerSecret: configuredSyntheticMarkerSecret);
+        var verdict = await service.VerifyAsync(CAPTCHAActions.Login, TestValues.NewEmailAddress(), submittedRecaptchaToken, configuredSyntheticMarkerSecret, TestContext.Current.CancellationToken);
+        Assert.False(verdict.Passed);
+        Assert.False(verdict.MonitorOnly);
+    }
+
+    [Fact]
+    public async Task VerifyAsync_TestEmailWithoutMarker_LowScore_Fails()
+    {
+        var configuredTestEmail = TestValues.NewEmailAddress();
+        var submittedRecaptchaToken = TestValues.NewRecaptchaToken();
+        var (service, _) = CreateService(
+            responseScore: TestValues.NewScoreBelowDefaultThreshold(),
+            testEmails: [configuredTestEmail],
+            syntheticMarkerSecret: TestValues.NewSyntheticMarker());
+        var verdict = await service.VerifyAsync(CAPTCHAActions.Login, configuredTestEmail, submittedRecaptchaToken, null, TestContext.Current.CancellationToken);
         Assert.False(
-            service.IsExempt(TestValues.NewEmailAddress()),
-            "an unconfigured TestEmail must exempt nobody, or a null option silently disables the CAPTCHA");
+            verdict.Passed,
+            "a test email without the marker header must get full enforcement, or the email list becomes a captcha-free credential-stuffing surface");
+        Assert.False(verdict.MonitorOnly);
     }
 
     [Fact]
-    public void IsExempt_AdminEmailNotConfigured_ReturnsFalseForEveryCaller()
+    public async Task VerifyAsync_WrongMarker_LowScore_Fails()
     {
-        var service = CreateService(responseScore: 0.9m, adminEmail: null, testEmail: TestValues.NewEmailAddress());
-        Assert.False(
-            service.IsExempt(TestValues.NewEmailAddress()),
-            "an unconfigured AdminEmail must exempt nobody, or a null option silently disables the CAPTCHA");
+        var configuredTestEmail = TestValues.NewEmailAddress();
+        var submittedRecaptchaToken = TestValues.NewRecaptchaToken();
+        var presentedWrongMarker = TestValues.NewSyntheticMarker();
+        var (service, _) = CreateService(
+            responseScore: TestValues.NewScoreBelowDefaultThreshold(),
+            testEmails: [configuredTestEmail],
+            syntheticMarkerSecret: TestValues.NewSyntheticMarker());
+        var verdict = await service.VerifyAsync(CAPTCHAActions.Login, configuredTestEmail, submittedRecaptchaToken, presentedWrongMarker, TestContext.Current.CancellationToken);
+        Assert.False(verdict.Passed);
+        Assert.False(verdict.MonitorOnly);
     }
 
-    private static ReCAPTCHAService CreateService(
+    [Fact]
+    public async Task VerifyAsync_MarkerSecretNotConfigured_WhitespaceMarkerHeader_Fails()
+    {
+        var configuredTestEmail = TestValues.NewEmailAddress();
+        var submittedRecaptchaToken = TestValues.NewRecaptchaToken();
+        var (service, _) = CreateService(
+            responseScore: TestValues.NewScoreBelowDefaultThreshold(),
+            testEmails: [configuredTestEmail],
+            syntheticMarkerSecret: null);
+        var verdict = await service.VerifyAsync(CAPTCHAActions.Login, configuredTestEmail, submittedRecaptchaToken, " ", TestContext.Current.CancellationToken);
+        Assert.False(
+            verdict.Passed,
+            "an unconfigured marker secret must disable the synthetic path entirely, or blank-matches-blank silently disables the CAPTCHA");
+        Assert.False(verdict.MonitorOnly);
+    }
+
+    [Fact]
+    public async Task VerifyAsync_MonitorOnly_StillCallsSiteverify()
+    {
+        var configuredTestEmail = TestValues.NewEmailAddress();
+        var configuredSyntheticMarkerSecret = TestValues.NewSyntheticMarker();
+        var submittedRecaptchaToken = TestValues.NewRecaptchaToken();
+        var (service, handlerMock) = CreateService(
+            responseScore: TestValues.NewScoreBelowDefaultThreshold(),
+            testEmails: [configuredTestEmail],
+            syntheticMarkerSecret: configuredSyntheticMarkerSecret);
+        await service.VerifyAsync(CAPTCHAActions.Login, configuredTestEmail, submittedRecaptchaToken, configuredSyntheticMarkerSecret, TestContext.Current.CancellationToken);
+        handlerMock.Protected().Verify(
+            "SendAsync",
+            Times.Once(),
+            ItExpr.IsAny<HttpRequestMessage>(),
+            ItExpr.IsAny<CancellationToken>());
+    }
+
+    private static (ReCAPTCHAService Service, Mock<HttpMessageHandler> HandlerMock) CreateService(
         decimal responseScore,
         bool success = true,
         HttpStatusCode httpStatusCode = HttpStatusCode.OK,
-        string? secretKey = "test-secret",
-        string? adminEmail = null,
-        string? testEmail = null)
+        bool secretKeyConfigured = true,
+        string? syntheticMarkerSecret = null,
+        params string[] testEmails)
     {
-        var json = $$"""{"success":{{(success ? "true" : "false")}},"score":{{responseScore}}}""";
+        var secretKey = secretKeyConfigured ? TestValues.NewRecaptchaSecretKey() : null;
+        var renderedScore = responseScore.ToString(CultureInfo.InvariantCulture);
+        var json = $$"""{"success":{{(success ? "true" : "false")}},"score":{{renderedScore}}}""";
 
         var handlerMock = new Mock<HttpMessageHandler>(MockBehavior.Strict);
         handlerMock.Protected()
@@ -154,7 +245,12 @@ public class ReCAPTCHAServiceTests
             BaseAddress = new UriBuilder("https", "recaptcha.test").Uri
         };
         var optionsMock = new Mock<IOptions<ReCAPTCHAOptions>>(MockBehavior.Strict);
-        optionsMock.Setup(o => o.Value).Returns(new ReCAPTCHAOptions { SecretKey = secretKey, AdminEmail = adminEmail, TestEmail = testEmail });
-        return new ReCAPTCHAService(httpClient, optionsMock.Object);
+        optionsMock.Setup(o => o.Value).Returns(new ReCAPTCHAOptions
+        {
+            SecretKey = secretKey,
+            TestEmails = testEmails,
+            SyntheticMarkerSecret = syntheticMarkerSecret
+        });
+        return (new ReCAPTCHAService(httpClient, optionsMock.Object), handlerMock);
     }
 }

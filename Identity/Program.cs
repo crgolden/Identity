@@ -40,8 +40,8 @@ try
         googleClientSecret = builder.Configuration.GetRequired<string>("GoogleClientSecret"),
         reCAPTCHASiteKey = builder.Configuration.GetRequired<string>("ReCAPTCHASiteKey"),
         reCAPTCHASecretKey = builder.Configuration.GetRequired<string>("ReCAPTCHASecretKey");
-    string? adminEmail = builder.Configuration.GetValue<string?>("AdminEmail"),
-        testEmail = builder.Configuration.GetValue<string?>("TestEmail");
+    var reCAPTCHATestEmails = builder.Configuration.GetSection("ReCAPTCHATestEmails").Get<string[]>() ?? [];
+    var reCAPTCHASyntheticMarkerSecret = builder.Configuration.GetValue<string?>("ReCAPTCHASyntheticMarkerSecret");
     var sqlConnectionStringBuilderSection = builder.Configuration.GetRequiredSection(nameof(SqlConnectionStringBuilder));
     var sqlConnectionStringBuilder = sqlConnectionStringBuilderSection.Get<SqlConnectionStringBuilder>() ?? throw new InvalidOperationException($"Invalid '{nameof(SqlConnectionStringBuilder)}' section.");
     var corsPolicySection = builder.Configuration.GetRequiredSection(nameof(CorsPolicy));
@@ -66,11 +66,6 @@ try
             openTelemetryLoggerOptions.IncludeScopes = true;
         });
         builder.Services
-            .Configure<ReCAPTCHAOptions>(recaptchaOptions =>
-            {
-                recaptchaOptions.AdminEmail = adminEmail;
-                recaptchaOptions.TestEmail = testEmail;
-            })
             .AddSerilog((serviceProvider, loggerConfiguration) => loggerConfiguration
                 .ReadFrom.Configuration(builder.Configuration)
                 .ReadFrom.Services(serviceProvider)
@@ -146,11 +141,6 @@ try
 
         var serviceBusConnectionString = builder.Configuration.GetRequired<string>("ServiceBusConnectionString");
         builder.Services
-            .Configure<ReCAPTCHAOptions>(recaptchaOptions =>
-            {
-                recaptchaOptions.AdminEmail = adminEmail;
-                recaptchaOptions.TestEmail = testEmail;
-            })
             .AddSerilog((serviceProvider, loggerConfiguration) => loggerConfiguration
                 .ReadFrom.Configuration(builder.Configuration)
                 .ReadFrom.Services(serviceProvider)
@@ -219,6 +209,8 @@ try
             recaptchaOptions.SiteKey = reCAPTCHASiteKey;
             recaptchaOptions.SecretKey = reCAPTCHASecretKey;
             recaptchaOptions.VerifyEndpoint = recaptchaVerifyEndpoint;
+            recaptchaOptions.TestEmails = reCAPTCHATestEmails;
+            recaptchaOptions.SyntheticMarkerSecret = reCAPTCHASyntheticMarkerSecret;
         })
         .AddHttpClient<ICAPTCHAService, ReCAPTCHAService>().Services
         .AddRateLimiter(rateLimiterOptions =>

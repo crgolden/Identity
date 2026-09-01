@@ -101,12 +101,8 @@ internal sealed class AlwaysPassCAPTCHAService : ICAPTCHAService
 {
     public string? SiteKey => null;
 
-    public decimal ScoreThreshold => 0.5m;
-
-    public bool IsExempt(string? email) => false;
-
-    public Task<decimal> VerifyAsync(string? token, CancellationToken cancellationToken = default)
-        => Task.FromResult(1.0m);
+    public Task<CAPTCHAVerdict> VerifyAsync(string action, string? email, string? token, string? syntheticMarker, CancellationToken cancellationToken = default)
+        => Task.FromResult(new CAPTCHAVerdict(Passed: true, Score: 1.0m, MonitorOnly: false));
 }
 
 internal sealed class TestServiceBusClientFactory : IAzureClientFactory<ServiceBusClient>

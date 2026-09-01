@@ -57,14 +57,16 @@ public class RegisterModel : PageModel
             return Page();
         }
 
-        if (!_captchaService.IsExempt(Input.Email))
+        var verdict = await _captchaService.VerifyAsync(
+            CAPTCHAActions.Register,
+            Input.Email,
+            Input.RecaptchaToken,
+            HttpContext.Request.Headers[ReCAPTCHAService.SyntheticMarkerHeaderName],
+            HttpContext.RequestAborted);
+        if (!verdict.Passed)
         {
-            var score = await _captchaService.VerifyAsync(Input.RecaptchaToken, HttpContext.RequestAborted);
-            if (score < _captchaService.ScoreThreshold)
-            {
-                ModelState.AddModelError(Empty, "Request could not be verified.");
-                return Page();
-            }
+            ModelState.AddModelError(Empty, "Request could not be verified.");
+            return Page();
         }
 
         var user = new IdentityUser<Guid>();

@@ -223,6 +223,56 @@ public sealed class TelemetryTests
         Assert.Contains(capturedTags, t => string.Equals(t.Key, "client_id", StringComparison.Ordinal) && t.Value is null);
     }
 
+    [Fact]
+    public void SyntheticCaptchaObserved_EmitsCounterWithValueOne()
+    {
+        // Arrange
+        long captured = 0;
+        using var listener = MakeListener(
+            "identity.captcha.synthetic_observed",
+            (value, _) => captured = value);
+
+        // Act
+        Telemetry.Metrics.SyntheticCaptchaObserved(CAPTCHA.CAPTCHAActions.Login, TestValues.NewScoreBelowDefaultThreshold());
+
+        // Assert
+        Assert.Equal(1, captured);
+    }
+
+    [Fact]
+    public void SyntheticCaptchaObserved_TagsContainAction()
+    {
+        // Arrange
+        KeyValuePair<string, object?>[] capturedTags = [];
+        using var listener = MakeListener(
+            "identity.captcha.synthetic_observed",
+            (_, tags) => capturedTags = tags);
+
+        // Act
+        Telemetry.Metrics.SyntheticCaptchaObserved(CAPTCHA.CAPTCHAActions.Register, TestValues.NewScoreBelowDefaultThreshold());
+
+        // Assert
+        Assert.Contains(capturedTags, t => string.Equals(t.Key, "action", StringComparison.Ordinal) && CAPTCHA.CAPTCHAActions.Register.Equals(t.Value));
+    }
+
+    [Fact]
+    public void SyntheticCaptchaObserved_TagsContainScoreBucketWithOneDecimalInvariantFormat()
+    {
+        // Arrange
+        var observedScore = TestValues.NewScoreBelowDefaultThreshold();
+        var expectedScoreBucket = observedScore.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
+        KeyValuePair<string, object?>[] capturedTags = [];
+        using var listener = MakeListener(
+            "identity.captcha.synthetic_observed",
+            (_, tags) => capturedTags = tags);
+
+        // Act
+        Telemetry.Metrics.SyntheticCaptchaObserved(CAPTCHA.CAPTCHAActions.Login, observedScore);
+
+        // Assert
+        Assert.Contains(capturedTags, t => string.Equals(t.Key, "score_bucket", StringComparison.Ordinal) && expectedScoreBucket.Equals(t.Value));
+    }
+
     private static MeterListener MakeListener(
         string instrumentName,
         Action<long, KeyValuePair<string, object?>[]> onMeasurement)

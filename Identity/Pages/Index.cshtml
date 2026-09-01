@@ -1,18 +1,41 @@
 @page
 @model IndexModel
+@inject SignInManager<IdentityUser<Guid>> SignInManager
 @{
-    ViewData["Title"] = "Sign in";
-    ViewData["Description"] = "One account for every application connected to this sign-in service. Passkeys, two-factor authentication, and Google sign-in, with full control over what each application can see.";
+    var signedIn = SignInManager.IsSignedIn(User);
+    ViewData["Title"] = signedIn ? "Home" : "Sign in";
+    if (!signedIn)
+    {
+        ViewData["Description"] = "One account for every application connected to this sign-in service. Passkeys, two-factor authentication, and Google sign-in, with full control over what each application can see.";
+    }
 }
 
-<h1>One account. Every app you connect.</h1>
+@if (signedIn)
+{
+    <h1>Your account. Every app you connected.</h1>
 
-<p class="lead">Register once here. Any application connected to this service sends you back when it needs to know who you are &mdash; so none of them ever stores your password.</p>
+    <p id="signed-in-lead" class="lead">Signed in as @User.Identity?.Name. Change how you sign in, review which applications have access, or sign your other devices out.</p>
 
-<p class="mb-4">
-    <a asp-page="/Account/Register" class="btn btn-primary">Create an account</a>
-    <a asp-page="/Account/Login" class="btn btn-outline-secondary ms-1">Sign in</a>
-</p>
+    <p class="mb-4">
+        <a id="manage-account" asp-page="/Account/Manage/Index" class="btn btn-primary">Manage your account</a>
+        <a id="review-grants" asp-page="/Account/Manage/Grants" class="btn btn-outline-secondary ms-1">Application access</a>
+        @if (User.IsInRole("Admin"))
+        {
+            <a id="home-admin" asp-page="/Admin/Index" class="btn btn-outline-secondary ms-1">Admin</a>
+        }
+    </p>
+}
+else
+{
+    <h1>One account. Every app you connect.</h1>
+
+    <p class="lead">Register once here. Any application connected to this service sends you back when it needs to know who you are &mdash; so none of them ever stores your password.</p>
+
+    <p class="mb-4">
+        <a id="create-account" asp-page="/Account/Register" class="btn btn-primary">Create an account</a>
+        <a id="sign-in" asp-page="/Account/Login" class="btn btn-outline-secondary ms-1">Sign in</a>
+    </p>
+}
 
 <div class="row row-cols-1 row-cols-md-2 g-3 mb-4">
     <div class="col">
@@ -50,7 +73,10 @@
 </div>
 
 <p class="text-muted">
-    Already registered? <a asp-page="/Account/Manage/Index">Manage your account</a>.
+    @if (!signedIn)
+    {
+        <text>Already registered? <a asp-page="/Account/Manage/Index">Manage your account</a>.</text>
+    }
     Read the <a asp-page="/Privacy">privacy policy</a>, or browse the source at
     <a href="https://github.com/crgolden/Identity">github.com/crgolden/Identity</a>.
 </p>

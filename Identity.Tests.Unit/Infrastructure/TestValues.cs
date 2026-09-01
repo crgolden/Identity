@@ -53,4 +53,18 @@ internal static class TestValues
 
     internal static DateTime NewUtcDateTime() =>
         DateTime.UtcNow.AddMinutes(-Random.Shared.Next(1, 100_000));
+
+    internal static decimal NewScoreAtOrAboveDefaultThreshold() =>
+        Identity.CAPTCHA.ReCAPTCHAOptions.DefaultScoreThreshold + (Random.Shared.Next(0, 6) / 10m);
+
+    internal static decimal NewScoreBelowDefaultThreshold() =>
+        Identity.CAPTCHA.ReCAPTCHAOptions.DefaultScoreThreshold - (Random.Shared.Next(1, 6) / 10m);
+
+    internal static string NewSyntheticMarker() => LowercaseToken(64);
+
+    internal static string NewRecaptchaToken() => LowercaseToken(16);
+
+    internal static string NewRecaptchaSecretKey() => LowercaseToken(24);
+
+    internal static string NewRecaptchaSiteKey() => LowercaseToken(12);
 }

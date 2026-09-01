@@ -7,9 +7,10 @@
     Credentials are read from User Secrets (ID aspnet-Identity-149346d0-999f-4a74-8ff7-2a92d39790f2) so
     they never need to be set as OS environment variables.
 .PARAMETER BaseUrl
-    Target for the smoke tests. Defaults to the deployed app. For local runs, pass
-    https://localhost:7261 — requires Identity running locally with ReCAPTCHA:SmokeTestEmail set via its
-    User Secrets to match TestEmail.
+    Target for the smoke tests. Defaults to the deployed app, whose ReCAPTCHASyntheticMarkerSecret the
+    local User Secrets value must match. For local runs, pass https://localhost:7261 — requires Identity
+    running locally with ReCAPTCHATestEmails:0 set via its User Secrets to match TestEmail, and
+    ReCAPTCHASyntheticMarkerSecret set to any value shared between the app and this script.
 .EXAMPLE
     .\Invoke-SmokeTests.ps1
     Runs against the deployed app at https://crgolden-identity.azurewebsites.net.
@@ -28,6 +29,7 @@ $env:SmokeBaseUrl = $BaseUrl
 $env:SmokeDataSource = $secrets.SmokeDataSource
 $env:TestEmail = $secrets.TestEmail
 $env:TestPassword = $secrets.TestPassword
+$env:ReCAPTCHASyntheticMarkerSecret = $secrets.ReCAPTCHASyntheticMarkerSecret
 $env:SqlConnectionStringBuilder__InitialCatalog = $secrets.SqlConnectionStringBuilder.InitialCatalog
 $env:SqlConnectionStringBuilder__UserID         = $secrets.SqlConnectionStringBuilder.UserID
 $env:SqlConnectionStringBuilder__Password       = $secrets.SqlConnectionStringBuilder.Password
@@ -38,7 +40,7 @@ try
 }
 finally
 {
-    Remove-Item Env:SmokeBaseUrl, Env:TestEmail, Env:TestPassword `
+    Remove-Item Env:SmokeBaseUrl, Env:TestEmail, Env:TestPassword, Env:ReCAPTCHASyntheticMarkerSecret, `
         Env:SmokeDataSource, Env:SqlConnectionStringBuilder__InitialCatalog, `
         Env:SqlConnectionStringBuilder__UserID, Env:SqlConnectionStringBuilder__Password `
         -ErrorAction SilentlyContinue

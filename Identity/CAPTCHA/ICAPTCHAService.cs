@@ -6,9 +6,10 @@ public interface ICAPTCHAService
 {
     string? SiteKey { get; }
 
-    decimal ScoreThreshold { get; }
-
-    bool IsExempt(string? email);
-
-    Task<decimal> VerifyAsync(string? token, CancellationToken cancellationToken = default);
+    Task<CAPTCHAVerdict> VerifyAsync(
+        string action,
+        string? email,
+        string? token,
+        string? syntheticMarker,
+        CancellationToken cancellationToken = default);
 }

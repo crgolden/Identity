@@ -42,9 +42,12 @@ regression.** `Identity.Tests.E2E` also holds the `Category=Smoke` suite (`Accou
 written to run against the **live deployed site** and needs a `TestEmail` that only Key Vault supplies.
 Run the project unfiltered — `dotnet run --project Identity.Tests.E2E` — and those tests are discovered and
 executed locally, where they fail with `InvalidOperationException: TestEmail is not set` and take a
-registration test down with them, because `TestEmail` is also the reCAPTCHA exemption
-(`ICAPTCHAService.IsExempt`, see `ARCHITECTURE.md`). The symptom is two failures in files nobody touched
-and a total five higher than the last green run. Check the total before blaming the diff: **the E2E tier
+registration test down with them. Smoke authenticates against the deployed server's real reCAPTCHA via
+monitor-only enforcement: the fixture sends the `X-Synthetic-Marker` header (from the
+`ReCAPTCHASyntheticMarkerSecret` env var, which must match the server's Key Vault value) and the
+`TestEmail` account must be in the server's `ReCAPTCHATestEmails` collection (see `ARCHITECTURE.md`,
+Bot protection). The symptom of an unfiltered run is failures in files nobody touched
+and a total higher than the last green run. Check the total before blaming the diff: **the E2E tier
 alone is the count to compare.**
 
 ### Single Test (by method name)
@@ -63,8 +66,8 @@ alone is the count to compare.**
 - **`Identity.Tests.E2E` — Smoke** — post-deploy smoke tests (`Category=Smoke`, `AccountSmokeTests`) run against the live deployed site
 
 **Test infrastructure**
-- **`IdentityWebApplicationFactory`** (extends `WebApplicationFactory<Program>`) — starts a real Kestrel HTTPS server on a random port for Playwright; replaces `IAzureClientFactory<ServiceBusClient>` with `TestServiceBusClientFactory` (captures sent email via `EmailCaptureSender` instead of calling Azure Service Bus); replaces `IAvatarService` with `NullAvatarService` (no real Gravatar HTTP calls); replaces `ICAPTCHAService` with an always-pass stub (no real Google reCAPTCHA calls); reduces the password hasher's PBKDF2 iteration count to 1 (default 600k iterations is CPU-prohibitive across a whole suite of logins); in Development, replaces the Serilog `ILoggerFactory` with a console logger (avoids an Elasticsearch connection at startup); ignores background-service exceptions (IdentityServer key refresh, token cleanup) so a transient one can't tear down the Kestrel host mid-run.
-- **`PlaywrightFixture`** (xUnit `IAsyncLifetime`) — installs Chromium on first run, warms up the server, provides `NewPageAsync()` per test, stubs client-side `grecaptcha` so form submissions are synchronous, and in CI cleans up the test database after the suite. Every test creates its own confirmed user via `CreateConfirmedUserAsync()` — there is no shared long-lived account. A prior shared-account optimization (`GrantsTests`, `ServerSideSessionsTests` reusing one account created at fixture startup) was removed 2026-08-16 after it produced a confirmed CI failure: the shared account's first login of a run hit `SignInResult.Failed` ("Invalid login attempt.") for reasons the available Playwright trace/screenshot artifacts couldn't pin down, and the test had no retry — it polled the unchanged `/Account/Login` URL for the full 60s timeout and failed outright. Every other test in this suite, all using a fresh per-test account, has shown no comparable failure across the runs that surfaced this. If a future test wants to avoid per-test account-creation overhead, prefer a scoped shared account per test *class* (created once, used only by tests in that class) over a suite-wide one, and keep first-login assertions retry-capable rather than a bare 60s wait-and-fail.
+- **`IdentityWebApplicationFactory`** (extends `WebApplicationFactory<Program>`) — starts a real Kestrel HTTPS server on a random port for Playwright; replaces `IAzureClientFactory<ServiceBusClient>` with `TestServiceBusClientFactory` (captures sent email via `EmailCaptureSender` instead of calling Azure Service Bus); replaces `IAvatarService` with `NullAvatarService` (no real Gravatar HTTP calls); replaces `ICAPTCHAService` with an always-pass stub returning a passing `CAPTCHAVerdict` (no real Google reCAPTCHA calls); reduces the password hasher's PBKDF2 iteration count to 1 (default 600k iterations is CPU-prohibitive across a whole suite of logins); in Development, replaces the Serilog `ILoggerFactory` with a console logger (avoids an Elasticsearch connection at startup); ignores background-service exceptions (IdentityServer key refresh, token cleanup) so a transient one can't tear down the Kestrel host mid-run.
+- **`PlaywrightFixture`** (xUnit `IAsyncLifetime`) — installs Chromium on first run, warms up the server, provides `NewPageAsync()` per test, stubs client-side `grecaptcha` so form submissions are synchronous (in smoke mode the stubbed token really round-trips Google, scores 0, and passes via the fixture-injected `X-Synthetic-Marker` header — monitor-only enforcement), and in CI cleans up the test database after the suite. Every test creates its own confirmed user via `CreateConfirmedUserAsync()` — there is no shared long-lived account. A prior shared-account optimization (`GrantsTests`, `ServerSideSessionsTests` reusing one account created at fixture startup) was removed 2026-08-16 after it produced a confirmed CI failure: the shared account's first login of a run hit `SignInResult.Failed` ("Invalid login attempt.") for reasons the available Playwright trace/screenshot artifacts couldn't pin down, and the test had no retry — it polled the unchanged `/Account/Login` URL for the full 60s timeout and failed outright. Every other test in this suite, all using a fresh per-test account, has shown no comparable failure across the runs that surfaced this. If a future test wants to avoid per-test account-creation overhead, prefer a scoped shared account per test *class* (created once, used only by tests in that class) over a suite-wide one, and keep first-login assertions retry-capable rather than a bare 60s wait-and-fail.
 - Test collections run serially (`parallelizeTestCollections: false` in `xunit.runner.json`, `Identity.Tests.E2E` only) to prevent `WebApplicationFactory` startup from timing out Key Vault calls when the thread pool is saturated.
 - Tests that drive `/connect/authorize` against a client with a fake `redirect_uri` (e.g. `https://localhost:9999/callback` — nothing listens there) must capture the final redirect from the browser's own `Request` event via `page.RunAndWaitForRequestAsync(...)` *before* triggering the click that causes it, rather than awaiting navigation afterward — by the time a post-navigation wait would resolve, the browser has already failed the connection to the fake host (`ERR_CONNECTION_REFUSED`) and the URL is unavailable. The same before-not-after ordering applies to `page.WaitForResponseAsync(...)`: register the listener before the click that triggers the POST, or a fast response can complete before the listener attaches.
 - `page.WaitForURLAsync(...)` can miss a navigation that completes before the listener registers (common right after a form POST that renders in place, e.g. 2FA setup/reset flows). Prefer polling for a DOM element that only appears on the destination page (`Assertions.Expect(page.Locator(...)).ToBeVisibleAsync(...)`) over `WaitForURLAsync` in those spots.
@@ -1326,11 +1329,30 @@ flowchart TD
 
 | Path | File | Test Method |
 |---|---|---|
-| GET / — constructor | `Pages/Index.cshtmlTests.cs` | `Constructor_BothDependenciesNull_DoesNotThrowAndCreatesInstance` |
+| GET / — anonymous CTAs and title | `Identity.Tests.E2E/HomeTests.cs` | `Home_Anonymous_Shows_Register_And_SignIn_Calls_To_Action` |
+| GET / — signed-in CTAs and title | `Identity.Tests.E2E/HomeTests.cs` | `Home_SignedIn_Shows_Account_Links_Instead_Of_Register_And_SignIn` |
+| GET / — signed-in body names the user | `Identity.Tests.E2E/HomeTests.cs` | `Home_SignedIn_Body_Agrees_With_Navbar` |
+| GET / — Admin shortcut, admin role | `Identity.Tests.E2E/HomeTests.cs` | `Home_AdminLink_Visible_When_AdminRole` |
+| GET / — Admin shortcut, non-admin role | `Identity.Tests.E2E/HomeTests.cs` | `Home_AdminLink_Hidden_When_NonAdminRole` |
 | GET /Error — no error ID | `Pages/Error.cshtmlTests.cs` | `OnGetAsync_NullOrWhitespaceErrorId_SkipsInteractionService` |
 | GET /Error — with error ID | `Pages/Error.cshtmlTests.cs` | `OnGetAsync_ValidErrorId_CallsInteractionService` |
 | GET /Error — with error message (logs) | `Pages/Error.cshtmlTests.cs` | `OnGetAsync_ValidErrorId_WithErrorMessage_LogsError` |
 | GET /Error — ShowRequestId property | `Pages/Error.cshtmlTests.cs` | `ShowRequestId_VariousValues_ReturnsExpected` |
+
+### Home page ids
+
+The home page branches on the same predicate the navbar does — `SignInManager.IsSignedIn(User)` in `Pages/Index.cshtml`, matching `Pages/Shared/_LoginPartial.cshtml` — so the two regions cannot disagree. `HomeTests` selects the branch-specific links by id:
+
+| Element | `id` |
+|---|---|
+| "Create an account" (anonymous) | `create-account` |
+| "Sign in" (anonymous) | `sign-in` |
+| "Manage your account" (signed in) | `manage-account` |
+| "Application access" (signed in) | `review-grants` |
+| Lead paragraph naming the signed-in user | `signed-in-lead` |
+| "Admin" shortcut (signed in, Admin role) | `home-admin` — distinct from the navbar's `admin-nav`, which the same role gates |
+
+The anonymous branch's `ViewData["Title"]` and `ViewData["Description"]` are the crawler-facing pair and stay fixed; only the signed-in branch's title varies, which is what `Home_SignedIn_Shows_Account_Links_Instead_Of_Register_And_SignIn` pins.
 
 ---
 
