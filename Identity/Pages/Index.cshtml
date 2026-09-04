@@ -16,14 +16,14 @@
 
     <p id="signed-in-lead" class="lead">Signed in as @User.Identity?.Name. Change how you sign in, review which applications have access, or sign your other devices out.</p>
 
-    <p class="mb-4">
+    <div class="d-flex flex-wrap gap-2 mb-4">
         <a id="manage-account" asp-page="/Account/Manage/Index" class="btn btn-primary">Manage your account</a>
-        <a id="review-grants" asp-page="/Account/Manage/Grants" class="btn btn-outline-secondary ms-1">Application access</a>
+        <a id="review-grants" asp-page="/Account/Manage/Grants" class="btn btn-outline-secondary">Application access</a>
         @if (User.IsInRole("Admin"))
         {
-            <a id="home-admin" asp-page="/Admin/Index" class="btn btn-outline-secondary ms-1">Admin</a>
+            <a id="home-admin" asp-page="/Admin/Index" class="btn btn-outline-secondary">Admin</a>
         }
-    </p>
+    </div>
 }
 else
 {

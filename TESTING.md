@@ -1508,7 +1508,7 @@ quadrantChart
 | `POST /Account/PasskeyCreationOptions` | — | ✅ | ❌ | Minimal API |
 | `POST /Account/PasskeyRequestOptions` | — | ✅ | ❌ | Minimal API |
 | `/Health` | ❌ | — | ❌ | Infrastructure endpoint |
-| `/` | 🔵 | — | ❌ | Constructor only |
+| `/` | ❌ | — | ✅ | E2E only (`HomeTests.cs`). The anonymous/signed-in branch lives in the view, so `IndexModel` has no seam a unit test can reach — the ❌ is a property of the design, not a gap someone forgot |
 | `/Privacy` | 🔵 | — | ❌ | Constructor only |
 | `/Error` | ✅ | — | ❌ | |
 | `/Account/Manage/Consent` | ✅ | ✅ | ✅ | Allow, Deny, no-scopes E2E flows |
