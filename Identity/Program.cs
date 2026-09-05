@@ -1,6 +1,5 @@
 #pragma warning disable SA1200
 using System.Diagnostics;
-using System.Net.Http.Headers;
 using System.Security.Claims;
 using Azure.Identity;
 using Duende.IdentityServer;

@@ -4,7 +4,6 @@ using Identity.Pages.Admin.Users;
 using Infrastructure;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Moq;
 
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]

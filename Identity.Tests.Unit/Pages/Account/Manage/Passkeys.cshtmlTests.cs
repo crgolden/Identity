@@ -1,6 +1,5 @@
 namespace Identity.Tests.Unit.Pages.Account.Manage;
 
-using System.Buffers.Text;
 using System.Security.Claims;
 using Identity.Pages.Account.Manage;
 using Infrastructure;

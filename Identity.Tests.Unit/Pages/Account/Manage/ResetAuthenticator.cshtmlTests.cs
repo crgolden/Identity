@@ -3,13 +3,10 @@ namespace Identity.Tests.Unit.Pages.Account.Manage;
 using System.Security.Claims;
 using Identity.Pages.Account.Manage;
 using Infrastructure;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Moq;
 
 [Collection(UnitCollection.Name)]

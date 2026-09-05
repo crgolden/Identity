@@ -3,7 +3,6 @@ namespace Identity.Tests.Unit;
 using System.Globalization;
 using System.Net;
 using CAPTCHA;
-using Identity;
 using Infrastructure;
 using Microsoft.Extensions.Options;
 using Moq;

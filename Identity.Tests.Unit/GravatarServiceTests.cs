@@ -3,7 +3,6 @@ namespace Identity.Tests.Unit;
 using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
-using Identity;
 using Identity.Avatar;
 using Infrastructure;
 

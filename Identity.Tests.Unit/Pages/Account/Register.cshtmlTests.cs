@@ -1,6 +1,5 @@
 namespace Identity.Tests.Unit.Pages.Account;
 
-using System.Threading.Channels;
 using Azure.Messaging.ServiceBus;
 using CAPTCHA;
 using Identity.Pages.Account;
@@ -14,7 +13,6 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Azure;
-using Microsoft.Extensions.Logging;
 using Moq;
 
 [Collection(UnitCollection.Name)]
