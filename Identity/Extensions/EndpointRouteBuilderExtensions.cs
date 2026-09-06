@@ -12,14 +12,22 @@ public static class EndpointRouteBuilderExtensions
     {
         public IEndpointConventionBuilder MapAdditionalIdentityEndpoints()
         {
-            var accountGroup = endpoints.MapGroup("/Account");
+            var accountGroup = endpoints.MapGroup("/Account").RequireRateLimiting(PasskeyEndpoints.RateLimiterPolicyName);
             accountGroup.MapPost("/PasskeyCreationOptions", async (
                 HttpContext context,
                 [FromServices] UserManager<IdentityUser<Guid>> userManager,
                 [FromServices] SignInManager<IdentityUser<Guid>> signInManager,
                 [FromServices] IAntiforgery antiforgery) =>
             {
-                await antiforgery.ValidateRequestAsync(context);
+                try
+                {
+                    await antiforgery.ValidateRequestAsync(context);
+                }
+                catch (AntiforgeryValidationException)
+                {
+                    return Results.BadRequest();
+                }
+
                 var user = await userManager.GetUserAsync(context.User);
                 if (user is null)
                 {
@@ -39,10 +47,21 @@ public static class EndpointRouteBuilderExtensions
             });
 
             accountGroup.MapPost("/PasskeyRequestOptions", async (
+                HttpContext context,
                 [FromServices] UserManager<IdentityUser<Guid>> userManager,
                 [FromServices] SignInManager<IdentityUser<Guid>> signInManager,
+                [FromServices] IAntiforgery antiforgery,
                 [FromQuery] string? username) =>
             {
+                try
+                {
+                    await antiforgery.ValidateRequestAsync(context);
+                }
+                catch (AntiforgeryValidationException)
+                {
+                    return Results.BadRequest();
+                }
+
                 var user = IsNullOrWhiteSpace(username) ? null : await userManager.FindByNameAsync(username);
                 var optionsJson = await signInManager.MakePasskeyRequestOptionsAsync(user);
                 return TypedResults.Content(optionsJson, contentType: Json);

@@ -6,10 +6,5 @@ public interface ICAPTCHAService
 {
     string? SiteKey { get; }
 
-    Task<CAPTCHAVerdict> VerifyAsync(
-        string action,
-        string? email,
-        string? token,
-        string? syntheticMarker,
-        CancellationToken cancellationToken = default);
+    Task<CAPTCHAVerdict> VerifyAsync(string? token, CancellationToken cancellationToken = default);
 }

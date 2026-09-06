@@ -13,8 +13,4 @@ public sealed class ReCAPTCHAOptions
     public decimal ScoreThreshold { get; set; } = DefaultScoreThreshold;
 
     public Uri? VerifyEndpoint { get; set; }
-
-    public ICollection<string> TestEmails { get; set; } = [];
-
-    public string? SyntheticMarkerSecret { get; set; }
 }

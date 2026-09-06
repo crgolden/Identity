@@ -60,7 +60,10 @@ internal static class TestValues
     internal static decimal NewScoreBelowDefaultThreshold() =>
         Identity.CAPTCHA.ReCAPTCHAOptions.DefaultScoreThreshold - (Random.Shared.Next(1, 6) / 10m);
 
-    internal static string NewSyntheticMarker() => LowercaseToken(64);
+    internal static string NewBrowserUserAgent() => $"Mozilla/5.0 ({LowercaseToken(12)}) {LowercaseToken(8)}/1.0";
+
+    internal static string NewSyntheticWalkerUserAgent() =>
+        $"{NewBrowserUserAgent()} {Identity.Telemetry.Metrics.SyntheticUserAgentToken}/1.0";
 
     internal static string NewRecaptchaToken() => LowercaseToken(16);
 

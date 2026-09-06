@@ -39,8 +39,6 @@ try
         googleClientSecret = builder.Configuration.GetRequired<string>("GoogleClientSecret"),
         reCAPTCHASiteKey = builder.Configuration.GetRequired<string>("ReCAPTCHASiteKey"),
         reCAPTCHASecretKey = builder.Configuration.GetRequired<string>("ReCAPTCHASecretKey");
-    var reCAPTCHATestEmails = builder.Configuration.GetSection("ReCAPTCHATestEmails").Get<string[]>() ?? [];
-    var reCAPTCHASyntheticMarkerSecret = builder.Configuration.GetValue<string?>("ReCAPTCHASyntheticMarkerSecret");
     var sqlConnectionStringBuilderSection = builder.Configuration.GetRequiredSection(nameof(SqlConnectionStringBuilder));
     var sqlConnectionStringBuilder = sqlConnectionStringBuilderSection.Get<SqlConnectionStringBuilder>() ?? throw new InvalidOperationException($"Invalid '{nameof(SqlConnectionStringBuilder)}' section.");
     var corsPolicySection = builder.Configuration.GetRequiredSection(nameof(CorsPolicy));
@@ -208,8 +206,6 @@ try
             recaptchaOptions.SiteKey = reCAPTCHASiteKey;
             recaptchaOptions.SecretKey = reCAPTCHASecretKey;
             recaptchaOptions.VerifyEndpoint = recaptchaVerifyEndpoint;
-            recaptchaOptions.TestEmails = reCAPTCHATestEmails;
-            recaptchaOptions.SyntheticMarkerSecret = reCAPTCHASyntheticMarkerSecret;
         })
         .AddHttpClient<ICAPTCHAService, ReCAPTCHAService>().Services
         .AddRateLimiter(rateLimiterOptions =>
@@ -218,6 +214,12 @@ try
             rateLimiterOptions.AddFixedWindowLimiter(AvatarEndpoints.RateLimiterPolicyName, fixedWindowOptions =>
             {
                 fixedWindowOptions.PermitLimit = 120;
+                fixedWindowOptions.Window = TimeSpan.FromMinutes(1);
+                fixedWindowOptions.QueueLimit = 0;
+            });
+            rateLimiterOptions.AddFixedWindowLimiter(PasskeyEndpoints.RateLimiterPolicyName, fixedWindowOptions =>
+            {
+                fixedWindowOptions.PermitLimit = 240;
                 fixedWindowOptions.Window = TimeSpan.FromMinutes(1);
                 fixedWindowOptions.QueueLimit = 0;
             });

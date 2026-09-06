@@ -62,6 +62,7 @@ public class LoginModel : PageModel
             using var passkeyActivity = Telemetry.StartActivity("identity.login.passkey");
             result = await _signInManager.PasskeySignInAsync(Input.Passkey.CredentialJson);
             passkeyActivity?.SetTag("succeeded", result.Succeeded);
+            Telemetry.Metrics.PasskeySignIn(result.Succeeded, HttpContext.Request.Headers.UserAgent);
         }
         else
         {
@@ -70,12 +71,7 @@ public class LoginModel : PageModel
                 return Page();
             }
 
-            var verdict = await _captchaService.VerifyAsync(
-                CAPTCHAActions.Login,
-                Input.Email,
-                Input.RecaptchaToken,
-                HttpContext.Request.Headers[ReCAPTCHAService.SyntheticMarkerHeaderName],
-                HttpContext.RequestAborted);
+            var verdict = await _captchaService.VerifyAsync(Input.RecaptchaToken, HttpContext.RequestAborted);
             if (!verdict.Passed)
             {
                 ModelState.AddModelError(Empty, "Request could not be verified.");

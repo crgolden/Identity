@@ -2,7 +2,6 @@ namespace Identity;
 
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
-using System.Globalization;
 
 public static class Telemetry
 {
@@ -19,11 +18,9 @@ public static class Telemetry
 
         internal const string ExceptionTypeTagName = "exception.type";
 
-        internal const string SyntheticCaptchaObservedCounterName = "identity.captcha.synthetic_observed";
+        internal const string PasskeySignInCounterName = "identity.login.passkey_signins";
 
-        internal const string SyntheticSpanTagName = "captcha.synthetic";
-
-        internal const string ScoreSpanTagName = "captcha.score";
+        internal const string SyntheticUserAgentToken = "crgolden-synthetic";
 
         private static readonly Counter<long> ConsentGrantedCounter =
             Meter.CreateCounter<long>("identity.consent.granted", description: "Number of consent grants by users.");
@@ -37,10 +34,10 @@ public static class Telemetry
         private static readonly Counter<long> ExceptionCounter =
             Meter.CreateCounter<long>(ExceptionCounterName, description: "Number of unhandled exceptions.");
 
-        private static readonly Counter<long> SyntheticCaptchaObservedCounter =
+        private static readonly Counter<long> PasskeySignInCounter =
             Meter.CreateCounter<long>(
-                SyntheticCaptchaObservedCounterName,
-                description: "Number of synthetic-marker requests whose reCAPTCHA score was observed but not enforced.");
+                PasskeySignInCounterName,
+                description: "Number of passkey sign-in attempts, split by outcome and by whether the caller identifies itself as synthetic.");
 
         public static void ConsentGranted(string clientId, IEnumerable<string> scopes, bool remember) =>
             ConsentGrantedCounter.Add(1, new TagList
@@ -63,15 +60,14 @@ public static class Telemetry
         public static void ExceptionOccurred(string exceptionType) =>
             ExceptionCounter.Add(1, new TagList { { ExceptionTypeTagName, exceptionType } });
 
-        public static void SyntheticCaptchaObserved(string action, decimal score)
-        {
-            Activity.Current?.SetTag(SyntheticSpanTagName, true);
-            Activity.Current?.SetTag(ScoreSpanTagName, score);
-            SyntheticCaptchaObservedCounter.Add(1, new TagList
+        public static void PasskeySignIn(bool succeeded, string? userAgent) =>
+            PasskeySignInCounter.Add(1, new TagList
             {
-                { "action", action },
-                { "score_bucket", score.ToString("0.0", CultureInfo.InvariantCulture) },
+                { "succeeded", succeeded },
+                { "synthetic", IsSyntheticUserAgent(userAgent) },
             });
-        }
+
+        private static bool IsSyntheticUserAgent(string? userAgent) =>
+            userAgent?.Contains(SyntheticUserAgentToken, StringComparison.OrdinalIgnoreCase) == true;
     }
 }

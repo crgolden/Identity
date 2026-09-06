@@ -224,53 +224,99 @@ public sealed class TelemetryTests
     }
 
     [Fact]
-    public void SyntheticCaptchaObserved_EmitsCounterWithValueOne()
+    public void PasskeySignInCounterName_IsTheNameTheWalkerDashboardQueries()
+    {
+        Assert.Equal("identity.login.passkey_signins", Telemetry.Metrics.PasskeySignInCounterName);
+    }
+
+    [Fact]
+    public void SyntheticUserAgentToken_IsTheSuffixTheWalkersSend()
+    {
+        Assert.Equal("crgolden-synthetic", Telemetry.Metrics.SyntheticUserAgentToken);
+    }
+
+    [Fact]
+    public void PasskeySignIn_EmitsCounterWithValueOne()
     {
         // Arrange
         long captured = 0;
         using var listener = MakeListener(
-            "identity.captcha.synthetic_observed",
+            Telemetry.Metrics.PasskeySignInCounterName,
             (value, _) => captured = value);
 
         // Act
-        Telemetry.Metrics.SyntheticCaptchaObserved(CAPTCHA.CAPTCHAActions.Login, TestValues.NewScoreBelowDefaultThreshold());
+        Telemetry.Metrics.PasskeySignIn(succeeded: true, TestValues.NewBrowserUserAgent());
 
         // Assert
         Assert.Equal(1, captured);
     }
 
-    [Fact]
-    public void SyntheticCaptchaObserved_TagsContainAction()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void PasskeySignIn_TagsContainOutcome(bool succeeded)
     {
         // Arrange
         KeyValuePair<string, object?>[] capturedTags = [];
         using var listener = MakeListener(
-            "identity.captcha.synthetic_observed",
+            Telemetry.Metrics.PasskeySignInCounterName,
             (_, tags) => capturedTags = tags);
 
         // Act
-        Telemetry.Metrics.SyntheticCaptchaObserved(CAPTCHA.CAPTCHAActions.Register, TestValues.NewScoreBelowDefaultThreshold());
+        Telemetry.Metrics.PasskeySignIn(succeeded, TestValues.NewBrowserUserAgent());
 
         // Assert
-        Assert.Contains(capturedTags, t => string.Equals(t.Key, "action", StringComparison.Ordinal) && CAPTCHA.CAPTCHAActions.Register.Equals(t.Value));
+        Assert.Contains(capturedTags, t => string.Equals(t.Key, "succeeded", StringComparison.Ordinal) && succeeded.Equals(t.Value));
     }
 
     [Fact]
-    public void SyntheticCaptchaObserved_TagsContainScoreBucketWithOneDecimalInvariantFormat()
+    public void PasskeySignIn_WalkerUserAgent_TagsSyntheticTrue()
     {
         // Arrange
-        var observedScore = TestValues.NewScoreBelowDefaultThreshold();
-        var expectedScoreBucket = observedScore.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
         KeyValuePair<string, object?>[] capturedTags = [];
         using var listener = MakeListener(
-            "identity.captcha.synthetic_observed",
+            Telemetry.Metrics.PasskeySignInCounterName,
             (_, tags) => capturedTags = tags);
 
         // Act
-        Telemetry.Metrics.SyntheticCaptchaObserved(CAPTCHA.CAPTCHAActions.Login, observedScore);
+        Telemetry.Metrics.PasskeySignIn(succeeded: true, TestValues.NewSyntheticWalkerUserAgent());
 
         // Assert
-        Assert.Contains(capturedTags, t => string.Equals(t.Key, "score_bucket", StringComparison.Ordinal) && expectedScoreBucket.Equals(t.Value));
+        Assert.Contains(capturedTags, t => string.Equals(t.Key, "synthetic", StringComparison.Ordinal) && true.Equals(t.Value));
+    }
+
+    [Fact]
+    public void PasskeySignIn_OrdinaryBrowserUserAgent_TagsSyntheticFalse()
+    {
+        // Arrange
+        KeyValuePair<string, object?>[] capturedTags = [];
+        using var listener = MakeListener(
+            Telemetry.Metrics.PasskeySignInCounterName,
+            (_, tags) => capturedTags = tags);
+
+        // Act
+        Telemetry.Metrics.PasskeySignIn(succeeded: true, TestValues.NewBrowserUserAgent());
+
+        // Assert
+        Assert.Contains(
+            capturedTags,
+            t => string.Equals(t.Key, "synthetic", StringComparison.Ordinal) && false.Equals(t.Value));
+    }
+
+    [Fact]
+    public void PasskeySignIn_NullUserAgent_TagsSyntheticFalse()
+    {
+        // Arrange
+        KeyValuePair<string, object?>[] capturedTags = [];
+        using var listener = MakeListener(
+            Telemetry.Metrics.PasskeySignInCounterName,
+            (_, tags) => capturedTags = tags);
+
+        // Act
+        Telemetry.Metrics.PasskeySignIn(succeeded: false, userAgent: null);
+
+        // Assert
+        Assert.Contains(capturedTags, t => string.Equals(t.Key, "synthetic", StringComparison.Ordinal) && false.Equals(t.Value));
     }
 
     private static MeterListener MakeListener(

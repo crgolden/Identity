@@ -57,12 +57,7 @@ public class RegisterModel : PageModel
             return Page();
         }
 
-        var verdict = await _captchaService.VerifyAsync(
-            CAPTCHAActions.Register,
-            Input.Email,
-            Input.RecaptchaToken,
-            HttpContext.Request.Headers[ReCAPTCHAService.SyntheticMarkerHeaderName],
-            HttpContext.RequestAborted);
+        var verdict = await _captchaService.VerifyAsync(Input.RecaptchaToken, HttpContext.RequestAborted);
         if (!verdict.Passed)
         {
             ModelState.AddModelError(Empty, "Request could not be verified.");

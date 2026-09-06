@@ -210,56 +210,6 @@ public class RegisterModelTests
         userManagerMock.Verify(u => u.CreateAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>()), Times.Never);
     }
 
-    [Fact]
-    public async Task OnPostAsync_TestEmailWithMonitorOnlyVerdict_VerifiesCaptchaAndCreatesUser()
-    {
-        var userManagerMock = MockHelpers.MockUserManager();
-        userManagerMock.SetupGet(u => u.SupportsUserEmail).Returns(true);
-        userManagerMock
-            .Setup(u => u.CreateAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>()))
-            .ReturnsAsync(IdentityResult.Success);
-        userManagerMock
-            .Setup(u => u.GetUserIdAsync(It.IsAny<IdentityUser<Guid>>()))
-            .ReturnsAsync(TestValues.NewUserId().ToString());
-        userManagerMock
-            .Setup(u => u.GenerateEmailConfirmationTokenAsync(It.IsAny<IdentityUser<Guid>>()))
-            .ReturnsAsync(TestValues.NewProviderKey());
-
-        var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
-        signInManagerMock.Setup(s => s.GetExternalAuthenticationSchemesAsync()).ReturnsAsync([]);
-
-        var syntheticTestEmail = TestValues.NewEmailAddress();
-        var recaptchaServiceMock = CreateRecaptchaServiceMock(passed: true, monitorOnly: true);
-
-        var model = new RegisterModel(
-            userManagerMock.Object,
-            signInManagerMock.Object,
-            CreateClientFactory(),
-            recaptchaServiceMock.Object);
-
-        var ctx = new DefaultHttpContext();
-        ctx.Request.Scheme = "https";
-        model.PageContext = new PageContext { HttpContext = ctx };
-
-        var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
-        var urlRouteData = new RouteData();
-        urlRouteData.Values["page"] = "/Account/Register";
-        urlHelperMock.SetupGet(u => u.ActionContext).Returns(
-            new ActionContext(new DefaultHttpContext(), urlRouteData, new ActionDescriptor()));
-        urlHelperMock.Setup(u => u.RouteUrl(It.IsAny<UrlRouteContext>())).Returns("https://example/confirm");
-        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
-        model.Url = urlHelperMock.Object;
-        model.Input = new RegisterModel.InputModel { Email = syntheticTestEmail, Password = TestValues.NewPassword() };
-
-        await model.OnPostAsync("/return");
-
-        userManagerMock.Verify(u => u.CreateAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>()), Times.Once);
-        recaptchaServiceMock.Verify(
-            s => s.VerifyAsync(CAPTCHAActions.Register, syntheticTestEmail, It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()),
-            Times.Once,
-            "a monitor-only registration must still verify the token, or synthetic traffic exercises less of the production path than real users do");
-    }
-
     private static IAzureClientFactory<ServiceBusClient> CreateClientFactory()
     {
         var senderMock = new Mock<ServiceBusSender>(MockBehavior.Strict);
@@ -284,15 +234,15 @@ public class RegisterModelTests
         return (factoryMock.Object, senderMock);
     }
 
-    private static Mock<ICAPTCHAService> CreateRecaptchaServiceMock(bool passed = true, bool monitorOnly = false)
+    private static Mock<ICAPTCHAService> CreateRecaptchaServiceMock(bool passed = true)
     {
         var mock = new Mock<ICAPTCHAService>(MockBehavior.Strict);
-        var score = passed && !monitorOnly
+        var score = passed
             ? TestValues.NewScoreAtOrAboveDefaultThreshold()
             : TestValues.NewScoreBelowDefaultThreshold();
         mock.Setup(s => s.SiteKey).Returns((string?)null);
-        mock.Setup(s => s.VerifyAsync(It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new CAPTCHAVerdict(passed, score, monitorOnly));
+        mock.Setup(s => s.VerifyAsync(It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new CAPTCHAVerdict(passed, score));
         return mock;
     }
 

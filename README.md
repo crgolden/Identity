@@ -93,8 +93,12 @@ Setting a local User Secret under the secret name instead of the configuration k
 | `ElasticsearchPassword` | same | Elasticsearch password |
 | `ReCAPTCHASiteKey` | same | Google reCAPTCHA v3 site key |
 | `ReCAPTCHASecretKey` | same | Google reCAPTCHA v3 secret key |
-| `ReCAPTCHASyntheticMarkerSecret` | same | Synthetic-traffic marker; requests carrying it in `X-Synthetic-Marker` for a `ReCAPTCHATestEmails` account get monitor-only reCAPTCHA enforcement |
-| `TestEmail` | `ReCAPTCHATestEmails:0` (app) and `TestEmail` (smoke env var) | E2E/smoke test account email |
+
+reCAPTCHA is a plain v3 implementation: every login and registration is scored and compared against a
+threshold, with no exemption, no email allowlist and no marker header. The former
+`ReCAPTCHASyntheticMarkerSecret` secret and `ReCAPTCHATestEmails` settings were retired along with the
+post-deploy smoke suite — scheduled synthetic traffic now signs in with a passkey, which Identity evaluates
+before the CAPTCHA and is therefore a first-class auth path rather than a bypass.
 
 Identity no longer reads `AdminEmail` — the Key Vault secret survives because Infrastructure still uses it; the admin account goes through ordinary reCAPTCHA scoring.
 
@@ -131,7 +135,7 @@ App is available at `https://localhost:7261` (the only profile defined in `launc
 Identity/            # ASP.NET Core 10 Razor Pages web app and DbContext
 Identity.Data/       # SQL Server Database Project — schema source of truth, builds to .dacpac
 Identity.Tests.Unit/ # xUnit v3 test project: unit tests (Moq)
-Identity.Tests.E2E/  # xUnit v3 test project: E2E tests (Playwright/Chromium), load tests, smoke tests
+Identity.Tests.E2E/  # xUnit v3 test project: E2E tests (Playwright/Chromium), load tests, synthetic walker
 ```
 
 ## Commands
@@ -210,8 +214,9 @@ The GitHub Actions workflow triggers on pushes to `main`, pull requests, and man
 
 Database schema is always deployed before the app to ensure a valid schema is in place when the app starts.
 
-**Smoke job** — runs after deploy, only on `main`:
-- Downloads the test binaries and runs the `Category=Smoke` suite against the deployed site (`SMOKE_BASE_URL`); uploads the results and failure artifacts
+There is no post-deploy job. The deployed site is exercised by the scheduled **synthetic walker**
+(`.github/workflows/synthetic.yml`), which signs in with a passkey and walks the member menus and then the
+admin menus in one seeded run. See [TESTING.md](TESTING.md#synthetic-walker).
 
 **Mutation job** — runs on every push, manual dispatch, and pull requests from branches in this repository (fork PRs cannot read the Stryker dashboard secret):
 - Runs Stryker mutation testing over the whole `Identity` project, excluding only generated code, `Program.cs`, and `Properties/`, and uploads the HTML/JSON report as `stryker-report`. The job takes about 25 minutes on a CI runner; it runs in parallel with the build job and is not a deploy dependency, so a deploy never waits on it. See [TESTING.md](TESTING.md#20-mutation-testing-stryker) for the measured trade-offs behind that scope and why the Stryker version is pinned

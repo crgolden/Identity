@@ -1,8 +1,6 @@
 namespace Identity.Tests.Unit.Pages.Account;
 
-using System.Threading.Channels;
 using CAPTCHA;
-using Identity;
 using Identity.Pages.Account;
 using Infrastructure;
 using Microsoft.AspNetCore.Authentication;
@@ -12,8 +10,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Moq;
 
 [Collection(UnitCollection.Name)]
@@ -216,6 +212,7 @@ public class LoginModelTests
         var model = new LoginModel(signInManagerMock.Object, CreateRecaptchaServiceMock().Object)
         {
             Url = urlHelperMock.Object,
+            PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
             Input = new LoginModel.InputModel
             {
                 Passkey = new Identity.Pages.Account.Manage.PasskeyInputModel { CredentialJson = "{\"credentialJson\":true}" }
@@ -305,6 +302,7 @@ public class LoginModelTests
         var model = new LoginModel(signInManagerMock.Object, recaptchaServiceMock.Object)
         {
             Url = urlHelperMock.Object,
+            PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
             Input = new LoginModel.InputModel
             {
                 Passkey = new Identity.Pages.Account.Manage.PasskeyInputModel { CredentialJson = "{\"credentialJson\":true}" }
@@ -314,39 +312,7 @@ public class LoginModelTests
         var result = await model.OnPostAsync();
 
         Assert.IsType<LocalRedirectResult>(result);
-        recaptchaServiceMock.Verify(s => s.VerifyAsync(It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task OnPostAsync_TestEmailWithMonitorOnlyVerdict_VerifiesCaptchaAndSucceeds()
-    {
-        var syntheticTestEmail = TestValues.NewEmailAddress();
-        var syntheticTestPassword = TestValues.NewPassword();
-        var signInManagerMock = CreateSignInManagerMock();
-        signInManagerMock
-            .Setup(s => s.PasswordSignInAsync(syntheticTestEmail, syntheticTestPassword, false, true))
-            .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Success);
-
-        var recaptchaServiceMock = CreateRecaptchaServiceMock(passed: true, monitorOnly: true);
-
-        var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
-        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
-        urlHelperMock.Setup(u => u.IsLocalUrl("/")).Returns(true);
-
-        var model = new LoginModel(signInManagerMock.Object, recaptchaServiceMock.Object)
-        {
-            Url = urlHelperMock.Object,
-            PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
-            Input = new LoginModel.InputModel { Email = syntheticTestEmail, Password = syntheticTestPassword }
-        };
-
-        var result = await model.OnPostAsync();
-
-        Assert.IsType<LocalRedirectResult>(result);
-        recaptchaServiceMock.Verify(
-            s => s.VerifyAsync(It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()),
-            Times.Once,
-            "a monitor-only login must still verify the token, or synthetic traffic exercises less of the production path than real users do");
+        recaptchaServiceMock.Verify(s => s.VerifyAsync(It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -369,66 +335,8 @@ public class LoginModelTests
 
         Assert.IsType<PageResult>(result);
         Assert.False(model.ModelState.IsValid);
-        recaptchaServiceMock.Verify(s => s.VerifyAsync(It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Once);
+        recaptchaServiceMock.Verify(s => s.VerifyAsync(It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Once);
         signInManagerMock.Verify(s => s.PasswordSignInAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task OnPostAsync_PreviouslyExemptEmail_NowVerifiesCaptcha()
-    {
-        var previouslyExemptEmail = TestValues.NewEmailAddress();
-        var signInManagerMock = CreateSignInManagerMock();
-        var recaptchaServiceMock = CreateRecaptchaServiceMock(passed: false);
-
-        var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
-        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
-
-        var model = new LoginModel(signInManagerMock.Object, recaptchaServiceMock.Object)
-        {
-            Url = urlHelperMock.Object,
-            PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
-            Input = new LoginModel.InputModel { Email = previouslyExemptEmail, Password = TestValues.NewPassword() }
-        };
-
-        var result = await model.OnPostAsync();
-
-        Assert.IsType<PageResult>(result);
-        recaptchaServiceMock.Verify(
-            s => s.VerifyAsync(It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()),
-            Times.Once,
-            "no email value may skip verification, or the email becomes a captcha-free credential-stuffing surface");
-    }
-
-    [Fact]
-    public async Task OnPostAsync_SyntheticMarkerHeader_IsPassedToCaptchaService()
-    {
-        var submittedEmail = TestValues.NewEmailAddress();
-        var presentedSyntheticMarker = TestValues.NewSyntheticMarker();
-        var signInManagerMock = CreateSignInManagerMock();
-        signInManagerMock
-            .Setup(s => s.PasswordSignInAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>()))
-            .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Success);
-
-        var recaptchaServiceMock = CreateRecaptchaServiceMock(passed: true, monitorOnly: true);
-
-        var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
-        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
-        urlHelperMock.Setup(u => u.IsLocalUrl("/")).Returns(true);
-
-        var httpContext = new DefaultHttpContext();
-        httpContext.Request.Headers[ReCAPTCHAService.SyntheticMarkerHeaderName] = presentedSyntheticMarker;
-        var model = new LoginModel(signInManagerMock.Object, recaptchaServiceMock.Object)
-        {
-            Url = urlHelperMock.Object,
-            PageContext = new PageContext(new ActionContext(httpContext, new RouteData(), new PageActionDescriptor())),
-            Input = new LoginModel.InputModel { Email = submittedEmail, Password = TestValues.NewPassword() }
-        };
-
-        await model.OnPostAsync();
-
-        recaptchaServiceMock.Verify(
-            s => s.VerifyAsync(CAPTCHAActions.Login, submittedEmail, It.IsAny<string?>(), presentedSyntheticMarker, It.IsAny<CancellationToken>()),
-            Times.Once);
     }
 
     private static LoginModel CreateModelWithContext(params AuthenticationScheme[] schemes)
@@ -469,14 +377,14 @@ public class LoginModelTests
         return signInManagerMock;
     }
 
-    private static Mock<ICAPTCHAService> CreateRecaptchaServiceMock(bool passed = true, bool monitorOnly = false)
+    private static Mock<ICAPTCHAService> CreateRecaptchaServiceMock(bool passed = true)
     {
         var mock = new Mock<ICAPTCHAService>(MockBehavior.Strict);
-        var score = passed && !monitorOnly
+        var score = passed
             ? TestValues.NewScoreAtOrAboveDefaultThreshold()
             : TestValues.NewScoreBelowDefaultThreshold();
-        mock.Setup(s => s.VerifyAsync(It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new CAPTCHAVerdict(passed, score, monitorOnly));
+        mock.Setup(s => s.VerifyAsync(It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new CAPTCHAVerdict(passed, score));
         mock.Setup(s => s.SiteKey).Returns(TestValues.NewRecaptchaSiteKey());
         return mock;
     }

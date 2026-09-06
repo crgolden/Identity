@@ -22,7 +22,7 @@
             @foreach (var passkey in Model.CurrentPasskeys)
             {
                 var credentialId = Base64Url.EncodeToString(passkey.CredentialId);
-                <tr>
+                <tr id="passkey-row-@credentialId">
                     <td class="align-middle">@(passkey.Name ?? "Unnamed passkey")</td>
                     <td class="align-middle">
                         <form asp-page-handler="UpdatePasskey" method="post">
@@ -43,7 +43,7 @@ else
 }
 
 <form asp-page-handler="AddPasskey" method="post" class="mt-2">
-    <passkey-submit operation="@PasskeyOperation.Create" name="Input.Passkey" class="btn btn-primary">Add a new passkey</passkey-submit>
+    <passkey-submit operation="@PasskeyOperation.Create" name="Input.Passkey" id="add-passkey" class="btn btn-primary">Add a new passkey</passkey-submit>
 </form>
 
 @section Scripts {

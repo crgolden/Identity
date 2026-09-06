@@ -1,0 +1,108 @@
+name: Synthetic walker
+
+# The schedule stays commented out until a manual dispatch has run green against
+# the deployed app. Enable it by uncommenting the two cron lines.
+on:
+  # schedule:
+  #   - cron: '47 11 * * *'
+  #   - cron: '47 23 * * *'
+  workflow_dispatch:
+    inputs:
+      seed:
+        description: 'Walk seed (uint32) for deterministic replay; random when empty'
+        required: false
+      steps:
+        description: 'Step budget override (default 40)'
+        required: false
+
+concurrency:
+  group: synthetic-walker
+  cancel-in-progress: false
+
+jobs:
+  walk:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up .NET Core
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.x'
+
+      - name: Build walker
+        run: dotnet build Identity.Tests.E2E --configuration Release
+
+      - name: Get Playwright version
+        id: playwright-version
+        run: |
+          $version = (Select-Xml -Path Identity.Tests.E2E/Identity.Tests.E2E.csproj `
+            -XPath "//PackageReference[@Include='Microsoft.Playwright']/@Version").Node.Value
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Restore Playwright browsers cache
+        id: cache-playwright
+        uses: actions/cache/restore@v5
+        with:
+          path: ~\AppData\Local\ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
+
+      - name: Install Playwright browsers
+        if: steps.cache-playwright.outputs.cache-hit != 'true'
+        run: pwsh "${{ github.workspace }}\Identity.Tests.E2E\bin\Release\net10.0\playwright.ps1" install --with-deps chromium
+
+      - name: Resolve seed
+        id: seed
+        run: |
+          $seed = "${{ inputs.seed }}"
+          if ([string]::IsNullOrWhiteSpace($seed)) {
+            $seed = [uint32](Get-Random -Minimum 0 -Maximum ([int]::MaxValue))
+          }
+          "value=$seed" >> $env:GITHUB_OUTPUT
+          "### Synthetic walk seed: ``$seed``" >> $env:GITHUB_STEP_SUMMARY
+
+      - name: Run synthetic walker
+        env:
+          CI: true
+          WalkerBaseUrl: ${{ vars.WALKER_BASE_URL }}
+          SYNTHETIC_SEED: ${{ steps.seed.outputs.value }}
+          SYNTHETIC_STEPS: ${{ inputs.steps }}
+          EMAIL1: ${{ secrets.EMAIL1 }}
+          PASSKEY_CREDENTIAL1: ${{ secrets.PASSKEY_CREDENTIAL1 }}
+          EMAIL3: ${{ secrets.EMAIL3 }}
+          PASSKEY_CREDENTIAL3: ${{ secrets.PASSKEY_CREDENTIAL3 }}
+        run: |
+          $resultsDir = "${{ github.workspace }}\Identity.Tests.E2E\bin\Release\net10.0\TestResults"
+          New-Item -ItemType Directory -Force -Path $resultsDir | Out-Null
+          & "${{ github.workspace }}\Identity.Tests.E2E\bin\Release\net10.0\Identity.Tests.E2E.exe" `
+            -trait "Category=Walker" `
+            -trx "$resultsDir\walker.trx"
+
+      - name: Assert the walk actually ran
+        if: always()
+        run: |
+          $trx = "${{ github.workspace }}\Identity.Tests.E2E\bin\Release\net10.0\TestResults\walker.trx"
+          if (-not (Test-Path $trx)) {
+            Write-Output "::error::No walker.trx was produced — the walk did not run."
+            exit 1
+          }
+          [xml]$results = Get-Content $trx
+          $counters = $results.TestRun.ResultSummary.Counters
+          $executed = [int]$counters.executed
+          $passed = [int]$counters.passed
+          "Executed $executed, passed $passed (seed ${{ steps.seed.outputs.value }})" >> $env:GITHUB_STEP_SUMMARY
+          if ($executed -eq 0) {
+            Write-Output "::error::Synthetic run executed 0 tests — a vacuous green."
+            exit 1
+          }
+
+      - name: Upload walker results and artifacts
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: identity-walker-artifacts
+          path: Identity.Tests.E2E/bin/Release/net10.0/TestResults/
+          if-no-files-found: warn

@@ -37,18 +37,14 @@ dotnet build Identity.Tests.E2E --configuration Debug
 cmd /c "Identity.Tests.E2E\bin\Debug\net10.0\Identity.Tests.E2E.exe -trait ""Category=E2E"" -showLiveOutput > C:\temp\identity-e2e.txt 2>&1"
 ```
 
-**`-trait "Category=E2E"` is not optional, and dropping it fails in a way that looks like a code
-regression.** `Identity.Tests.E2E` also holds the `Category=Smoke` suite (`AccountSmokeTests`), which is
-written to run against the **live deployed site** and needs a `TestEmail` that only Key Vault supplies.
-Run the project unfiltered — `dotnet run --project Identity.Tests.E2E` — and those tests are discovered and
-executed locally, where they fail with `InvalidOperationException: TestEmail is not set` and take a
-registration test down with them. Smoke authenticates against the deployed server's real reCAPTCHA via
-monitor-only enforcement: the fixture sends the `X-Synthetic-Marker` header (from the
-`ReCAPTCHASyntheticMarkerSecret` env var, which must match the server's Key Vault value) and the
-`TestEmail` account must be in the server's `ReCAPTCHATestEmails` collection (see `ARCHITECTURE.md`,
-Bot protection). The symptom of an unfiltered run is failures in files nobody touched
-and a total higher than the last green run. Check the total before blaming the diff: **the E2E tier
-alone is the count to compare.**
+**`-trait "Category=E2E"` is not optional.** `Identity.Tests.E2E` also holds the `Category=Load` and
+`Category=Walker` suites, both written to run against a **deployed** target. The walker skips cleanly when
+`WalkerBaseUrl` is unset, so an unfiltered local run no longer fails the way it used to — but it still
+inflates the total, and **the E2E tier alone is the count to compare** against the last green run.
+
+The `Category=Smoke` suite that used to live here (`AccountSmokeTests`) is **gone**, along with the
+`TestEmail` / `X-Synthetic-Marker` machinery it needed to get past reCAPTCHA. Its coverage moved to the
+synthetic walker; see [Synthetic walker](#synthetic-walker).
 
 ### Single Test (by method name)
 
@@ -63,11 +59,11 @@ alone is the count to compare.**
 - **`Identity.Tests.Unit`** — xUnit page-model / service / API tests (`Category=Unit`); includes property-based (`PropertyBased/`) sub-folder. No Playwright/`Microsoft.AspNetCore.Mvc.Testing` dependency.
 - **`Identity.Tests.E2E`** — Playwright browser tests (`Category=E2E`); includes OIDC discovery tests (`Oidc/`) and IdentityServer flow tests (`ConsentTests`, `GrantsTests`, `DiagnosticsTests`, `ServerSideSessionsTests`), plus `Security/` (`AntiforgeryTests`, `ConcurrentLockoutTests`, `OpenRedirectTests`)
 - **`Identity.Tests.E2E` — Load** — throughput / failure-rate tests using `Parallel.ForEachAsync` + `HttpClient` (`Category=Load`, `Load/LoadTests.cs`); run separately (requires live server)
-- **`Identity.Tests.E2E` — Smoke** — post-deploy smoke tests (`Category=Smoke`, `AccountSmokeTests`) run against the live deployed site
+- **`Identity.Tests.E2E` — Walker** — the scheduled synthetic walker (`Category=Walker`, `Synthetic/`), which walks the **deployed** site's menus as a member account and then as an admin. Skips unless `WalkerBaseUrl` is set. This replaced the retired `Category=Smoke` suite
 
 **Test infrastructure**
 - **`IdentityWebApplicationFactory`** (extends `WebApplicationFactory<Program>`) — starts a real Kestrel HTTPS server on a random port for Playwright; replaces `IAzureClientFactory<ServiceBusClient>` with `TestServiceBusClientFactory` (captures sent email via `EmailCaptureSender` instead of calling Azure Service Bus); replaces `IAvatarService` with `NullAvatarService` (no real Gravatar HTTP calls); replaces `ICAPTCHAService` with an always-pass stub returning a passing `CAPTCHAVerdict` (no real Google reCAPTCHA calls); reduces the password hasher's PBKDF2 iteration count to 1 (default 600k iterations is CPU-prohibitive across a whole suite of logins); in Development, replaces the Serilog `ILoggerFactory` with a console logger (avoids an Elasticsearch connection at startup); ignores background-service exceptions (IdentityServer key refresh, token cleanup) so a transient one can't tear down the Kestrel host mid-run.
-- **`PlaywrightFixture`** (xUnit `IAsyncLifetime`) — installs Chromium on first run, warms up the server, provides `NewPageAsync()` per test, stubs client-side `grecaptcha` so form submissions are synchronous (in smoke mode the stubbed token really round-trips Google, scores 0, and passes via the fixture-injected `X-Synthetic-Marker` header — monitor-only enforcement), and in CI cleans up the test database after the suite. Every test creates its own confirmed user via `CreateConfirmedUserAsync()` — there is no shared long-lived account. A prior shared-account optimization (`GrantsTests`, `ServerSideSessionsTests` reusing one account created at fixture startup) was removed 2026-08-16 after it produced a confirmed CI failure: the shared account's first login of a run hit `SignInResult.Failed` ("Invalid login attempt.") for reasons the available Playwright trace/screenshot artifacts couldn't pin down, and the test had no retry — it polled the unchanged `/Account/Login` URL for the full 60s timeout and failed outright. Every other test in this suite, all using a fresh per-test account, has shown no comparable failure across the runs that surfaced this. If a future test wants to avoid per-test account-creation overhead, prefer a scoped shared account per test *class* (created once, used only by tests in that class) over a suite-wide one, and keep first-login assertions retry-capable rather than a bare 60s wait-and-fail.
+- **`PlaywrightFixture`** (xUnit `IAsyncLifetime`) — installs Chromium on first run, warms up the server, provides `NewPageAsync()` per test, stubs client-side `grecaptcha` so form submissions are synchronous, and in CI cleans up the test database after the suite. **The stub is a hermetic test double, not a production bypass**: it pairs with the DI-swapped `AlwaysPassCAPTCHAService` so an in-process run never calls Google at all. The fixture used to carry a second, deployed-target mode with a `X-Synthetic-Marker` header; that went with the smoke tier, and the fixture is now in-process only. The walker has its own fixture (`Synthetic/IdentityWalkerFixture`), which is what keeps the two concerns from sharing a mode flag. Every test creates its own confirmed user via `CreateConfirmedUserAsync()` — there is no shared long-lived account. A prior shared-account optimization (`GrantsTests`, `ServerSideSessionsTests` reusing one account created at fixture startup) was removed 2026-08-16 after it produced a confirmed CI failure: the shared account's first login of a run hit `SignInResult.Failed` ("Invalid login attempt.") for reasons the available Playwright trace/screenshot artifacts couldn't pin down, and the test had no retry — it polled the unchanged `/Account/Login` URL for the full 60s timeout and failed outright. Every other test in this suite, all using a fresh per-test account, has shown no comparable failure across the runs that surfaced this. If a future test wants to avoid per-test account-creation overhead, prefer a scoped shared account per test *class* (created once, used only by tests in that class) over a suite-wide one, and keep first-login assertions retry-capable rather than a bare 60s wait-and-fail.
 - Test collections run serially (`parallelizeTestCollections: false` in `xunit.runner.json`, `Identity.Tests.E2E` only) to prevent `WebApplicationFactory` startup from timing out Key Vault calls when the thread pool is saturated.
 - Tests that drive `/connect/authorize` against a client with a fake `redirect_uri` (e.g. `https://localhost:9999/callback` — nothing listens there) must capture the final redirect from the browser's own `Request` event via `page.RunAndWaitForRequestAsync(...)` *before* triggering the click that causes it, rather than awaiting navigation afterward — by the time a post-navigation wait would resolve, the browser has already failed the connection to the fake host (`ERR_CONNECTION_REFUSED`) and the URL is unavailable. The same before-not-after ordering applies to `page.WaitForResponseAsync(...)`: register the listener before the click that triggers the POST, or a fast response can complete before the listener attaches.
 - `page.WaitForURLAsync(...)` can miss a navigation that completes before the listener registers (common right after a form POST that renders in place, e.g. 2FA setup/reset flows). Prefer polling for a DOM element that only appears on the destination page (`Assertions.Expect(page.Locator(...)).ToBeVisibleAsync(...)`) over `WaitForURLAsync` in those spots.
@@ -79,6 +75,46 @@ alone is the count to compare.**
 | 🟡 | Unit tests only |
 | 🔵 | Constructor / instantiation test only |
 | ❌ | No tests |
+
+---
+
+## Synthetic walker
+
+`Identity.Tests.E2E/Synthetic/` is a **seeded random walk of the deployed Identity**, and it is what replaced
+the retired post-deploy smoke suite. One run covers both authorization tiers: it signs in as a member account
+(`EMAIL3`), walks the member menus, signs out, signs in as the admin account (`EMAIL1`), and walks the admin
+menus. Every action is read-only — Identity is the fleet's authentication authority and the walker never
+writes to it.
+
+It is gated by `[Trait("Category", "Walker")]`, which CI's `Category=E2E` filter does not match, and it skips
+entirely unless `WalkerBaseUrl` is set. It runs from `.github/workflows/synthetic.yml` and is **never a merge
+gate**. **The schedule ships commented out** and is enabled only after a green manual dispatch, per the
+standing rule that self-triggering work lands inert.
+
+| Variable | Meaning |
+|---|---|
+| `WalkerBaseUrl` | Deployed Identity URL; absent means skip |
+| `SYNTHETIC_SEED` | **Required** decimal uint32; the whole walk derives from it |
+| `SYNTHETIC_STEPS` | Optional step budget (default 40, split evenly between the two tiers) |
+| `EMAIL1` / `PASSKEY_CREDENTIAL1` | Admin account and its passkey |
+| `EMAIL3` / `PASSKEY_CREDENTIAL3` | Member account and its passkey |
+
+**This walker is C#, while the other three are TypeScript.** Identity has no npm toolchain, and
+`Microsoft.Playwright` 1.62 exposes the same virtual-authenticator API (`IBrowserContext.Credentials`) as the
+Node build, so a small engine here was cheaper than adding npm, a GitHub Packages token and a second browser
+install to a .NET repo. `WalkerRng` is the same mulberry32 as the shared engine and `Walker.WalkAsync` the same
+weighted-availability loop; that duplication is deliberate and recorded in `Tools/Identity/AGENTS.md`.
+
+**Login is by passkey and nothing is bypassed.** The passkey branch in `Login.cshtml.cs` is evaluated *before*
+the CAPTCHA, so the walker exercises a first-class production auth path. Accounts, the credential model and the
+enrollment runbook live in `Tools/Identity/AGENTS.md` (private repo).
+
+Replay a failed walk with the seed from the job summary:
+
+```powershell
+$env:SYNTHETIC_SEED = '<seed>'; $env:WalkerBaseUrl = 'https://crgolden-identity.azurewebsites.net'
+.\Identity.Tests.E2E\bin\Debug\net10.0\Identity.Tests.E2E.exe -trait "Category=Walker" -showLiveOutput
+```
 
 ---
 

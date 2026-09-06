@@ -4,7 +4,6 @@ using System.Net;
 using Avatar;
 using Azure.Messaging.ServiceBus;
 using CAPTCHA;
-using Identity;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Server;
@@ -101,8 +100,8 @@ internal sealed class AlwaysPassCAPTCHAService : ICAPTCHAService
 {
     public string? SiteKey => null;
 
-    public Task<CAPTCHAVerdict> VerifyAsync(string action, string? email, string? token, string? syntheticMarker, CancellationToken cancellationToken = default)
-        => Task.FromResult(new CAPTCHAVerdict(Passed: true, Score: 1.0m, MonitorOnly: false));
+    public Task<CAPTCHAVerdict> VerifyAsync(string? token, CancellationToken cancellationToken = default)
+        => Task.FromResult(new CAPTCHAVerdict(Passed: true, Score: 1.0m));
 }
 
 internal sealed class TestServiceBusClientFactory : IAzureClientFactory<ServiceBusClient>

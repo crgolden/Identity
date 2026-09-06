@@ -18,7 +18,7 @@ Built on:
 | `Identity/` | ASP.NET Core 10 web app | The running application — Razor Pages, services, `Program.cs`, `ApplicationDbContext` |
 | `Identity.Data/` | SQL Server Database Project (SSDT) | Authoritative schema source; builds to a `.dacpac` for production deployment |
 | `Identity.Tests.Unit/` | xUnit v3 test project | Unit and property-based tests |
-| `Identity.Tests.E2E/` | xUnit v3 test project | E2E (Playwright/Chromium), load, and smoke tests |
+| `Identity.Tests.E2E/` | xUnit v3 test project | E2E (Playwright/Chromium), load tests, and the synthetic walker |
 
 ---
 
@@ -478,7 +478,11 @@ Restore the element if ES modules are ever introduced — bare and relative modu
 
 The internal score lookup returns `0` — a guaranteed failure — whenever the token is blank, the secret key is unset, the verification call returns a non-success status, or Google reports `success: false`. Verification therefore fails closed: a misconfigured or unreachable reCAPTCHA blocks sign-in and registration rather than silently allowing everything through.
 
-**Monitor-only enforcement for marked synthetic traffic** replaces the former email-based exemption (which was a captcha-free credential-stuffing surface for any address in the settings, including the admin account). A request is treated as synthetic only when both hold: its `X-Synthetic-Marker` header equals the `ReCAPTCHASyntheticMarkerSecret` value (Key Vault; compared with `CryptographicOperations.FixedTimeEquals`) **and** the submitted email is in the `ReCAPTCHATestEmails` collection (Key Vault-backed array; compared `OrdinalIgnoreCase`). For such requests the token still round-trips Google and the score is recorded — span tags `captcha.synthetic`/`captcha.score` and the `identity.captcha.synthetic_observed` counter — but the threshold is not enforced, so the smoke suite and the synthetic walkers exercise the full production path with a stubbed token. Either half alone gets full enforcement, and an unconfigured marker secret disables the synthetic path entirely — this is the one deliberate optional-configuration read in `Program.cs` (a required read would be a cold-start outage in environments without the secret, and absence fails closed).
+**There is no test-only branch in this service, and that is the point.** `VerifyAsync(token, ct)` fetches a score and compares it to the threshold; that is the whole method. Two earlier designs were removed: an email-based exemption (a captcha-free credential-stuffing surface for any address in the settings, including the admin account), and the monitor-only enforcement that replaced it (an `X-Synthetic-Marker` header plus a `ReCAPTCHATestEmails` allowlist, which still meant production code existed to make tests pass, in the one service that owns authentication).
+
+Scheduled synthetic traffic now signs in with a **passkey** instead. `Login.cshtml.cs` evaluates the passkey branch *before* the CAPTCHA call, so the walkers use a real production authentication path rather than an exemption — nothing is bypassed, and no configuration distinguishes them. The only trace they leave here is observational: `identity.login.passkey_signins` carries a `synthetic` tag derived from the `crgolden-synthetic/1.0` User-Agent suffix, which no authorization decision reads.
+
+One consequence worth stating: with the exemption gone, a Google outage or a bad site key blocks password sign-in for everyone. The passkey path is the escape hatch, which is why the admin account keeps a registered passkey.
 
 The CSP's `script-src` includes `https://www.google.com https://www.gstatic.com` specifically so `Login` and `Register` can load reCAPTCHA; the frame it renders comes from `www.google.com` too, matched by `frame-src`.
 
@@ -561,9 +565,9 @@ Defined in `.github/workflows/main_crgolden-identity.yml`. Triggers: push to `ma
 
 The database is always deployed before the application to ensure schema readiness on startup.
 
-### Smoke job (`windows-latest`, after deploy, `main` only)
+### Synthetic walker (`windows-latest`, scheduled — separate workflow)
 
-Downloads the published test binaries and runs the `Category=Smoke` suite against the deployed site (`SMOKE_BASE_URL`), then uploads the results and failure artifacts.
+`synthetic.yml` builds `Identity.Tests.E2E` and runs the `Category=Walker` suite against the deployed site (`WALKER_BASE_URL`), signing in by passkey as a member account and then as an admin, then uploads the TRX and Playwright artifacts. It replaced the post-deploy smoke job and is never a merge gate; its schedule ships commented out until a green manual dispatch.
 
 ### Mutation job (`windows-latest`, `schedule` or `workflow_dispatch`)
 

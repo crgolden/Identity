@@ -1,9 +1,7 @@
 namespace Identity.Tests.E2E.Infrastructure;
 
 using Duende.IdentityServer.EntityFramework.Entities;
-using Identity.CAPTCHA;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Playwright;
@@ -14,33 +12,15 @@ public sealed class PlaywrightFixture : IAsyncLifetime
     private static readonly bool CI = bool.TryParse(Environment.GetEnvironmentVariable("CI"), out var isCi) && isCi;
     private static readonly bool Headless = !string.Equals(Environment.GetEnvironmentVariable("PLAYWRIGHT_HEADED"), "1", StringComparison.OrdinalIgnoreCase);
     private static readonly bool StrykerActive = Environment.GetEnvironmentVariable("STRYKER_MUTANT_FILE") is not null;
-    private static readonly string? SmokeBaseUrl = Environment.GetEnvironmentVariable("SmokeBaseUrl");
-    private static readonly string? DataSource = Environment.GetEnvironmentVariable("SmokeDataSource");
-    private static readonly string? InitialCatalog = Environment.GetEnvironmentVariable("SqlConnectionStringBuilder__InitialCatalog");
-    private static readonly string? UserID = Environment.GetEnvironmentVariable("SqlConnectionStringBuilder__UserID");
-    private static readonly string? Password = Environment.GetEnvironmentVariable("SqlConnectionStringBuilder__Password");
-    private static readonly string? SyntheticMarker = Environment.GetEnvironmentVariable("ReCAPTCHASyntheticMarkerSecret");
-    private readonly IdentityWebApplicationFactory? _factory;
+    private readonly IdentityWebApplicationFactory _factory = new();
     private IPlaywright? _playwright;
     private IBrowser? _browser;
     private string? _baseAddress;
     private bool _started;
 
-    public PlaywrightFixture()
-    {
-        if (!IsSmoke)
-        {
-            _factory = new IdentityWebApplicationFactory();
-        }
-    }
+    public IdentityWebApplicationFactory Factory => _factory;
 
-    public static bool IsSmoke => SmokeBaseUrl is not null;
-
-    public IdentityWebApplicationFactory Factory =>
-        _factory ?? throw new InvalidOperationException("Factory is not available in smoke mode.");
-
-    public EmailCaptureSender Email =>
-        _factory?.EmailCapture ?? throw new InvalidOperationException("Email capture is not available in smoke mode.");
+    public EmailCaptureSender Email => _factory.EmailCapture;
 
     public string BaseAddress =>
         _baseAddress ?? throw new InvalidOperationException("BaseAddress is not available until InitializeAsync has run.");
@@ -52,15 +32,8 @@ public sealed class PlaywrightFixture : IAsyncLifetime
             return;
         }
 
-        if (SmokeBaseUrl is { } smokeBaseUrl)
-        {
-            _baseAddress = smokeBaseUrl;
-        }
-        else
-        {
-            Factory.CreateClient();
-            _baseAddress = Factory.ServerAddress;
-        }
+        Factory.CreateClient();
+        _baseAddress = Factory.ServerAddress;
 
         var exitCode = Program.Main(["install", "chromium"]);
         if (exitCode != 0)
@@ -73,11 +46,6 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         {
             Headless = Headless
         });
-
-        if (IsSmoke)
-        {
-            return;
-        }
 
         var (warmupCtx, warmupPage) = await NewPageAsync();
         await using (warmupCtx)
@@ -260,16 +228,6 @@ public sealed class PlaywrightFixture : IAsyncLifetime
 
     public async Task ConfirmUserEmailAsync(string email)
     {
-        if (IsSmoke)
-        {
-            await using var conn = OpenSmokeConnection();
-            await using var cmd = conn.CreateCommand();
-            cmd.CommandText = "UPDATE AspNetUsers SET EmailConfirmed = 1 WHERE NormalizedEmail = @email";
-            cmd.Parameters.AddWithValue("@email", email.ToUpperInvariant());
-            await cmd.ExecuteNonQueryAsync();
-            return;
-        }
-
         await using var scope = Factory.Services.CreateAsyncScope();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser<Guid>>>();
         var user = await userManager.FindByEmailAsync(email)
@@ -285,17 +243,6 @@ public sealed class PlaywrightFixture : IAsyncLifetime
 
     public async Task<Guid> GetUserIdAsync(string email)
     {
-        if (IsSmoke)
-        {
-            await using var conn = OpenSmokeConnection();
-            await using var cmd = conn.CreateCommand();
-            cmd.CommandText = "SELECT Id FROM AspNetUsers WHERE NormalizedEmail = @email";
-            cmd.Parameters.AddWithValue("@email", email.ToUpperInvariant());
-            var scalar = await cmd.ExecuteScalarAsync()
-                ?? throw new InvalidOperationException($"User '{email}' not found.");
-            return (Guid)scalar;
-        }
-
         await using var scope = Factory.Services.CreateAsyncScope();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser<Guid>>>();
         var user = await userManager.FindByEmailAsync(email)
@@ -305,16 +252,6 @@ public sealed class PlaywrightFixture : IAsyncLifetime
 
     public async Task DeleteUserIfExistsAsync(string email)
     {
-        if (IsSmoke)
-        {
-            await using var conn = OpenSmokeConnection();
-            await using var cmd = conn.CreateCommand();
-            cmd.CommandText = "DELETE FROM AspNetUsers WHERE NormalizedEmail = @email";
-            cmd.Parameters.AddWithValue("@email", email.ToUpperInvariant());
-            await cmd.ExecuteNonQueryAsync();
-            return;
-        }
-
         await using var scope = Factory.Services.CreateAsyncScope();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser<Guid>>>();
         var user = await userManager.FindByEmailAsync(email);
@@ -336,19 +273,6 @@ public sealed class PlaywrightFixture : IAsyncLifetime
             BaseURL = BaseAddress,
             IgnoreHTTPSErrors = true
         };
-        if (IsSmoke)
-        {
-            if (IsNullOrWhiteSpace(SyntheticMarker))
-            {
-                throw new InvalidOperationException("ReCAPTCHASyntheticMarkerSecret is not set. Smoke tests against a deployed server require the synthetic marker to pass reCAPTCHA monitor-only enforcement.");
-            }
-
-            contextOptions.ExtraHTTPHeaders = new Dictionary<string, string>
-            {
-                [ReCAPTCHAService.SyntheticMarkerHeaderName] = SyntheticMarker
-            };
-        }
-
         var (session, page) = await PlaywrightArtifactRecorder.CreateSessionAsync(_browser, "Identity", suiteName, contextOptions);
 
         await page.Context.AddInitScriptAsync("window.grecaptcha = { ready: cb => cb(), execute: () => Promise.resolve('e2e-test-token') };");
@@ -371,50 +295,12 @@ public sealed class PlaywrightFixture : IAsyncLifetime
 
         _playwright?.Dispose();
 
-        if (IsSmoke)
-        {
-            return;
-        }
-
         if (CI && _started)
         {
             await CleanupDatabaseAsync();
         }
 
-        if (_factory is not null)
-        {
-            await _factory.DisposeAsync();
-        }
-    }
-
-    private static SqlConnection OpenSmokeConnection()
-    {
-        if (IsNullOrWhiteSpace(DataSource) || IsNullOrWhiteSpace(InitialCatalog) || IsNullOrWhiteSpace(UserID) || IsNullOrWhiteSpace(Password))
-        {
-            var missing = new[]
-            {
-                IsNullOrWhiteSpace(DataSource) ? "SmokeDataSource" : null,
-                IsNullOrWhiteSpace(InitialCatalog) ? "SqlConnectionStringBuilder__InitialCatalog" : null,
-                IsNullOrWhiteSpace(UserID) ? "SqlConnectionStringBuilder__UserID" : null,
-                IsNullOrWhiteSpace(Password) ? "SqlConnectionStringBuilder__Password" : null,
-            }.Where(v => v is not null);
-            throw new InvalidOperationException($"Missing smoke DB env vars: {Join(", ", missing)}");
-        }
-
-        var connectionString = new SqlConnectionStringBuilder
-        {
-            DataSource = DataSource,
-            InitialCatalog = InitialCatalog,
-            UserID = UserID,
-            Password = Password,
-            IntegratedSecurity = false,
-            Encrypt = true,
-            TrustServerCertificate = false
-        }.ConnectionString;
-
-        var conn = new SqlConnection(connectionString);
-        conn.Open();
-        return conn;
+        await _factory.DisposeAsync();
     }
 
     private async Task CleanupDatabaseAsync()
