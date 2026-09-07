@@ -28,6 +28,32 @@ public sealed class PasskeyCeremonyTests(PlaywrightFixture fixture)
 
             await page.GotoAsync("/Account/Manage/Passkeys");
 
+            var ceremonyPrerequisites = await page.EvaluateAsync<string>(
+                @"() => {
+                    const element = document.querySelector('passkey-submit');
+                    const button = document.querySelector('button[name=""__passkeySubmit""]');
+                    return JSON.stringify({
+                        isSecureContext: window.isSecureContext,
+                        hasCredentials: navigator.credentials !== undefined,
+                        hasPublicKeyCredential: typeof PublicKeyCredential !== 'undefined',
+                        hasParseCreationOptions: typeof PublicKeyCredential !== 'undefined'
+                            && typeof PublicKeyCredential.parseCreationOptionsFromJSON === 'function',
+                        hasParseRequestOptions: typeof PublicKeyCredential !== 'undefined'
+                            && typeof PublicKeyCredential.parseRequestOptionsFromJSON === 'function',
+                        customElementDefined: customElements.get('passkey-submit') !== undefined,
+                        elementUpgraded: element instanceof (customElements.get('passkey-submit') ?? HTMLElement)
+                            && element?.internals !== undefined,
+                        elementSeesForm: element?.internals?.form !== null
+                            && element?.internals?.form !== undefined,
+                        operation: element?.getAttribute('operation'),
+                        clickTargetIsSubmitter: button?.id === 'add-passkey',
+                    });
+                }");
+            Assert.False(
+                ceremonyPrerequisites.Contains("false", StringComparison.Ordinal)
+                    || ceremonyPrerequisites.Contains("null", StringComparison.Ordinal),
+                $"The page cannot start a WebAuthn ceremony, so passkey-submit.js posts the form without a credential: {ceremonyPrerequisites}");
+
             await page.RunAndWaitForResponseAsync(
                 () => page.ClickAsync(PasskeySelectors.Register),
                 response => response.Request.Method == "POST"
@@ -43,9 +69,9 @@ public sealed class PasskeyCeremonyTests(PlaywrightFixture fixture)
                 $"Identity refused the attestation, so the credential never serialized correctly: {reported}");
 
             var credentials = await page.Context.Credentials.GetAsync();
-            Assert.True(
-                credentials.Count == 1,
-                $"The Add passkey button should mint exactly one credential; the authenticator holds {credentials.Count}.");
+            var mintFailure = $"The Add passkey button should mint exactly one credential; the authenticator holds {credentials.Count}. "
+                              + $"Identity said: '{reported.Trim()}'. Ceremony prerequisites: {ceremonyPrerequisites}";
+            Assert.True(credentials.Count == 1, mintFailure);
 
             await SyntheticAccount.SignOutAsync(page);
             await SignInWithPasskeyAsync(page, email);

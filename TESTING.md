@@ -27,7 +27,10 @@ dotnet build Identity.Tests.Unit --configuration Debug
 
 Require a running SQL Server with test database `IdentityTest` and configured User Secrets. No `az login` needed — Azure credentials are only constructed inside `IsProduction()` in `Program.cs`, which is never reached in Development.
 
+**Check that the server is actually up first — a stopped one fails as something else entirely.** Locally it is `(localdb)\MSSQLLocalDB` (`appsettings.Development.json`), which auto-creates but does **not** auto-start reliably under load. A stopped instance surfaces as `SqlException : Connection Timeout Expired ... pre-login handshake` with a multi-second `initialization=` figure, on every test at once, which reads like the suite or the app is broken. `sqllocaldb info MSSQLLocalDB` reports `State:`; `sqllocaldb start MSSQLLocalDB` fixes it. Cold-starting it while a build, a test run or a browser suite is competing for the box is what produces the slowest version of this.
+
 ```powershell
+sqllocaldb info MSSQLLocalDB     # State: Running, or start it first
 $env:ASPNETCORE_ENVIRONMENT = "Development"
 $env:SqlConnectionStringBuilder__InitialCatalog = "IdentityTest"
 $env:PasskeyOrigin = "https://127.0.0.1"

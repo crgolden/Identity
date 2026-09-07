@@ -20,8 +20,8 @@ public class ManageNavPagesTests
 
     public static TheoryData<object?, string?, string?> DeletePersonalDataCases() => new()
     {
-        { ManageNavPages.DeletePersonalData, "/some/path/Irrelevant.cshtml", "active" },
-        { ManageNavPages.DeletePersonalData.ToLowerInvariant(), "/some/path/Irrelevant.cshtml", "active" },
+        { "DeletePersonalData", "/some/path/Irrelevant.cshtml", "active" },
+        { "deletepersonaldata", "/some/path/Irrelevant.cshtml", "active" },
         { "SomethingElse", "/Areas/Identity/Pages/Account/Manage/DeletePersonalData.cshtml", null },
         { null, "/Areas/Identity/Pages/Account/Manage/DeletePersonalData.cshtml", "active" },
         { 123, "/Areas/Identity/Pages/Account/Manage/DeletePersonalData.cshtml", "active" },
