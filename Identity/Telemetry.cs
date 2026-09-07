@@ -63,9 +63,11 @@ public static class Telemetry
         public static void PasskeySignIn(bool succeeded, string? userAgent) =>
             PasskeySignInCounter.Add(1, new TagList
             {
-                { "succeeded", succeeded },
-                { "synthetic", IsSyntheticUserAgent(userAgent) },
+                { "succeeded", LabelValue(succeeded) },
+                { "synthetic", LabelValue(IsSyntheticUserAgent(userAgent)) },
             });
+
+        private static string LabelValue(bool value) => value ? "true" : "false";
 
         private static bool IsSyntheticUserAgent(string? userAgent) =>
             userAgent?.Contains(SyntheticUserAgentToken, StringComparison.OrdinalIgnoreCase) == true;

@@ -27,14 +27,12 @@ public sealed class PasskeyCeremonyTests(PlaywrightFixture fixture)
             await SignInWithPasswordAsync(page, email, password);
 
             await page.GotoAsync("/Account/Manage/Passkeys");
+
             await page.ClickAsync(PasskeySelectors.Register);
 
-            await page.WaitForURLAsync(
-                url => !url.Contains("/Account/Manage/Passkeys", StringComparison.OrdinalIgnoreCase),
-                new PageWaitForURLOptions { Timeout = CeremonyTimeoutMs });
-
             var status = page.Locator(StatusMessageSelector);
-            var reported = await status.CountAsync() > 0 ? await status.InnerTextAsync() : string.Empty;
+            await status.WaitForAsync(new LocatorWaitForOptions { Timeout = CeremonyTimeoutMs });
+            var reported = await status.InnerTextAsync();
             Assert.False(
                 reported.Contains("Could not add", StringComparison.OrdinalIgnoreCase),
                 $"Identity refused the attestation, so the credential never serialized correctly: {reported}");

@@ -252,9 +252,9 @@ public sealed class TelemetryTests
     }
 
     [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public void PasskeySignIn_TagsContainOutcome(bool succeeded)
+    [InlineData(true, "true")]
+    [InlineData(false, "false")]
+    public void PasskeySignIn_TagsContainOutcome(bool succeeded, string expectedLabel)
     {
         // Arrange
         KeyValuePair<string, object?>[] capturedTags = [];
@@ -266,7 +266,7 @@ public sealed class TelemetryTests
         Telemetry.Metrics.PasskeySignIn(succeeded, TestValues.NewBrowserUserAgent());
 
         // Assert
-        Assert.Contains(capturedTags, t => string.Equals(t.Key, "succeeded", StringComparison.Ordinal) && succeeded.Equals(t.Value));
+        Assert.Contains(capturedTags, t => string.Equals(t.Key, "succeeded", StringComparison.Ordinal) && expectedLabel.Equals(t.Value));
     }
 
     [Fact]
@@ -282,7 +282,7 @@ public sealed class TelemetryTests
         Telemetry.Metrics.PasskeySignIn(succeeded: true, TestValues.NewSyntheticWalkerUserAgent());
 
         // Assert
-        Assert.Contains(capturedTags, t => string.Equals(t.Key, "synthetic", StringComparison.Ordinal) && true.Equals(t.Value));
+        Assert.Contains(capturedTags, t => string.Equals(t.Key, "synthetic", StringComparison.Ordinal) && "true".Equals(t.Value));
     }
 
     [Fact]
@@ -300,7 +300,7 @@ public sealed class TelemetryTests
         // Assert
         Assert.Contains(
             capturedTags,
-            t => string.Equals(t.Key, "synthetic", StringComparison.Ordinal) && false.Equals(t.Value));
+            t => string.Equals(t.Key, "synthetic", StringComparison.Ordinal) && "false".Equals(t.Value));
     }
 
     [Fact]
@@ -316,7 +316,7 @@ public sealed class TelemetryTests
         Telemetry.Metrics.PasskeySignIn(succeeded: false, userAgent: null);
 
         // Assert
-        Assert.Contains(capturedTags, t => string.Equals(t.Key, "synthetic", StringComparison.Ordinal) && false.Equals(t.Value));
+        Assert.Contains(capturedTags, t => string.Equals(t.Key, "synthetic", StringComparison.Ordinal) && "false".Equals(t.Value));
     }
 
     private static MeterListener MakeListener(
