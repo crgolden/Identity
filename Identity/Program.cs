@@ -127,14 +127,13 @@ try
         if (builder.Environment.IsDevelopment())
         {
             builder.Configuration.AddUserSecrets("aspnet-Identity-149346d0-999f-4a74-8ff7-2a92d39790f2");
-            builder.Services
-                .Configure<IdentityPasskeyOptions>(identityPasskeyOptions =>
-                {
-                    identityPasskeyOptions.ValidateOrigin = context =>
-        ValueTask.FromResult(string.Equals(context.Origin, "https://localhost:7261", StringComparison.Ordinal));
-                })
-                .AddDatabaseDeveloperPageExceptionFilter();
+            builder.Services.AddDatabaseDeveloperPageExceptionFilter();
         }
+
+        var passkeyOrigin = builder.Configuration.GetRequired<string>("PasskeyOrigin");
+        builder.Services.Configure<IdentityPasskeyOptions>(identityPasskeyOptions =>
+            identityPasskeyOptions.ValidateOrigin = context =>
+                ValueTask.FromResult(string.Equals(context.Origin, passkeyOrigin, StringComparison.Ordinal)));
 
         var serviceBusConnectionString = builder.Configuration.GetRequired<string>("ServiceBusConnectionString");
         builder.Services

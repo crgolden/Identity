@@ -46,7 +46,8 @@ public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Progra
         builder.ConfigureAppConfiguration(configBuilder =>
             configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ServiceBusConnectionString"] = "Endpoint=sb://test.servicebus.windows.net/;SharedAccessKeyName=test;SharedAccessKey=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+                ["ServiceBusConnectionString"] = "Endpoint=sb://test.servicebus.windows.net/;SharedAccessKeyName=test;SharedAccessKey=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+                ["PasskeyOrigin"] = "https://localhost"
             }));
 
         builder.ConfigureServices((context, services) =>
