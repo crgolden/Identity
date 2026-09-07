@@ -50,6 +50,28 @@ test host binds loopback **by IP** on a random port, while `appsettings.Developm
 `https://localhost:7261` for `dotnet run`. Origin validation compares scheme and host and ignores port, so
 the port does not matter but `localhost` versus `127.0.0.1` does.
 
+**The test host must call `UseStaticWebAssets()`, or every script and stylesheet is served empty outside
+Development.** `WebApplicationFactory` inherits the generic host's behaviour of loading the static web
+assets manifest **only when the environment is Development**. CI runs as `CI`, so without the explicit call
+in `IdentityWebApplicationFactory` every fingerprinted asset returned `200` with a **zero-byte body and no
+`Content-Type`** — jQuery, Tabler, the fonts and every `wwwroot` script alike. Nothing errors: the request
+succeeds, the browser gets an empty file, and no console message is produced, so the whole E2E suite ran
+against pages with no JavaScript and no CSS while still reporting green. A deployed app is unaffected
+because publishing copies the assets physically into `wwwroot`, which is why production served the same
+file at full size throughout.
+
+The measurement that settles it is the response length in the request log, compared across environments:
+`- 200 7646 text/javascript` when the manifest is loaded versus `- 200 0 -` when it is not. Any E2E
+assertion that depends on client-side behaviour is vacuous in the second state.
+
+**A local E2E run is not configured the way CI is, so "it passes locally" is weak evidence about a CI-only
+failure.** CI sets `ASPNETCORE_ENVIRONMENT: CI` and **no `appsettings.CI.json` exists**, so the app there is
+configured by `appsettings.json` plus environment variables alone. A local run under `Development`
+additionally loads `appsettings.Development.json` *and* User Secrets. When reproducing a CI failure, set the
+same environment variables CI sets rather than relying on the Development file — and note that an
+environment variable outranks both files, which is why an explicit `PasskeyOrigin` makes the two agree on the
+one setting that gates origin validation.
+
 **`-trait "Category=E2E"` is not optional.** `Identity.Tests.E2E` also holds the `Category=Load` and
 `Category=Walker` suites, both written to run against a **deployed** target. The walker skips cleanly when
 `WalkerBaseUrl` is unset, so an unfiltered local run no longer fails the way it used to — but it still

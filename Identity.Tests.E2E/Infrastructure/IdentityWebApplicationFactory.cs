@@ -43,6 +43,8 @@ public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Progra
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        builder.UseStaticWebAssets();
+
         builder.ConfigureAppConfiguration(configBuilder =>
             configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
             {
