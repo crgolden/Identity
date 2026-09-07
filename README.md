@@ -100,7 +100,7 @@ threshold, with no exemption, no email allowlist and no marker header. The forme
 post-deploy smoke suite — scheduled synthetic traffic now signs in with a passkey, which Identity evaluates
 before the CAPTCHA and is therefore a first-class auth path rather than a bypass.
 
-Identity no longer reads `AdminEmail` — the Key Vault secret survives because Infrastructure still uses it; the admin account goes through ordinary reCAPTCHA scoring.
+Identity no longer reads `AdminEmail` — the Key Vault secret survives only until Infrastructure's next deploy, which moves its alert recipient to `Email1`; the admin account goes through ordinary reCAPTCHA scoring.
 
 The Azure Service Bus namespace is supplied as the `ServiceBusNamespace` **configuration** value, same as the secrets above.
 

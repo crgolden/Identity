@@ -30,12 +30,22 @@ Require a running SQL Server with test database `IdentityTest` and configured Us
 ```powershell
 $env:ASPNETCORE_ENVIRONMENT = "Development"
 $env:SqlConnectionStringBuilder__InitialCatalog = "IdentityTest"
+$env:PasskeyOrigin = "https://127.0.0.1"
 dotnet build Identity.Tests.E2E --configuration Debug
 .\Identity.Tests.E2E\bin\Debug\net10.0\Identity.Tests.E2E.exe -trait "Category=E2E" -showLiveOutput
 
 # Redirect output for in-flight inspection
 cmd /c "Identity.Tests.E2E\bin\Debug\net10.0\Identity.Tests.E2E.exe -trait ""Category=E2E"" -showLiveOutput > C:\temp\identity-e2e.txt 2>&1"
 ```
+
+**`PasskeyOrigin` is not optional either, and `appsettings.Development.json`'s value is the wrong one
+here.** `Program.cs` reads it with `GetRequired` while the app builds, so an unset value aborts startup and
+every E2E test fails with "The entry point exited without ever building an IHost" — the in-memory config in
+`IdentityWebApplicationFactory` cannot supply it, because `WebApplicationFactory` applies
+`ConfigureAppConfiguration` after those reads have run. The value must be `https://127.0.0.1`: the Kestrel
+test host binds loopback **by IP** on a random port, while `appsettings.Development.json` carries
+`https://localhost:7261` for `dotnet run`. Origin validation compares scheme and host and ignores port, so
+the port does not matter but `localhost` versus `127.0.0.1` does.
 
 **`-trait "Category=E2E"` is not optional.** `Identity.Tests.E2E` also holds the `Category=Load` and
 `Category=Walker` suites, both written to run against a **deployed** target. The walker skips cleanly when

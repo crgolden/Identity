@@ -25,7 +25,7 @@ public sealed class PasskeyTests(PlaywrightFixture fixture)
             await page.GotoAsync("/Account/Manage/Passkeys");
             await page.WaitForLoadStateAsync();
 
-            var button = page.Locator("button[name='__passkeySubmit']");
+            var button = page.Locator(PasskeySelectors.Register);
             await button.WaitForAsync();
             Assert.True(await button.IsVisibleAsync(), "Add passkey button was not rendered; PasskeySubmitTagHelper may not be registered.");
             var text = await button.TextContentAsync();
@@ -42,7 +42,7 @@ public sealed class PasskeyTests(PlaywrightFixture fixture)
             await page.GotoAsync("/Account/Login");
             await page.WaitForLoadStateAsync();
 
-            var button = page.Locator("button[name='__passkeySubmit']");
+            var button = page.Locator(PasskeySelectors.SignIn);
             await button.WaitForAsync();
             Assert.True(await button.IsVisibleAsync(), "Login passkey button was not rendered; PasskeySubmitTagHelper may not be registered.");
             var text = await button.TextContentAsync();

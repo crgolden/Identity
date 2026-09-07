@@ -6,9 +6,9 @@ using Microsoft.Playwright;
 internal sealed record SyntheticAccount(string Email, string RpId, CredentialsCreateOptions Credential)
 {
     private const string LoginPath = "/Account/Login";
-    private const string PasskeySubmitSelector = "#passkey-submit";
     private const float PasskeySubmitTimeoutMs = 15_000;
     private const float LoginTimeoutMs = 30_000;
+    private const float AutofillGraceMs = 5_000;
 
     public static SyntheticAccount Resolve(int slot)
     {
@@ -47,11 +47,17 @@ internal sealed record SyntheticAccount(string Email, string RpId, CredentialsCr
     {
         await page.Context.Credentials.CreateAsync(RpId, Credential);
         await page.Context.Credentials.InstallAsync();
+        await CredentialSerialization.InstallAsync(page.Context);
         await page.GotoAsync($"{LoginPath}?ReturnUrl=%2F");
-        await page.FillAsync("input[name='Input.Email']", Email);
+        if (await AutofillSignedInAsync(page))
+        {
+            return;
+        }
+
         try
         {
-            await page.ClickAsync(PasskeySubmitSelector, new PageClickOptions { Timeout = PasskeySubmitTimeoutMs });
+            await page.FillAsync("input[name='Input.Email']", Email);
+            await page.ClickAsync(PasskeySelectors.SignIn, new PageClickOptions { Timeout = PasskeySubmitTimeoutMs });
         }
         catch (PlaywrightException) when (!IsOnLoginPage(page))
         {
@@ -61,6 +67,21 @@ internal sealed record SyntheticAccount(string Email, string RpId, CredentialsCr
         await page.WaitForURLAsync(
             url => !IsLoginPath(url),
             new PageWaitForURLOptions { Timeout = LoginTimeoutMs });
+    }
+
+    private static async Task<bool> AutofillSignedInAsync(IPage page)
+    {
+        try
+        {
+            await page.Locator("input[name='Input.Email']").WaitForAsync(
+                new LocatorWaitForOptions { Timeout = AutofillGraceMs });
+        }
+        catch (TimeoutException)
+        {
+            return !IsOnLoginPage(page);
+        }
+
+        return !IsOnLoginPage(page);
     }
 
     private static bool IsOnLoginPage(IPage page) => IsLoginPath(page.Url);

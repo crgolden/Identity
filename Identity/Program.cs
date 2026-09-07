@@ -130,10 +130,13 @@ try
             builder.Services.AddDatabaseDeveloperPageExceptionFilter();
         }
 
-        var passkeyOrigin = builder.Configuration.GetRequired<string>("PasskeyOrigin");
+        var passkeyOrigin = new Uri(builder.Configuration.GetRequired<string>("PasskeyOrigin"));
         builder.Services.Configure<IdentityPasskeyOptions>(identityPasskeyOptions =>
             identityPasskeyOptions.ValidateOrigin = context =>
-                ValueTask.FromResult(string.Equals(context.Origin, passkeyOrigin, StringComparison.Ordinal)));
+                ValueTask.FromResult(
+                    Uri.TryCreate(context.Origin, UriKind.Absolute, out var origin)
+                    && string.Equals(origin.Scheme, passkeyOrigin.Scheme, StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(origin.Host, passkeyOrigin.Host, StringComparison.OrdinalIgnoreCase)));
 
         var serviceBusConnectionString = builder.Configuration.GetRequired<string>("ServiceBusConnectionString");
         builder.Services
