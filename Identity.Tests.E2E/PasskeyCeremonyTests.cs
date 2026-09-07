@@ -10,6 +10,7 @@ using Synthetic;
 public sealed class PasskeyCeremonyTests(PlaywrightFixture fixture)
 {
     private const string StatusMessageSelector = "#status-message";
+    private const string CreationOptionsPath = "/Account/PasskeyCreationOptions";
     private const float CeremonyTimeoutMs = 30_000;
     private const float AutofillGraceMs = 5_000;
 
@@ -54,11 +55,21 @@ public sealed class PasskeyCeremonyTests(PlaywrightFixture fixture)
                     || ceremonyPrerequisites.Contains("null", StringComparison.Ordinal),
                 $"The page cannot start a WebAuthn ceremony, so passkey-submit.js posts the form without a credential: {ceremonyPrerequisites}");
 
-            await page.RunAndWaitForResponseAsync(
+            var creationOptionsRequests = new List<string>();
+            page.Request += (_, request) =>
+            {
+                if (request.Url.Contains(CreationOptionsPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    creationOptionsRequests.Add(request.Method);
+                }
+            };
+
+            var submission = await page.RunAndWaitForResponseAsync(
                 () => page.ClickAsync(PasskeySelectors.Register),
-                response => response.Request.Method == "POST"
+                response => string.Equals(response.Request.Method, "POST", StringComparison.Ordinal)
                             && response.Url.Contains("/Account/Manage/Passkeys", StringComparison.OrdinalIgnoreCase),
                 new PageRunAndWaitForResponseOptions { Timeout = CeremonyTimeoutMs });
+            var submittedFields = SubmittedFieldNames(submission.Request.PostData);
             await page.WaitForLoadStateAsync();
 
             var status = page.Locator(StatusMessageSelector);
@@ -70,7 +81,9 @@ public sealed class PasskeyCeremonyTests(PlaywrightFixture fixture)
 
             var credentials = await page.Context.Credentials.GetAsync();
             var mintFailure = $"The Add passkey button should mint exactly one credential; the authenticator holds {credentials.Count}. "
-                              + $"Identity said: '{reported.Trim()}'. Ceremony prerequisites: {ceremonyPrerequisites}";
+                              + $"Identity said: '{reported.Trim()}'. The form posted these fields: {submittedFields}. "
+                              + $"Creation-options requests: {creationOptionsRequests.Count}. "
+                              + $"Ceremony prerequisites: {ceremonyPrerequisites}";
             Assert.True(credentials.Count == 1, mintFailure);
 
             await SyntheticAccount.SignOutAsync(page);
@@ -81,6 +94,11 @@ public sealed class PasskeyCeremonyTests(PlaywrightFixture fixture)
                 new PageAssertionsToHaveURLOptions { Timeout = CeremonyTimeoutMs });
         }
     }
+
+    private static string SubmittedFieldNames(string? postData) =>
+        string.IsNullOrWhiteSpace(postData)
+            ? "(empty body)"
+            : string.Join(", ", postData.Split('&').Select(field => field.Split('=')[0]));
 
     private static async Task SignInWithPasskeyAsync(IPage page, string email)
     {

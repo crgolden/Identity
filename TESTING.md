@@ -602,6 +602,20 @@ flowchart TD
 
 ## 6. Passkeys (WebAuthn)
 
+### Diagnosing a registration ceremony that mints no credential
+
+`OnPostAddPasskeyAsync` sets a different `StatusMessage` per branch, and that message identifies which half of the ceremony broke without needing a client-side trace:
+
+| Status message | What actually happened |
+|---|---|
+| `Could not add a passkey: <error>` | `passkey-submit.js` ran, threw, and posted `Input.Passkey.Error`. Everything inside `obtainAndSubmitCredential`'s `try` lands here — the `browserSupportsPasskeys` feature check, an unknown `operation`, and a `Headers` constructor `TypeError` from an empty `request-token-name`. The `<error>` text names which. |
+| `The browser did not provide a passkey.` | Neither `CredentialJson` **nor** `Error` reached the server, so the custom element's `setFormValue` never ran. The form posted **natively** — the `submit` listener in `connectedCallback` never intercepted. |
+| `Could not add the passkey: <failure>` | The ceremony completed and Identity rejected the attestation. |
+
+The second row is the easy one to misread. Its fingerprint is a small `application/x-www-form-urlencoded` body (antiforgery token plus `__passkeySubmit=`), a valid ModelState, a 302, and **zero** `/Account/PasskeyCreationOptions` requests anywhere in the log — because no ceremony code executed at all. An empty token *value* does not produce it: the fetch still fires and shows a 400. Only a listener that never attached, or an element that never upgraded, does.
+
+`PasskeyCeremonyTests` probes these prerequisites before clicking and reports them on failure. Confirm the probe still discriminates by suppressing the upgrade — `page.AddInitScriptAsync("customElements.define('passkey-submit', class extends HTMLElement {});")` pre-empts the real registration, and the probe must go red with `elementUpgraded:false, elementSeesForm:false` while every other value stays true.
+
 ```mermaid
 flowchart TD
     classDef covered fill:#bbf7d0,stroke:#15803d
