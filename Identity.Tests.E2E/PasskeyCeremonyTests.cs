@@ -28,7 +28,12 @@ public sealed class PasskeyCeremonyTests(PlaywrightFixture fixture)
 
             await page.GotoAsync("/Account/Manage/Passkeys");
 
-            await page.ClickAsync(PasskeySelectors.Register);
+            await page.RunAndWaitForResponseAsync(
+                () => page.ClickAsync(PasskeySelectors.Register),
+                response => response.Request.Method == "POST"
+                            && response.Url.Contains("/Account/Manage/Passkeys", StringComparison.OrdinalIgnoreCase),
+                new PageRunAndWaitForResponseOptions { Timeout = CeremonyTimeoutMs });
+            await page.WaitForLoadStateAsync();
 
             var status = page.Locator(StatusMessageSelector);
             await status.WaitForAsync(new LocatorWaitForOptions { Timeout = CeremonyTimeoutMs });
