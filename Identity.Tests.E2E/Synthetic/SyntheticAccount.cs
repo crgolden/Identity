@@ -49,42 +49,32 @@ internal sealed record SyntheticAccount(string Email, string RpId, CredentialsCr
         await page.Context.Credentials.InstallAsync();
         await CredentialSerialization.InstallAsync(page.Context);
         await page.GotoAsync($"{LoginPath}?ReturnUrl=%2F");
-        if (await AutofillSignedInAsync(page))
+        if (await AutofillNavigatedAwayAsync(page))
         {
             return;
         }
 
-        try
-        {
-            await page.FillAsync("input[name='Input.Email']", Email);
-            await page.ClickAsync(PasskeySelectors.SignIn, new PageClickOptions { Timeout = PasskeySubmitTimeoutMs });
-        }
-        catch (PlaywrightException) when (!IsOnLoginPage(page))
-        {
-            return;
-        }
-
+        await page.FillAsync("input[name='Input.Email']", Email);
+        await page.ClickAsync(PasskeySelectors.SignIn, new PageClickOptions { Timeout = PasskeySubmitTimeoutMs });
         await page.WaitForURLAsync(
             url => !IsLoginPath(url),
             new PageWaitForURLOptions { Timeout = LoginTimeoutMs });
     }
 
-    private static async Task<bool> AutofillSignedInAsync(IPage page)
+    private static async Task<bool> AutofillNavigatedAwayAsync(IPage page)
     {
         try
         {
-            await page.Locator("input[name='Input.Email']").WaitForAsync(
-                new LocatorWaitForOptions { Timeout = AutofillGraceMs });
+            await page.WaitForURLAsync(
+                url => !IsLoginPath(url),
+                new PageWaitForURLOptions { Timeout = AutofillGraceMs });
+            return true;
         }
-        catch (TimeoutException)
+        catch (Exception exception) when (exception is TimeoutException or PlaywrightException)
         {
-            return !IsOnLoginPage(page);
+            return false;
         }
-
-        return !IsOnLoginPage(page);
     }
-
-    private static bool IsOnLoginPage(IPage page) => IsLoginPath(page.Url);
 
     private static bool IsLoginPath(string url) =>
         new Uri(url).AbsolutePath.StartsWith(LoginPath, StringComparison.OrdinalIgnoreCase);
