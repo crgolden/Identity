@@ -1,7 +1,7 @@
 @page "{id:int}"
 @model Identity.Pages.Admin.ApiScopes.Edit.ClaimTypesModel
 @{
-    ViewData["Title"] = "Edit Claim Types";
+    ViewData["Title"] = "Edit API Scope Claim Types";
     var rows = Model.ClaimTypes.Select(c => new ClaimTypeRow(c.Id, c.Type)).ToList();
     var cancelHref = Url.Page("/Admin/ApiScopes/Details/ClaimTypes", new { id = Request.RouteValues["id"] });
 }

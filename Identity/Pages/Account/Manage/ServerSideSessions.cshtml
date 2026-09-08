@@ -58,7 +58,7 @@ else
                         <td><code>@session.SessionId</code></td>
                         <td>@session.Created.ToString("yyyy-MM-dd HH:mm")</td>
                         <td>@session.Renewed.ToString("yyyy-MM-dd HH:mm")</td>
-                        <td>@(session.Expires.HasValue ? session.Expires.Value.ToString("yyyy-MM-dd HH:mm") : "—")</td>
+                        <td>@(session.Expires.HasValue ? session.Expires.Value.ToString("yyyy-MM-dd HH:mm") : "-")</td>
                         <td>
                             <form method="post">
                                 <input type="hidden" name="SessionId" value="@session.SessionId" />

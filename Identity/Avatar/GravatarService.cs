@@ -6,7 +6,7 @@ public class GravatarService : IAvatarService
 {
     internal const string ActivityName = "identity.gravatar.build_url";
     internal const string HashTagName = "gravatar.hash";
-#pragma warning disable S1075 // Fixed vendor endpoint, not configuration — see CODE-STYLE.md's "Configuration must not decide control flow" corollary.
+#pragma warning disable S1075 // Fixed vendor endpoint, not configuration - see CODE-STYLE.md's "Configuration must not decide control flow" corollary.
     internal const string ImageBaseUrl = "https://gravatar.com/avatar/";
 #pragma warning restore S1075
     internal const string DefaultImageQuery = "?s=2048&d=identicon";
