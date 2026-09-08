@@ -3,7 +3,7 @@
 @inject SignInManager<IdentityUser<Guid>> SignInManager
 @{
     var signedIn = SignInManager.IsSignedIn(User);
-    ViewData["Title"] = "Home";
+    ViewData["Title"] = PageTitles.Home;
     if (!signedIn)
     {
         ViewData["Description"] = "One account for every application connected to this sign-in service. Passkeys, two-factor authentication, and Google sign-in, with full control over what each application can see.";

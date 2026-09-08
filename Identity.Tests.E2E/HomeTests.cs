@@ -20,7 +20,7 @@ public sealed class HomeTests(PlaywrightFixture fixture)
             await Assertions.Expect(page.Locator("#sign-in")).ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("#manage-account")).Not.ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("#review-grants")).Not.ToBeVisibleAsync();
-            await Assertions.Expect(page).ToHaveTitleAsync("Home - Identity");
+            await Assertions.Expect(page).ToHaveTitleAsync(PageTitles.Document(PageTitles.Home));
         }
     }
 
@@ -39,7 +39,7 @@ public sealed class HomeTests(PlaywrightFixture fixture)
             await Assertions.Expect(page.Locator("#review-grants")).ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("#create-account")).Not.ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("#sign-in")).Not.ToBeVisibleAsync();
-            await Assertions.Expect(page).ToHaveTitleAsync("Home - Identity");
+            await Assertions.Expect(page).ToHaveTitleAsync(PageTitles.Document(PageTitles.Home));
         }
     }
 
