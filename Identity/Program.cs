@@ -44,6 +44,15 @@ try
     var corsPolicySection = builder.Configuration.GetRequiredSection(nameof(CorsPolicy));
     var corsPolicy = corsPolicySection.Get<CorsPolicy>() ?? throw new InvalidOperationException($"Invalid '{nameof(CorsPolicy)}' section.");
     var recaptchaVerifyEndpoint = builder.Configuration.GetRequired<Uri>("RecaptchaVerifyEndpoint");
+
+    var passkeyOrigin = new Uri(builder.Configuration.GetRequired<string>("PasskeyOrigin"));
+    builder.Services.Configure<IdentityPasskeyOptions>(identityPasskeyOptions =>
+        identityPasskeyOptions.ValidateOrigin = context =>
+            ValueTask.FromResult(
+                Uri.TryCreate(context.Origin, UriKind.Absolute, out var origin)
+                && string.Equals(origin.Scheme, passkeyOrigin.Scheme, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(origin.Host, passkeyOrigin.Host, StringComparison.OrdinalIgnoreCase)));
+
     if (builder.Environment.IsProduction())
     {
         var defaultAzureCredentialOptionsSection = builder.Configuration.GetRequiredSection(nameof(DefaultAzureCredentialOptions));
@@ -129,14 +138,6 @@ try
             builder.Configuration.AddUserSecrets("aspnet-Identity-149346d0-999f-4a74-8ff7-2a92d39790f2");
             builder.Services.AddDatabaseDeveloperPageExceptionFilter();
         }
-
-        var passkeyOrigin = new Uri(builder.Configuration.GetRequired<string>("PasskeyOrigin"));
-        builder.Services.Configure<IdentityPasskeyOptions>(identityPasskeyOptions =>
-            identityPasskeyOptions.ValidateOrigin = context =>
-                ValueTask.FromResult(
-                    Uri.TryCreate(context.Origin, UriKind.Absolute, out var origin)
-                    && string.Equals(origin.Scheme, passkeyOrigin.Scheme, StringComparison.OrdinalIgnoreCase)
-                    && string.Equals(origin.Host, passkeyOrigin.Host, StringComparison.OrdinalIgnoreCase)));
 
         var serviceBusConnectionString = builder.Configuration.GetRequired<string>("ServiceBusConnectionString");
         builder.Services

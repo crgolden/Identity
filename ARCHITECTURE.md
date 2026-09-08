@@ -223,7 +223,17 @@ Login:
 2. The browser performs the WebAuthn assertion.
 3. `SignInManager` verifies and signs in the user.
 
-Both endpoints validate antiforgery tokens. In development, origin validation is relaxed to `https://localhost:7261`.
+Both endpoints validate antiforgery tokens.
+
+**Origin validation is configured in every environment, and Production is the one that most needs it.**
+`ValidateOrigin` compares the authenticator's reported origin against the required `PasskeyOrigin`
+setting, matching scheme and host and ignoring port. While that registration sat in the non-Production
+branch, Production fell back to the framework's request-relative default, which behind App Service's TLS
+termination rejected the site's own origin — every registration failed with *"The authenticator response
+had an invalid origin"*, and the deployed `PasskeyOrigin` app setting was never read at all. No test
+caught it because the E2E suite never runs as Production, so the environment that was broken was the only
+one never exercised. Treat any environment-conditional registration in `Program.cs` as suspect for the
+same reason.
 
 #### Four browser quirks `wwwroot/js/passkey-submit.js` exists to absorb
 
@@ -518,7 +528,7 @@ Allowed origins are read from the `CorsPolicy:Origins` configuration array (supp
 14. Data Protection (Azure Blob + Key Vault)
 15. Problem Details (`AddProblemDetails`) — enables `IProblemDetailsService` used by the global exception handler
 16. Database developer page exception filter (Development only)
-17. Passkey origin validator (Development only — relaxed to `https://localhost:7261`)
+17. Passkey origin validator — registered in **every** environment, from the required `PasskeyOrigin` setting
 
 ### Middleware pipeline order
 
