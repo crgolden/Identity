@@ -23,6 +23,8 @@ dotnet build Identity.Tests.Unit --configuration Debug
 .\Identity.Tests.Unit\bin\Debug\net10.0\Identity.Tests.Unit.exe -trait "Category=Unit" -showLiveOutput
 ```
 
+A `PageModel` test whose handler calls `Url.Page(...)` or `Url.RouteUrl(...)` must set up the mocked `IUrlHelper`'s `ActionContext` (`urlHelperMock.SetupGet(u => u.ActionContext).Returns(new ActionContext(new DefaultHttpContext(), routeData, new ActionDescriptor()))`) even though the test never reads it: `UrlHelperExtensions.Page`/`RouteUrl` read it on every call and throw on null. `Pages/Account/ExternalLogin.cshtmlTests.cs` is the pattern.
+
 ### E2E Tests (local, `Identity.Tests.E2E`)
 
 Require a running SQL Server with test database `IdentityTest` and configured User Secrets. No `az login` needed — Azure credentials are only constructed inside `IsProduction()` in `Program.cs`, which is never reached in Development.
@@ -122,9 +124,8 @@ menus. Every action is read-only — Identity is the fleet's authentication auth
 writes to it.
 
 It is gated by `[Trait("Category", "Walker")]`, which CI's `Category=E2E` filter does not match, and it skips
-entirely unless `WalkerBaseUrl` is set. It runs from `.github/workflows/synthetic.yml` and is **never a merge
-gate**. **The schedule ships commented out** and is enabled only after a green manual dispatch, per the
-standing rule that self-triggering work lands inert.
+entirely unless `WalkerBaseUrl` is set. It runs on the schedule in `.github/workflows/synthetic.yml` and is
+**never a merge gate**.
 
 | Variable | Meaning |
 |---|---|
