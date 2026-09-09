@@ -65,6 +65,9 @@ internal static class TestValues
     internal static string NewSyntheticWalkerUserAgent() =>
         $"{NewBrowserUserAgent()} {Identity.Telemetry.Metrics.SyntheticUserAgentToken}/1.0";
 
+    internal static string NewPasskeyCredentialJson() =>
+        $"{{\"id\":\"{LowercaseToken(16)}\",\"type\":\"public-key\"}}";
+
     internal static string NewRecaptchaToken() => LowercaseToken(16);
 
     internal static string NewRecaptchaSecretKey() => LowercaseToken(24);

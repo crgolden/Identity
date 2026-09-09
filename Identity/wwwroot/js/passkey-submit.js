@@ -50,6 +50,7 @@ customElements.define('passkey-submit', class extends HTMLElement {
             emailName: this.getAttribute('email-name'),
             requestTokenName: this.getAttribute('request-token-name'),
             requestTokenValue: this.getAttribute('request-token-value'),
+            autofill: this.getAttribute('autofill'),
         };
 
         this.internals.form.addEventListener('submit', (event) => {
@@ -184,6 +185,10 @@ customElements.define('passkey-submit', class extends HTMLElement {
     }
 
     async tryAutofillPasskey() {
+        if (this.attrs.autofill === 'off') {
+            return;
+        }
+
         if (browserSupportsPasskeys && this.attrs.operation === 'Request' && await PublicKeyCredential.isConditionalMediationAvailable?.()) {
             const useConditionalMediation = true;
             await this.obtainAndSubmitCredential(useConditionalMediation);

@@ -227,6 +227,68 @@ public class LoginModelTests
     }
 
     [Fact]
+    public async Task OnPostAsync_PasskeySignIn_Failed_TurnsAutofillOff()
+    {
+        // Arrange
+        var credentialJson = TestValues.NewPasskeyCredentialJson();
+        var signInManagerMock = CreateSignInManagerMock();
+        signInManagerMock
+            .Setup(s => s.PasskeySignInAsync(credentialJson))
+            .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Failed);
+
+        var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
+        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
+
+        var model = new LoginModel(signInManagerMock.Object, CreateRecaptchaServiceMock().Object)
+        {
+            Url = urlHelperMock.Object,
+            PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
+            Input = new LoginModel.InputModel
+            {
+                Passkey = new Identity.Pages.Account.Manage.PasskeyInputModel { CredentialJson = credentialJson }
+            }
+        };
+
+        // Act
+        var result = await model.OnPostAsync();
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        Assert.False(model.PasskeyAutofillAllowed);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_PasswordSignIn_Failed_LeavesAutofillOn()
+    {
+        // Arrange
+        var signInManagerMock = CreateSignInManagerMock();
+        signInManagerMock
+            .Setup(s => s.PasswordSignInAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>()))
+            .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Failed);
+
+        var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
+        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
+
+        var model = new LoginModel(signInManagerMock.Object, CreateRecaptchaServiceMock().Object)
+        {
+            Url = urlHelperMock.Object,
+            PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
+            Input = new LoginModel.InputModel
+            {
+                Email = TestValues.NewEmailAddress(),
+                Password = TestValues.NewPassword()
+            }
+        };
+
+        // Act
+        var result = await model.OnPostAsync();
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        Assert.True(model.PasskeyAutofillAllowed);
+    }
+
+    [Fact]
     public async Task OnPostAsync_InvalidModelState_ReturnsPageWithoutSignIn()
     {
         // Arrange

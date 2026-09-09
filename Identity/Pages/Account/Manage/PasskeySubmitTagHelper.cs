@@ -25,6 +25,9 @@ public class PasskeySubmitTagHelper : TagHelper
     [HtmlAttributeName("email-name")]
     public string? EmailName { get; set; }
 
+    [HtmlAttributeName("autofill")]
+    public bool Autofill { get; set; } = true;
+
     public override async Task ProcessAsync(TagHelperContext context, TagHelperOutput output)
     {
         if (_httpContextAccessor.HttpContext is null)
@@ -36,7 +39,8 @@ public class PasskeySubmitTagHelper : TagHelper
         var buttonAttributes = output.Attributes
             .Where(x => !string.Equals(x.Name, "operation", StringComparison.Ordinal)
                         && !string.Equals(x.Name, "name", StringComparison.Ordinal)
-                        && !string.Equals(x.Name, "email-name", StringComparison.Ordinal))
+                        && !string.Equals(x.Name, "email-name", StringComparison.Ordinal)
+                        && !string.Equals(x.Name, "autofill", StringComparison.Ordinal))
             .ToList();
         var buttonContent = (await output.GetChildContentAsync(Default)).GetContent(Default);
         const string value = "<button type=\"submit\" name=\"__passkeySubmit\" ";
@@ -62,6 +66,7 @@ public class PasskeySubmitTagHelper : TagHelper
         await htmlWriter.WriteAsync($"email-name=\"{EmailName ?? Empty}\" ");
         await htmlWriter.WriteAsync($"request-token-name=\"{tokens.HeaderName ?? Empty}\" ");
         await htmlWriter.WriteAsync($"request-token-value=\"{tokens.RequestToken ?? Empty}\" ");
+        await htmlWriter.WriteAsync($"autofill=\"{(Autofill ? "on" : "off")}\" ");
         await htmlWriter.WriteAsync(">");
         await htmlWriter.WriteAsync("</passkey-submit>");
         output.TagName = null;

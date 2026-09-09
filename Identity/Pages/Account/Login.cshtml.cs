@@ -34,6 +34,8 @@ public class LoginModel : PageModel
 
     public string? RecaptchaSiteKey { get; private set; }
 
+    public bool PasskeyAutofillAllowed { get; private set; } = true;
+
     [TempData]
     public string? ErrorMessage { get; set; }
 
@@ -63,6 +65,7 @@ public class LoginModel : PageModel
             result = await _signInManager.PasskeySignInAsync(Input.Passkey.CredentialJson);
             passkeyActivity?.SetTag("succeeded", result.Succeeded);
             Telemetry.Metrics.PasskeySignIn(result.Succeeded, HttpContext.Request.Headers.UserAgent);
+            PasskeyAutofillAllowed = result.Succeeded;
         }
         else
         {

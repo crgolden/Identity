@@ -114,5 +114,55 @@ public class PasskeySubmitTagHelperTests
         Assert.Contains("email-name=\"\"", html, StringComparison.Ordinal);
         Assert.Contains("request-token-name=\"\"", html, StringComparison.Ordinal);
         Assert.Contains("request-token-value=\"\"", html, StringComparison.Ordinal);
+        Assert.Contains("autofill=\"on\"", html, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData(true, "on")]
+    [InlineData(false, "off")]
+    public async Task ProcessAsync_RendersTheAutofillState_SoAFailedAttemptDoesNotRetryItself(
+        bool autofill,
+        string expected)
+    {
+        // Arrange
+        var httpContext = new DefaultHttpContext();
+
+        var httpAccessorMock = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
+        httpAccessorMock.Setup(a => a.HttpContext).Returns(httpContext);
+
+        var antiforgeryMock = new Mock<IAntiforgery>(MockBehavior.Strict);
+        antiforgeryMock
+            .Setup(a => a.GetTokens(httpContext))
+            .Returns(new AntiforgeryTokenSet(null, "cookie", "__RequestVerificationToken", null));
+
+        var helper = new PasskeySubmitTagHelper(httpAccessorMock.Object, antiforgeryMock.Object)
+        {
+            Operation = 0,
+            Name = TestValues.NewApiResourceName(),
+            Autofill = autofill
+        };
+
+        var attributes = new TagHelperAttributeList
+            {
+                new TagHelperAttribute("autofill", "should-not-reach-the-button")
+            };
+
+        var childContent = new DefaultTagHelperContent();
+        childContent.SetContent(TestValues.NewClaimValue());
+
+        var output = new TagHelperOutput(
+            "passkey-submit",
+            attributes,
+            (useCachedResult, encoder) => Task.FromResult<TagHelperContent>(childContent));
+
+        var context = new TagHelperContext([], new Dictionary<object, object>(), Guid.NewGuid().ToString());
+
+        // Act
+        await helper.ProcessAsync(context, output);
+
+        // Assert
+        var html = output.Content.GetContent(NullHtmlEncoder.Default);
+        Assert.Contains($"autofill=\"{expected}\"", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("should-not-reach-the-button", html, StringComparison.Ordinal);
     }
 }

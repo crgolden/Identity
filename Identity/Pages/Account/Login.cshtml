@@ -36,7 +36,7 @@
                     <button id="login-submit" type="submit" class="w-100 btn btn-lg btn-primary">Log in</button>
                 </div>
                 <hr />
-                <passkey-submit operation="@PasskeyOperation.Request" name="Input.Passkey" email-name="Input.Email" id="passkey-submit" class="btn btn-outline-primary position-relative" formnovalidate>
+                <passkey-submit operation="@PasskeyOperation.Request" name="Input.Passkey" email-name="Input.Email" autofill="@Model.PasskeyAutofillAllowed" id="passkey-submit" class="btn btn-outline-primary position-relative" formnovalidate>
                     Log in with a passkey
                 </passkey-submit>
                 <hr />
