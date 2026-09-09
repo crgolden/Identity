@@ -54,8 +54,21 @@ internal sealed record SyntheticAccount(string Email, string RpId, CredentialsCr
             return;
         }
 
-        await page.FillAsync("input[name='Input.Email']", Email);
-        await page.ClickAsync(PasskeySelectors.SignIn, new PageClickOptions { Timeout = PasskeySubmitTimeoutMs });
+        try
+        {
+            await page.FillAsync("input[name='Input.Email']", Email);
+            await page.ClickAsync(PasskeySelectors.SignIn, new PageClickOptions { Timeout = PasskeySubmitTimeoutMs });
+        }
+        catch (Exception exception) when (exception is TimeoutException or PlaywrightException)
+        {
+            if (IsLoginPath(page.Url))
+            {
+                throw;
+            }
+
+            return;
+        }
+
         await page.WaitForURLAsync(
             url => !IsLoginPath(url),
             new PageWaitForURLOptions { Timeout = LoginTimeoutMs });
