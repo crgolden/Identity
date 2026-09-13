@@ -14,11 +14,11 @@ public class LoginWith2faModelTests
     public static TheoryData<bool, string?> ValidUserCases() => new()
     {
         { false, null },
-        { true, "/" },
+        { true, TestValues.NewLocalPath() },
         { false, string.Empty },
-        { true, "   " },
-        { false, new string('a', 1024) },
-        { true, "special-chars-!@#$%^&*()\t\n" },
+        { true, TestValues.NewWhitespaceValue() },
+        { false, TestValues.NewOverlongValue() },
+        { true, TestValues.NewControlAndSymbolValue() },
     };
 
     [Fact]
@@ -30,15 +30,15 @@ public class LoginWith2faModelTests
         {
             Input = new LoginWith2faModel.InputModel
             {
-                TwoFactorCode = "000000",
+                TwoFactorCode = TestValues.NewVerificationCode(),
                 RememberMachine = false
             }
         };
 
-        model.ModelState.AddModelError("SomeKey", "Some error");
+        model.ModelState.AddModelError(TestValues.NewModelStateKey(), TestValues.NewValidationMessage());
 
         // Act
-        var result = await model.OnPostAsync(true, "/irrelevant");
+        var result = await model.OnPostAsync(true, TestValues.NewLocalPath());
 
         // Assert
         Assert.IsType<PageResult>(result);
@@ -56,13 +56,13 @@ public class LoginWith2faModelTests
         {
             Input = new LoginWith2faModel.InputModel
             {
-                TwoFactorCode = "123456",
+                TwoFactorCode = TestValues.NewVerificationCode(),
                 RememberMachine = false
             }
         };
 
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
-        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
+        urlHelperMock.Setup(u => u.Content(PageRoutes.ContentRoot)).Returns(TestValues.NewLocalPath());
         model.Url = urlHelperMock.Object;
 
         // Act
@@ -70,7 +70,7 @@ public class LoginWith2faModelTests
 
         // Assert
         var ex = Assert.IsType<InvalidOperationException>(exception);
-        Assert.Equal("Unable to load two-factor authentication user.", ex.Message);
+        Assert.Equal(UserMessages.UnableToLoadTwoFactorUser, ex.Message);
     }
 
     [Fact]
@@ -88,7 +88,7 @@ public class LoginWith2faModelTests
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => model.OnGetAsync(false, null));
 
         // Assert
-        Assert.Equal("Unable to load two-factor authentication user.", ex.Message);
+        Assert.Equal(UserMessages.UnableToLoadTwoFactorUser, ex.Message);
     }
 
     [Theory]
@@ -97,7 +97,7 @@ public class LoginWith2faModelTests
     {
         // Arrange
         var signInManagerMock = CreateSignInManagerMock();
-        var user = new IdentityUser<Guid> { Id = Guid.NewGuid(), UserName = TestValues.NewUserName() };
+        var user = new IdentityUser<Guid> { Id = TestValues.NewUserId(), UserName = TestValues.NewUserName() };
         signInManagerMock
             .Setup(s => s.GetTwoFactorAuthenticationUserAsync())
             .ReturnsAsync(user);
@@ -161,10 +161,13 @@ public class LoginWith2faModelTests
 
         var model = new LoginWith2faModel(signInManagerMock.Object)
         {
-            Input = new LoginWith2faModel.InputModel { TwoFactorCode = "123456", RememberMachine = false }
+            Input = new LoginWith2faModel.InputModel
+            {
+                TwoFactorCode = TestValues.NewVerificationCode(), RememberMachine = false
+            }
         };
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
-        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
+        urlHelperMock.Setup(u => u.Content(PageRoutes.ContentRoot)).Returns(TestValues.NewLocalPath());
         model.Url = urlHelperMock.Object;
 
         // Act
@@ -172,7 +175,7 @@ public class LoginWith2faModelTests
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./Lockout", redirect.PageName);
+        Assert.Equal(PageRoutes.SiblingLockout, redirect.PageName);
     }
 
     [Fact]
@@ -188,10 +191,13 @@ public class LoginWith2faModelTests
 
         var model = new LoginWith2faModel(signInManagerMock.Object)
         {
-            Input = new LoginWith2faModel.InputModel { TwoFactorCode = "000000", RememberMachine = false }
+            Input = new LoginWith2faModel.InputModel
+            {
+                TwoFactorCode = TestValues.NewVerificationCode(), RememberMachine = false
+            }
         };
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
-        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
+        urlHelperMock.Setup(u => u.Content(PageRoutes.ContentRoot)).Returns(TestValues.NewLocalPath());
         model.Url = urlHelperMock.Object;
 
         // Act

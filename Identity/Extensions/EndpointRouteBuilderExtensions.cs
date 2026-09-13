@@ -12,8 +12,10 @@ public static class EndpointRouteBuilderExtensions
     {
         public IEndpointConventionBuilder MapAdditionalIdentityEndpoints()
         {
-            var accountGroup = endpoints.MapGroup("/Account").RequireRateLimiting(PasskeyEndpoints.RateLimiterPolicyName);
-            accountGroup.MapPost("/PasskeyCreationOptions", async (
+            var accountGroup = endpoints
+                .MapGroup(PasskeyEndpoints.AccountGroupPrefix)
+                .RequireRateLimiting(PasskeyEndpoints.RateLimiterPolicyName);
+            accountGroup.MapPost(PasskeyEndpoints.CreationOptionsRoute, async (
                 HttpContext context,
                 [FromServices] UserManager<IdentityUser<Guid>> userManager,
                 [FromServices] SignInManager<IdentityUser<Guid>> signInManager,
@@ -31,11 +33,11 @@ public static class EndpointRouteBuilderExtensions
                 var user = await userManager.GetUserAsync(context.User);
                 if (user is null)
                 {
-                    return Results.NotFound($"Unable to load user with ID '{userManager.GetUserId(context.User)}'.");
+                    return Results.NotFound(UserMessages.UnableToLoadUser(userManager.GetUserId(context.User)));
                 }
 
                 var userId = await userManager.GetUserIdAsync(user);
-                var userName = await userManager.GetUserNameAsync(user) ?? "User";
+                var userName = await userManager.GetUserNameAsync(user) ?? PasskeyEndpoints.FallbackUserName;
                 var userEntity = new PasskeyUserEntity
                 {
                     Id = userId,
@@ -46,7 +48,7 @@ public static class EndpointRouteBuilderExtensions
                 return TypedResults.Content(optionsJson, contentType: Json);
             });
 
-            accountGroup.MapPost("/PasskeyRequestOptions", async (
+            accountGroup.MapPost(PasskeyEndpoints.RequestOptionsRoute, async (
                 HttpContext context,
                 [FromServices] UserManager<IdentityUser<Guid>> userManager,
                 [FromServices] SignInManager<IdentityUser<Guid>> signInManager,

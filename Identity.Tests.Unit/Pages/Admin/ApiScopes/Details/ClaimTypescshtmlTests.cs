@@ -12,13 +12,15 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ClaimTypescshtmlTests
 {
+    private static readonly string ClaimType = TestValues.NewClaimType();
+
     private static readonly int ExistingEntityId = TestValues.NewEntityId();
     private static readonly int MissingEntityId = ExistingEntityId + 1;
 
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var scope = new ApiScope { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), UserClaims = [new ApiScopeClaim { Type = "sub" }] };
+        var scope = new ApiScope { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), UserClaims = [new ApiScopeClaim { Type = ClaimType }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([scope]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);

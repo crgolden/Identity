@@ -1,5 +1,6 @@
 namespace Identity.Tests.Unit.Pages.Admin.IdentityResources.Edit;
 
+using Duende.IdentityServer;
 using Duende.IdentityServer.EntityFramework.Entities;
 using Duende.IdentityServer.EntityFramework.Interfaces;
 using Identity.Pages.Admin.IdentityResources.Edit;
@@ -12,13 +13,17 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ProperiescshtmlTests
 {
+    private static readonly string PropertyKey = TestValues.NewPropertyKey();
+
+    private static readonly string PropertyValue = TestValues.NewPropertyValue();
+
     private static readonly int ExistingEntityId = TestValues.NewEntityId();
     private static readonly int MissingEntityId = ExistingEntityId + 1;
 
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var resource = new IdentityResource { Id = ExistingEntityId, Name = "openid", Properties = [new IdentityResourceProperty { Key = "k", Value = "v" }] };
+        var resource = new IdentityResource { Id = ExistingEntityId, Name = IdentityServerConstants.StandardScopes.OpenId, Properties = [new IdentityResourceProperty { Key = PropertyKey, Value = PropertyValue }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
@@ -41,20 +46,20 @@ public class ProperiescshtmlTests
     [Fact]
     public async Task OnPostAsync_AddsNewProperty()
     {
-        var resource = new IdentityResource { Id = ExistingEntityId, Name = "openid", Properties = [] };
+        var resource = new IdentityResource { Id = ExistingEntityId, Name = IdentityServerConstants.StandardScopes.OpenId, Properties = [] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new PropertiesModel(ctx.Object)
         {
-            Properties = [new IdentityResourceProperty { Id = 0, Key = "k", Value = "v" }],
+            Properties = [new IdentityResourceProperty { Id = 0, Key = PropertyKey, Value = PropertyValue }],
         };
         var result = await model.OnPostAsync(ExistingEntityId);
         var onlyProperty = Assert.Single(resource.Properties);
-        Assert.Equal("k", onlyProperty.Key);
+        Assert.Equal(PropertyKey, onlyProperty.Key);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("/Admin/IdentityResources/Details/Properties", redirect.PageName);
+        Assert.Equal(PropertiesModel.DetailsPageName, redirect.PageName);
     }
 
     [Fact]
@@ -70,8 +75,8 @@ public class ProperiescshtmlTests
     [Fact]
     public async Task OnPostAsync_RemovesAbsentProperty()
     {
-        var existing = new IdentityResourceProperty { Id = ExistingEntityId, Key = "k", Value = "v", IdentityResourceId = ExistingEntityId };
-        var resource = new IdentityResource { Id = ExistingEntityId, Name = "openid", Properties = [existing] };
+        var existing = new IdentityResourceProperty { Id = ExistingEntityId, Key = PropertyKey, Value = PropertyValue, IdentityResourceId = ExistingEntityId };
+        var resource = new IdentityResource { Id = ExistingEntityId, Name = IdentityServerConstants.StandardScopes.OpenId, Properties = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
@@ -84,7 +89,7 @@ public class ProperiescshtmlTests
     [Fact]
     public async Task OnPostAddRowAsync_AddsBlankRow_WhenFound()
     {
-        var resource = new IdentityResource { Id = ExistingEntityId, Name = "openid" };
+        var resource = new IdentityResource { Id = ExistingEntityId, Name = IdentityServerConstants.StandardScopes.OpenId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
@@ -110,12 +115,12 @@ public class ProperiescshtmlTests
     [Fact]
     public async Task OnPostRemoveRowAsync_RemovesRow_WhenValidIndex()
     {
-        var resource = new IdentityResource { Id = ExistingEntityId, Name = "openid" };
+        var resource = new IdentityResource { Id = ExistingEntityId, Name = IdentityServerConstants.StandardScopes.OpenId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
 
-        var model = new PropertiesModel(ctx.Object) { Properties = [new IdentityResourceProperty { Id = ExistingEntityId, Key = "k", Value = "v" }] };
+        var model = new PropertiesModel(ctx.Object) { Properties = [new IdentityResourceProperty { Id = ExistingEntityId, Key = PropertyKey, Value = PropertyValue }] };
         var result = await model.OnPostRemoveRowAsync(ExistingEntityId, 0);
 
         Assert.IsType<PageResult>(result);

@@ -25,6 +25,6 @@ public class CreateModel : PageModel
 
         _context.ApiScopes.Add(Scope);
         await _context.SaveChangesAsync();
-        return RedirectToPage("./Details/Index", new { id = Scope.Id });
+        return RedirectToPage(PageRoutes.SiblingDetailsIndex, new { id = Scope.Id });
     }
 }

@@ -16,12 +16,20 @@ using Moq;
 [Trait("Category", "Unit")]
 public class LoginModelTests
 {
+    private static readonly string RequestedReturnUrl = TestValues.NewLocalPath();
+
+    private static readonly string ContentRootUrl = TestValues.NewLocalPath();
+
+    private static readonly string ExternalSchemeName = TestValues.NewSchemeName();
+
+    private static readonly string PasskeyCredentialJson = TestValues.NewPasskeyCredentialJson();
+
     [Fact]
     public async Task OnGetAsync_WithErrorMessage_AddsModelError()
     {
         // Arrange
         var model = CreateModelWithContext();
-        model.ErrorMessage = "Login failed.";
+        model.ErrorMessage = TestValues.NewFailureReason();
 
         // Act
         await model.OnGetAsync();
@@ -51,10 +59,10 @@ public class LoginModelTests
         var model = CreateModelWithContext();
 
         // Act
-        await model.OnGetAsync("/dashboard");
+        await model.OnGetAsync(RequestedReturnUrl);
 
         // Assert
-        Assert.Equal("/dashboard", model.ReturnUrl);
+        Assert.Equal(RequestedReturnUrl, model.ReturnUrl);
     }
 
     [Fact]
@@ -67,14 +75,14 @@ public class LoginModelTests
         await model.OnGetAsync();
 
         // Assert
-        Assert.Equal("/", model.ReturnUrl);
+        Assert.Equal(ContentRootUrl, model.ReturnUrl);
     }
 
     [Fact]
     public async Task OnGetAsync_ExternalSchemesAvailable_PopulatesExternalLogins()
     {
         // Arrange
-        var scheme = new AuthenticationScheme("Google", "Google", typeof(IAuthenticationHandler));
+        var scheme = new AuthenticationScheme(ExternalSchemeName, TestValues.NewDisplayName(), typeof(IAuthenticationHandler));
         var model = CreateModelWithContext(scheme);
 
         // Act
@@ -82,7 +90,7 @@ public class LoginModelTests
 
         // Assert
         var onlyExternalLogin = Assert.Single(model.ExternalLogins);
-        Assert.Equal("Google", onlyExternalLogin.Name);
+        Assert.Equal(ExternalSchemeName, onlyExternalLogin.Name);
     }
 
     [Fact]
@@ -97,8 +105,8 @@ public class LoginModelTests
             .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Success);
 
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
-        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
-        urlHelperMock.Setup(u => u.IsLocalUrl("/")).Returns(true);
+        urlHelperMock.Setup(u => u.Content(PageRoutes.ContentRoot)).Returns(ContentRootUrl);
+        urlHelperMock.Setup(u => u.IsLocalUrl(ContentRootUrl)).Returns(true);
 
         var model = new LoginModel(signInManagerMock.Object, CreateRecaptchaServiceMock().Object)
         {
@@ -112,7 +120,7 @@ public class LoginModelTests
 
         // Assert
         var redirect = Assert.IsType<LocalRedirectResult>(result);
-        Assert.Equal("/", redirect.Url);
+        Assert.Equal(ContentRootUrl, redirect.Url);
     }
 
     [Fact]
@@ -125,7 +133,7 @@ public class LoginModelTests
             .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.TwoFactorRequired);
 
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
-        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
+        urlHelperMock.Setup(u => u.Content(PageRoutes.ContentRoot)).Returns(ContentRootUrl);
 
         var model = new LoginModel(signInManagerMock.Object, CreateRecaptchaServiceMock().Object)
         {
@@ -139,7 +147,7 @@ public class LoginModelTests
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./LoginWith2fa", redirect.PageName);
+        Assert.Equal(LoginModel.LoginWith2faPageName, redirect.PageName);
     }
 
     [Fact]
@@ -152,7 +160,7 @@ public class LoginModelTests
             .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.LockedOut);
 
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
-        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
+        urlHelperMock.Setup(u => u.Content(PageRoutes.ContentRoot)).Returns(ContentRootUrl);
 
         var model = new LoginModel(signInManagerMock.Object, CreateRecaptchaServiceMock().Object)
         {
@@ -166,7 +174,7 @@ public class LoginModelTests
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./Lockout", redirect.PageName);
+        Assert.Equal(PageRoutes.SiblingLockout, redirect.PageName);
     }
 
     [Fact]
@@ -179,7 +187,7 @@ public class LoginModelTests
             .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Failed);
 
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
-        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
+        urlHelperMock.Setup(u => u.Content(PageRoutes.ContentRoot)).Returns(ContentRootUrl);
 
         var model = new LoginModel(signInManagerMock.Object, CreateRecaptchaServiceMock().Object)
         {
@@ -202,11 +210,11 @@ public class LoginModelTests
         // Arrange
         var signInManagerMock = CreateSignInManagerMock();
         signInManagerMock
-            .Setup(s => s.PasskeySignInAsync("{\"credentialJson\":true}"))
+            .Setup(s => s.PasskeySignInAsync(PasskeyCredentialJson))
             .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Success);
 
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
-        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
+        urlHelperMock.Setup(u => u.Content(PageRoutes.ContentRoot)).Returns(ContentRootUrl);
         urlHelperMock.Setup(u => u.IsLocalUrl(It.IsAny<string?>())).Returns(true);
 
         var model = new LoginModel(signInManagerMock.Object, CreateRecaptchaServiceMock().Object)
@@ -215,7 +223,7 @@ public class LoginModelTests
             PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
             Input = new LoginModel.InputModel
             {
-                Passkey = new Identity.Pages.Account.Manage.PasskeyInputModel { CredentialJson = "{\"credentialJson\":true}" }
+                Passkey = new Identity.Pages.Account.Manage.PasskeyInputModel { CredentialJson = PasskeyCredentialJson }
             }
         };
 
@@ -237,7 +245,7 @@ public class LoginModelTests
             .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Failed);
 
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
-        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
+        urlHelperMock.Setup(u => u.Content(PageRoutes.ContentRoot)).Returns(ContentRootUrl);
 
         var model = new LoginModel(signInManagerMock.Object, CreateRecaptchaServiceMock().Object)
         {
@@ -267,7 +275,7 @@ public class LoginModelTests
             .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Failed);
 
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
-        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
+        urlHelperMock.Setup(u => u.Content(PageRoutes.ContentRoot)).Returns(ContentRootUrl);
 
         var model = new LoginModel(signInManagerMock.Object, CreateRecaptchaServiceMock().Object)
         {
@@ -299,7 +307,7 @@ public class LoginModelTests
             .ReturnsAsync([]);
 
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
-        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
+        urlHelperMock.Setup(u => u.Content(PageRoutes.ContentRoot)).Returns(ContentRootUrl);
 
         var model = new LoginModel(signInManagerMock.Object, CreateRecaptchaServiceMock().Object)
         {
@@ -313,7 +321,7 @@ public class LoginModelTests
             }
         };
 
-        model.ModelState.AddModelError("error", "invalid");
+        model.ModelState.AddModelError(TestValues.NewModelStateKey(), TestValues.NewValidationMessage());
 
         // Act
         var result = await model.OnPostAsync(returnUrl: null);
@@ -330,7 +338,7 @@ public class LoginModelTests
         var recaptchaServiceMock = CreateRecaptchaServiceMock(passed: false);
 
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
-        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
+        urlHelperMock.Setup(u => u.Content(PageRoutes.ContentRoot)).Returns(ContentRootUrl);
 
         var model = new LoginModel(signInManagerMock.Object, recaptchaServiceMock.Object)
         {
@@ -358,8 +366,8 @@ public class LoginModelTests
         var recaptchaServiceMock = CreateRecaptchaServiceMock(passed: false);
 
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
-        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
-        urlHelperMock.Setup(u => u.IsLocalUrl("/")).Returns(true);
+        urlHelperMock.Setup(u => u.Content(PageRoutes.ContentRoot)).Returns(ContentRootUrl);
+        urlHelperMock.Setup(u => u.IsLocalUrl(ContentRootUrl)).Returns(true);
 
         var model = new LoginModel(signInManagerMock.Object, recaptchaServiceMock.Object)
         {
@@ -367,7 +375,7 @@ public class LoginModelTests
             PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
             Input = new LoginModel.InputModel
             {
-                Passkey = new Identity.Pages.Account.Manage.PasskeyInputModel { CredentialJson = "{\"credentialJson\":true}" }
+                Passkey = new Identity.Pages.Account.Manage.PasskeyInputModel { CredentialJson = PasskeyCredentialJson }
             }
         };
 
@@ -384,7 +392,7 @@ public class LoginModelTests
         var recaptchaServiceMock = CreateRecaptchaServiceMock(passed: false);
 
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
-        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
+        urlHelperMock.Setup(u => u.Content(PageRoutes.ContentRoot)).Returns(ContentRootUrl);
 
         var model = new LoginModel(signInManagerMock.Object, recaptchaServiceMock.Object)
         {
@@ -423,7 +431,7 @@ public class LoginModelTests
         model.PageContext = new PageContext(new ActionContext(httpContext, new RouteData(), new PageActionDescriptor()));
 
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
-        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
+        urlHelperMock.Setup(u => u.Content(PageRoutes.ContentRoot)).Returns(ContentRootUrl);
         model.Url = urlHelperMock.Object;
 
         return model;

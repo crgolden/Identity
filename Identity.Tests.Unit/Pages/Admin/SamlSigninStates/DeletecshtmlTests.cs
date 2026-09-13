@@ -12,13 +12,15 @@ using Moq;
 [Trait("Category", "Unit")]
 public class DeletecshtmlTests
 {
+    private static readonly string ServiceProviderEntityId = TestValues.NewEntityIdUrn();
+
     private static readonly int ExistingEntityId = TestValues.NewEntityId();
     private static readonly int MissingEntityId = ExistingEntityId + 1;
 
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var state = new SamlSigninState { Id = ExistingEntityId, ServiceProviderEntityId = "sp1" };
+        var state = new SamlSigninState { Id = ExistingEntityId, ServiceProviderEntityId = ServiceProviderEntityId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([state]);
         var ctx = new Mock<IPersistedGrantDbContext>();
         ctx.Setup(c => c.SamlSigninStates).Returns(mockSet.Object);
@@ -27,7 +29,7 @@ public class DeletecshtmlTests
         var result = await model.OnGetAsync(ExistingEntityId);
 
         Assert.IsType<PageResult>(result);
-        Assert.Equal("sp1", model.SamlSigninState.ServiceProviderEntityId);
+        Assert.Equal(ServiceProviderEntityId, model.SamlSigninState.ServiceProviderEntityId);
     }
 
     [Fact]
@@ -55,7 +57,7 @@ public class DeletecshtmlTests
 
         ctx.Verify(c => c.SamlSigninStates.Remove(state), Times.Once);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./Index", redirect.PageName);
+        Assert.Equal(PageRoutes.SiblingIndex, redirect.PageName);
     }
 
     [Fact]

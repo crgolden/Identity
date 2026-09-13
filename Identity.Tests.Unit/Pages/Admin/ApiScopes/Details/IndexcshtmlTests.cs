@@ -12,20 +12,22 @@ using Moq;
 [Trait("Category", "Unit")]
 public class IndexcshtmlTests
 {
+    private static readonly string ScopeName = TestValues.NewApiResourceName();
+
     private static readonly int ExistingEntityId = TestValues.NewEntityId();
     private static readonly int MissingEntityId = ExistingEntityId + 1;
 
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var scope = new ApiScope { Id = ExistingEntityId, Name = "api1" };
+        var scope = new ApiScope { Id = ExistingEntityId, Name = ScopeName };
         var mockSet = MockDbSetHelper.BuildMockDbSet([scope]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
         var model = new IndexModel(ctx.Object);
         var result = await model.OnGetAsync(ExistingEntityId);
         Assert.IsType<PageResult>(result);
-        Assert.Equal("api1", model.Scope.Name);
+        Assert.Equal(ScopeName, model.Scope.Name);
     }
 
     [Fact]

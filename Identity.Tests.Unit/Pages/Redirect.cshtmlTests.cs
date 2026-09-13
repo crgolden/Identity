@@ -12,6 +12,10 @@ using Moq;
 [Trait("Category", "Unit")]
 public class RedirectIndexModelTests
 {
+    private static readonly string ExternalUrl = TestValues.NewOrigin();
+
+    private static readonly string LocalPath = TestValues.NewLocalPath();
+
     [Fact]
     public void Constructor_NoParameters_DoesNotThrow()
     {
@@ -29,18 +33,18 @@ public class RedirectIndexModelTests
         // Arrange
         var mockUrlHelper = new Mock<IUrlHelper>(MockBehavior.Strict);
         mockUrlHelper
-            .Setup(x => x.IsLocalUrl("https://external.com"))
+            .Setup(x => x.IsLocalUrl(ExternalUrl))
             .Returns(false);
 
         var model = CreateModel();
         model.Url = mockUrlHelper.Object;
 
         // Act
-        var result = model.OnGet("https://external.com");
+        var result = model.OnGet(ExternalUrl);
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("/Error", redirect.PageName);
+        Assert.Equal(PageRoutes.Error, redirect.PageName);
     }
 
     [Fact]
@@ -49,18 +53,18 @@ public class RedirectIndexModelTests
         // Arrange
         var mockUrlHelper = new Mock<IUrlHelper>(MockBehavior.Strict);
         mockUrlHelper
-            .Setup(x => x.IsLocalUrl("/local/path"))
+            .Setup(x => x.IsLocalUrl(LocalPath))
             .Returns(true);
 
         var model = CreateModel();
         model.Url = mockUrlHelper.Object;
 
         // Act
-        var result = model.OnGet("/local/path");
+        var result = model.OnGet(LocalPath);
 
         // Assert
         Assert.IsType<PageResult>(result);
-        Assert.Equal("/local/path", model.RedirectUri);
+        Assert.Equal(LocalPath, model.RedirectUri);
     }
 
     private static RedirectModel CreateModel()

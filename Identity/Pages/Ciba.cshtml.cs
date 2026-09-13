@@ -23,13 +23,13 @@ public class CibaModel : PageModel
     {
         if (IsNullOrWhiteSpace(id))
         {
-            return RedirectToPage("/Error");
+            return RedirectToPage(PageRoutes.Error);
         }
 
         var result = await _backchannelInteraction.GetLoginRequestByInternalIdAsync(id, HttpContext.RequestAborted);
         if (result == null)
         {
-            return RedirectToPage("/Error");
+            return RedirectToPage(PageRoutes.Error);
         }
 
         LoginRequest = result;

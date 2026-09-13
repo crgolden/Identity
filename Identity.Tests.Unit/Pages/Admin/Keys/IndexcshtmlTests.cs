@@ -21,10 +21,14 @@ public class IndexcshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsSortedDescending()
     {
+        var newerCreated = TestValues.NewUtcInstant();
+        var olderCreated = TestValues.NewUtcInstantBefore(newerCreated);
+        var olderKeyId = TestValues.NewKeyId();
+        var newerKeyId = TestValues.NewKeyId();
         var data = new[]
         {
-            new Key { Id = "a", Created = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Key { Id = "b", Created = new DateTime(2024, 6, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Key { Id = olderKeyId, Created = olderCreated.UtcDateTime },
+            new Key { Id = newerKeyId, Created = newerCreated.UtcDateTime },
         };
         var mockSet = MockDbSetHelper.BuildMockDbSet(data);
         var ctx = new Mock<IPersistedGrantDbContext>();
@@ -33,7 +37,7 @@ public class IndexcshtmlTests
         var model = new IndexModel(ctx.Object);
         await model.OnGetAsync();
 
-        Assert.Equal(2, model.Keys.Count);
-        Assert.Equal("b", model.Keys[0].Id);
+        Assert.Equal(data.Length, model.Keys.Count);
+        Assert.Equal(newerKeyId, model.Keys[0].Id);
     }
 }

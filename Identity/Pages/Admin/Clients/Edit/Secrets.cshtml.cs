@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore;
 
 public class SecretsModel : PageModel
 {
+    internal const string DetailsPageName = "/Admin/Clients/Details/Secrets";
+
     private readonly IConfigurationDbContext _context;
 
     public SecretsModel(IConfigurationDbContext context) => _context = context;
@@ -74,9 +76,9 @@ public class SecretsModel : PageModel
             });
         }
 
-        client.Updated = DateTime.UtcNow;
+        client.Updated = DateTimeOffset.UtcNow.UtcDateTime;
         await _context.SaveChangesAsync();
-        return RedirectToPage("/Admin/Clients/Details/Secrets", new { id });
+        return RedirectToPage(DetailsPageName, new { id });
     }
 
     public async Task<IActionResult> OnPostAddRowAsync(int id)

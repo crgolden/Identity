@@ -57,7 +57,7 @@ public class DeletecshtmlTests
 
         ctx.Verify(c => c.DeviceFlowCodes.Remove(code), Times.Once);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./Index", redirect.PageName);
+        Assert.Equal(PageRoutes.SiblingIndex, redirect.PageName);
     }
 
     [Fact]

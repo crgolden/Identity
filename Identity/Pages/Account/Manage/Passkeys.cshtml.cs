@@ -1,12 +1,39 @@
 namespace Identity.Pages.Account.Manage;
 
+using System.Globalization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Routing;
 using static System.Buffers.Text.Base64Url;
 
 public class PasskeysModel : PageModel
 {
+    internal const string RenameAction = "rename";
+
+    internal const string DeleteAction = "delete";
+
+    internal const string PasskeyNotFoundMessage = "Could not find the passkey.";
+
+    internal const string UnknownActionMessage = "Unknown action.";
+
+    internal const string BrowserProvidedNoPasskeyMessage = "The browser did not provide a passkey.";
+
+    internal const string PasskeyNotAddedMessage = "The passkey could not be added to your account.";
+
+    internal const string PasskeyAddedMessage =
+        "The passkey was added to your account. You can now use it to sign in. Give it an easy to remember name.";
+
+    internal const string PasskeyRemovedMessage = "The passkey was removed.";
+
+    internal const string BrowserErrorMessageFormat = "Could not add a passkey: {0}";
+
+    internal const string AttestationFailedMessageFormat = "Could not add the passkey: {0}.";
+
+    internal const string RegisterActivityName = "identity.passkey.register";
+
+    internal const string DeleteActivityName = "identity.passkey.delete";
+
     private readonly UserManager<IdentityUser<Guid>> _userManager;
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
 
@@ -29,7 +56,7 @@ public class PasskeysModel : PageModel
         var user = await _userManager.GetUserAsync(User);
         if (user is null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound(UserMessages.UnableToLoadUser(_userManager.GetUserId(User)));
         }
 
         CurrentPasskeys = await _userManager.GetPasskeysAsync(user);
@@ -41,12 +68,12 @@ public class PasskeysModel : PageModel
         var user = await _userManager.GetUserAsync(User);
         if (user is null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound(UserMessages.UnableToLoadUser(_userManager.GetUserId(User)));
         }
 
         if (IsNullOrWhiteSpace(Input?.CredentialId))
         {
-            StatusMessage = "Could not find the passkey.";
+            StatusMessage = PasskeyNotFoundMessage;
             return RedirectToPage();
         }
 
@@ -57,18 +84,18 @@ public class PasskeysModel : PageModel
         }
         catch (FormatException)
         {
-            StatusMessage = "The specified passkey ID had an invalid format.";
+            StatusMessage = RenamePasskeyModel.InvalidCredentialIdFormatMessage;
             return RedirectToPage();
         }
 
         switch (Input.Action)
         {
-            case "rename":
-                return RedirectToPage("./RenamePasskey", new { id = Input.CredentialId });
-            case "delete":
+            case RenameAction:
+                return RedirectToPage(PageRoutes.SiblingRenamePasskey, RenamePasskeyRoute(Input.CredentialId));
+            case DeleteAction:
                 return await DeletePasskey(user, credentialId);
             default:
-                StatusMessage = "Unknown action.";
+                StatusMessage = UnknownActionMessage;
                 return RedirectToPage();
         }
     }
@@ -78,46 +105,51 @@ public class PasskeysModel : PageModel
         var user = await _userManager.GetUserAsync(User);
         if (user is null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound(UserMessages.UnableToLoadUser(_userManager.GetUserId(User)));
         }
 
         if (!IsNullOrWhiteSpace(Input?.Passkey?.Error))
         {
-            StatusMessage = $"Could not add a passkey: {Input.Passkey.Error}";
+            StatusMessage = Format(CultureInfo.InvariantCulture, BrowserErrorMessageFormat, Input.Passkey.Error);
             return RedirectToPage();
         }
 
         if (IsNullOrWhiteSpace(Input?.Passkey?.CredentialJson))
         {
-            StatusMessage = "The browser did not provide a passkey.";
+            StatusMessage = BrowserProvidedNoPasskeyMessage;
             return RedirectToPage();
         }
 
-        using var activity = Telemetry.StartActivity("identity.passkey.register");
+        using var activity = Telemetry.StartActivity(RegisterActivityName);
         var attestationResult = await _signInManager.PerformPasskeyAttestationAsync(Input.Passkey.CredentialJson);
         if (!attestationResult.Succeeded)
         {
-            activity?.SetTag("succeeded", false);
-            StatusMessage = $"Could not add the passkey: {attestationResult.Failure.Message}.";
+            activity?.SetTag(Telemetry.Metrics.SucceededTagName, false);
+            StatusMessage = Format(CultureInfo.InvariantCulture, AttestationFailedMessageFormat, attestationResult.Failure.Message);
             return RedirectToPage();
         }
 
         var setPasskeyResult = await _userManager.AddOrUpdatePasskeyAsync(user, attestationResult.Passkey);
         if (!setPasskeyResult.Succeeded)
         {
-            activity?.SetTag("succeeded", false);
-            StatusMessage = "The passkey could not be added to your account.";
+            activity?.SetTag(Telemetry.Metrics.SucceededTagName, false);
+            StatusMessage = PasskeyNotAddedMessage;
             return RedirectToPage();
         }
 
-        activity?.SetTag("succeeded", true);
-        StatusMessage = "The passkey was added to your account. You can now use it to sign in. Give it an easy to remember name.";
-        return RedirectToPage("./RenamePasskey", new { id = EncodeToString(attestationResult.Passkey.CredentialId) });
+        activity?.SetTag(Telemetry.Metrics.SucceededTagName, true);
+        StatusMessage = PasskeyAddedMessage;
+        return RedirectToPage(
+            PageRoutes.SiblingRenamePasskey,
+            RenamePasskeyRoute(EncodeToString(attestationResult.Passkey.CredentialId)));
     }
+
+    private static RouteValueDictionary RenamePasskeyRoute(string? credentialId) =>
+        new() { [RenamePasskeyModel.IdRouteValueName] = credentialId };
 
     private async Task<IActionResult> DeletePasskey(IdentityUser<Guid> user, byte[] credentialId)
     {
-        using var activity = Telemetry.StartActivity("identity.passkey.delete");
+        using var activity = Telemetry.StartActivity(DeleteActivityName);
         var result = await _userManager.RemovePasskeyAsync(user, credentialId);
         if (!result.Succeeded)
         {
@@ -125,7 +157,7 @@ public class PasskeysModel : PageModel
             throw new InvalidOperationException($"Unexpected error occurred removing passkey for user with ID '{userId}'.");
         }
 
-        StatusMessage = "The passkey was removed.";
+        StatusMessage = PasskeyRemovedMessage;
         return RedirectToPage();
     }
 

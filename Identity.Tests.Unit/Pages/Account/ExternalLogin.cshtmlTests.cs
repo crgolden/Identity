@@ -1,5 +1,6 @@
 namespace Identity.Tests.Unit.Pages.Account;
 
+using System.Globalization;
 using System.Security.Claims;
 using Azure.Messaging.ServiceBus;
 using Identity.Pages.Account;
@@ -21,6 +22,14 @@ using Moq;
 [Trait("Category", "Unit")]
 public sealed class ExternalLoginModelTests
 {
+    private static readonly string ExternalProvider = TestValues.NewSchemeName();
+
+    private static readonly string ExternalProviderDisplayName = TestValues.NewDisplayName();
+
+    private static readonly string LocalReturnUrl = TestValues.NewLocalPath();
+
+    private static readonly string ExternalReturnUrl = TestValues.NewOrigin();
+
     [Fact]
     public void OnGet_RedirectsToLoginPage()
     {
@@ -32,7 +41,7 @@ public sealed class ExternalLoginModelTests
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./Login", redirect.PageName);
+        Assert.Equal(ExternalLoginModel.LoginPageName, redirect.PageName);
     }
 
     [Fact]
@@ -41,15 +50,15 @@ public sealed class ExternalLoginModelTests
         // Arrange
         var harness = CreateModel();
         harness.SignIn
-            .Setup(s => s.ConfigureExternalAuthenticationProperties("Google", It.IsAny<string?>(), null))
+            .Setup(s => s.ConfigureExternalAuthenticationProperties(ExternalProvider, It.IsAny<string?>(), null))
             .Returns(new AuthenticationProperties());
 
         // Act
-        var result = harness.Model.OnPost("Google", "/return");
+        var result = harness.Model.OnPost(ExternalProvider, LocalReturnUrl);
 
         // Assert
         var challenge = Assert.IsType<ChallengeResult>(result);
-        Assert.Contains("Google", challenge.AuthenticationSchemes);
+        Assert.Contains(ExternalProvider, challenge.AuthenticationSchemes);
     }
 
     [Fact]
@@ -60,11 +69,11 @@ public sealed class ExternalLoginModelTests
         var remoteFailureReason = TestValues.NewFailureReason();
 
         // Act
-        var result = await harness.Model.OnGetCallbackAsync("/return", remoteFailureReason);
+        var result = await harness.Model.OnGetCallbackAsync(LocalReturnUrl, remoteFailureReason);
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./Login", redirect.PageName);
+        Assert.Equal(ExternalLoginModel.LoginPageName, redirect.PageName);
         Assert.Contains(remoteFailureReason, harness.Model.ErrorMessage, StringComparison.Ordinal);
         harness.SignIn.Verify(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>()), Times.Never);
     }
@@ -77,12 +86,12 @@ public sealed class ExternalLoginModelTests
         harness.SignIn.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>())).ReturnsAsync((ExternalLoginInfo?)null);
 
         // Act
-        var result = await harness.Model.OnGetCallbackAsync("/return", null);
+        var result = await harness.Model.OnGetCallbackAsync(LocalReturnUrl, null);
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./Login", redirect.PageName);
-        Assert.Equal("Error loading external login information.", harness.Model.ErrorMessage);
+        Assert.Equal(ExternalLoginModel.LoginPageName, redirect.PageName);
+        Assert.Equal(ExternalLoginModel.LoadExternalLoginFailedMessage, harness.Model.ErrorMessage);
     }
 
     [Fact]
@@ -94,11 +103,11 @@ public sealed class ExternalLoginModelTests
         harness.SignIn.Setup(s => s.ExternalLoginSignInAsync(It.IsAny<string>(), It.IsAny<string>(), false, true)).ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Success);
 
         // Act
-        var result = await harness.Model.OnGetCallbackAsync("/local", null);
+        var result = await harness.Model.OnGetCallbackAsync(LocalReturnUrl, null);
 
         // Assert
         var redirect = Assert.IsType<LocalRedirectResult>(result);
-        Assert.Equal("/local", redirect.Url);
+        Assert.Equal(LocalReturnUrl, redirect.Url);
     }
 
     [Fact]
@@ -110,11 +119,11 @@ public sealed class ExternalLoginModelTests
         harness.SignIn.Setup(s => s.ExternalLoginSignInAsync(It.IsAny<string>(), It.IsAny<string>(), false, true)).ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Success);
 
         // Act
-        var result = await harness.Model.OnGetCallbackAsync("http://evil.example", null);
+        var result = await harness.Model.OnGetCallbackAsync(ExternalReturnUrl, null);
 
         // Assert
         var redirect = Assert.IsType<LocalRedirectResult>(result);
-        Assert.Equal("~/", redirect.Url);
+        Assert.Equal(PageRoutes.ContentRoot, redirect.Url);
     }
 
     [Fact]
@@ -126,11 +135,11 @@ public sealed class ExternalLoginModelTests
         harness.SignIn.Setup(s => s.ExternalLoginSignInAsync(It.IsAny<string>(), It.IsAny<string>(), false, true)).ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.LockedOut);
 
         // Act
-        var result = await harness.Model.OnGetCallbackAsync("/local", null);
+        var result = await harness.Model.OnGetCallbackAsync(LocalReturnUrl, null);
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./Lockout", redirect.PageName);
+        Assert.Equal(PageRoutes.SiblingLockout, redirect.PageName);
     }
 
     [Fact]
@@ -147,14 +156,14 @@ public sealed class ExternalLoginModelTests
         harness.UserMgr.Setup(m => m.AddLoginAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<ExternalLoginInfo>())).ReturnsAsync(IdentityResult.Success);
 
         // Act
-        var result = await harness.Model.OnGetCallbackAsync("/local", null);
+        var result = await harness.Model.OnGetCallbackAsync(LocalReturnUrl, null);
 
         // Assert
         var redirect = Assert.IsType<LocalRedirectResult>(result);
-        Assert.Equal("/local", redirect.Url);
+        Assert.Equal(LocalReturnUrl, redirect.Url);
         harness.UserMgr.Verify(m => m.CreateAsync(It.IsAny<IdentityUser<Guid>>()), Times.Once);
         harness.UserMgr.Verify(m => m.AddLoginAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<ExternalLoginInfo>()), Times.Once);
-        harness.SignIn.Verify(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), false, "Google"), Times.Once);
+        harness.SignIn.Verify(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), false, ExternalProvider), Times.Once);
         Assert.Null(harness.Model.Input.Email);
     }
 
@@ -173,14 +182,14 @@ public sealed class ExternalLoginModelTests
         harness.UserMgr.Setup(m => m.IsEmailConfirmedAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync(true);
 
         // Act
-        var result = await harness.Model.OnGetCallbackAsync("/local", null);
+        var result = await harness.Model.OnGetCallbackAsync(LocalReturnUrl, null);
 
         // Assert
         var redirect = Assert.IsType<LocalRedirectResult>(result);
-        Assert.Equal("/local", redirect.Url);
+        Assert.Equal(LocalReturnUrl, redirect.Url);
         harness.EmailStore.Verify(s => s.SetEmailConfirmedAsync(It.IsAny<IdentityUser<Guid>>(), true, It.IsAny<CancellationToken>()), Times.Once);
         harness.Sender.Verify(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()), Times.Never);
-        harness.SignIn.Verify(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), false, "Google"), Times.Once);
+        harness.SignIn.Verify(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), false, ExternalProvider), Times.Once);
     }
 
     [Fact]
@@ -196,7 +205,7 @@ public sealed class ExternalLoginModelTests
         harness.UserMgr.Setup(m => m.AddLoginAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<ExternalLoginInfo>())).ReturnsAsync(IdentityResult.Success);
 
         // Act
-        var result = await harness.Model.OnGetCallbackAsync("/local", null);
+        var result = await harness.Model.OnGetCallbackAsync(LocalReturnUrl, null);
 
         // Assert
         Assert.IsType<RedirectToPageResult>(result);
@@ -215,13 +224,13 @@ public sealed class ExternalLoginModelTests
         harness.UserMgr.Setup(u => u.FindByEmailAsync(externalEmail)).ReturnsAsync(new IdentityUser<Guid> { Email = externalEmail });
 
         // Act
-        var result = await harness.Model.OnGetCallbackAsync("/local", null);
+        var result = await harness.Model.OnGetCallbackAsync(LocalReturnUrl, null);
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./Login", redirect.PageName);
+        Assert.Equal(ExternalLoginModel.LoginPageName, redirect.PageName);
         Assert.Contains(externalEmail, harness.Model.ErrorMessage, StringComparison.Ordinal);
-        Assert.Contains("Display", harness.Model.ErrorMessage, StringComparison.Ordinal);
+        Assert.Contains(ExternalProviderDisplayName, harness.Model.ErrorMessage, StringComparison.Ordinal);
         harness.UserMgr.Verify(m => m.CreateAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
     }
 
@@ -234,7 +243,7 @@ public sealed class ExternalLoginModelTests
         harness.SignIn.Setup(s => s.ExternalLoginSignInAsync(It.IsAny<string>(), It.IsAny<string>(), false, true)).ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Failed);
 
         // Act
-        var result = await harness.Model.OnGetCallbackAsync("/local", null);
+        var result = await harness.Model.OnGetCallbackAsync(LocalReturnUrl, null);
 
         // Assert
         Assert.IsType<PageResult>(result);
@@ -253,8 +262,8 @@ public sealed class ExternalLoginModelTests
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./Login", redirect.PageName);
-        Assert.Equal("Error loading external login information during confirmation.", harness.Model.ErrorMessage);
+        Assert.Equal(ExternalLoginModel.LoginPageName, redirect.PageName);
+        Assert.Equal(ExternalLoginModel.LoadExternalLoginDuringConfirmationFailedMessage, harness.Model.ErrorMessage);
     }
 
     [Fact]
@@ -263,16 +272,16 @@ public sealed class ExternalLoginModelTests
         // Arrange
         var harness = CreateModel();
         harness.SignIn.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>())).ReturnsAsync(BuildLoginInfo());
-        harness.Model.ModelState.AddModelError("Test", "error");
+        harness.Model.ModelState.AddModelError(TestValues.NewModelStateKey(), TestValues.NewFailureReason());
         harness.Model.Input = new ExternalLoginModel.InputModel { Email = TestValues.NewEmailAddress() };
 
         // Act
-        var result = await harness.Model.OnPostConfirmationAsync("/return");
+        var result = await harness.Model.OnPostConfirmationAsync(LocalReturnUrl);
 
         // Assert
         Assert.IsType<PageResult>(result);
-        Assert.Equal("Display", harness.Model.ProviderDisplayName);
-        Assert.Equal("/return", harness.Model.ReturnUrl);
+        Assert.Equal(ExternalProviderDisplayName, harness.Model.ProviderDisplayName);
+        Assert.Equal(LocalReturnUrl, harness.Model.ReturnUrl);
         harness.UserMgr.Verify(m => m.CreateAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
     }
 
@@ -287,11 +296,11 @@ public sealed class ExternalLoginModelTests
         harness.Model.Input = new ExternalLoginModel.InputModel { Email = existingEmail };
 
         // Act
-        var result = await harness.Model.OnPostConfirmationAsync("/return");
+        var result = await harness.Model.OnPostConfirmationAsync(LocalReturnUrl);
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./Login", redirect.PageName);
+        Assert.Equal(ExternalLoginModel.LoginPageName, redirect.PageName);
         Assert.Contains(existingEmail, harness.Model.ErrorMessage, StringComparison.Ordinal);
         harness.UserMgr.Verify(m => m.CreateAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
     }
@@ -305,7 +314,7 @@ public sealed class ExternalLoginModelTests
         harness.Model.Input = new ExternalLoginModel.InputModel { Email = null };
 
         // Act
-        var result = await harness.Model.OnPostConfirmationAsync("/return");
+        var result = await harness.Model.OnPostConfirmationAsync(LocalReturnUrl);
 
         // Assert
         Assert.IsType<PageResult>(result);
@@ -318,11 +327,11 @@ public sealed class ExternalLoginModelTests
         // Arrange
         var harness = CreateModel();
         harness.SignIn.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>())).ReturnsAsync(BuildLoginInfo());
-        harness.UserMgr.Setup(m => m.CreateAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "create failed" }));
+        harness.UserMgr.Setup(m => m.CreateAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = TestValues.NewFailureReason() }));
         harness.Model.Input = new ExternalLoginModel.InputModel { Email = TestValues.NewEmailAddress() };
 
         // Act
-        var result = await harness.Model.OnPostConfirmationAsync("/return");
+        var result = await harness.Model.OnPostConfirmationAsync(LocalReturnUrl);
 
         // Assert
         Assert.IsType<PageResult>(result);
@@ -336,11 +345,11 @@ public sealed class ExternalLoginModelTests
         var harness = CreateModel();
         harness.SignIn.Setup(s => s.GetExternalLoginInfoAsync(It.IsAny<string?>())).ReturnsAsync(BuildLoginInfo());
         harness.UserMgr.Setup(m => m.CreateAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync(IdentityResult.Success);
-        harness.UserMgr.Setup(m => m.AddLoginAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<ExternalLoginInfo>())).ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "add login failed" }));
+        harness.UserMgr.Setup(m => m.AddLoginAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<ExternalLoginInfo>())).ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = TestValues.NewFailureReason() }));
         harness.Model.Input = new ExternalLoginModel.InputModel { Email = TestValues.NewEmailAddress() };
 
         // Act
-        var result = await harness.Model.OnPostConfirmationAsync("/return");
+        var result = await harness.Model.OnPostConfirmationAsync(LocalReturnUrl);
 
         // Assert
         Assert.IsType<PageResult>(result);
@@ -359,12 +368,12 @@ public sealed class ExternalLoginModelTests
         harness.Model.Input = new ExternalLoginModel.InputModel { Email = confirmingEmail };
 
         // Act
-        var result = await harness.Model.OnPostConfirmationAsync("/local");
+        var result = await harness.Model.OnPostConfirmationAsync(LocalReturnUrl);
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./RegisterConfirmation", redirect.PageName);
-        Assert.Equal(confirmingEmail, redirect.RouteValues?["email"]);
+        Assert.Equal(ExternalLoginModel.RegisterConfirmationPageName, redirect.PageName);
+        Assert.Equal(confirmingEmail, redirect.RouteValues?[nameof(ExternalLoginModel.InputModel.Email)]);
         harness.Sender.Verify(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()), Times.Once);
         harness.SignIn.Verify(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<bool>(), It.IsAny<string?>()), Times.Never);
     }
@@ -381,12 +390,12 @@ public sealed class ExternalLoginModelTests
         harness.Model.Input = new ExternalLoginModel.InputModel { Email = TestValues.NewEmailAddress() };
 
         // Act
-        var result = await harness.Model.OnPostConfirmationAsync("/local");
+        var result = await harness.Model.OnPostConfirmationAsync(LocalReturnUrl);
 
         // Assert
         var redirect = Assert.IsType<LocalRedirectResult>(result);
-        Assert.Equal("/local", redirect.Url);
-        harness.SignIn.Verify(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), false, "Google"), Times.Once);
+        Assert.Equal(LocalReturnUrl, redirect.Url);
+        harness.SignIn.Verify(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), false, ExternalProvider), Times.Once);
     }
 
     [Fact]
@@ -401,11 +410,11 @@ public sealed class ExternalLoginModelTests
         harness.Model.Input = new ExternalLoginModel.InputModel { Email = TestValues.NewEmailAddress() };
 
         // Act
-        var result = await harness.Model.OnPostConfirmationAsync("http://evil.example");
+        var result = await harness.Model.OnPostConfirmationAsync(ExternalReturnUrl);
 
         // Assert
         var redirect = Assert.IsType<LocalRedirectResult>(result);
-        Assert.Equal("~/", redirect.Url);
+        Assert.Equal(PageRoutes.ContentRoot, redirect.Url);
     }
 
     [Fact]
@@ -420,15 +429,17 @@ public sealed class ExternalLoginModelTests
         harness.Model.Input = new ExternalLoginModel.InputModel { Email = TestValues.NewEmailAddress() };
 
         // Act
-        var result = await harness.Model.OnPostConfirmationAsync("/local");
+        var result = await harness.Model.OnPostConfirmationAsync(LocalReturnUrl);
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./RegisterConfirmation", redirect.PageName);
+        Assert.Equal(ExternalLoginModel.RegisterConfirmationPageName, redirect.PageName);
         harness.Sender.Verify(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    private static ExternalLoginInfo BuildLoginInfo(string? email = "user@example.com", bool? emailVerified = null)
+    private static ExternalLoginInfo BuildLoginInfo() => BuildLoginInfo(TestValues.NewEmailAddress());
+
+    private static ExternalLoginInfo BuildLoginInfo(string? email, bool? emailVerified = null)
     {
         var claims = new List<Claim>();
         if (email is not null)
@@ -438,11 +449,13 @@ public sealed class ExternalLoginModelTests
 
         if (emailVerified.HasValue)
         {
-            claims.Add(new Claim("email_verified", emailVerified.Value ? "true" : "false"));
+            claims.Add(new Claim(
+                ExternalLoginModel.EmailVerifiedClaimType,
+                emailVerified.Value.ToString(CultureInfo.InvariantCulture)));
         }
 
-        var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
-        return new ExternalLoginInfo(principal, "Google", "provider-key", "Display");
+        var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, TestValues.NewSchemeName()));
+        return new ExternalLoginInfo(principal, ExternalProvider, TestValues.NewProviderKey(), ExternalProviderDisplayName);
     }
 
     private static (IAzureClientFactory<ServiceBusClient> Factory, Mock<ServiceBusSender> Sender) CreateServiceBusFactory()
@@ -450,9 +463,9 @@ public sealed class ExternalLoginModelTests
         var sender = new Mock<ServiceBusSender>(MockBehavior.Strict);
         sender.Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
         var client = new Mock<ServiceBusClient>(MockBehavior.Strict);
-        client.Setup(c => c.CreateSender("email")).Returns(sender.Object);
+        client.Setup(c => c.CreateSender(ServiceBusNames.EmailQueueName)).Returns(sender.Object);
         var factory = new Mock<IAzureClientFactory<ServiceBusClient>>(MockBehavior.Strict);
-        factory.Setup(f => f.CreateClient("crgolden")).Returns(client.Object);
+        factory.Setup(f => f.CreateClient(ServiceBusNames.ClientName)).Returns(client.Object);
         return (factory.Object, sender);
     }
 
@@ -479,8 +492,8 @@ public sealed class ExternalLoginModelTests
             new Mock<IServiceProvider>().Object,
             NullLogger<UserManager<IdentityUser<Guid>>>.Instance);
         userManager.SetupGet(u => u.SupportsUserEmail).Returns(true);
-        userManager.Setup(u => u.GetUserIdAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync("the-user-id");
-        userManager.Setup(u => u.GenerateEmailConfirmationTokenAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync("email-token");
+        userManager.Setup(u => u.GetUserIdAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync(TestValues.NewUserId().ToString());
+        userManager.Setup(u => u.GenerateEmailConfirmationTokenAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync(TestValues.NewEmailConfirmationToken());
         userManager.Setup(u => u.GetClaimsAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync(new List<Claim>());
         userManager.Setup(u => u.AddClaimsAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<IEnumerable<Claim>>())).ReturnsAsync(IdentityResult.Success);
         userManager.Setup(u => u.FindByEmailAsync(It.IsAny<string>())).ReturnsAsync((IdentityUser<Guid>?)null);
@@ -497,12 +510,12 @@ public sealed class ExternalLoginModelTests
         var (factory, sender) = CreateServiceBusFactory();
 
         var url = new Mock<IUrlHelper>();
-        url.Setup(u => u.Content("~/")).Returns("/");
-        url.Setup(u => u.IsLocalUrl(It.IsAny<string?>())).Returns<string?>(u => u is not null && u.StartsWith('/') && !u.StartsWith("//", StringComparison.Ordinal));
+        url.Setup(u => u.Content(PageRoutes.ContentRoot)).Returns(TestValues.NewLocalPath());
+        url.Setup(u => u.IsLocalUrl(It.IsAny<string?>())).Returns<string?>(u => u is not null && u.StartsWith('/'));
         var routeData = new RouteData();
-        routeData.Values["page"] = "/Account/ExternalLogin";
+        routeData.Values[MockHelpers.PageRouteValueName] = ExternalLoginModel.ExternalLoginPagePath;
         url.SetupGet(u => u.ActionContext).Returns(new ActionContext(new DefaultHttpContext(), routeData, new ActionDescriptor()));
-        url.Setup(u => u.RouteUrl(It.IsAny<UrlRouteContext>())).Returns("https://example/confirm");
+        url.Setup(u => u.RouteUrl(It.IsAny<UrlRouteContext>())).Returns(TestValues.NewCallbackUrl());
 
         var model = new ExternalLoginModel(signIn.Object, userManager.Object, store.Object, factory)
         {

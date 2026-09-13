@@ -11,6 +11,10 @@ using Moq;
 [Trait("Category", "Unit")]
 public class IndexcshtmlTests
 {
+    private static readonly string FirstResourceName = TestValues.NewFirstAlphabeticalName();
+
+    private static readonly string LastResourceName = TestValues.NewLastAlphabeticalName();
+
     [Fact]
     public void IsPageModel()
     {
@@ -21,13 +25,13 @@ public class IndexcshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsSortedByName()
     {
-        var data = new[] { new IdentityResource { Name = "z" }, new IdentityResource { Name = "a" } };
+        var data = new[] { new IdentityResource { Name = LastResourceName }, new IdentityResource { Name = FirstResourceName } };
         var mockSet = MockDbSetHelper.BuildMockDbSet(data);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         var model = new IndexModel(ctx.Object);
         await model.OnGetAsync();
-        Assert.Equal("a", model.IdentityResources[0].Name);
-        Assert.Equal("z", model.IdentityResources[1].Name);
+        Assert.Equal(FirstResourceName, model.IdentityResources[0].Name);
+        Assert.Equal(LastResourceName, model.IdentityResources[1].Name);
     }
 }

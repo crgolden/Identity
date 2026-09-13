@@ -36,6 +36,6 @@ public class DeleteModel : PageModel
 
         _context.SamlSigninStates.Remove(state);
         await _context.SaveChangesAsync();
-        return RedirectToPage("./Index");
+        return RedirectToPage(PageRoutes.SiblingIndex);
     }
 }

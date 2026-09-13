@@ -11,12 +11,18 @@ using Moq;
 [Trait("Category", "Unit")]
 public class IndexcshtmlTests
 {
+    private static readonly string RoleName = TestValues.NewRoleName();
+
+    private static readonly string PriorRoleName = TestValues.NewRoleName();
+
+    private static readonly string UpdatedRoleName = TestValues.NewRoleName();
+
     private static readonly string MissingUserId = TestValues.NewUserId().ToString();
 
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var role = new IdentityRole<Guid>("Admin");
+        var role = new IdentityRole<Guid>(RoleName);
         var rm = MockHelpers.MockRoleManager();
         rm.Setup(m => m.FindByIdAsync(role.Id.ToString())).ReturnsAsync(role);
 
@@ -24,7 +30,7 @@ public class IndexcshtmlTests
         var result = await model.OnGetAsync(role.Id.ToString());
 
         Assert.IsType<PageResult>(result);
-        Assert.Equal("Admin", model.AppRole.Name);
+        Assert.Equal(RoleName, model.AppRole.Name);
     }
 
     [Fact]
@@ -39,17 +45,17 @@ public class IndexcshtmlTests
     [Fact]
     public async Task OnPostAsync_UpdatesAndRedirects_WhenFound()
     {
-        var role = new IdentityRole<Guid>("OldName");
+        var role = new IdentityRole<Guid>(PriorRoleName);
         var rm = MockHelpers.MockRoleManager();
         rm.Setup(m => m.FindByIdAsync(role.Id.ToString())).ReturnsAsync(role);
         rm.Setup(m => m.UpdateAsync(role)).ReturnsAsync(IdentityResult.Success);
 
-        var model = new IndexModel(rm.Object) { AppRole = new IdentityRole<Guid> { Name = "NewName" } };
+        var model = new IndexModel(rm.Object) { AppRole = new IdentityRole<Guid> { Name = UpdatedRoleName } };
         var result = await model.OnPostAsync(role.Id.ToString());
 
-        Assert.Equal("NewName", role.Name);
+        Assert.Equal(UpdatedRoleName, role.Name);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("/Admin/Roles/Details/Index", redirect.PageName);
+        Assert.Equal(IndexModel.DetailsPageName, redirect.PageName);
     }
 
     [Fact]

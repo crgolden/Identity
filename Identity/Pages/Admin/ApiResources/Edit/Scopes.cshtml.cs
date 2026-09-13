@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore;
 
 public class ScopesModel : PageModel
 {
+    internal const string DetailsPageName = "/Admin/ApiResources/Details/Scopes";
+
     private readonly IConfigurationDbContext _context;
 
     public ScopesModel(IConfigurationDbContext context) => _context = context;
@@ -56,7 +58,7 @@ public class ScopesModel : PageModel
             Scopes.Where(p => p.Id == 0).Select(p => new ApiResourceScope { Scope = p.Scope, ApiResourceId = id }));
 
         await _context.SaveChangesAsync();
-        return RedirectToPage("/Admin/ApiResources/Details/Scopes", new { id });
+        return RedirectToPage(DetailsPageName, new { id });
     }
 
     public async Task<IActionResult> OnPostAddRowAsync(int id)

@@ -6,6 +6,11 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 public class ResetAuthenticatorModel : PageModel
 {
+    internal const string EnableAuthenticatorPageName = "./EnableAuthenticator";
+
+    internal const string AuthenticatorResetMessage =
+        "Your authenticator app key has been reset, you will need to configure your authenticator app using the new key.";
+
     private readonly UserManager<IdentityUser<Guid>> _userManager;
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
 
@@ -27,7 +32,7 @@ public class ResetAuthenticatorModel : PageModel
         var user = await _userManager.GetUserAsync(User);
         if (user is null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound(UserMessages.UnableToLoadUser(_userManager.GetUserId(User)));
         }
 
         return Page();
@@ -38,13 +43,13 @@ public class ResetAuthenticatorModel : PageModel
         var user = await _userManager.GetUserAsync(User);
         if (user is null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound(UserMessages.UnableToLoadUser(_userManager.GetUserId(User)));
         }
 
         await _userManager.SetTwoFactorEnabledAsync(user, false);
         await _userManager.ResetAuthenticatorKeyAsync(user);
         await _signInManager.RefreshSignInAsync(user);
-        StatusMessage = "Your authenticator app key has been reset, you will need to configure your authenticator app using the new key.";
-        return RedirectToPage("./EnableAuthenticator");
+        StatusMessage = AuthenticatorResetMessage;
+        return RedirectToPage(EnableAuthenticatorPageName);
     }
 }

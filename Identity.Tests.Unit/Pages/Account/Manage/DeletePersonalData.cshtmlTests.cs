@@ -12,6 +12,12 @@ using Moq;
 [Trait("Category", "Unit")]
 public sealed class DeletePersonalDataModelTests
 {
+    private static readonly string MissingUserId = TestValues.NewUserId().ToString();
+
+    private static readonly string CorrectPassword = TestValues.NewPassword();
+
+    private static readonly string IncorrectPassword = TestValues.NewPassword();
+
     [Fact]
     public void Constructor_ValidDependencies_InitializesDefaults()
     {
@@ -33,14 +39,14 @@ public sealed class DeletePersonalDataModelTests
         // Arrange
         var (userManager, _, model) = CreateModel();
         userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync((IdentityUser<Guid>?)null);
-        userManager.Setup(m => m.GetUserId(It.IsAny<ClaimsPrincipal>())).Returns("missing-id");
+        userManager.Setup(m => m.GetUserId(It.IsAny<ClaimsPrincipal>())).Returns(MissingUserId);
 
         // Act
         var result = await model.OnGet();
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
-        Assert.Contains("missing-id", notFound.Value as string, StringComparison.Ordinal);
+        Assert.Contains(MissingUserId, notFound.Value as string, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -66,14 +72,14 @@ public sealed class DeletePersonalDataModelTests
         // Arrange
         var (userManager, _, model) = CreateModel();
         userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync((IdentityUser<Guid>?)null);
-        userManager.Setup(m => m.GetUserId(It.IsAny<ClaimsPrincipal>())).Returns("missing-id");
+        userManager.Setup(m => m.GetUserId(It.IsAny<ClaimsPrincipal>())).Returns(MissingUserId);
 
         // Act
         var result = await model.OnPostAsync();
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
-        Assert.Contains("missing-id", notFound.Value as string, StringComparison.Ordinal);
+        Assert.Contains(MissingUserId, notFound.Value as string, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -92,7 +98,7 @@ public sealed class DeletePersonalDataModelTests
 
         // Assert
         var redirect = Assert.IsType<RedirectResult>(result);
-        Assert.Equal("~/", redirect.Url);
+        Assert.Equal(PageRoutes.ContentRoot, redirect.Url);
         signInManager.Verify(s => s.SignOutAsync(), Times.Once);
     }
 
@@ -123,8 +129,8 @@ public sealed class DeletePersonalDataModelTests
         var user = MockHelpers.TestUser();
         userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
         userManager.Setup(m => m.HasPasswordAsync(user)).ReturnsAsync(true);
-        userManager.Setup(m => m.CheckPasswordAsync(user, "wrong")).ReturnsAsync(false);
-        model.Input = new DeletePersonalDataModel.InputModel { Password = "wrong" };
+        userManager.Setup(m => m.CheckPasswordAsync(user, IncorrectPassword)).ReturnsAsync(false);
+        model.Input = new DeletePersonalDataModel.InputModel { Password = IncorrectPassword };
 
         // Act
         var result = await model.OnPostAsync();
@@ -143,17 +149,17 @@ public sealed class DeletePersonalDataModelTests
         var user = MockHelpers.TestUser();
         userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
         userManager.Setup(m => m.HasPasswordAsync(user)).ReturnsAsync(true);
-        userManager.Setup(m => m.CheckPasswordAsync(user, "correct")).ReturnsAsync(true);
+        userManager.Setup(m => m.CheckPasswordAsync(user, CorrectPassword)).ReturnsAsync(true);
         userManager.Setup(m => m.DeleteAsync(user)).ReturnsAsync(IdentityResult.Success);
         signInManager.Setup(s => s.SignOutAsync()).Returns(Task.CompletedTask);
-        model.Input = new DeletePersonalDataModel.InputModel { Password = "correct" };
+        model.Input = new DeletePersonalDataModel.InputModel { Password = CorrectPassword };
 
         // Act
         var result = await model.OnPostAsync();
 
         // Assert
         var redirect = Assert.IsType<RedirectResult>(result);
-        Assert.Equal("~/", redirect.Url);
+        Assert.Equal(PageRoutes.ContentRoot, redirect.Url);
         signInManager.Verify(s => s.SignOutAsync(), Times.Once);
     }
 
@@ -165,7 +171,7 @@ public sealed class DeletePersonalDataModelTests
         var user = MockHelpers.TestUser();
         userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
         userManager.Setup(m => m.HasPasswordAsync(user)).ReturnsAsync(false);
-        userManager.Setup(m => m.DeleteAsync(user)).ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "boom" }));
+        userManager.Setup(m => m.DeleteAsync(user)).ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = TestValues.NewFailureReason() }));
 
         // Act
         var exception = await Record.ExceptionAsync(() => model.OnPostAsync());

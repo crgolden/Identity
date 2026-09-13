@@ -12,21 +12,35 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ClaimscshtmlTests
 {
+    private static readonly string RoleName = TestValues.NewRoleName();
+
+    private static readonly string ClaimType = TestValues.NewClaimType();
+
+    private static readonly string ClaimValue = TestValues.NewClaimValue();
+
+    private static readonly string RemovedClaimType = TestValues.NewClaimType();
+
+    private static readonly string RemovedClaimValue = TestValues.NewClaimValue();
+
+    private static readonly string PostedClaimType = TestValues.NewClaimType();
+
+    private static readonly string PostedClaimValue = TestValues.NewClaimValue();
+
     private static readonly string MissingUserId = TestValues.NewUserId().ToString();
 
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var role = new IdentityRole<Guid>("Admin") { Name = "Admin" };
+        var role = new IdentityRole<Guid>(RoleName) { Name = RoleName };
         var rm = MockHelpers.MockRoleManager();
         rm.Setup(m => m.FindByIdAsync(role.Id.ToString())).ReturnsAsync(role);
-        rm.Setup(m => m.GetClaimsAsync(role)).ReturnsAsync([new Claim("permission", "read")]);
+        rm.Setup(m => m.GetClaimsAsync(role)).ReturnsAsync([new Claim(ClaimType, ClaimValue)]);
 
         var model = new ClaimsModel(rm.Object);
         var result = await model.OnGetAsync(role.Id.ToString());
 
         Assert.IsType<PageResult>(result);
-        Assert.Equal("Admin", model.RoleName);
+        Assert.Equal(RoleName, model.RoleName);
         Assert.Single(model.Claims);
     }
 
@@ -42,21 +56,21 @@ public class ClaimscshtmlTests
     [Fact]
     public async Task OnPostAsync_ReplacesClaims_WhenFound()
     {
-        var role = new IdentityRole<Guid>("Admin");
-        var existing = new Claim("old", "value");
+        var role = new IdentityRole<Guid>(RoleName);
+        var existing = new Claim(RemovedClaimType, RemovedClaimValue);
         var rm = MockHelpers.MockRoleManager();
         rm.Setup(m => m.FindByIdAsync(role.Id.ToString())).ReturnsAsync(role);
         rm.Setup(m => m.GetClaimsAsync(role)).ReturnsAsync([existing]);
         rm.Setup(m => m.RemoveClaimAsync(role, existing)).ReturnsAsync(IdentityResult.Success);
         rm.Setup(m => m.AddClaimAsync(role, It.IsAny<Claim>())).ReturnsAsync(IdentityResult.Success);
 
-        var model = new ClaimsModel(rm.Object) { Claims = [new ClaimsModel.ClaimInputModel { Type = "new", Value = "val" }] };
+        var model = new ClaimsModel(rm.Object) { Claims = [new ClaimsModel.ClaimInputModel { Type = PostedClaimType, Value = PostedClaimValue }] };
         var result = await model.OnPostAsync(role.Id.ToString());
 
         rm.Verify(m => m.RemoveClaimAsync(role, existing), Times.Once);
         rm.Verify(m => m.AddClaimAsync(role, It.IsAny<Claim>()), Times.Once);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("/Admin/Roles/Details/Claims", redirect.PageName);
+        Assert.Equal(ClaimsModel.DetailsPageName, redirect.PageName);
     }
 
     [Fact]
@@ -71,7 +85,7 @@ public class ClaimscshtmlTests
     [Fact]
     public async Task OnPostAddRowAsync_AddsBlankRow_WhenFound()
     {
-        var role = new IdentityRole<Guid>("Admin") { Name = "Admin" };
+        var role = new IdentityRole<Guid>(RoleName) { Name = RoleName };
         var rm = MockHelpers.MockRoleManager();
         rm.Setup(m => m.FindByIdAsync(role.Id.ToString())).ReturnsAsync(role);
 
@@ -95,11 +109,11 @@ public class ClaimscshtmlTests
     [Fact]
     public async Task OnPostRemoveRowAsync_RemovesRow_WhenValidIndex()
     {
-        var role = new IdentityRole<Guid>("Admin") { Name = "Admin" };
+        var role = new IdentityRole<Guid>(RoleName) { Name = RoleName };
         var rm = MockHelpers.MockRoleManager();
         rm.Setup(m => m.FindByIdAsync(role.Id.ToString())).ReturnsAsync(role);
 
-        var model = new ClaimsModel(rm.Object) { Claims = [new ClaimsModel.ClaimInputModel { Type = "permission", Value = "read" }] };
+        var model = new ClaimsModel(rm.Object) { Claims = [new ClaimsModel.ClaimInputModel { Type = ClaimType, Value = ClaimValue }] };
         var result = await model.OnPostRemoveRowAsync(role.Id.ToString(), 0);
 
         Assert.IsType<PageResult>(result);

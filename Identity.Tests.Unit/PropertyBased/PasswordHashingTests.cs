@@ -4,6 +4,7 @@ using CsCheck;
 using Infrastructure;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
+using static PasswordFixtureConstants;
 
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
@@ -12,10 +13,22 @@ public sealed class PasswordHashingTests
     private readonly PasswordHasher<IdentityUser<Guid>> _hasher = new(
         Options.Create(new PasswordHasherOptions { IterationCount = 1 }));
 
+    public static TheoryData<string> NonAsciiPasswords() => new()
+    {
+        TestValues.NewTokenFromCodePointRange(LatinSupplementFirstCodePoint, LatinSupplementLastCodePoint),
+        TestValues.NewTokenFromCodePointRange(GreekFirstCodePoint, GreekLastCodePoint),
+        TestValues.NewTokenFromCodePointRange(CyrillicFirstCodePoint, CyrillicLastCodePoint),
+        TestValues.NewTokenFromCodePointRange(ArabicFirstCodePoint, ArabicLastCodePoint),
+        TestValues.NewTokenFromCodePointRange(HiraganaFirstCodePoint, KatakanaLastCodePoint),
+        TestValues.NewTokenFromCodePointRange(CjkFirstCodePoint, CjkLastCodePoint),
+        TestValues.NewTokenFromCodePointRange(HangulFirstCodePoint, HangulLastCodePoint),
+        TestValues.NewTokenFromCodePointRange(EmojiFirstCodePoint, EmojiLastCodePoint),
+    };
+
     [Fact]
     public void HashPassword_ThenVerify_AlwaysSucceeds()
     {
-        Gen.String[1, 72]
+        Gen.String[MinGeneratedPasswordLength, MaxGeneratedPasswordLength]
             .Sample(password =>
             {
                 var user = new IdentityUser<Guid>();
@@ -28,7 +41,7 @@ public sealed class PasswordHashingTests
     [Fact]
     public void HashPassword_SameInput_ProducesDifferentHashesEachTime()
     {
-        Gen.String[1, 72]
+        Gen.String[MinGeneratedPasswordLength, MaxGeneratedPasswordLength]
             .Sample(password =>
             {
                 var user = new IdentityUser<Guid>();
@@ -41,8 +54,8 @@ public sealed class PasswordHashingTests
     [Fact]
     public void HashPassword_WrongPassword_NeverVerifies()
     {
-        Gen.String[1, 72]
-            .Select(p => (Password: p, Wrong: p + "X"))
+        Gen.String[MinGeneratedPasswordLength, MaxGeneratedPasswordLength]
+            .Select(p => (Password: p, Wrong: p + WrongPasswordSuffix))
             .Sample(pair =>
             {
                 var user = new IdentityUser<Guid>();
@@ -53,14 +66,7 @@ public sealed class PasswordHashingTests
     }
 
     [Theory]
-    [InlineData("Ünïcödé@123!")]
-    [InlineData("日本語パスワード1!")]
-    [InlineData("العربية123!")]
-    [InlineData("Ελληνικά123!")]
-    [InlineData("한국어비밀번호1!")]
-    [InlineData("Ру́сский123!")]
-    [InlineData("中文密码123!")]
-    [InlineData("🔐password1!")]
+    [MemberData(nameof(NonAsciiPasswords))]
     public void HashPassword_UnicodePassword_RoundTrips(string password)
     {
         var user = new IdentityUser<Guid>();

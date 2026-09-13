@@ -24,23 +24,28 @@ public class RegisterModelTests
         Enumerable.Empty<AuthenticationScheme>(),
         new List<AuthenticationScheme>
         {
-            new AuthenticationScheme("Provider1", "Provider One", typeof(DummyAuthHandler))
+            NewScheme()
         },
         new List<AuthenticationScheme>
         {
-            new AuthenticationScheme("ProviderA", "A", typeof(DummyAuthHandler)),
-            new AuthenticationScheme("ProviderB", "B", typeof(DummyAuthHandler)),
-            new AuthenticationScheme("ProviderC", "C", typeof(DummyAuthHandler))
+            NewScheme(),
+            NewScheme(),
+            NewScheme()
         },
     };
 
+    public static TheoryData<string?> ReturnUrlValues() => new()
+    {
+        (string?)null,
+        string.Empty,
+        TestValues.NewWhitespaceValue(),
+        TestValues.LowercaseToken(1),
+        TestValues.NewPunctuatedPageName(),
+        TestValues.NewOverlongPageName(),
+    };
+
     [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("   ")]
-    [InlineData("a")]
-    [InlineData("a/../?%#&")]
-    [InlineData("LongString_" + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
+    [MemberData(nameof(ReturnUrlValues))]
     public async Task OnGetAsync_VariousReturnUrlValues_AssignsReturnUrlAndDoesNotThrow(string? returnUrl)
     {
         // Arrange
@@ -89,11 +94,13 @@ public class RegisterModelTests
             CreateClientFactory(),
             CreateRecaptchaServiceMock().Object);
 
+        var returnUrl = TestValues.NewLocalPath();
+
         // Act
-        await model.OnGetAsync("someReturn");
+        await model.OnGetAsync(returnUrl);
 
         // Assert
-        Assert.Equal("someReturn", model.ReturnUrl);
+        Assert.Equal(returnUrl, model.ReturnUrl);
         Assert.NotNull(model.ExternalLogins);
         Assert.Equal(schemes.Count(), model.ExternalLogins.Count);
         var expectedNames = schemes.Select(s => s.Name).ToList();
@@ -121,16 +128,16 @@ public class RegisterModelTests
             CreateRecaptchaServiceMock().Object);
 
         var ctx = new DefaultHttpContext();
-        ctx.Request.Scheme = "https";
+        ctx.Request.Scheme = Uri.UriSchemeHttps;
         model.PageContext = new PageContext { HttpContext = ctx };
 
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
-        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
+        urlHelperMock.Setup(u => u.Content(PageRoutes.ContentRoot)).Returns(TestValues.NewLocalPath());
         model.Url = urlHelperMock.Object;
         model.ModelState.AddModelError(TestValues.NewClaimType(), TestValues.NewFailureReason());
 
         // Act
-        var result = await model.OnPostAsync("/return");
+        var result = await model.OnPostAsync(TestValues.NewLocalPath());
 
         // Assert
         Assert.IsType<PageResult>(result);
@@ -142,7 +149,7 @@ public class RegisterModelTests
     public async Task OnPostAsync_CreateSucceedsAndConfirmationRequired_RedirectsToRegisterConfirmationWithoutSigningIn()
     {
         // Arrange
-        var returnUrl = $"/confirmed-redirect-{Guid.NewGuid():N}";
+        var returnUrl = TestValues.NewLocalPath();
         var (model, userManagerMock, signInManagerMock, senderMock) = BuildRegisterFixture(requireConfirmedAccount: true);
 
         // Act
@@ -152,10 +159,10 @@ public class RegisterModelTests
         userManagerMock.Verify(u => u.CreateAsync(It.IsAny<IdentityUser<Guid>>(), It.Is<string>(p => p == model.Input.Password)), Times.Once);
         senderMock.Verify(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()), Times.Once);
         var redirect = Assert.IsType<RedirectToPageResult>(actionResult);
-        Assert.Equal("RegisterConfirmation", redirect.PageName);
+        Assert.Equal(RegisterModel.RegisterConfirmationPageName, redirect.PageName);
         Assert.NotNull(redirect.RouteValues);
-        Assert.Equal(model.Input.Email, redirect.RouteValues["email"]);
-        Assert.Equal(returnUrl, redirect.RouteValues["returnUrl"]);
+        Assert.Equal(model.Input.Email, redirect.RouteValues[nameof(RegisterModel.InputModel.Email)]);
+        Assert.Equal(returnUrl, redirect.RouteValues[nameof(RegisterModel.ReturnUrl)]);
         signInManagerMock.Verify(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<bool>(), It.IsAny<string>()), Times.Never);
     }
 
@@ -163,7 +170,7 @@ public class RegisterModelTests
     public async Task OnPostAsync_CreateSucceedsAndConfirmationNotRequired_SignsInAndRedirectsLocally()
     {
         // Arrange
-        var returnUrl = $"/local-redirect-{Guid.NewGuid():N}";
+        var returnUrl = TestValues.NewLocalPath();
         var (model, userManagerMock, signInManagerMock, senderMock) = BuildRegisterFixture(requireConfirmedAccount: false);
 
         // Act
@@ -194,15 +201,15 @@ public class RegisterModelTests
             recaptchaServiceMock.Object);
 
         var ctx = new DefaultHttpContext();
-        ctx.Request.Scheme = "https";
+        ctx.Request.Scheme = Uri.UriSchemeHttps;
         model.PageContext = new PageContext { HttpContext = ctx };
 
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
-        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
+        urlHelperMock.Setup(u => u.Content(PageRoutes.ContentRoot)).Returns(TestValues.NewLocalPath());
         model.Url = urlHelperMock.Object;
         model.Input = new RegisterModel.InputModel { Email = TestValues.NewEmailAddress(), Password = TestValues.NewPassword() };
 
-        var result = await model.OnPostAsync("/return");
+        var result = await model.OnPostAsync(TestValues.NewLocalPath());
 
         Assert.IsType<PageResult>(result);
         Assert.False(model.ModelState.IsValid);
@@ -216,9 +223,9 @@ public class RegisterModelTests
         senderMock.Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
         var clientMock = new Mock<ServiceBusClient>(MockBehavior.Strict);
-        clientMock.Setup(c => c.CreateSender("email")).Returns(senderMock.Object);
+        clientMock.Setup(c => c.CreateSender(ServiceBusNames.EmailQueueName)).Returns(senderMock.Object);
         var factoryMock = new Mock<IAzureClientFactory<ServiceBusClient>>(MockBehavior.Strict);
-        factoryMock.Setup(f => f.CreateClient("crgolden")).Returns(clientMock.Object);
+        factoryMock.Setup(f => f.CreateClient(ServiceBusNames.ClientName)).Returns(clientMock.Object);
         return factoryMock.Object;
     }
 
@@ -228,9 +235,9 @@ public class RegisterModelTests
         senderMock.Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
         var clientMock = new Mock<ServiceBusClient>(MockBehavior.Strict);
-        clientMock.Setup(c => c.CreateSender("email")).Returns(senderMock.Object);
+        clientMock.Setup(c => c.CreateSender(ServiceBusNames.EmailQueueName)).Returns(senderMock.Object);
         var factoryMock = new Mock<IAzureClientFactory<ServiceBusClient>>(MockBehavior.Strict);
-        factoryMock.Setup(f => f.CreateClient("crgolden")).Returns(clientMock.Object);
+        factoryMock.Setup(f => f.CreateClient(ServiceBusNames.ClientName)).Returns(clientMock.Object);
         return (factoryMock.Object, senderMock);
     }
 
@@ -260,13 +267,15 @@ public class RegisterModelTests
             .Setup(u => u.CreateAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>()))
             .ReturnsAsync(IdentityResult.Success);
 
+        var createdUserId = TestValues.NewUserId().ToString();
         userManagerMock
             .Setup(u => u.GetUserIdAsync(It.IsAny<IdentityUser<Guid>>()))
-            .ReturnsAsync(Guid.NewGuid().ToString());
+            .ReturnsAsync(createdUserId);
 
+        var emailConfirmationToken = TestValues.NewEmailConfirmationToken();
         userManagerMock
             .Setup(u => u.GenerateEmailConfirmationTokenAsync(It.IsAny<IdentityUser<Guid>>()))
-            .ReturnsAsync(Guid.NewGuid().ToString("N"));
+            .ReturnsAsync(emailConfirmationToken);
 
         var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
 
@@ -288,26 +297,28 @@ public class RegisterModelTests
             CreateRecaptchaServiceMock().Object);
 
         var ctx = new DefaultHttpContext();
-        ctx.Request.Scheme = "https";
+        ctx.Request.Scheme = Uri.UriSchemeHttps;
         model.PageContext = new PageContext { HttpContext = ctx };
 
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
         var urlRouteData = new RouteData();
-        urlRouteData.Values["page"] = "/Account/Register";
         urlHelperMock.SetupGet(u => u.ActionContext).Returns(
             new ActionContext(new DefaultHttpContext(), urlRouteData, new ActionDescriptor()));
 
-        urlHelperMock.Setup(u => u.RouteUrl(It.IsAny<UrlRouteContext>())).Returns("https://example/confirm");
-        urlHelperMock.Setup(u => u.Content("~/")).Returns("/");
+        urlHelperMock.Setup(u => u.RouteUrl(It.IsAny<UrlRouteContext>())).Returns(TestValues.NewCallbackUrl());
+        urlHelperMock.Setup(u => u.Content(PageRoutes.ContentRoot)).Returns(TestValues.NewLocalPath());
         model.Url = urlHelperMock.Object;
         model.Input = new RegisterModel.InputModel
         {
             Email = TestValues.NewEmailAddress(),
-            Password = $"P@ss{Guid.NewGuid():N}!"
+            Password = TestValues.NewPassword()
         };
 
         return (model, userManagerMock, signInManagerMock, senderMock);
     }
+
+    private static AuthenticationScheme NewScheme() =>
+        new(TestValues.NewSchemeName(), TestValues.NewDisplayName(), typeof(DummyAuthHandler));
 
     private class DummyAuthHandler : IAuthenticationHandler
     {

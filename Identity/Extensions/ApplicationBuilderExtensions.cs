@@ -1,19 +1,46 @@
 namespace Identity.Extensions;
 
+using System.Net.Mime;
+using Microsoft.Net.Http.Headers;
+
 public static class ApplicationBuilderExtensions
 {
-    private const string ContentSecurityPolicy =
+    internal const string ReferrerPolicyHeaderName = "Referrer-Policy";
+
+    internal const string ReferrerPolicyNoReferrer = "no-referrer";
+
+    internal const string ContentTypeOptionsNoSniff = "nosniff";
+
+    internal const string FrameOptionsDeny = "DENY";
+
+    internal const string ScriptSrcDirective = "script-src";
+
+    internal const string StyleSrcDirective = "style-src";
+
+    internal const string ImgSrcDirective = "img-src";
+
+    internal const string ConnectSrcDirective = "connect-src";
+
+    internal const string FrameSrcDirective = "frame-src";
+
+    internal const string GoogleRecaptchaHost = "https://www.google.com";
+
+    internal const string GoogleStaticHost = "https://www.gstatic.com";
+
+    internal const string AnyHttpsSource = "https:";
+
+    internal const string ContentSecurityPolicy =
         "default-src 'self'; " +
-        "script-src 'self' https://www.google.com https://www.gstatic.com; " +
-        "style-src 'self'; " +
-        "img-src 'self' data: https:; " +
-        "connect-src 'self' https://www.google.com; " +
-        "frame-src https://www.google.com; " +
+        ScriptSrcDirective + " 'self' " + GoogleRecaptchaHost + " " + GoogleStaticHost + "; " +
+        StyleSrcDirective + " 'self'; " +
+        ImgSrcDirective + " 'self' data: " + AnyHttpsSource + "; " +
+        ConnectSrcDirective + " 'self' " + GoogleRecaptchaHost + "; " +
+        FrameSrcDirective + " " + GoogleRecaptchaHost + "; " +
         "object-src 'none'; " +
         "frame-ancestors 'none'; " +
         "base-uri 'self';";
 
-    public static IApplicationBuilder UseSecurityHeaders(this IApplicationBuilder applicationBuilder)
+    public static IApplicationBuilder UseSecurityHeaders(this IApplicationBuilder? applicationBuilder)
     {
         ThrowIfNull(applicationBuilder);
 
@@ -27,18 +54,18 @@ public static class ApplicationBuilderExtensions
     private static Task ApplyHeaders(HttpContext context)
     {
         var response = context.Response;
-        if (response.ContentType?.StartsWith("text/html", StringComparison.OrdinalIgnoreCase) != true)
+        if (response.ContentType?.StartsWith(MediaTypeNames.Text.Html, StringComparison.OrdinalIgnoreCase) != true)
         {
             return Task.CompletedTask;
         }
 
         var headers = response.Headers;
 
-        headers.XContentTypeOptions = "nosniff";
-        headers.XFrameOptions = "DENY";
-        headers["Referrer-Policy"] = "no-referrer";
+        headers.XContentTypeOptions = ContentTypeOptionsNoSniff;
+        headers.XFrameOptions = FrameOptionsDeny;
+        headers[ReferrerPolicyHeaderName] = ReferrerPolicyNoReferrer;
 
-        if (!headers.ContainsKey("Content-Security-Policy"))
+        if (!headers.ContainsKey(HeaderNames.ContentSecurityPolicy))
         {
             headers.ContentSecurityPolicy = ContentSecurityPolicy;
         }

@@ -25,6 +25,6 @@ public class CreateModel : PageModel
 
         _context.Clients.Add(Client);
         await _context.SaveChangesAsync();
-        return RedirectToPage("./Details/Index", new { id = Client.Id });
+        return RedirectToPage(PageRoutes.SiblingDetailsIndex, new { id = Client.Id });
     }
 }

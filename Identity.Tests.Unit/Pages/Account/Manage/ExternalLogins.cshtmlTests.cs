@@ -19,31 +19,34 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ExternalLoginsModelTests
 {
-    private const string EmptyProvider = "";
-    private const string WhitespaceOnlyProvider = "   ";
-    private const string SpecialCharacterProvider = "prov!der@#%";
-
     public static TheoryData<string> Providers() => new()
     {
-        "Google",
-        EmptyProvider,
-        WhitespaceOnlyProvider,
-        SpecialCharacterProvider,
+        TestValues.NewSchemeName(),
+        string.Empty,
+        TestValues.NewWhitespaceValue(),
+        TestValues.NewPunctuatedPageName(),
     };
 
-    public static TheoryData<int, string?, bool> ShowRemoveData() => new()
+    public static TheoryData<string, string> RemoveLoginArguments() => new()
     {
-        { 0, null, false },
-        { 0, "hash", true },
-        { 1, null, false },
-        { 2, null, true },
+        { string.Empty, TestValues.NewProviderKey() },
+        { TestValues.NewWhitespaceValue(), TestValues.NewWhitespaceValue() },
+        { TestValues.NewSchemeName(), string.Empty },
+        { TestValues.NewSchemeName(), TestValues.NewOverlongDisplayName() },
+    };
+
+    public static TheoryData<string, string> RemovableLogins() => new()
+    {
+        { TestValues.NewSchemeName(), TestValues.NewProviderKey() },
+        { TestValues.NewSchemeName(), TestValues.NewProviderKey() },
+        { TestValues.LowercaseToken(1), TestValues.LowercaseToken(1) },
     };
 
     [Fact]
     public async Task OnGetLinkLoginCallbackAsync_UserNotFound_ReturnsNotFoundObjectResult()
     {
         // Arrange
-        var expectedUserId = "missing-user-id";
+        var expectedUserId = TestValues.NewUserId().ToString();
         var userStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
 
         var userManagerMock = MockHelpers.MockUserManager();
@@ -64,7 +67,7 @@ public class ExternalLoginsModelTests
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
-        var expectedMessage = $"Unable to load user with ID '{expectedUserId}'.";
+        var expectedMessage = UserMessages.UnableToLoadUser(expectedUserId);
         Assert.Equal(expectedMessage, notFound.Value);
     }
 
@@ -72,8 +75,8 @@ public class ExternalLoginsModelTests
     public async Task OnGetLinkLoginCallbackAsync_NoExternalLoginInfo_ThrowsInvalidOperationException()
     {
         // Arrange
-        var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
-        var userIdString = "user-uid-123";
+        var user = new IdentityUser<Guid> { Id = TestValues.NewUserId() };
+        var userIdString = TestValues.NewUserId().ToString();
 
         var userStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
 
@@ -111,14 +114,14 @@ public class ExternalLoginsModelTests
 
         // Assert
         Assert.IsType<RedirectToPageResult>(actionResult);
-        Assert.Equal("The external login was added.", model.StatusMessage);
+        Assert.Equal(ExternalLoginsModel.LoginAddedMessage, model.StatusMessage);
     }
 
     [Fact]
     public async Task OnGetLinkLoginCallbackAsync_AddLoginFails_RedirectsWithNotAddedStatusMessage()
     {
         // Arrange
-        var addLoginFailure = IdentityResult.Failed(new IdentityError { Description = $"add-login-failed-{Guid.NewGuid():N}" });
+        var addLoginFailure = IdentityResult.Failed(new IdentityError { Description = TestValues.NewFailureReason() });
         var model = BuildModelForLinkLoginCallback(addLoginFailure);
 
         // Act
@@ -126,9 +129,7 @@ public class ExternalLoginsModelTests
 
         // Assert
         Assert.IsType<RedirectToPageResult>(actionResult);
-        Assert.Equal(
-            "The external login was not added. External logins can only be associated with one account.",
-            model.StatusMessage);
+        Assert.Equal(ExternalLoginsModel.LoginNotAddedMessage, model.StatusMessage);
     }
 
     [Fact]
@@ -147,7 +148,7 @@ public class ExternalLoginsModelTests
             Mock.Of<IServiceProvider>(),
             NullLogger<UserManager<IdentityUser<Guid>>>.Instance);
 
-        const string expectedUserId = "known-user-id";
+        var expectedUserId = TestValues.NewUserId().ToString();
         userManagerMock
             .Setup(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
             .ReturnsAsync((IdentityUser<Guid>?)null);
@@ -167,7 +168,7 @@ public class ExternalLoginsModelTests
         var model = new ExternalLoginsModel(userManagerMock.Object, signInManagerMock.Object, Mock.Of<IUserStore<IdentityUser<Guid>>>());
 
         // Act
-        var result = await model.OnPostRemoveLoginAsync("provider", "key");
+        var result = await model.OnPostRemoveLoginAsync(TestValues.NewSchemeName(), TestValues.NewProviderKey());
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
@@ -178,14 +179,11 @@ public class ExternalLoginsModelTests
     }
 
     [Theory]
-    [InlineData("", "key")]
-    [InlineData("   ", " ")]
-    [InlineData("provider", "")]
-    [InlineData("provider", "very-long-key-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")]
+    [MemberData(nameof(RemoveLoginArguments))]
     public async Task OnPostRemoveLoginAsync_RemoveLoginFails_SetsFailureMessageAndRedirects(string loginProvider, string providerKey)
     {
         // Arrange
-        var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
+        var user = new IdentityUser<Guid> { Id = TestValues.NewUserId() };
         var userStoreMockForCtor = Mock.Of<IUserStore<IdentityUser<Guid>>>();
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
             userStoreMockForCtor,
@@ -202,7 +200,7 @@ public class ExternalLoginsModelTests
             .Setup(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
             .ReturnsAsync(user);
 
-        var failedResult = IdentityResult.Failed(new IdentityError { Description = "remove failed" });
+        var failedResult = IdentityResult.Failed(new IdentityError { Description = TestValues.NewFailureReason() });
         userManagerMock
             .Setup(u => u.RemoveLoginAsync(It.Is<IdentityUser<Guid>>(x => x == user), loginProvider, providerKey))
             .ReturnsAsync(failedResult);
@@ -228,19 +226,17 @@ public class ExternalLoginsModelTests
 
         // Assert
         Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("The external login was not removed.", model.StatusMessage);
+        Assert.Equal(ExternalLoginsModel.LoginNotRemovedMessage, model.StatusMessage);
         userManagerMock.Verify(u => u.RemoveLoginAsync(It.Is<IdentityUser<Guid>>(x => x == user), loginProvider, providerKey), Times.Once);
         signInManagerMock.Verify(s => s.RefreshSignInAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
     }
 
     [Theory]
-    [InlineData("Google", "google-key")]
-    [InlineData("LocalProvider", "local-key")]
-    [InlineData("P", "K")]
+    [MemberData(nameof(RemovableLogins))]
     public async Task OnPostRemoveLoginAsync_RemoveLoginSucceeds_RefreshesSignInAndSetsSuccessMessage(string loginProvider, string providerKey)
     {
         // Arrange
-        var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
+        var user = new IdentityUser<Guid> { Id = TestValues.NewUserId() };
         var userStoreMockForCtor = Mock.Of<IUserStore<IdentityUser<Guid>>>();
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
             userStoreMockForCtor,
@@ -282,7 +278,7 @@ public class ExternalLoginsModelTests
 
         // Assert
         Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("The external login was removed.", model.StatusMessage);
+        Assert.Equal(ExternalLoginsModel.LoginRemovedMessage, model.StatusMessage);
 
         userManagerMock.Verify(u => u.RemoveLoginAsync(It.Is<IdentityUser<Guid>>(x => x == user), loginProvider, providerKey), Times.Once);
         signInManagerMock.Verify(s => s.RefreshSignInAsync(It.Is<IdentityUser<Guid>>(x => x == user)), Times.Once);
@@ -305,7 +301,7 @@ public class ExternalLoginsModelTests
             Mock.Of<IServiceProvider>(),
             NullLogger<UserManager<IdentityUser<Guid>>>.Instance);
 
-        const string expectedUserId = "user-id-123";
+        var expectedUserId = TestValues.NewUserId().ToString();
         mockUserManager.Setup(m => m.GetUserId(It.IsAny<ClaimsPrincipal>())).Returns(expectedUserId);
 
         var mockSignInManager = new Mock<SignInManager<IdentityUser<Guid>>>(
@@ -317,11 +313,12 @@ public class ExternalLoginsModelTests
             Mock.Of<IAuthenticationSchemeProvider>(),
             Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
 
-        var expectedProperties = new AuthenticationProperties(new Dictionary<string, string?> { { "k", "v" } });
-        const string expectedRedirect = "/ExternalLogins?handler=LinkLoginCallback";
+        var expectedProperties = new AuthenticationProperties(
+            new Dictionary<string, string?>(StringComparer.Ordinal) { { TestValues.NewPropertyKey(), TestValues.NewPropertyValue() } });
+        var expectedRedirect = TestValues.NewLocalPath();
         var mockUrlHelper = new Mock<IUrlHelper>(MockBehavior.Strict);
         var urlRouteData = new RouteData();
-        urlRouteData.Values["page"] = "/Account/Manage/ExternalLogins";
+        urlRouteData.Values[MockHelpers.PageRouteValueName] = ExternalLoginsModel.ExternalLoginsPagePath;
         mockUrlHelper.SetupGet(u => u.ActionContext).Returns(
             new ActionContext(new DefaultHttpContext(), urlRouteData, new ActionDescriptor()));
 
@@ -378,10 +375,10 @@ public class ExternalLoginsModelTests
 
     private static ExternalLoginsModel BuildModelForLinkLoginCallback(IdentityResult addLoginResult)
     {
-        var linkingUser = new IdentityUser<Guid> { Id = Guid.NewGuid() };
+        var linkingUser = new IdentityUser<Guid> { Id = TestValues.NewUserId() };
         var linkingUserId = linkingUser.Id.ToString();
-        var loginProvider = $"provider-{Guid.NewGuid():N}";
-        var loginProviderKey = $"provider-key-{Guid.NewGuid():N}";
+        var loginProvider = TestValues.NewSchemeName();
+        var loginProviderKey = TestValues.NewProviderKey();
 
         var userStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
 

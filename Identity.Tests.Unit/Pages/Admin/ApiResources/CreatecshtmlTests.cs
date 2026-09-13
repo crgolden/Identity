@@ -30,7 +30,7 @@ public class CreatecshtmlTests
         var result = await model.OnPostAsync();
 
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./Details/Index", redirect.PageName);
+        Assert.Equal(PageRoutes.SiblingDetailsIndex, redirect.PageName);
     }
 
     [Fact]
@@ -38,7 +38,7 @@ public class CreatecshtmlTests
     {
         var ctx = new Mock<IConfigurationDbContext>();
         var model = new CreateModel(ctx.Object);
-        model.ModelState.AddModelError("Resource.Name", "Required");
+        model.ModelState.AddModelError(nameof(ApiResource.Name), TestValues.NewValidationMessage());
 
         Assert.IsType<PageResult>(await model.OnPostAsync());
     }

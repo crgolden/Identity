@@ -2,6 +2,7 @@ namespace Identity.Tests.Unit.Extensions;
 
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
+using System.Net.Mime;
 using Identity.Extensions;
 using Infrastructure;
 using Microsoft.AspNetCore.Diagnostics;
@@ -13,13 +14,15 @@ using Moq;
 [Trait("Category", "Unit")]
 public class HttpContextExtensionsTests
 {
+    private const char AcceptHeaderSeparator = ',';
+
     [Fact]
     public async Task HandleException_HtmlRequest_RedirectsToErrorPage()
     {
         // Arrange
         var context = BuildContext(
             new InvalidOperationException("boom"),
-            "text/html,application/xhtml+xml",
+            MediaTypeNames.Text.Html + AcceptHeaderSeparator + MediaTypeNames.Application.Xml,
             out var mockProblemDetails);
 
         // Act
@@ -27,7 +30,7 @@ public class HttpContextExtensionsTests
 
         // Assert
         Assert.Equal(StatusCodes.Status302Found, context.Response.StatusCode);
-        Assert.Equal("/Error", context.Response.Headers.Location.ToString());
+        Assert.Equal(PageRoutes.Error, context.Response.Headers.Location.ToString());
         mockProblemDetails.Verify(p => p.WriteAsync(It.IsAny<ProblemDetailsContext>()), Times.Never);
     }
 
@@ -37,7 +40,7 @@ public class HttpContextExtensionsTests
         // Arrange
         var context = BuildContext(
             new InvalidOperationException("boom"),
-            "application/json",
+            MediaTypeNames.Application.Json,
             out var mockProblemDetails);
 
         // Act
@@ -57,10 +60,10 @@ public class HttpContextExtensionsTests
         var ex = new InvalidOperationException("test-error");
         var context = BuildContext(
             ex,
-            "application/json",
+            MediaTypeNames.Application.Json,
             out _);
 
-        using var source = new ActivitySource("test.source");
+        using var source = new ActivitySource(TestValues.NewActivitySourceName());
         using var listener = new ActivityListener
         {
             ShouldListenTo = _ => true,
@@ -68,7 +71,7 @@ public class HttpContextExtensionsTests
         };
         ActivitySource.AddActivityListener(listener);
 
-        using var activity = source.StartActivity("test-operation");
+        using var activity = source.StartActivity(TestValues.NewActivityName());
 
         // Act
         await context.HandleException();
@@ -76,7 +79,9 @@ public class HttpContextExtensionsTests
         // Assert
         Assert.NotNull(activity);
         Assert.Equal(ActivityStatusCode.Error, activity.Status);
-        Assert.Contains(activity.Events, e => string.Equals(e.Name, "exception", StringComparison.Ordinal));
+        Assert.Contains(
+            activity.Events,
+            e => string.Equals(e.Name, Telemetry.Metrics.ExceptionEventName, StringComparison.Ordinal));
     }
 
     [Fact]
@@ -86,7 +91,7 @@ public class HttpContextExtensionsTests
         var ex = new InvalidOperationException("test-error");
         var context = BuildContext(
             ex,
-            "application/json",
+            MediaTypeNames.Application.Json,
             out _);
 
         using var exceptionCounter = ExceptionCounterCapture.Start();

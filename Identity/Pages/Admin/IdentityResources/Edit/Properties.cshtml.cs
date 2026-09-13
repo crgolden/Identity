@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore;
 
 public class PropertiesModel : PageModel
 {
+    internal const string DetailsPageName = "/Admin/IdentityResources/Details/Properties";
+
     private readonly IConfigurationDbContext _context;
 
     public PropertiesModel(IConfigurationDbContext context) => _context = context;
@@ -56,7 +58,7 @@ public class PropertiesModel : PageModel
             .Select(p => new IdentityResourceProperty { Key = p.Key, Value = p.Value, IdentityResourceId = id }));
 
         await _context.SaveChangesAsync();
-        return RedirectToPage("/Admin/IdentityResources/Details/Properties", new { id });
+        return RedirectToPage(DetailsPageName, new { id });
     }
 
     public async Task<IActionResult> OnPostAddRowAsync(int id)

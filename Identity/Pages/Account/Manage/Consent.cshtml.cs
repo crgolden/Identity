@@ -11,6 +11,14 @@ using Microsoft.AspNetCore.Mvc;
 [Authorize]
 public class ConsentModel : ConsentPageModelBase
 {
+    internal const string DenyButtonValue = "no";
+
+    internal const string GrantButtonValue = "yes";
+
+    internal const string GrantActivityName = "identity.consent.grant";
+
+    internal const string DenyActivityName = "identity.consent.deny";
+
     private readonly IIdentityServerInteractionService _interaction;
     private readonly IEventService _events;
 
@@ -29,7 +37,7 @@ public class ConsentModel : ConsentPageModelBase
     {
         if (!await SetViewModelAsync(returnUrl))
         {
-            return RedirectToPage("/Error");
+            return RedirectToPage(PageRoutes.Error);
         }
 
         Input = new InputModel { ReturnUrl = returnUrl };
@@ -41,12 +49,12 @@ public class ConsentModel : ConsentPageModelBase
         var request = await _interaction.GetAuthorizationContextAsync(Input.ReturnUrl, HttpContext.RequestAborted);
         if (request == null)
         {
-            return RedirectToPage("/Error");
+            return RedirectToPage(PageRoutes.Error);
         }
 
         ConsentResponse? grantedConsent = null;
 
-        if (string.Equals(Input.Button, "no", StringComparison.Ordinal))
+        if (string.Equals(Input.Button, DenyButtonValue, StringComparison.Ordinal))
         {
             grantedConsent = new ConsentResponse { Error = InteractionError.AccessDenied };
             await _events.RaiseAsync(
@@ -58,10 +66,10 @@ public class ConsentModel : ConsentPageModelBase
             Telemetry.Metrics.ConsentDenied(
                 request.Client.ClientId,
                 request.ValidatedResources.ParsedScopes.Select(s => s.ParsedName));
-            using var denyActivity = Telemetry.StartActivity("identity.consent.deny");
-            denyActivity?.SetTag("client_id", request.Client.ClientId);
+            using var denyActivity = Telemetry.StartActivity(DenyActivityName);
+            denyActivity?.SetTag(Telemetry.Metrics.ClientIdTagName, request.Client.ClientId);
         }
-        else if (string.Equals(Input.Button, "yes", StringComparison.Ordinal))
+        else if (string.Equals(Input.Button, GrantButtonValue, StringComparison.Ordinal))
         {
             if (Input.ScopesConsented.Count != 0)
             {
@@ -95,10 +103,10 @@ public class ConsentModel : ConsentPageModelBase
                     .Select(s => s.ParsedName)
                     .Except(grantedConsent.ScopesValuesConsented, StringComparer.Ordinal);
                 Telemetry.Metrics.ConsentDenied(request.Client.ClientId, denied);
-                using var grantActivity = Telemetry.StartActivity("identity.consent.grant");
-                grantActivity?.SetTag("client_id", request.Client.ClientId);
-                grantActivity?.SetTag("scope_count", grantedConsent.ScopesValuesConsented.Count());
-                grantActivity?.SetTag("remember", grantedConsent.RememberConsent);
+                using var grantActivity = Telemetry.StartActivity(GrantActivityName);
+                grantActivity?.SetTag(Telemetry.Metrics.ClientIdTagName, request.Client.ClientId);
+                grantActivity?.SetTag(Telemetry.Metrics.ScopeCountTagName, grantedConsent.ScopesValuesConsented.Count());
+                grantActivity?.SetTag(Telemetry.Metrics.RememberTagName, grantedConsent.RememberConsent);
             }
             else
             {
@@ -119,7 +127,7 @@ public class ConsentModel : ConsentPageModelBase
 
         if (!await SetViewModelAsync(Input.ReturnUrl))
         {
-            return RedirectToPage("/Error");
+            return RedirectToPage(PageRoutes.Error);
         }
 
         return Page();

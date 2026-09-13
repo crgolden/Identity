@@ -49,7 +49,7 @@ public class GenerateRecoveryCodesModelTests
         // Arrange
         var userManagerMock = MockHelpers.MockUserManager();
 
-        var expectedUserId = "missing-user-id";
+        var expectedUserId = TestValues.NewUserId().ToString();
         userManagerMock
             .Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
             .ReturnsAsync((IdentityUser<Guid>?)null);
@@ -67,7 +67,7 @@ public class GenerateRecoveryCodesModelTests
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
-        var expectedMessage = $"Unable to load user with ID '{expectedUserId}'.";
+        var expectedMessage = UserMessages.UnableToLoadUser(expectedUserId);
         Assert.Equal(expectedMessage, Assert.IsType<string>(notFound.Value));
         Assert.Equal(expectedMessage, (string)notFound.Value);
     }
@@ -78,7 +78,7 @@ public class GenerateRecoveryCodesModelTests
         // Arrange
         var userManagerMock = MockHelpers.MockUserManager();
 
-        var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
+        var user = new IdentityUser<Guid> { Id = TestValues.NewUserId() };
         userManagerMock
             .Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
             .ReturnsAsync(user);
@@ -87,7 +87,7 @@ public class GenerateRecoveryCodesModelTests
             .ReturnsAsync(false);
         userManagerMock
             .Setup(um => um.GetUserIdAsync(user))
-            .ReturnsAsync("some-user-id");
+            .ReturnsAsync(TestValues.NewUserId().ToString());
 
         var model = new GenerateRecoveryCodesModel(userManagerMock.Object)
         {
@@ -99,7 +99,7 @@ public class GenerateRecoveryCodesModelTests
 
         // Assert
         var ex = Assert.IsType<InvalidOperationException>(exception);
-        Assert.Equal("Cannot generate recovery codes for user as they do not have 2FA enabled.", ex.Message);
+        Assert.Equal(GenerateRecoveryCodesModel.TwoFactorNotEnabledOnPostMessage, ex.Message);
     }
 
     [Fact]
@@ -108,7 +108,7 @@ public class GenerateRecoveryCodesModelTests
         // Arrange
         var userManagerMock = MockHelpers.MockUserManager();
 
-        var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
+        var user = new IdentityUser<Guid> { Id = TestValues.NewUserId() };
         userManagerMock
             .Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
             .ReturnsAsync(user);
@@ -117,11 +117,11 @@ public class GenerateRecoveryCodesModelTests
             .ReturnsAsync(true);
         userManagerMock
             .Setup(um => um.GetUserIdAsync(user))
-            .ReturnsAsync("active-user-id");
+            .ReturnsAsync(TestValues.NewUserId().ToString());
 
-        var generatedCodes = new List<string> { "code1", "code2", "code3" };
+        var generatedCodes = new List<string> { TestValues.NewRecoveryCode(), TestValues.NewRecoveryCode(), TestValues.NewRecoveryCode() };
         userManagerMock
-            .Setup(um => um.GenerateNewTwoFactorRecoveryCodesAsync(user, 10))
+            .Setup(um => um.GenerateNewTwoFactorRecoveryCodesAsync(user, GenerateRecoveryCodesModel.RecoveryCodeCount))
             .ReturnsAsync(generatedCodes);
 
         var model = new GenerateRecoveryCodesModel(userManagerMock.Object)
@@ -134,13 +134,13 @@ public class GenerateRecoveryCodesModelTests
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./ShowRecoveryCodes", redirect.PageName);
+        Assert.Equal(PageRoutes.SiblingShowRecoveryCodes, redirect.PageName);
 
         Assert.NotNull(model.RecoveryCodes);
         Assert.Equal(generatedCodes.Count, model.RecoveryCodes.Length);
         Assert.Equal(generatedCodes, model.RecoveryCodes.ToList());
 
-        Assert.Equal("You have generated new recovery codes.", model.StatusMessage);
+        Assert.Equal(GenerateRecoveryCodesModel.RecoveryCodesGeneratedMessage, model.StatusMessage);
     }
 
     [Fact]
@@ -152,7 +152,7 @@ public class GenerateRecoveryCodesModelTests
             .Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
             .ReturnsAsync((IdentityUser<Guid>?)null);
 
-        const string expectedId = "expected-user-id";
+        var expectedId = TestValues.NewUserId().ToString();
         userManagerMock
             .Setup(um => um.GetUserId(It.IsAny<ClaimsPrincipal>()))
             .Returns(expectedId);
@@ -174,7 +174,7 @@ public class GenerateRecoveryCodesModelTests
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
         var message = Assert.IsType<string>(notFound.Value);
-        Assert.Equal($"Unable to load user with ID '{expectedId}'.", message);
+        Assert.Equal(UserMessages.UnableToLoadUser(expectedId), message);
     }
 
     [Fact]
@@ -201,7 +201,7 @@ public class GenerateRecoveryCodesModelTests
 
         // Assert
         var ex = Assert.IsType<InvalidOperationException>(exception);
-        Assert.Equal("Cannot generate recovery codes for user because they do not have 2FA enabled.", ex.Message);
+        Assert.Equal(GenerateRecoveryCodesModel.TwoFactorNotEnabledOnGetMessage, ex.Message);
     }
 
     private static GenerateRecoveryCodesModel CreateModelWithTwoFactorState(bool isTwoFactorEnabled)

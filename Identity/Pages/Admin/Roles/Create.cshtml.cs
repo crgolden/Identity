@@ -34,6 +34,6 @@ public class CreateModel : PageModel
             return Page();
         }
 
-        return RedirectToPage("./Details/Index", new { id = role.Id });
+        return RedirectToPage(PageRoutes.SiblingDetailsIndex, new { id = role.Id });
     }
 }

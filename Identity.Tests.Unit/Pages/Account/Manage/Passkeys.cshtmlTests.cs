@@ -1,5 +1,7 @@
 namespace Identity.Tests.Unit.Pages.Account.Manage;
 
+using System.Buffers.Text;
+using System.Globalization;
 using System.Security.Claims;
 using Identity.Pages.Account.Manage;
 using Infrastructure;
@@ -12,7 +14,15 @@ using Moq;
 [Trait("Category", "Unit")]
 public sealed class PasskeysModelTests
 {
-    private const string ValidCredentialId = "AQID";
+    private static readonly byte[] CredentialIdBytes = TestValues.NewCredentialIdBytes();
+
+    private static readonly string ValidCredentialId = Base64Url.EncodeToString(CredentialIdBytes);
+
+    private static readonly string MissingUserId = TestValues.NewUserId().ToString();
+
+    private static readonly string BrowserError = TestValues.NewFailureReason();
+
+    private static readonly string AttestationFailure = TestValues.NewFailureReason();
 
     [Fact]
     public void Constructor_ValidManagers_InitializesProperties()
@@ -37,14 +47,14 @@ public sealed class PasskeysModelTests
         // Arrange
         var (userManager, _, model) = CreateModel();
         userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync((IdentityUser<Guid>?)null);
-        userManager.Setup(m => m.GetUserId(It.IsAny<ClaimsPrincipal>())).Returns("missing-id");
+        userManager.Setup(m => m.GetUserId(It.IsAny<ClaimsPrincipal>())).Returns(MissingUserId);
 
         // Act
         var result = await model.OnGetAsync();
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
-        Assert.Contains("missing-id", notFound.Value as string, StringComparison.Ordinal);
+        Assert.Contains(MissingUserId, notFound.Value as string, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -71,14 +81,14 @@ public sealed class PasskeysModelTests
         // Arrange
         var (userManager, _, model) = CreateModel();
         userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync((IdentityUser<Guid>?)null);
-        userManager.Setup(m => m.GetUserId(It.IsAny<ClaimsPrincipal>())).Returns("missing-id");
+        userManager.Setup(m => m.GetUserId(It.IsAny<ClaimsPrincipal>())).Returns(MissingUserId);
 
         // Act
         var result = await model.OnPostUpdatePasskeyAsync();
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
-        Assert.Contains("missing-id", notFound.Value as string, StringComparison.Ordinal);
+        Assert.Contains(MissingUserId, notFound.Value as string, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -94,7 +104,7 @@ public sealed class PasskeysModelTests
 
         // Assert
         Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("Could not find the passkey.", model.StatusMessage);
+        Assert.Equal(PasskeysModel.PasskeyNotFoundMessage, model.StatusMessage);
     }
 
     [Fact]
@@ -103,14 +113,14 @@ public sealed class PasskeysModelTests
         // Arrange
         var (userManager, _, model) = CreateModel();
         userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(MockHelpers.TestUser());
-        model.Input = new PasskeysModel.InputModel { CredentialId = "@@@" };
+        model.Input = new PasskeysModel.InputModel { CredentialId = TestValues.NewPunctuatedPageName() };
 
         // Act
         var result = await model.OnPostUpdatePasskeyAsync();
 
         // Assert
         Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("The specified passkey ID had an invalid format.", model.StatusMessage);
+        Assert.Equal(RenamePasskeyModel.InvalidCredentialIdFormatMessage, model.StatusMessage);
     }
 
     [Fact]
@@ -119,15 +129,15 @@ public sealed class PasskeysModelTests
         // Arrange
         var (userManager, _, model) = CreateModel();
         userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(MockHelpers.TestUser());
-        model.Input = new PasskeysModel.InputModel { CredentialId = ValidCredentialId, Action = "rename" };
+        model.Input = new PasskeysModel.InputModel { CredentialId = ValidCredentialId, Action = PasskeysModel.RenameAction };
 
         // Act
         var result = await model.OnPostUpdatePasskeyAsync();
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./RenamePasskey", redirect.PageName);
-        Assert.Equal(ValidCredentialId, redirect.RouteValues?["id"]);
+        Assert.Equal(PageRoutes.SiblingRenamePasskey, redirect.PageName);
+        Assert.Equal(ValidCredentialId, redirect.RouteValues?[RenamePasskeyModel.IdRouteValueName]);
     }
 
     [Fact]
@@ -138,14 +148,14 @@ public sealed class PasskeysModelTests
         var user = MockHelpers.TestUser();
         userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
         userManager.Setup(m => m.RemovePasskeyAsync(user, It.IsAny<byte[]>())).ReturnsAsync(IdentityResult.Success);
-        model.Input = new PasskeysModel.InputModel { CredentialId = ValidCredentialId, Action = "delete" };
+        model.Input = new PasskeysModel.InputModel { CredentialId = ValidCredentialId, Action = PasskeysModel.DeleteAction };
 
         // Act
         var result = await model.OnPostUpdatePasskeyAsync();
 
         // Assert
         Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("The passkey was removed.", model.StatusMessage);
+        Assert.Equal(PasskeysModel.PasskeyRemovedMessage, model.StatusMessage);
     }
 
     [Fact]
@@ -155,9 +165,9 @@ public sealed class PasskeysModelTests
         var (userManager, _, model) = CreateModel();
         var user = MockHelpers.TestUser();
         userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
-        userManager.Setup(m => m.RemovePasskeyAsync(user, It.IsAny<byte[]>())).ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "nope" }));
-        userManager.Setup(m => m.GetUserIdAsync(user)).ReturnsAsync("uid-1");
-        model.Input = new PasskeysModel.InputModel { CredentialId = ValidCredentialId, Action = "delete" };
+        userManager.Setup(m => m.RemovePasskeyAsync(user, It.IsAny<byte[]>())).ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = TestValues.NewFailureReason() }));
+        userManager.Setup(m => m.GetUserIdAsync(user)).ReturnsAsync(TestValues.NewUserId().ToString());
+        model.Input = new PasskeysModel.InputModel { CredentialId = ValidCredentialId, Action = PasskeysModel.DeleteAction };
 
         // Act
         var exception = await Record.ExceptionAsync(() => model.OnPostUpdatePasskeyAsync());
@@ -172,14 +182,14 @@ public sealed class PasskeysModelTests
         // Arrange
         var (userManager, _, model) = CreateModel();
         userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(MockHelpers.TestUser());
-        model.Input = new PasskeysModel.InputModel { CredentialId = ValidCredentialId, Action = "frobnicate" };
+        model.Input = new PasskeysModel.InputModel { CredentialId = ValidCredentialId, Action = TestValues.NewPasskeyAction() };
 
         // Act
         var result = await model.OnPostUpdatePasskeyAsync();
 
         // Assert
         Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("Unknown action.", model.StatusMessage);
+        Assert.Equal(PasskeysModel.UnknownActionMessage, model.StatusMessage);
     }
 
     [Fact]
@@ -188,14 +198,14 @@ public sealed class PasskeysModelTests
         // Arrange
         var (userManager, _, model) = CreateModel();
         userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync((IdentityUser<Guid>?)null);
-        userManager.Setup(m => m.GetUserId(It.IsAny<ClaimsPrincipal>())).Returns("missing-id");
+        userManager.Setup(m => m.GetUserId(It.IsAny<ClaimsPrincipal>())).Returns(MissingUserId);
 
         // Act
         var result = await model.OnPostAddPasskeyAsync();
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
-        Assert.Contains("missing-id", notFound.Value as string, StringComparison.Ordinal);
+        Assert.Contains(MissingUserId, notFound.Value as string, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -204,14 +214,16 @@ public sealed class PasskeysModelTests
         // Arrange
         var (userManager, _, model) = CreateModel();
         userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(MockHelpers.TestUser());
-        model.Input = new PasskeysModel.InputModel { Passkey = new PasskeyInputModel { Error = "user cancelled" } };
+        model.Input = new PasskeysModel.InputModel { Passkey = new PasskeyInputModel { Error = BrowserError } };
 
         // Act
         var result = await model.OnPostAddPasskeyAsync();
 
         // Assert
         Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("Could not add a passkey: user cancelled", model.StatusMessage);
+        Assert.Equal(
+            string.Format(CultureInfo.InvariantCulture, PasskeysModel.BrowserErrorMessageFormat, BrowserError),
+            model.StatusMessage);
     }
 
     [Fact]
@@ -227,7 +239,7 @@ public sealed class PasskeysModelTests
 
         // Assert
         Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("The browser did not provide a passkey.", model.StatusMessage);
+        Assert.Equal(PasskeysModel.BrowserProvidedNoPasskeyMessage, model.StatusMessage);
     }
 
     [Fact]
@@ -237,15 +249,17 @@ public sealed class PasskeysModelTests
         var (userManager, signInManager, model) = CreateModel();
         userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(MockHelpers.TestUser());
         signInManager.Setup(s => s.PerformPasskeyAttestationAsync(It.IsAny<string>()))
-            .ReturnsAsync(PasskeyAttestationResult.Fail(new PasskeyException("bad attestation")));
-        model.Input = new PasskeysModel.InputModel { Passkey = new PasskeyInputModel { CredentialJson = "{}" } };
+            .ReturnsAsync(PasskeyAttestationResult.Fail(new PasskeyException(AttestationFailure)));
+        model.Input = new PasskeysModel.InputModel { Passkey = new PasskeyInputModel { CredentialJson = TestValues.NewPasskeyCredentialJson() } };
 
         // Act
         var result = await model.OnPostAddPasskeyAsync();
 
         // Assert
         Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("Could not add the passkey: bad attestation.", model.StatusMessage);
+        Assert.Equal(
+            string.Format(CultureInfo.InvariantCulture, PasskeysModel.AttestationFailedMessageFormat, AttestationFailure),
+            model.StatusMessage);
     }
 
     [Fact]
@@ -257,15 +271,15 @@ public sealed class PasskeysModelTests
         userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
         signInManager.Setup(s => s.PerformPasskeyAttestationAsync(It.IsAny<string>())).ReturnsAsync(BuildSuccessfulAttestation());
         userManager.Setup(m => m.AddOrUpdatePasskeyAsync(user, It.IsAny<UserPasskeyInfo>()))
-            .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "store failure" }));
-        model.Input = new PasskeysModel.InputModel { Passkey = new PasskeyInputModel { CredentialJson = "{}" } };
+            .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = TestValues.NewFailureReason() }));
+        model.Input = new PasskeysModel.InputModel { Passkey = new PasskeyInputModel { CredentialJson = TestValues.NewPasskeyCredentialJson() } };
 
         // Act
         var result = await model.OnPostAddPasskeyAsync();
 
         // Assert
         Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("The passkey could not be added to your account.", model.StatusMessage);
+        Assert.Equal(PasskeysModel.PasskeyNotAddedMessage, model.StatusMessage);
     }
 
     [Fact]
@@ -277,30 +291,30 @@ public sealed class PasskeysModelTests
         userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
         signInManager.Setup(s => s.PerformPasskeyAttestationAsync(It.IsAny<string>())).ReturnsAsync(BuildSuccessfulAttestation());
         userManager.Setup(m => m.AddOrUpdatePasskeyAsync(user, It.IsAny<UserPasskeyInfo>())).ReturnsAsync(IdentityResult.Success);
-        model.Input = new PasskeysModel.InputModel { Passkey = new PasskeyInputModel { CredentialJson = "{}" } };
+        model.Input = new PasskeysModel.InputModel { Passkey = new PasskeyInputModel { CredentialJson = TestValues.NewPasskeyCredentialJson() } };
 
         // Act
         var result = await model.OnPostAddPasskeyAsync();
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./RenamePasskey", redirect.PageName);
-        Assert.Equal(ValidCredentialId, redirect.RouteValues?["id"]);
-        Assert.Equal("The passkey was added to your account. You can now use it to sign in. Give it an easy to remember name.", model.StatusMessage);
+        Assert.Equal(PageRoutes.SiblingRenamePasskey, redirect.PageName);
+        Assert.Equal(ValidCredentialId, redirect.RouteValues?[RenamePasskeyModel.IdRouteValueName]);
+        Assert.Equal(PasskeysModel.PasskeyAddedMessage, model.StatusMessage);
     }
 
     private static UserPasskeyInfo BuildPasskey() =>
         new(
-            credentialId: [1, 2, 3],
-            publicKey: [4, 5, 6],
+            credentialId: CredentialIdBytes,
+            publicKey: TestValues.NewPublicKeyBytes(),
             createdAt: DateTimeOffset.UnixEpoch,
             signCount: 0,
             transports: null,
             isUserVerified: false,
             isBackupEligible: false,
             isBackedUp: false,
-            attestationObject: [7, 8, 9],
-            clientDataJson: [10, 11, 12])
+            attestationObject: TestValues.NewAttestationObjectBytes(),
+            clientDataJson: TestValues.NewClientDataJsonBytes())
         {
             Name = TestValues.NewApiResourceName(),
         };

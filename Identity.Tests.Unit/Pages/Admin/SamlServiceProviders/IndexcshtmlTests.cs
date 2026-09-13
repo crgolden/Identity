@@ -11,6 +11,10 @@ using Moq;
 [Trait("Category", "Unit")]
 public class IndexcshtmlTests
 {
+    private static readonly string FirstEntityId = 'u' + TestValues.NewFirstAlphabeticalName();
+
+    private static readonly string LastEntityId = 'u' + TestValues.NewLastAlphabeticalName();
+
     [Fact]
     public void IsPageModel()
     {
@@ -23,8 +27,8 @@ public class IndexcshtmlTests
     {
         var data = new[]
         {
-            new SamlServiceProvider { EntityId = "urn:z" },
-            new SamlServiceProvider { EntityId = "urn:a" },
+            new SamlServiceProvider { EntityId = LastEntityId },
+            new SamlServiceProvider { EntityId = FirstEntityId },
         };
         var mockSet = MockDbSetHelper.BuildMockDbSet(data);
         var ctx = new Mock<IConfigurationDbContext>();
@@ -33,7 +37,7 @@ public class IndexcshtmlTests
         var model = new IndexModel(ctx.Object);
         await model.OnGetAsync();
 
-        Assert.Equal(2, model.SamlServiceProviders.Count);
-        Assert.Equal("urn:a", model.SamlServiceProviders[0].EntityId);
+        Assert.Equal(data.Length, model.SamlServiceProviders.Count);
+        Assert.Equal(FirstEntityId, model.SamlServiceProviders[0].EntityId);
     }
 }

@@ -9,9 +9,11 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 [Trait("Category", "Unit")]
 public class ShowRecoveryCodesModelTests
 {
-    private static readonly string[] SingleCode = ["ABC123"];
-    private static readonly string[] DuplicateCodes = ["code", "code"];
-    private static readonly string[] EmptyWhitespaceCodes = [string.Empty, "   "];
+    private const int LargeRecoveryCodeCount = 10_000;
+
+    private static readonly string[] SingleCode = [TestValues.NewRecoveryCode()];
+    private static readonly string[] DuplicateCodes = DuplicatesOf(TestValues.NewRecoveryCode());
+    private static readonly string[] EmptyWhitespaceCodes = [string.Empty, TestValues.NewWhitespaceValue()];
 
     public static TheoryData<string[]> InvalidRecoveryCodes() => new()
     {
@@ -23,7 +25,7 @@ public class ShowRecoveryCodesModelTests
         SingleCode,
         DuplicateCodes,
         EmptyWhitespaceCodes,
-        CreateLargeArray(10000, "X"),
+        CreateLargeArray(LargeRecoveryCodeCount, TestValues.NewRecoveryCode()),
     };
 
     [Theory]
@@ -41,7 +43,7 @@ public class ShowRecoveryCodesModelTests
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./TwoFactorAuthentication", redirect.PageName);
+        Assert.Equal(PageRoutes.SiblingTwoFactorAuthentication, redirect.PageName);
     }
 
     [Theory]
@@ -60,6 +62,8 @@ public class ShowRecoveryCodesModelTests
         // Assert
         Assert.IsType<PageResult>(result);
     }
+
+    private static string[] DuplicatesOf(string value) => [value, value];
 
     private static string[] CreateLargeArray(int count, string value)
     {

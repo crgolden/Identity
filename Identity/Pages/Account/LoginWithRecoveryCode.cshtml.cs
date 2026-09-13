@@ -9,6 +9,9 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 [AllowAnonymous]
 public class LoginWithRecoveryCodeModel : PageModel
 {
+    internal const string InvalidRecoveryCodeMessage =
+        "Invalid recovery code entered.";
+
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
 
     public LoginWithRecoveryCodeModel(SignInManager<IdentityUser<Guid>> signInManager)
@@ -27,7 +30,7 @@ public class LoginWithRecoveryCodeModel : PageModel
         var user = await _signInManager.GetTwoFactorAuthenticationUserAsync();
         if (user is null)
         {
-            throw new InvalidOperationException("Unable to load two-factor authentication user.");
+            throw new InvalidOperationException(UserMessages.UnableToLoadTwoFactorUser);
         }
 
         ReturnUrl = returnUrl;
@@ -45,7 +48,7 @@ public class LoginWithRecoveryCodeModel : PageModel
         var user = await _signInManager.GetTwoFactorAuthenticationUserAsync();
         if (user is null)
         {
-            throw new InvalidOperationException("Unable to load two-factor authentication user.");
+            throw new InvalidOperationException(UserMessages.UnableToLoadTwoFactorUser);
         }
 
         var recoveryCode = Input.RecoveryCode.Replace(" ", Empty, StringComparison.Ordinal);
@@ -54,15 +57,15 @@ public class LoginWithRecoveryCodeModel : PageModel
 
         if (result.Succeeded)
         {
-            return Url.IsLocalUrl(returnUrl) ? LocalRedirect(returnUrl) : LocalRedirect("~/");
+            return Url.IsLocalUrl(returnUrl) ? LocalRedirect(returnUrl) : LocalRedirect(PageRoutes.ContentRoot);
         }
 
         if (result.IsLockedOut)
         {
-            return RedirectToPage("./Lockout");
+            return RedirectToPage(PageRoutes.SiblingLockout);
         }
 
-        ModelState.AddModelError(Empty, "Invalid recovery code entered.");
+        ModelState.AddModelError(Empty, InvalidRecoveryCodeMessage);
         return Page();
     }
 

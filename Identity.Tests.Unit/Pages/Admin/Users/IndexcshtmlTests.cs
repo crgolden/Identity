@@ -10,10 +10,10 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 public class IndexcshtmlTests
 {
     private static readonly string FirstUserNameAlphabetically =
-        TestValues.NewTokenFromFirstHalfOfAlphabet(9);
+        TestValues.NewFirstAlphabeticalName();
 
     private static readonly string LastUserNameAlphabetically =
-        TestValues.NewTokenFromSecondHalfOfAlphabet(9);
+        TestValues.NewLastAlphabeticalName();
 
     [Fact]
     public void IsPageModel()

@@ -11,6 +11,10 @@ using Moq;
 [Trait("Category", "Unit")]
 public class IndexcshtmlTests
 {
+    private static readonly string FirstSchemeName = TestValues.NewFirstAlphabeticalName();
+
+    private static readonly string LastSchemeName = TestValues.NewLastAlphabeticalName();
+
     [Fact]
     public void IsPageModel()
     {
@@ -23,8 +27,8 @@ public class IndexcshtmlTests
     {
         var data = new[]
         {
-            new IdentityProvider { Scheme = "z-scheme" },
-            new IdentityProvider { Scheme = "a-scheme" },
+            new IdentityProvider { Scheme = LastSchemeName },
+            new IdentityProvider { Scheme = FirstSchemeName },
         };
         var mockSet = MockDbSetHelper.BuildMockDbSet(data);
         var ctx = new Mock<IConfigurationDbContext>();
@@ -33,7 +37,7 @@ public class IndexcshtmlTests
         var model = new IndexModel(ctx.Object);
         await model.OnGetAsync();
 
-        Assert.Equal(2, model.IdentityProviders.Count);
-        Assert.Equal("a-scheme", model.IdentityProviders[0].Scheme);
+        Assert.Equal(data.Length, model.IdentityProviders.Count);
+        Assert.Equal(FirstSchemeName, model.IdentityProviders[0].Scheme);
     }
 }

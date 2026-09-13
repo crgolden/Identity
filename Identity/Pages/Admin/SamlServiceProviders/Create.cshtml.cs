@@ -25,6 +25,6 @@ public class CreateModel : PageModel
 
         _context.SamlServiceProviders.Add(SamlServiceProvider);
         await _context.SaveChangesAsync();
-        return RedirectToPage("./Details", new { id = SamlServiceProvider.Id });
+        return RedirectToPage(PageRoutes.SiblingDetails, new { id = SamlServiceProvider.Id });
     }
 }

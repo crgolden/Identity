@@ -14,6 +14,8 @@ using Moq;
 [Trait("Category", "Unit")]
 public partial class EnableAuthenticatorModelTests
 {
+    private static readonly string AuthenticatorKey = TestValues.NewAuthenticatorKey();
+
     [Fact]
     public void Constructor_NullDependency_ExpectedBehavior()
     {
@@ -36,7 +38,7 @@ public partial class EnableAuthenticatorModelTests
         var userManagerMock = MockHelpers.MockUserManager();
         var urlEncoder = UrlEncoder.Default;
 
-        var expectedId = "missing-user-id";
+        var expectedId = TestValues.NewUserId().ToString();
         userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
             .ReturnsAsync((IdentityUser<Guid>?)null);
         userManagerMock.Setup(um => um.GetUserId(It.IsAny<ClaimsPrincipal>()))
@@ -60,17 +62,17 @@ public partial class EnableAuthenticatorModelTests
         var userManagerMock = MockHelpers.MockUserManager();
         var urlEncoder = UrlEncoder.Default;
 
-        var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
+        var user = new IdentityUser<Guid> { Id = TestValues.NewUserId() };
         userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
         userManagerMock.Setup(um => um.GetAuthenticatorKeyAsync(It.IsAny<IdentityUser<Guid>>()))
-            .ReturnsAsync("ABCDEFG");
+            .ReturnsAsync(AuthenticatorKey);
         userManagerMock.Setup(um => um.GetEmailAsync(It.IsAny<IdentityUser<Guid>>()))
             .ReturnsAsync(TestValues.NewEmailAddress());
         userManagerMock.Setup(um => um.ResetAuthenticatorKeyAsync(It.IsAny<IdentityUser<Guid>>()))
             .ReturnsAsync(IdentityResult.Success);
 
         var model = new EnableAuthenticatorModel(userManagerMock.Object, urlEncoder);
-        model.ModelState.AddModelError("SomeKey", "Some error");
+        model.ModelState.AddModelError(TestValues.NewModelStateKey(), TestValues.NewValidationMessage());
 
         // Act
         var result = await model.OnPostAsync();
@@ -86,20 +88,18 @@ public partial class EnableAuthenticatorModelTests
         var userManagerMock = MockHelpers.MockUserManager();
         var urlEncoder = UrlEncoder.Default;
 
-        var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
+        var user = new IdentityUser<Guid> { Id = TestValues.NewUserId() };
 
         userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
         userManagerMock.Setup(um => um.GetAuthenticatorKeyAsync(It.IsAny<IdentityUser<Guid>>()))
-            .ReturnsAsync("ABCDEFG");
+            .ReturnsAsync(AuthenticatorKey);
         userManagerMock.Setup(um => um.GetEmailAsync(It.IsAny<IdentityUser<Guid>>()))
             .ReturnsAsync(TestValues.NewEmailAddress());
         userManagerMock.Setup(um => um.ResetAuthenticatorKeyAsync(It.IsAny<IdentityUser<Guid>>()))
             .ReturnsAsync(IdentityResult.Success);
 
-        var rawCode = "12 34-56";
-        var stripped = rawCode
-            .Replace(" ", string.Empty, StringComparison.Ordinal)
-            .Replace("-", string.Empty, StringComparison.Ordinal);
+        var stripped = TestValues.NewVerificationCode();
+        var rawCode = TestValues.WithFormattingSeparators(stripped);
 
         userManagerMock.Setup(um => um.VerifyTwoFactorTokenAsync(
                 It.IsAny<IdentityUser<Guid>>(),
@@ -117,10 +117,10 @@ public partial class EnableAuthenticatorModelTests
 
         // Assert
         Assert.IsType<PageResult>(result);
-        Assert.True(model.ModelState.ContainsKey("Input.Code"));
-        var error = model.ModelState["Input.Code"]?.Errors.FirstOrDefault();
+        Assert.True(model.ModelState.ContainsKey(EnableAuthenticatorModel.CodeModelStateKey));
+        var error = model.ModelState[EnableAuthenticatorModel.CodeModelStateKey]?.Errors.FirstOrDefault();
         Assert.NotNull(error);
-        Assert.Equal("Verification code is invalid.", error.ErrorMessage);
+        Assert.Equal(EnableAuthenticatorModel.InvalidVerificationCodeMessage, error.ErrorMessage);
     }
 
     [Fact]
@@ -147,8 +147,8 @@ public partial class EnableAuthenticatorModelTests
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./ShowRecoveryCodes", redirect.PageName);
-        Assert.Equal("Your authenticator app has been verified.", model.StatusMessage);
+        Assert.Equal(PageRoutes.SiblingShowRecoveryCodes, redirect.PageName);
+        Assert.Equal(EnableAuthenticatorModel.AuthenticatorVerifiedMessage, model.StatusMessage);
         Assert.Equal(freshlyGeneratedCodes, model.RecoveryCodes);
         userManagerMock.Verify(um => um.SetTwoFactorEnabledAsync(It.IsAny<IdentityUser<Guid>>(), true), Times.Once);
     }
@@ -157,7 +157,7 @@ public partial class EnableAuthenticatorModelTests
     public async Task OnPostAsync_ValidTokenAndRecoveryCodesRemaining_RedirectsToTwoFactorAuthentication()
     {
         // Arrange
-        var remainingRecoveryCount = Random.Shared.Next(1, 11);
+        var remainingRecoveryCount = TestValues.NewRecoveryCodeCount();
         var userManagerMock = MockUserManagerForVerifiedAuthenticator(
             remainingRecoveryCount,
             [TestValues.NewRecoveryCode()]);
@@ -172,8 +172,8 @@ public partial class EnableAuthenticatorModelTests
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./TwoFactorAuthentication", redirect.PageName);
-        Assert.Equal("Your authenticator app has been verified.", model.StatusMessage);
+        Assert.Equal(PageRoutes.SiblingTwoFactorAuthentication, redirect.PageName);
+        Assert.Equal(EnableAuthenticatorModel.AuthenticatorVerifiedMessage, model.StatusMessage);
         Assert.Empty(model.RecoveryCodes);
         userManagerMock.Verify(um => um.SetTwoFactorEnabledAsync(It.IsAny<IdentityUser<Guid>>(), true), Times.Once);
     }
@@ -184,7 +184,7 @@ public partial class EnableAuthenticatorModelTests
         // Arrange
         var userManagerMock = MockHelpers.MockUserManager();
 
-        var expectedId = "expected-id-123";
+        var expectedId = TestValues.NewUserId().ToString();
         userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
             .ReturnsAsync((IdentityUser<Guid>?)null);
         userManagerMock.Setup(um => um.GetUserId(It.IsAny<ClaimsPrincipal>()))
@@ -193,7 +193,7 @@ public partial class EnableAuthenticatorModelTests
         var urlEncoder = UrlEncoder.Default;
 
         var pageModel = new EnableAuthenticatorModel(userManagerMock.Object, urlEncoder);
-        var principal = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, expectedId)], "TestAuth"));
+        var principal = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, expectedId)], TestValues.NewSchemeName()));
         pageModel.PageContext = new PageContext { HttpContext = new DefaultHttpContext { User = principal } };
 
         // Act
@@ -201,7 +201,7 @@ public partial class EnableAuthenticatorModelTests
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
-        Assert.Equal($"Unable to load user with ID '{expectedId}'.", notFound.Value);
+        Assert.Equal(UserMessages.UnableToLoadUser(expectedId), notFound.Value);
     }
 
     private static string BuildVerificationCode() => TestValues.NewVerificationCode();
@@ -230,7 +230,7 @@ public partial class EnableAuthenticatorModelTests
             .ReturnsAsync(enablingUser.Id.ToString());
         userManagerMock.Setup(um => um.CountRecoveryCodesAsync(It.IsAny<IdentityUser<Guid>>()))
             .ReturnsAsync(existingRecoveryCount);
-        userManagerMock.Setup(um => um.GenerateNewTwoFactorRecoveryCodesAsync(It.IsAny<IdentityUser<Guid>>(), 10))
+        userManagerMock.Setup(um => um.GenerateNewTwoFactorRecoveryCodesAsync(It.IsAny<IdentityUser<Guid>>(), EnableAuthenticatorModel.RecoveryCodeCount))
             .ReturnsAsync(freshlyGeneratedCodes);
         userManagerMock.Setup(um => um.GetAuthenticatorKeyAsync(It.IsAny<IdentityUser<Guid>>()))
             .ReturnsAsync(TestValues.NewAuthenticatorKey());

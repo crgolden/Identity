@@ -15,7 +15,7 @@ public class ShowRecoveryCodesModel : PageModel
     {
         if (RecoveryCodes.Length == 0)
         {
-            return RedirectToPage("./TwoFactorAuthentication");
+            return RedirectToPage(PageRoutes.SiblingTwoFactorAuthentication);
         }
 
         return Page();

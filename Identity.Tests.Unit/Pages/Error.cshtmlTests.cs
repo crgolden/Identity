@@ -13,20 +13,25 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ErrorModelTests
 {
+    private const char NullCharacter = '\0';
+    private const char LineFeed = '\n';
+    private const char CarriageReturn = '\r';
+
     public static TheoryData<string?> ErrorIdsThatSkipTheInteractionService() => new()
     {
         (string?)null,
         string.Empty,
-        "   ",
+        TestValues.NewWhitespaceValue(),
     };
 
     public static TheoryData<string> ErrorIdsThatReachTheInteractionService()
     {
-        var longId = new string('x', 5000);
-        var specialId = "err\0or\n\t☃-!@#$%^&*()";
+        var errorId = $"error-{Guid.NewGuid():N}";
+        var longId = TestValues.NewOverlongValue();
+        var specialId = TestValues.NewControlAndSymbolValue();
         return new TheoryData<string>
         {
-            $"error-{Guid.NewGuid():N}",
+            errorId,
             longId,
             specialId,
         };
@@ -36,13 +41,13 @@ public class ErrorModelTests
     {
         { null, false },
         { string.Empty, false },
-        { " ", false },
-        { "request-123", true },
-        { new string('x', 10000), true },
-        { "\0", true },
-        { "\n", false },
-        { "\r\n", false },
-        { "©®™!@#$%^&*()", true },
+        { TestValues.NewWhitespaceValue(), false },
+        { TestValues.NewRequestId(), true },
+        { TestValues.NewOverlongValue(), true },
+        { new string(NullCharacter, 1), true },
+        { new string(LineFeed, 1), false },
+        { new string([CarriageReturn, LineFeed]), false },
+        { TestValues.NewPunctuatedPageName(), true },
     };
 
     [Fact]
@@ -65,7 +70,7 @@ public class ErrorModelTests
     {
         // Arrange
         var mockInteraction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
-        var model = BuildModel(mockInteraction, out _);
+        var (model, _) = BuildModel(mockInteraction);
         using var activityScope = CurrentActivityScope.Start();
 
         // Act
@@ -82,7 +87,7 @@ public class ErrorModelTests
     {
         // Arrange
         var mockInteraction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
-        var model = BuildModel(mockInteraction, out var traceIdentifier);
+        var (model, traceIdentifier) = BuildModel(mockInteraction);
         Activity.Current = null;
 
         // Act
@@ -99,7 +104,7 @@ public class ErrorModelTests
     {
         // Arrange
         var mockInteraction = BuildInteractionServiceReturningNoErrorContext(errorId);
-        var model = BuildModel(mockInteraction, out _);
+        var (model, _) = BuildModel(mockInteraction);
         using var activityScope = CurrentActivityScope.Start();
 
         // Act
@@ -109,7 +114,7 @@ public class ErrorModelTests
         Assert.Null(ex);
         mockInteraction.Verify(s => s.GetErrorContextAsync(errorId, It.IsAny<CancellationToken>()), Times.Once);
         Assert.Equal(activityScope.ActivityId, model.RequestId);
-        Assert.True(model.ShowRequestId, "ShowRequestId should be true when RequestId is set.");
+        Assert.True(model.ShowRequestId);
     }
 
     [Theory]
@@ -118,7 +123,7 @@ public class ErrorModelTests
     {
         // Arrange
         var mockInteraction = BuildInteractionServiceReturningNoErrorContext(errorId);
-        var model = BuildModel(mockInteraction, out var traceIdentifier);
+        var (model, traceIdentifier) = BuildModel(mockInteraction);
         Activity.Current = null;
 
         // Act
@@ -128,7 +133,7 @@ public class ErrorModelTests
         Assert.Null(ex);
         mockInteraction.Verify(s => s.GetErrorContextAsync(errorId, It.IsAny<CancellationToken>()), Times.Once);
         Assert.Equal(traceIdentifier, model.RequestId);
-        Assert.True(model.ShowRequestId, "ShowRequestId should be true when RequestId is set.");
+        Assert.True(model.ShowRequestId);
     }
 
     [Theory]
@@ -181,8 +186,7 @@ public class ErrorModelTests
     private static void VerifyInteractionServiceNeverCalled(Mock<IIdentityServerInteractionService> mockInteraction) =>
         mockInteraction.Verify(
             s => s.GetErrorContextAsync(It.IsAny<string?>(), It.IsAny<CancellationToken>()),
-            Times.Never,
-            "GetErrorContextAsync should not be called when errorId is null/empty/whitespace.");
+            Times.Never);
 
     private static Mock<IIdentityServerInteractionService> BuildInteractionServiceReturningNoErrorContext(string errorId)
     {
@@ -194,16 +198,16 @@ public class ErrorModelTests
         return mockInteraction;
     }
 
-    private static ErrorModel BuildModel(
-        Mock<IIdentityServerInteractionService> mockInteraction,
-        out string traceIdentifier)
+    private static (ErrorModel Model, string TraceIdentifier) BuildModel(
+        Mock<IIdentityServerInteractionService> mockInteraction)
     {
-        traceIdentifier = $"trace-{Guid.NewGuid():N}";
+        var traceIdentifier = $"trace-{Guid.NewGuid():N}";
         var httpContext = new DefaultHttpContext { TraceIdentifier = traceIdentifier };
-        return new ErrorModel(mockInteraction.Object)
+        var model = new ErrorModel(mockInteraction.Object)
         {
             PageContext = new PageContext { HttpContext = httpContext }
         };
+        return (model, traceIdentifier);
     }
 
     private sealed class CurrentActivityScope : IDisposable

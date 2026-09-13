@@ -13,11 +13,15 @@ using Moq;
 [Trait("Category", "Unit")]
 public class TwoFactorAuthenticationModelTests
 {
+    private static readonly string AuthenticatorKey = TestValues.NewAuthenticatorKey();
+
+    private static readonly string StatusText = TestValues.NewValidationMessage();
+
     public static TheoryData<string?, bool, bool, int> GetOnGetAsyncCases() => new()
     {
         { null, false, false, 0 },
-        { "auth-key-abc", true, true, 5 },
-        { "k", false, true, int.MaxValue },
+        { AuthenticatorKey, true, true, TestValues.NewRecoveryCodeCount() },
+        { TestValues.NewAuthenticatorKey(), false, true, int.MaxValue },
         { null, true, false, int.MinValue },
     };
 
@@ -30,19 +34,21 @@ public class TwoFactorAuthenticationModelTests
 
         var model = new TwoFactorAuthenticationModel(userManager.Object, signInManager.Object);
 
+        var recoveryCodesLeft = TestValues.NewRecoveryCodeCount();
+
         // Act
         model.HasAuthenticator = true;
-        model.RecoveryCodesLeft = 5;
+        model.RecoveryCodesLeft = recoveryCodesLeft;
         model.Is2faEnabled = true;
         model.IsMachineRemembered = true;
-        model.StatusMessage = "status";
+        model.StatusMessage = StatusText;
 
         // Assert
         Assert.True(model.HasAuthenticator);
-        Assert.Equal(5, model.RecoveryCodesLeft);
+        Assert.Equal(recoveryCodesLeft, model.RecoveryCodesLeft);
         Assert.True(model.Is2faEnabled);
         Assert.True(model.IsMachineRemembered);
-        Assert.Equal("status", model.StatusMessage);
+        Assert.Equal(StatusText, model.StatusMessage);
     }
 
     [Fact]
@@ -57,7 +63,7 @@ public class TwoFactorAuthenticationModelTests
         var principal = new ClaimsPrincipal(new ClaimsIdentity());
         model.PageContext = new PageContext { HttpContext = new DefaultHttpContext { User = principal } };
 
-        const string expectedUserId = "missing-user-id";
+        var expectedUserId = TestValues.NewUserId().ToString();
         userManagerMock
             .Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
             .ReturnsAsync((IdentityUser<Guid>?)null);
@@ -70,7 +76,7 @@ public class TwoFactorAuthenticationModelTests
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
-        Assert.Equal($"Unable to load user with ID '{expectedUserId}'.", notFound.Value);
+        Assert.Equal(UserMessages.UnableToLoadUser(expectedUserId), notFound.Value);
         signInManagerMock.Verify(s => s.ForgetTwoFactorClientAsync(), Times.Never);
     }
 
@@ -86,7 +92,7 @@ public class TwoFactorAuthenticationModelTests
         var principal = new ClaimsPrincipal(new ClaimsIdentity());
         model.PageContext = new PageContext { HttpContext = new DefaultHttpContext { User = principal } };
 
-        var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
+        var user = new IdentityUser<Guid> { Id = TestValues.NewUserId() };
         userManagerMock
             .Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
             .ReturnsAsync(user);
@@ -101,7 +107,7 @@ public class TwoFactorAuthenticationModelTests
 
         // Assert
         Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("The current browser has been forgotten. When you login again from this browser you will be prompted for your 2fa code.", model.StatusMessage);
+        Assert.Equal(TwoFactorAuthenticationModel.BrowserForgottenMessage, model.StatusMessage);
         signInManagerMock.Verify(sm => sm.ForgetTwoFactorClientAsync(), Times.Once);
     }
 
@@ -113,7 +119,7 @@ public class TwoFactorAuthenticationModelTests
 
         var mockSignInManager = MockHelpers.MockSignInManager(mockUserManager.Object);
 
-        const string expectedId = "expected-id-123";
+        var expectedId = TestValues.NewUserId().ToString();
         mockUserManager
             .Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
             .ReturnsAsync((IdentityUser<Guid>?)null);
@@ -128,7 +134,7 @@ public class TwoFactorAuthenticationModelTests
 
         // Assert
         var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
-        Assert.Equal($"Unable to load user with ID '{expectedId}'.", notFoundResult.Value);
+        Assert.Equal(UserMessages.UnableToLoadUser(expectedId), notFoundResult.Value);
     }
 
     [Theory]

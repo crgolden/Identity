@@ -11,16 +11,18 @@ using Moq;
 [Trait("Category", "Unit")]
 public class UserscshtmlTests
 {
+    private static readonly string RoleName = TestValues.NewRoleName();
+
     private static readonly string MissingUserId = TestValues.NewUserId().ToString();
 
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var role = new IdentityRole<Guid>("Admin") { Name = "Admin" };
+        var role = new IdentityRole<Guid>(RoleName) { Name = RoleName };
         var rm = MockHelpers.MockRoleManager();
         rm.Setup(m => m.FindByIdAsync(role.Id.ToString())).ReturnsAsync(role);
         var um = MockHelpers.MockUserManager();
-        um.Setup(m => m.GetUsersInRoleAsync("Admin")).ReturnsAsync([MockHelpers.TestUser()]);
+        um.Setup(m => m.GetUsersInRoleAsync(RoleName)).ReturnsAsync([MockHelpers.TestUser()]);
 
         var model = new UsersModel(rm.Object, um.Object);
         var result = await model.OnGetAsync(role.Id.ToString());

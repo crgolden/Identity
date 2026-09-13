@@ -12,13 +12,15 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ScopescshtmlTests
 {
+    private static readonly string ScopeName = TestValues.NewApiScopeName();
+
     private static readonly int ExistingEntityId = TestValues.NewEntityId();
     private static readonly int MissingEntityId = ExistingEntityId + 1;
 
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var resource = new ApiResource { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), Scopes = [new ApiResourceScope { Id = ExistingEntityId, Scope = "my-api.read" }] };
+        var resource = new ApiResource { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), Scopes = [new ApiResourceScope { Id = ExistingEntityId, Scope = ScopeName }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);

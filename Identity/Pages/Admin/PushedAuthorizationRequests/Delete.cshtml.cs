@@ -36,6 +36,6 @@ public class DeleteModel : PageModel
 
         _context.PushedAuthorizationRequests.Remove(par);
         await _context.SaveChangesAsync();
-        return RedirectToPage("./Index");
+        return RedirectToPage(PageRoutes.SiblingIndex);
     }
 }

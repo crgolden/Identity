@@ -11,6 +11,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 public class LoginWith2faModel : PageModel
 #pragma warning restore S101
 {
+    internal const string InvalidAuthenticatorCodeMessage = "Invalid authenticator code.";
+
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
 
     public LoginWith2faModel(SignInManager<IdentityUser<Guid>> signInManager)
@@ -31,7 +33,7 @@ public class LoginWith2faModel : PageModel
 
         if (user == null)
         {
-            throw new InvalidOperationException($"Unable to load two-factor authentication user.");
+            throw new InvalidOperationException(UserMessages.UnableToLoadTwoFactorUser);
         }
 
         ReturnUrl = returnUrl;
@@ -47,12 +49,12 @@ public class LoginWith2faModel : PageModel
             return Page();
         }
 
-        returnUrl ??= Url.Content("~/");
+        returnUrl ??= Url.Content(PageRoutes.ContentRoot);
 
         var user = await _signInManager.GetTwoFactorAuthenticationUserAsync();
         if (user is null)
         {
-            throw new InvalidOperationException("Unable to load two-factor authentication user.");
+            throw new InvalidOperationException(UserMessages.UnableToLoadTwoFactorUser);
         }
 
         var authenticatorCode = Input.TwoFactorCode
@@ -63,12 +65,12 @@ public class LoginWith2faModel : PageModel
 
         if (result.Succeeded)
         {
-            return Url.IsLocalUrl(returnUrl) ? LocalRedirect(returnUrl) : LocalRedirect("~/");
+            return Url.IsLocalUrl(returnUrl) ? LocalRedirect(returnUrl) : LocalRedirect(PageRoutes.ContentRoot);
         }
 
         if (result.IsLockedOut)
         {
-            return RedirectToPage("./Lockout");
+            return RedirectToPage(PageRoutes.SiblingLockout);
         }
 
         ModelState.AddModelError(Empty, "Invalid authenticator code.");

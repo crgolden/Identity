@@ -12,6 +12,14 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ClaimscshtmlTests
 {
+    private static readonly string ClaimType = TestValues.NewClaimType();
+
+    private static readonly string ClaimValue = TestValues.NewClaimValue();
+
+    private static readonly string RemovedClaimType = TestValues.NewClaimType();
+
+    private static readonly string RemovedClaimValue = TestValues.NewClaimValue();
+
     private static readonly string ExistingUserId = TestValues.NewUserId().ToString();
     private static readonly string MissingUserId = TestValues.NewUserId().ToString();
 
@@ -21,14 +29,14 @@ public class ClaimscshtmlTests
         var user = new IdentityUser<Guid> { UserName = TestValues.NewUserName() };
         var um = MockHelpers.MockUserManager();
         um.Setup(m => m.FindByIdAsync(ExistingUserId)).ReturnsAsync(user);
-        um.Setup(m => m.GetClaimsAsync(user)).ReturnsAsync([new Claim("role", "Admin")]);
+        um.Setup(m => m.GetClaimsAsync(user)).ReturnsAsync([new Claim(ClaimType, ClaimValue)]);
 
         var model = new ClaimsModel(um.Object);
         var result = await model.OnGetAsync(ExistingUserId);
 
         Assert.IsType<PageResult>(result);
         var onlyClaim = Assert.Single(model.Claims);
-        Assert.Equal("role", onlyClaim.Type);
+        Assert.Equal(ClaimType, onlyClaim.Type);
     }
 
     [Fact]
@@ -46,20 +54,20 @@ public class ClaimscshtmlTests
         var user = new IdentityUser<Guid> { UserName = TestValues.NewUserName() };
         var um = MockHelpers.MockUserManager();
         um.Setup(m => m.FindByIdAsync(ExistingUserId)).ReturnsAsync(user);
-        um.Setup(m => m.GetClaimsAsync(user)).ReturnsAsync([new Claim("old", "val")]);
+        um.Setup(m => m.GetClaimsAsync(user)).ReturnsAsync([new Claim(RemovedClaimType, RemovedClaimValue)]);
         um.Setup(m => m.RemoveClaimsAsync(user, It.IsAny<IEnumerable<Claim>>())).ReturnsAsync(IdentityResult.Success);
         um.Setup(m => m.AddClaimsAsync(user, It.IsAny<IEnumerable<Claim>>())).ReturnsAsync(IdentityResult.Success);
 
         var model = new ClaimsModel(um.Object)
         {
-            Claims = [new ClaimsModel.ClaimInputModel { Type = "role", Value = "Admin" }],
+            Claims = [new ClaimsModel.ClaimInputModel { Type = ClaimType, Value = ClaimValue }],
         };
         var result = await model.OnPostAsync(ExistingUserId);
 
         um.Verify(m => m.RemoveClaimsAsync(user, It.IsAny<IEnumerable<Claim>>()), Times.Once);
         um.Verify(m => m.AddClaimsAsync(user, It.IsAny<IEnumerable<Claim>>()), Times.Once);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("/Admin/Users/Details/Claims", redirect.PageName);
+        Assert.Equal(ClaimsModel.DetailsPageName, redirect.PageName);
     }
 
     [Fact]
@@ -103,7 +111,7 @@ public class ClaimscshtmlTests
         var um = MockHelpers.MockUserManager();
         um.Setup(m => m.FindByIdAsync(ExistingUserId)).ReturnsAsync(user);
 
-        var model = new ClaimsModel(um.Object) { Claims = [new ClaimsModel.ClaimInputModel { Type = "role", Value = "Admin" }] };
+        var model = new ClaimsModel(um.Object) { Claims = [new ClaimsModel.ClaimInputModel { Type = ClaimType, Value = ClaimValue }] };
         var result = await model.OnPostRemoveRowAsync(ExistingUserId, 0);
 
         Assert.IsType<PageResult>(result);

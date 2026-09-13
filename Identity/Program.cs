@@ -128,7 +128,7 @@ try
             .AddAzureClients(azureClientFactoryBuilder =>
             {
                 azureClientFactoryBuilder.UseCredential(tokenCredential);
-                azureClientFactoryBuilder.AddServiceBusClientWithNamespace(serviceBusNamespace).WithName("crgolden");
+                azureClientFactoryBuilder.AddServiceBusClientWithNamespace(serviceBusNamespace).WithName(ServiceBusNames.ClientName);
             });
     }
     else
@@ -149,7 +149,7 @@ try
             .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(builder.Environment.ContentRootPath, ".dataprotection-keys"))).Services
             .AddAzureClients(azureClientFactoryBuilder =>
             {
-                azureClientFactoryBuilder.AddServiceBusClient(serviceBusConnectionString).WithName("crgolden");
+                azureClientFactoryBuilder.AddServiceBusClient(serviceBusConnectionString).WithName(ServiceBusNames.ClientName);
             });
     }
 

@@ -51,7 +51,7 @@ public class ApplicationDbContextTests
         DbContextOptions<ApplicationDbContext>? options = null;
 
         // Act
-        var exception = Record.Exception(() => new ApplicationDbContext(options!));
+        var exception = Record.Exception(() => new ApplicationDbContext(options));
 
         // Assert
         Assert.IsType<ArgumentNullException>(exception);

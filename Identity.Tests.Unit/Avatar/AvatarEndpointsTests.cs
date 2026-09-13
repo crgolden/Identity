@@ -152,7 +152,7 @@ public class AvatarEndpointsTests
     public async Task GetAvatarAsync_ReturnsNotFoundForAUserWithNoEmailOrUserName()
     {
         // Arrange
-        var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
+        var user = new IdentityUser<Guid> { Id = TestValues.NewUserId() };
         var avatarService = new Mock<IAvatarService>(MockBehavior.Strict);
         var userManager = UserManagerFor(user, []);
         var httpContext = new DefaultHttpContext();
@@ -214,7 +214,7 @@ public class AvatarEndpointsTests
 
         // Assert
         Assert.IsType<RedirectHttpResult>(result);
-        Assert.Equal("public, max-age=300", httpContext.Response.Headers.CacheControl.ToString());
+        Assert.Equal(AvatarEndpoints.RedirectCacheControl, httpContext.Response.Headers.CacheControl.ToString());
     }
 
     [Fact]
@@ -241,12 +241,12 @@ public class AvatarEndpointsTests
 
         // Assert
         Assert.IsType<RedirectHttpResult>(result);
-        Assert.Equal("public, max-age=300", httpContext.Response.Headers.CacheControl.ToString());
+        Assert.Equal(AvatarEndpoints.RedirectCacheControl, httpContext.Response.Headers.CacheControl.ToString());
     }
 
     private static IdentityUser<Guid> UserWithEmail(string emailAddress)
     {
-        var userId = Guid.NewGuid();
+        var userId = TestValues.NewUserId();
         return new IdentityUser<Guid> { Id = userId, Email = emailAddress, UserName = emailAddress };
     }
 

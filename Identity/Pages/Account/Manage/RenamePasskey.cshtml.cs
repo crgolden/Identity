@@ -8,6 +8,12 @@ using static System.Buffers.Text.Base64Url;
 
 public class RenamePasskeyModel : PageModel
 {
+    internal const string IdRouteValueName = "id";
+
+    internal const string InvalidCredentialIdFormatMessage = "The specified passkey ID had an invalid format.";
+
+    internal const string PasskeyUpdatedMessage = "The passkey was updated.";
+
     private readonly UserManager<IdentityUser<Guid>> _userManager;
     private readonly ApplicationDbContext _dbContext;
 
@@ -30,7 +36,7 @@ public class RenamePasskeyModel : PageModel
         var user = await _userManager.GetUserAsync(User);
         if (user is null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound(UserMessages.UnableToLoadUser(_userManager.GetUserId(User)));
         }
 
         byte[] credentialId;
@@ -40,14 +46,14 @@ public class RenamePasskeyModel : PageModel
         }
         catch (FormatException)
         {
-            StatusMessage = "The specified passkey ID had an invalid format.";
-            return RedirectToPage("./Passkeys");
+            StatusMessage = InvalidCredentialIdFormatMessage;
+            return RedirectToPage(PageRoutes.SiblingPasskeys);
         }
 
         var passkey = await _userManager.GetPasskeyAsync(user, credentialId);
         if (passkey is null)
         {
-            return NotFound($"Unable to load passkey ID '{_userManager.GetUserId(User)}'.");
+            return NotFound(UserMessages.UnableToLoadPasskey(_userManager.GetUserId(User)));
         }
 
         Input = new InputModel
@@ -63,7 +69,7 @@ public class RenamePasskeyModel : PageModel
         var user = await _userManager.GetUserAsync(User);
         if (user is null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound(UserMessages.UnableToLoadUser(_userManager.GetUserId(User)));
         }
 
         byte[] credentialId;
@@ -73,14 +79,14 @@ public class RenamePasskeyModel : PageModel
         }
         catch (FormatException)
         {
-            StatusMessage = "The specified passkey ID had an invalid format.";
-            return RedirectToPage("./Passkeys");
+            StatusMessage = InvalidCredentialIdFormatMessage;
+            return RedirectToPage(PageRoutes.SiblingPasskeys);
         }
 
         var passkey = await _userManager.GetPasskeyAsync(user, credentialId);
         if (passkey is null)
         {
-            return NotFound($"Unable to load passkey ID '{_userManager.GetUserId(User)}'.");
+            return NotFound(UserMessages.UnableToLoadPasskey(_userManager.GetUserId(User)));
         }
 
         passkey.Name = Input?.Name;
@@ -98,8 +104,8 @@ public class RenamePasskeyModel : PageModel
             await _dbContext.SaveChangesAsync();
         }
 
-        StatusMessage = "The passkey was updated.";
-        return RedirectToPage("./Passkeys");
+        StatusMessage = PasskeyUpdatedMessage;
+        return RedirectToPage(PageRoutes.SiblingPasskeys);
     }
 
     public class InputModel

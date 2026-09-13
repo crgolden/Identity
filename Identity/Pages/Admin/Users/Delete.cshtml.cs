@@ -33,6 +33,6 @@ public class DeleteModel : PageModel
         }
 
         await _userManager.DeleteAsync(user);
-        return RedirectToPage("./Index");
+        return RedirectToPage(PageRoutes.SiblingIndex);
     }
 }

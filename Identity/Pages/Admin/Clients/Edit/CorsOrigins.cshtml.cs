@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore;
 
 public class CorsOriginsModel : PageModel
 {
+    internal const string DetailsPageName = "/Admin/Clients/Details/CorsOrigins";
+
     private readonly IConfigurationDbContext _context;
 
     public CorsOriginsModel(IConfigurationDbContext context) => _context = context;
@@ -65,9 +67,9 @@ public class CorsOriginsModel : PageModel
             client.AllowedCorsOrigins.Add(new ClientCorsOrigin { Origin = posted.Origin, ClientId = id });
         }
 
-        client.Updated = DateTime.UtcNow;
+        client.Updated = DateTimeOffset.UtcNow.UtcDateTime;
         await _context.SaveChangesAsync();
-        return RedirectToPage("/Admin/Clients/Details/CorsOrigins", new { id });
+        return RedirectToPage(DetailsPageName, new { id });
     }
 
     public async Task<IActionResult> OnPostAddRowAsync(int id)

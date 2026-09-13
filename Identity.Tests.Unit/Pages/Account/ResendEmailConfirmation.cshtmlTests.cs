@@ -16,11 +16,16 @@ public class ResendEmailConfirmationModelTests
     public static IEnumerable<object[]> EmailTestCases()
     {
         yield return [string.Empty];
-        yield return ["   "];
+        yield return [TestValues.NewWhitespaceValue()];
         yield return [TestValues.NewEmailAddress()];
-        yield return [new string('a', 1024)];
-        yield return ["special!@#$%^&*()\t\n\"<>[];:\\'/"];
+        yield return [TestValues.NewOverlongValue()];
+        yield return [TestValues.NewControlAndSymbolValue()];
     }
+
+    public static TheoryData<string> UnknownEmailAddresses() => new()
+    {
+        TestValues.NewEmailAddress(),
+    };
 
     [Fact]
     public async Task OnPostAsync_ModelStateInvalid_ReturnsPageWithoutCallingDependencies()
@@ -48,7 +53,7 @@ public class ResendEmailConfirmationModelTests
     }
 
     [Theory]
-    [InlineData("user@example.com")]
+    [MemberData(nameof(UnknownEmailAddresses))]
     public async Task OnPostAsync_UserNotFound_AddsModelErrorAndReturnsPage(string email)
     {
         // Arrange
@@ -66,7 +71,7 @@ public class ResendEmailConfirmationModelTests
         };
 
         model.PageContext = new PageContext { HttpContext = new DefaultHttpContext() };
-        model.PageContext.HttpContext.Request.Scheme = "https";
+        model.PageContext.HttpContext.Request.Scheme = Uri.UriSchemeHttps;
 
         // Act
         var result = await model.OnPostAsync();
@@ -78,7 +83,7 @@ public class ResendEmailConfirmationModelTests
         var entry = model.ModelState[string.Empty];
         Assert.NotNull(entry);
         Assert.NotEmpty(entry.Errors);
-        Assert.Equal("Verification email sent. Please check your email.", entry.Errors[0].ErrorMessage);
+        Assert.Equal(ResendEmailConfirmationModel.VerificationEmailSentMessage, entry.Errors[0].ErrorMessage);
 
         mockUserManager.Verify(m => m.FindByEmailAsync(It.Is<string>(s => s == email)), Times.Once);
         senderMock.Verify(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -90,9 +95,9 @@ public class ResendEmailConfirmationModelTests
         senderMock.Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
         var clientMock = new Mock<ServiceBusClient>(MockBehavior.Strict);
-        clientMock.Setup(c => c.CreateSender("email")).Returns(senderMock.Object);
+        clientMock.Setup(c => c.CreateSender(ServiceBusNames.EmailQueueName)).Returns(senderMock.Object);
         var factoryMock = new Mock<IAzureClientFactory<ServiceBusClient>>(MockBehavior.Strict);
-        factoryMock.Setup(f => f.CreateClient("crgolden")).Returns(clientMock.Object);
+        factoryMock.Setup(f => f.CreateClient(ServiceBusNames.ClientName)).Returns(clientMock.Object);
         return (factoryMock.Object, senderMock);
     }
 }

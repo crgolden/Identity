@@ -36,6 +36,6 @@ public class DeleteModel : PageModel
 
         _context.ServerSideSessions.Remove(session);
         await _context.SaveChangesAsync();
-        return RedirectToPage("./Index");
+        return RedirectToPage(PageRoutes.SiblingIndex);
     }
 }

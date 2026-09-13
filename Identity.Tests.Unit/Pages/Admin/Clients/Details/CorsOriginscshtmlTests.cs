@@ -12,13 +12,15 @@ using Moq;
 [Trait("Category", "Unit")]
 public class CorsOriginscshtmlTests
 {
+    private static readonly string Origin = TestValues.NewOrigin();
+
     private static readonly int ExistingEntityId = TestValues.NewEntityId();
     private static readonly int MissingEntityId = ExistingEntityId + 1;
 
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), AllowedCorsOrigins = [new ClientCorsOrigin { Id = ExistingEntityId, Origin = "https://example.com", ClientId = ExistingEntityId }] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), AllowedCorsOrigins = [new ClientCorsOrigin { Id = ExistingEntityId, Origin = Origin, ClientId = ExistingEntityId }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);

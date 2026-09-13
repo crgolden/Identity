@@ -12,13 +12,19 @@ using Moq;
 [Trait("Category", "Unit")]
 public class PostLogoutRedirectUriscshtmlTests
 {
+    private static readonly string ExistingUri = TestValues.NewCallbackUrl();
+
+    private static readonly string PostedUri = TestValues.NewCallbackUrl();
+
+    private static readonly string ReplacedUri = TestValues.NewCallbackUrl();
+
     private static readonly int ExistingEntityId = TestValues.NewEntityId();
     private static readonly int MissingEntityId = ExistingEntityId + 1;
 
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), PostLogoutRedirectUris = [new ClientPostLogoutRedirectUri { Id = ExistingEntityId, PostLogoutRedirectUri = "https://example.com/logout", ClientId = ExistingEntityId }] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), PostLogoutRedirectUris = [new ClientPostLogoutRedirectUri { Id = ExistingEntityId, PostLogoutRedirectUri = ExistingUri, ClientId = ExistingEntityId }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -54,14 +60,14 @@ public class PostLogoutRedirectUriscshtmlTests
 
         var model = new PostLogoutRedirectUrisModel(ctx.Object)
         {
-            PostLogoutRedirectUris = [new ClientPostLogoutRedirectUri { Id = 0, PostLogoutRedirectUri = "https://new.com/logout" }],
+            PostLogoutRedirectUris = [new ClientPostLogoutRedirectUri { Id = 0, PostLogoutRedirectUri = PostedUri }],
         };
         var result = await model.OnPostAsync(ExistingEntityId);
 
         var onlyPostLogoutRedirectUri = Assert.Single(client.PostLogoutRedirectUris);
-        Assert.Equal("https://new.com/logout", onlyPostLogoutRedirectUri.PostLogoutRedirectUri);
+        Assert.Equal(PostedUri, onlyPostLogoutRedirectUri.PostLogoutRedirectUri);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("/Admin/Clients/Details/PostLogoutRedirectUris", redirect.PageName);
+        Assert.Equal(PostLogoutRedirectUrisModel.DetailsPageName, redirect.PageName);
     }
 
     [Fact]
@@ -80,7 +86,7 @@ public class PostLogoutRedirectUriscshtmlTests
     [Fact]
     public async Task OnPostAsync_RemovesUri_WhenNotPosted()
     {
-        var existing = new ClientPostLogoutRedirectUri { Id = ExistingEntityId, PostLogoutRedirectUri = "https://old.com/logout", ClientId = ExistingEntityId };
+        var existing = new ClientPostLogoutRedirectUri { Id = ExistingEntityId, PostLogoutRedirectUri = ReplacedUri, ClientId = ExistingEntityId };
         var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), PostLogoutRedirectUris = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
@@ -96,7 +102,7 @@ public class PostLogoutRedirectUriscshtmlTests
     [Fact]
     public async Task OnPostAsync_UpdatesExistingPostLogoutRedirectUri_WhenPostedWithId()
     {
-        var existing = new ClientPostLogoutRedirectUri { Id = ExistingEntityId, PostLogoutRedirectUri = "https://old.com/logout", ClientId = ExistingEntityId };
+        var existing = new ClientPostLogoutRedirectUri { Id = ExistingEntityId, PostLogoutRedirectUri = ReplacedUri, ClientId = ExistingEntityId };
         var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), PostLogoutRedirectUris = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
@@ -105,11 +111,11 @@ public class PostLogoutRedirectUriscshtmlTests
 
         var model = new PostLogoutRedirectUrisModel(ctx.Object)
         {
-            PostLogoutRedirectUris = [new ClientPostLogoutRedirectUri { Id = ExistingEntityId, PostLogoutRedirectUri = "https://new.com/logout" }],
+            PostLogoutRedirectUris = [new ClientPostLogoutRedirectUri { Id = ExistingEntityId, PostLogoutRedirectUri = PostedUri }],
         };
         await model.OnPostAsync(ExistingEntityId);
 
-        Assert.Equal("https://new.com/logout", existing.PostLogoutRedirectUri);
+        Assert.Equal(PostedUri, existing.PostLogoutRedirectUri);
     }
 
     [Fact]
@@ -148,7 +154,7 @@ public class PostLogoutRedirectUriscshtmlTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
 
-        var model = new PostLogoutRedirectUrisModel(ctx.Object) { PostLogoutRedirectUris = [new ClientPostLogoutRedirectUri { Id = ExistingEntityId, PostLogoutRedirectUri = "https://example.com/logout" }] };
+        var model = new PostLogoutRedirectUrisModel(ctx.Object) { PostLogoutRedirectUris = [new ClientPostLogoutRedirectUri { Id = ExistingEntityId, PostLogoutRedirectUri = ExistingUri }] };
         var result = await model.OnPostRemoveRowAsync(ExistingEntityId, 0);
 
         Assert.IsType<PageResult>(result);

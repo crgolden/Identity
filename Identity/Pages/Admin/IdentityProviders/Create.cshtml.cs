@@ -25,6 +25,6 @@ public class CreateModel : PageModel
 
         _context.IdentityProviders.Add(IdentityProvider);
         await _context.SaveChangesAsync();
-        return RedirectToPage("./Details", new { id = IdentityProvider.Id });
+        return RedirectToPage(PageRoutes.SiblingDetails, new { id = IdentityProvider.Id });
     }
 }

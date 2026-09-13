@@ -5,15 +5,19 @@ using Serilog.Events;
 
 internal static class DuendeLicenseNotice
 {
-    private const string LicenseValidatorSourceContext = "Duende.Private.Licencing.V2.LicenseValidator";
+    internal const string LicenseValidatorSourceContext = "Duende.Private.Licencing.V2.LicenseValidator";
+    internal const string NoValidLicenseKeyEventName = "NoValidLicenseKey";
+    internal const string FeatureUsedNoLicenseEventName = "FeatureUsedNoLicense";
+    internal const string QuantizedNoLicenseEventName = "QuantizedNoLicense";
+
     private const string EventIdPropertyName = "EventId";
     private const string EventNamePropertyName = "Name";
 
     private static readonly string[] NoLicenseConfiguredEventNames =
     [
-        "NoValidLicenseKey",
-        "FeatureUsedNoLicense",
-        "QuantizedNoLicense"
+        NoValidLicenseKeyEventName,
+        FeatureUsedNoLicenseEventName,
+        QuantizedNoLicenseEventName
     ];
 
     public static bool IsNoLicenseConfiguredNotice(LogEvent logEvent)

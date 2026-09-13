@@ -8,6 +8,15 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 [AllowAnonymous]
 public class ConfirmEmailChangeModel : PageModel
 {
+    internal const string EmailChangeFailedMessage =
+        "Error changing email.";
+
+    internal const string UserNameChangeFailedMessage =
+        "Error changing user name.";
+
+    internal const string EmailChangeConfirmedMessage =
+        "Thank you for confirming your email change.";
+
     private readonly UserManager<IdentityUser<Guid>> _userManager;
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
 
@@ -26,13 +35,13 @@ public class ConfirmEmailChangeModel : PageModel
     {
         if (IsNullOrWhiteSpace(userId) || IsNullOrWhiteSpace(email) || IsNullOrWhiteSpace(code))
         {
-            return RedirectToPage("/Index");
+            return RedirectToPage(PageRoutes.Home);
         }
 
         var user = await _userManager.FindByIdAsync(userId);
         if (user is null)
         {
-            return NotFound($"Unable to load user with ID '{userId}'.");
+            return NotFound(UserMessages.UnableToLoadUser(userId));
         }
 
         var bytes = Base64UrlDecode(code);
@@ -40,19 +49,19 @@ public class ConfirmEmailChangeModel : PageModel
         var result = await _userManager.ChangeEmailAsync(user, email, code);
         if (!result.Succeeded)
         {
-            StatusMessage = "Error changing email.";
+            StatusMessage = EmailChangeFailedMessage;
             return Page();
         }
 
         var setUserNameResult = await _userManager.SetUserNameAsync(user, email);
         if (!setUserNameResult.Succeeded)
         {
-            StatusMessage = "Error changing user name.";
+            StatusMessage = UserNameChangeFailedMessage;
             return Page();
         }
 
         await _signInManager.RefreshSignInAsync(user);
-        StatusMessage = "Thank you for confirming your email change.";
+        StatusMessage = EmailChangeConfirmedMessage;
         return Page();
     }
 }

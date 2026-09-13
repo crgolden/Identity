@@ -14,7 +14,7 @@ public sealed class UserManagerExtensionsTests
     public async Task AddMissingClaimsAsync_UserHasNoClaims_AddsEveryPrincipalClaim()
     {
         // Arrange
-        var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
+        var user = new IdentityUser<Guid> { Id = TestValues.NewUserId() };
         var userManager = MockHelpers.MockUserManager();
         userManager.Setup(m => m.GetClaimsAsync(user)).ReturnsAsync(new List<Claim>());
         userManager
@@ -22,19 +22,22 @@ public sealed class UserManagerExtensionsTests
             .ReturnsAsync(IdentityResult.Success)
             .Verifiable();
 
-        var principal = new ClaimsPrincipal(new ClaimsIdentity(
+        Claim[] principalClaims =
         [
             new Claim(ClaimTypes.Email, TestValues.NewEmailAddress()),
             new Claim(ClaimTypes.GivenName, TestValues.NewGivenName()),
-            new Claim("picture", TestValues.NewPictureUrl())
-        ]));
+            new Claim(Identity.Avatar.AvatarProfileService.PictureClaimType, TestValues.NewPictureUrl())
+        ];
+        var principal = new ClaimsPrincipal(new ClaimsIdentity(principalClaims));
 
         // Act
         await userManager.Object.AddMissingClaimsAsync(user, principal);
 
         // Assert
         userManager.Verify(
-            m => m.AddClaimsAsync(user, It.Is<IEnumerable<Claim>>(claims => claims.Count() == 3)),
+            m => m.AddClaimsAsync(
+                user,
+                It.Is<IEnumerable<Claim>>(claims => claims.Count() == principalClaims.Length)),
             Times.Once);
     }
 
@@ -42,7 +45,7 @@ public sealed class UserManagerExtensionsTests
     public async Task AddMissingClaimsAsync_UserAlreadyHasSomeClaimTypes_OnlyAddsMissingTypes()
     {
         // Arrange
-        var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
+        var user = new IdentityUser<Guid> { Id = TestValues.NewUserId() };
         var userManager = MockHelpers.MockUserManager();
         var emailAlreadyOnTheUser = TestValues.NewEmailAddress();
         var emailOfferedByTheProvider = TestValues.NewEmailAddress();
@@ -78,7 +81,7 @@ public sealed class UserManagerExtensionsTests
     public async Task AddMissingClaimsAsync_NameIdentifierClaim_IsNeverPersisted()
     {
         // Arrange
-        var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
+        var user = new IdentityUser<Guid> { Id = TestValues.NewUserId() };
         var userManager = MockHelpers.MockUserManager();
         userManager.Setup(m => m.GetClaimsAsync(user)).ReturnsAsync(new List<Claim>());
         userManager
@@ -88,8 +91,8 @@ public sealed class UserManagerExtensionsTests
 
         var principal = new ClaimsPrincipal(new ClaimsIdentity(
         [
-            new Claim(ClaimTypes.NameIdentifier, "115104222051319378434"),
-            new Claim(ClaimTypes.GivenName, "Chris")
+            new Claim(ClaimTypes.NameIdentifier, TestValues.NewNumericSubjectId()),
+            new Claim(ClaimTypes.GivenName, TestValues.NewGivenName())
         ]));
 
         // Act
@@ -109,13 +112,13 @@ public sealed class UserManagerExtensionsTests
     public async Task AddMissingClaimsAsync_OnlyNameIdentifierClaimPresent_DoesNotCallAddClaimsAsync()
     {
         // Arrange
-        var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
+        var user = new IdentityUser<Guid> { Id = TestValues.NewUserId() };
         var userManager = MockHelpers.MockUserManager();
         userManager.Setup(m => m.GetClaimsAsync(user)).ReturnsAsync(new List<Claim>());
 
         var principal = new ClaimsPrincipal(new ClaimsIdentity(
         [
-            new Claim(ClaimTypes.NameIdentifier, "115104222051319378434")
+            new Claim(ClaimTypes.NameIdentifier, TestValues.NewNumericSubjectId())
         ]));
 
         // Act
@@ -129,7 +132,7 @@ public sealed class UserManagerExtensionsTests
     public async Task AddMissingClaimsAsync_UserAlreadyHasAllClaimTypes_DoesNotCallAddClaimsAsync()
     {
         // Arrange
-        var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
+        var user = new IdentityUser<Guid> { Id = TestValues.NewUserId() };
         var userManager = MockHelpers.MockUserManager();
         userManager.Setup(m => m.GetClaimsAsync(user)).ReturnsAsync(
         [

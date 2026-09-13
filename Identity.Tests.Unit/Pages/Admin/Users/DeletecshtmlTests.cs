@@ -51,7 +51,7 @@ public class DeletecshtmlTests
 
         um.Verify(m => m.DeleteAsync(user), Times.Once);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./Index", redirect.PageName);
+        Assert.Equal(PageRoutes.SiblingIndex, redirect.PageName);
     }
 
     [Fact]

@@ -6,6 +6,17 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 public class GenerateRecoveryCodesModel : PageModel
 {
+    internal const int RecoveryCodeCount = 10;
+
+    internal const string TwoFactorNotEnabledOnGetMessage =
+        "Cannot generate recovery codes for user because they do not have 2FA enabled.";
+
+    internal const string TwoFactorNotEnabledOnPostMessage =
+        "Cannot generate recovery codes for user as they do not have 2FA enabled.";
+
+    internal const string RecoveryCodesGeneratedMessage =
+        "You have generated new recovery codes.";
+
     private readonly UserManager<IdentityUser<Guid>> _userManager;
 
     public GenerateRecoveryCodesModel(UserManager<IdentityUser<Guid>> userManager)
@@ -25,12 +36,12 @@ public class GenerateRecoveryCodesModel : PageModel
         var user = await _userManager.GetUserAsync(User);
         if (user is null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound(UserMessages.UnableToLoadUser(_userManager.GetUserId(User)));
         }
 
         var isTwoFactorEnabled = await _userManager.GetTwoFactorEnabledAsync(user);
         return !isTwoFactorEnabled
-            ? throw new InvalidOperationException("Cannot generate recovery codes for user because they do not have 2FA enabled.")
+            ? throw new InvalidOperationException(TwoFactorNotEnabledOnGetMessage)
             : Page();
     }
 
@@ -39,18 +50,18 @@ public class GenerateRecoveryCodesModel : PageModel
         var user = await _userManager.GetUserAsync(User);
         if (user is null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound(UserMessages.UnableToLoadUser(_userManager.GetUserId(User)));
         }
 
         var isTwoFactorEnabled = await _userManager.GetTwoFactorEnabledAsync(user);
         if (!isTwoFactorEnabled)
         {
-            throw new InvalidOperationException($"Cannot generate recovery codes for user as they do not have 2FA enabled.");
+            throw new InvalidOperationException(TwoFactorNotEnabledOnPostMessage);
         }
 
-        var recoveryCodes = await _userManager.GenerateNewTwoFactorRecoveryCodesAsync(user, 10);
+        var recoveryCodes = await _userManager.GenerateNewTwoFactorRecoveryCodesAsync(user, RecoveryCodeCount);
         RecoveryCodes = recoveryCodes?.ToArray() ?? RecoveryCodes;
-        StatusMessage = "You have generated new recovery codes.";
-        return RedirectToPage("./ShowRecoveryCodes");
+        StatusMessage = RecoveryCodesGeneratedMessage;
+        return RedirectToPage(PageRoutes.SiblingShowRecoveryCodes);
     }
 }

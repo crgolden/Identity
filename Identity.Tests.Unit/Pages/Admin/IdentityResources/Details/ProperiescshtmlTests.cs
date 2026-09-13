@@ -1,5 +1,6 @@
 namespace Identity.Tests.Unit.Pages.Admin.IdentityResources.Details;
 
+using Duende.IdentityServer;
 using Duende.IdentityServer.EntityFramework.Entities;
 using Duende.IdentityServer.EntityFramework.Interfaces;
 using Identity.Pages.Admin.IdentityResources.Details;
@@ -12,13 +13,17 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ProperiescshtmlTests
 {
+    private static readonly string PropertyKey = TestValues.NewPropertyKey();
+
+    private static readonly string PropertyValue = TestValues.NewPropertyValue();
+
     private static readonly int ExistingEntityId = TestValues.NewEntityId();
     private static readonly int MissingEntityId = ExistingEntityId + 1;
 
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var resource = new IdentityResource { Id = ExistingEntityId, Name = "openid", Properties = [new IdentityResourceProperty { Key = "k", Value = "v" }] };
+        var resource = new IdentityResource { Id = ExistingEntityId, Name = IdentityServerConstants.StandardScopes.OpenId, Properties = [new IdentityResourceProperty { Key = PropertyKey, Value = PropertyValue }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);

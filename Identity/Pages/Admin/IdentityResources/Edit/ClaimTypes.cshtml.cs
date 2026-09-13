@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore;
 
 public class ClaimTypesModel : PageModel
 {
+    internal const string DetailsPageName = "/Admin/IdentityResources/Details/ClaimTypes";
+
     private readonly IConfigurationDbContext _context;
 
     public ClaimTypesModel(IConfigurationDbContext context) => _context = context;
@@ -55,7 +57,7 @@ public class ClaimTypesModel : PageModel
             .Select(p => new IdentityResourceClaim { Type = p.Type, IdentityResourceId = id }));
 
         await _context.SaveChangesAsync();
-        return RedirectToPage("/Admin/IdentityResources/Details/ClaimTypes", new { id });
+        return RedirectToPage(DetailsPageName, new { id });
     }
 
     public async Task<IActionResult> OnPostAddRowAsync(int id)

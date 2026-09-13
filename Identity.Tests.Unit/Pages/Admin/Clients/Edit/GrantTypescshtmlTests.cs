@@ -12,13 +12,19 @@ using Moq;
 [Trait("Category", "Unit")]
 public class GrantTypescshtmlTests
 {
+    private static readonly string ExistingGrantType = TestValues.NewGrantType();
+
+    private static readonly string PostedGrantType = TestValues.NewGrantType();
+
+    private static readonly string ReplacedGrantType = TestValues.NewGrantType();
+
     private static readonly int ExistingEntityId = TestValues.NewEntityId();
     private static readonly int MissingEntityId = ExistingEntityId + 1;
 
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), AllowedGrantTypes = [new ClientGrantType { Id = ExistingEntityId, GrantType = "authorization_code", ClientId = ExistingEntityId }] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), AllowedGrantTypes = [new ClientGrantType { Id = ExistingEntityId, GrantType = ExistingGrantType, ClientId = ExistingEntityId }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -54,14 +60,14 @@ public class GrantTypescshtmlTests
 
         var model = new GrantTypesModel(ctx.Object)
         {
-            GrantTypes = [new ClientGrantType { Id = 0, GrantType = "client_credentials" }],
+            GrantTypes = [new ClientGrantType { Id = 0, GrantType = PostedGrantType }],
         };
         var result = await model.OnPostAsync(ExistingEntityId);
 
         var onlyGrantType = Assert.Single(client.AllowedGrantTypes);
-        Assert.Equal("client_credentials", onlyGrantType.GrantType);
+        Assert.Equal(PostedGrantType, onlyGrantType.GrantType);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("/Admin/Clients/Details/GrantTypes", redirect.PageName);
+        Assert.Equal(GrantTypesModel.DetailsPageName, redirect.PageName);
     }
 
     [Fact]
@@ -80,7 +86,7 @@ public class GrantTypescshtmlTests
     [Fact]
     public async Task OnPostAsync_RemovesGrantType_WhenNotPosted()
     {
-        var existing = new ClientGrantType { Id = ExistingEntityId, GrantType = "implicit", ClientId = ExistingEntityId };
+        var existing = new ClientGrantType { Id = ExistingEntityId, GrantType = ReplacedGrantType, ClientId = ExistingEntityId };
         var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), AllowedGrantTypes = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
@@ -96,7 +102,7 @@ public class GrantTypescshtmlTests
     [Fact]
     public async Task OnPostAsync_UpdatesExistingGrantType_WhenPostedWithId()
     {
-        var existing = new ClientGrantType { Id = ExistingEntityId, GrantType = "implicit", ClientId = ExistingEntityId };
+        var existing = new ClientGrantType { Id = ExistingEntityId, GrantType = ReplacedGrantType, ClientId = ExistingEntityId };
         var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), AllowedGrantTypes = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
@@ -105,11 +111,11 @@ public class GrantTypescshtmlTests
 
         var model = new GrantTypesModel(ctx.Object)
         {
-            GrantTypes = [new ClientGrantType { Id = ExistingEntityId, GrantType = "authorization_code" }],
+            GrantTypes = [new ClientGrantType { Id = ExistingEntityId, GrantType = ExistingGrantType }],
         };
         await model.OnPostAsync(ExistingEntityId);
 
-        Assert.Equal("authorization_code", existing.GrantType);
+        Assert.Equal(ExistingGrantType, existing.GrantType);
     }
 
     [Fact]
@@ -148,7 +154,7 @@ public class GrantTypescshtmlTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
 
-        var model = new GrantTypesModel(ctx.Object) { GrantTypes = [new ClientGrantType { Id = ExistingEntityId, GrantType = "implicit" }] };
+        var model = new GrantTypesModel(ctx.Object) { GrantTypes = [new ClientGrantType { Id = ExistingEntityId, GrantType = ReplacedGrantType }] };
         var result = await model.OnPostRemoveRowAsync(ExistingEntityId, 0);
 
         Assert.IsType<PageResult>(result);

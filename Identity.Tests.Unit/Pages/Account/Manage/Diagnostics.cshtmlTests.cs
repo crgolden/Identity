@@ -31,7 +31,7 @@ public class DiagnosticsIndexModelTests
     {
         // Arrange
         var httpContext = new DefaultHttpContext();
-        httpContext.Connection.RemoteIpAddress = IPAddress.Parse("8.8.8.8");
+        httpContext.Connection.RemoteIpAddress = new IPAddress(TestValues.NewIPv4AddressBytes());
 
         var model = new DiagnosticsModel();
         model.PageContext = new PageContext

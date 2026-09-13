@@ -1,5 +1,6 @@
 namespace Identity.Tests.Unit.Pages.Admin.Clients.Edit;
 
+using Duende.IdentityServer;
 using Duende.IdentityServer.EntityFramework.Entities;
 using Duende.IdentityServer.EntityFramework.Interfaces;
 using Identity.Pages.Admin.Clients.Edit;
@@ -18,7 +19,7 @@ public class ScopescshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), AllowedScopes = [new ClientScope { Id = ExistingEntityId, Scope = "openid", ClientId = ExistingEntityId }] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), AllowedScopes = [new ClientScope { Id = ExistingEntityId, Scope = IdentityServerConstants.StandardScopes.OpenId, ClientId = ExistingEntityId }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -54,14 +55,14 @@ public class ScopescshtmlTests
 
         var model = new ScopesModel(ctx.Object)
         {
-            Scopes = [new ClientScope { Id = 0, Scope = "profile" }],
+            Scopes = [new ClientScope { Id = 0, Scope = IdentityServerConstants.StandardScopes.Profile }],
         };
         var result = await model.OnPostAsync(ExistingEntityId);
 
         var onlyAllowedScope = Assert.Single(client.AllowedScopes);
-        Assert.Equal("profile", onlyAllowedScope.Scope);
+        Assert.Equal(IdentityServerConstants.StandardScopes.Profile, onlyAllowedScope.Scope);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("/Admin/Clients/Details/Scopes", redirect.PageName);
+        Assert.Equal(ScopesModel.DetailsPageName, redirect.PageName);
     }
 
     [Fact]
@@ -80,7 +81,7 @@ public class ScopescshtmlTests
     [Fact]
     public async Task OnPostAsync_RemovesScope_WhenNotPosted()
     {
-        var existing = new ClientScope { Id = ExistingEntityId, Scope = "openid", ClientId = ExistingEntityId };
+        var existing = new ClientScope { Id = ExistingEntityId, Scope = IdentityServerConstants.StandardScopes.OpenId, ClientId = ExistingEntityId };
         var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), AllowedScopes = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
@@ -96,7 +97,7 @@ public class ScopescshtmlTests
     [Fact]
     public async Task OnPostAsync_UpdatesExistingScope_WhenPostedWithId()
     {
-        var existing = new ClientScope { Id = ExistingEntityId, Scope = "openid", ClientId = ExistingEntityId };
+        var existing = new ClientScope { Id = ExistingEntityId, Scope = IdentityServerConstants.StandardScopes.OpenId, ClientId = ExistingEntityId };
         var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), AllowedScopes = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
@@ -105,11 +106,11 @@ public class ScopescshtmlTests
 
         var model = new ScopesModel(ctx.Object)
         {
-            Scopes = [new ClientScope { Id = ExistingEntityId, Scope = "profile" }],
+            Scopes = [new ClientScope { Id = ExistingEntityId, Scope = IdentityServerConstants.StandardScopes.Profile }],
         };
         await model.OnPostAsync(ExistingEntityId);
 
-        Assert.Equal("profile", existing.Scope);
+        Assert.Equal(IdentityServerConstants.StandardScopes.Profile, existing.Scope);
     }
 
     [Fact]
@@ -148,7 +149,7 @@ public class ScopescshtmlTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
 
-        var model = new ScopesModel(ctx.Object) { Scopes = [new ClientScope { Id = ExistingEntityId, Scope = "openid" }] };
+        var model = new ScopesModel(ctx.Object) { Scopes = [new ClientScope { Id = ExistingEntityId, Scope = IdentityServerConstants.StandardScopes.OpenId }] };
         var result = await model.OnPostRemoveRowAsync(ExistingEntityId, 0);
 
         Assert.IsType<PageResult>(result);

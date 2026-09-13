@@ -9,6 +9,10 @@ using Microsoft.Extensions.Options;
 public sealed class ReCAPTCHAService : ICAPTCHAService
 #pragma warning restore S101
 {
+    internal const string SiteverifySuccessFieldName = "success";
+
+    internal const string SiteverifyScoreFieldName = "score";
+
     private readonly HttpClient _httpClient;
     private readonly ReCAPTCHAOptions _options;
 
@@ -57,5 +61,5 @@ public sealed class ReCAPTCHAService : ICAPTCHAService
 }
 
 internal sealed record RecaptchaResponse(
-    [property: JsonPropertyName("success")] bool Success,
-    [property: JsonPropertyName("score")] decimal Score);
+    [property: JsonPropertyName(ReCAPTCHAService.SiteverifySuccessFieldName)] bool Success,
+    [property: JsonPropertyName(ReCAPTCHAService.SiteverifyScoreFieldName)] decimal Score);

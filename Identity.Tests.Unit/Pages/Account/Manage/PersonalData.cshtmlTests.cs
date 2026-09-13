@@ -19,9 +19,9 @@ public class PersonalDataModelTests
     {
         (string?)null,
         string.Empty,
-        "   ",
-        new string('a', 1024),
-        "special\n\t!@#\ufffd",
+        TestValues.NewWhitespaceValue(),
+        TestValues.NewOverlongValue(),
+        TestValues.NewControlAndSymbolValue(),
     };
 
     [Fact]
@@ -124,7 +124,7 @@ public class PersonalDataModelTests
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
-        var expected = $"Unable to load user with ID '{userId}'.";
+        var expected = UserMessages.UnableToLoadUser(userId);
         Assert.Equal(expected, Assert.IsType<string>(notFound.Value));
         Assert.Equal(expected, (string)notFound.Value);
 
@@ -145,7 +145,7 @@ public class PersonalDataModelTests
 
         userManagerMock
             .Setup(m => m.GetUserId(It.IsAny<ClaimsPrincipal>()))
-            .Throws(new Exception("GetUserId should not be called when user is found"));
+            .Throws(new InvalidOperationException(TestValues.NewFailureReason()));
 
         var model = new PersonalDataModel(userManagerMock.Object)
         {
@@ -175,7 +175,7 @@ public class PersonalDataModelTests
 
         userManagerMock
             .Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
-            .ThrowsAsync(new InvalidOperationException("boom"));
+            .ThrowsAsync(new InvalidOperationException(TestValues.NewFailureReason()));
 
         var model = new PersonalDataModel(userManagerMock.Object)
         {

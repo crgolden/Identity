@@ -12,13 +12,19 @@ using Moq;
 [Trait("Category", "Unit")]
 public class RedirectUriscshtmlTests
 {
+    private static readonly string ExistingUri = TestValues.NewCallbackUrl();
+
+    private static readonly string PostedUri = TestValues.NewCallbackUrl();
+
+    private static readonly string ReplacedUri = TestValues.NewCallbackUrl();
+
     private static readonly int ExistingEntityId = TestValues.NewEntityId();
     private static readonly int MissingEntityId = ExistingEntityId + 1;
 
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), RedirectUris = [new ClientRedirectUri { Id = ExistingEntityId, RedirectUri = "https://example.com/callback", ClientId = ExistingEntityId }] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), RedirectUris = [new ClientRedirectUri { Id = ExistingEntityId, RedirectUri = ExistingUri, ClientId = ExistingEntityId }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -54,14 +60,14 @@ public class RedirectUriscshtmlTests
 
         var model = new RedirectUrisModel(ctx.Object)
         {
-            RedirectUris = [new ClientRedirectUri { Id = 0, RedirectUri = "https://new.com/callback" }],
+            RedirectUris = [new ClientRedirectUri { Id = 0, RedirectUri = PostedUri }],
         };
         var result = await model.OnPostAsync(ExistingEntityId);
 
         var onlyRedirectUri = Assert.Single(client.RedirectUris);
-        Assert.Equal("https://new.com/callback", onlyRedirectUri.RedirectUri);
+        Assert.Equal(PostedUri, onlyRedirectUri.RedirectUri);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("/Admin/Clients/Details/RedirectUris", redirect.PageName);
+        Assert.Equal(RedirectUrisModel.DetailsPageName, redirect.PageName);
     }
 
     [Fact]
@@ -80,7 +86,7 @@ public class RedirectUriscshtmlTests
     [Fact]
     public async Task OnPostAsync_RemovesUri_WhenNotPosted()
     {
-        var existing = new ClientRedirectUri { Id = ExistingEntityId, RedirectUri = "https://old.com/callback", ClientId = ExistingEntityId };
+        var existing = new ClientRedirectUri { Id = ExistingEntityId, RedirectUri = ReplacedUri, ClientId = ExistingEntityId };
         var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), RedirectUris = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
@@ -96,7 +102,7 @@ public class RedirectUriscshtmlTests
     [Fact]
     public async Task OnPostAsync_UpdatesExistingRedirectUri_WhenPostedWithId()
     {
-        var existing = new ClientRedirectUri { Id = ExistingEntityId, RedirectUri = "https://old.com/callback", ClientId = ExistingEntityId };
+        var existing = new ClientRedirectUri { Id = ExistingEntityId, RedirectUri = ReplacedUri, ClientId = ExistingEntityId };
         var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), RedirectUris = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
@@ -105,11 +111,11 @@ public class RedirectUriscshtmlTests
 
         var model = new RedirectUrisModel(ctx.Object)
         {
-            RedirectUris = [new ClientRedirectUri { Id = ExistingEntityId, RedirectUri = "https://new.com/callback" }],
+            RedirectUris = [new ClientRedirectUri { Id = ExistingEntityId, RedirectUri = PostedUri }],
         };
         await model.OnPostAsync(ExistingEntityId);
 
-        Assert.Equal("https://new.com/callback", existing.RedirectUri);
+        Assert.Equal(PostedUri, existing.RedirectUri);
     }
 
     [Fact]
@@ -148,7 +154,7 @@ public class RedirectUriscshtmlTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
 
-        var model = new RedirectUrisModel(ctx.Object) { RedirectUris = [new ClientRedirectUri { Id = ExistingEntityId, RedirectUri = "https://example.com/callback" }] };
+        var model = new RedirectUrisModel(ctx.Object) { RedirectUris = [new ClientRedirectUri { Id = ExistingEntityId, RedirectUri = ExistingUri }] };
         var result = await model.OnPostRemoveRowAsync(ExistingEntityId, 0);
 
         Assert.IsType<PageResult>(result);

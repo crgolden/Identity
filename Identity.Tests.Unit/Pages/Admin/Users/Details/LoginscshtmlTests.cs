@@ -11,6 +11,12 @@ using Moq;
 [Trait("Category", "Unit")]
 public class LoginscshtmlTests
 {
+    private static readonly string LoginProvider = TestValues.NewSchemeName();
+
+    private static readonly string LoginProviderKey = TestValues.NewProviderKey();
+
+    private static readonly string LoginDisplayName = TestValues.NewDisplayName();
+
     private static readonly string ExistingUserId = TestValues.NewUserId().ToString();
     private static readonly string MissingUserId = TestValues.NewUserId().ToString();
 
@@ -20,14 +26,14 @@ public class LoginscshtmlTests
         var user = new IdentityUser<Guid> { UserName = TestValues.NewUserName() };
         var um = MockHelpers.MockUserManager();
         um.Setup(m => m.FindByIdAsync(ExistingUserId)).ReturnsAsync(user);
-        um.Setup(m => m.GetLoginsAsync(user)).ReturnsAsync([new UserLoginInfo("google", "key-1", "Google")]);
+        um.Setup(m => m.GetLoginsAsync(user)).ReturnsAsync([new UserLoginInfo(LoginProvider, LoginProviderKey, LoginDisplayName)]);
 
         var model = new LoginsModel(um.Object);
         var result = await model.OnGetAsync(ExistingUserId);
 
         Assert.IsType<PageResult>(result);
         var onlyLogin = Assert.Single(model.Logins);
-        Assert.Equal("google", onlyLogin.LoginProvider);
+        Assert.Equal(LoginProvider, onlyLogin.LoginProvider);
     }
 
     [Fact]

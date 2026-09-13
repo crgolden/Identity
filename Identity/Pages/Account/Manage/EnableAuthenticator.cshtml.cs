@@ -11,6 +11,17 @@ using static String;
 
 public class EnableAuthenticatorModel : PageModel
 {
+    internal const int RecoveryCodeCount = 10;
+
+    internal const string CodeModelStateKey =
+        "Input.Code";
+
+    internal const string InvalidVerificationCodeMessage =
+        "Verification code is invalid.";
+
+    internal const string AuthenticatorVerifiedMessage =
+        "Your authenticator app has been verified.";
+
 #pragma warning disable S1075
     private const string AuthenticatorUriFormat = "otpauth://totp/{0}:{1}?secret={2}&issuer={0}&digits=6";
 #pragma warning restore S1075
@@ -44,7 +55,7 @@ public class EnableAuthenticatorModel : PageModel
         var user = await _userManager.GetUserAsync(User);
         if (user is null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound(UserMessages.UnableToLoadUser(_userManager.GetUserId(User)));
         }
 
         await LoadSharedKeyAndQrCodeUriAsync(user);
@@ -56,7 +67,7 @@ public class EnableAuthenticatorModel : PageModel
         var user = await _userManager.GetUserAsync(User);
         if (user is null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound(UserMessages.UnableToLoadUser(_userManager.GetUserId(User)));
         }
 
         if (!ModelState.IsValid || IsNullOrWhiteSpace(Input?.Code))
@@ -72,21 +83,21 @@ public class EnableAuthenticatorModel : PageModel
         var is2faTokenValid = await _userManager.VerifyTwoFactorTokenAsync(user, tokenProvider, verificationCode);
         if (!is2faTokenValid)
         {
-            ModelState.AddModelError("Input.Code", "Verification code is invalid.");
+            ModelState.AddModelError(CodeModelStateKey, InvalidVerificationCodeMessage);
             await LoadSharedKeyAndQrCodeUriAsync(user);
             return Page();
         }
 
         await _userManager.SetTwoFactorEnabledAsync(user, true);
-        StatusMessage = "Your authenticator app has been verified.";
+        StatusMessage = AuthenticatorVerifiedMessage;
         if (await _userManager.CountRecoveryCodesAsync(user) > 0)
         {
-            return RedirectToPage("./TwoFactorAuthentication");
+            return RedirectToPage(PageRoutes.SiblingTwoFactorAuthentication);
         }
 
-        var recoveryCodes = await _userManager.GenerateNewTwoFactorRecoveryCodesAsync(user, 10);
+        var recoveryCodes = await _userManager.GenerateNewTwoFactorRecoveryCodesAsync(user, RecoveryCodeCount);
         RecoveryCodes = recoveryCodes?.ToArray() ?? RecoveryCodes;
-        return RedirectToPage("./ShowRecoveryCodes");
+        return RedirectToPage(PageRoutes.SiblingShowRecoveryCodes);
     }
 
     private static string FormatKey(string unformattedKey)

@@ -11,8 +11,8 @@ using Moq;
 [Trait("Category", "Unit")]
 public class IndexcshtmlTests
 {
-    private static readonly string FirstSubjectAlphabetically = TestValues.NewTokenFromFirstHalfOfAlphabet(9);
-    private static readonly string LastSubjectAlphabetically = TestValues.NewTokenFromSecondHalfOfAlphabet(9);
+    private static readonly string FirstSubjectAlphabetically = TestValues.NewFirstAlphabeticalName();
+    private static readonly string LastSubjectAlphabetically = TestValues.NewLastAlphabeticalName();
 
     [Fact]
     public void IsPageModel()

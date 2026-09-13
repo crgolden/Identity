@@ -30,7 +30,7 @@ public class ResetAuthenticatorModelTests
     public async Task OnGet_UserMissing_ReturnsNotFoundNamingTheUserId()
     {
         // Arrange
-        var missingUserId = Guid.NewGuid().ToString();
+        var missingUserId = TestValues.NewUserId().ToString();
         var model = BuildOnGetModel(signedInUser: null, resolvedUserId: missingUserId);
 
         // Act
@@ -38,14 +38,14 @@ public class ResetAuthenticatorModelTests
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
-        Assert.Equal($"Unable to load user with ID '{missingUserId}'.", notFound.Value as string);
+        Assert.Equal(UserMessages.UnableToLoadUser(missingUserId), notFound.Value as string);
     }
 
     [Fact]
     public async Task OnPostAsync_UserNotFound_ReturnsNotFoundWithExpectedMessage()
     {
         // Arrange
-        var userIdString = "missing-user-id";
+        var userIdString = TestValues.NewUserId().ToString();
         var mockUserManager = MockHelpers.MockUserManager();
         mockUserManager
             .Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
@@ -66,7 +66,7 @@ public class ResetAuthenticatorModelTests
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
-        Assert.Equal($"Unable to load user with ID '{userIdString}'.", notFound.Value);
+        Assert.Equal(UserMessages.UnableToLoadUser(userIdString), notFound.Value);
         mockUserManager.Verify(um => um.SetTwoFactorEnabledAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<bool>()), Times.Never);
         mockUserManager.Verify(um => um.ResetAuthenticatorKeyAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
         mockSignInManager.Verify(sm => sm.RefreshSignInAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
@@ -108,9 +108,9 @@ public class ResetAuthenticatorModelTests
         IdentityUser<Guid> resettingUser)
     {
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./EnableAuthenticator", redirect.PageName);
+        Assert.Equal(ResetAuthenticatorModel.EnableAuthenticatorPageName, redirect.PageName);
         Assert.Equal(
-            "Your authenticator app key has been reset, you will need to configure your authenticator app using the new key.",
+            ResetAuthenticatorModel.AuthenticatorResetMessage,
             model.StatusMessage);
         mockUserManager.Verify(um => um.SetTwoFactorEnabledAsync(resettingUser, false), Times.Once);
         mockUserManager.Verify(um => um.ResetAuthenticatorKeyAsync(resettingUser), Times.Once);
@@ -149,7 +149,7 @@ public class ResetAuthenticatorModelTests
     {
         var resettingUser = new IdentityUser<Guid>
         {
-            Id = Guid.NewGuid(),
+            Id = TestValues.NewUserId(),
             UserName = TestValues.NewEmailAddress()
         };
 

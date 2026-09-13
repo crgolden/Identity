@@ -12,13 +12,17 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ClaimscshtmlTests
 {
+    private static readonly string ClaimType = TestValues.NewClaimType();
+
+    private static readonly string ClaimValue = TestValues.NewClaimValue();
+
     private static readonly int ExistingEntityId = TestValues.NewEntityId();
     private static readonly int MissingEntityId = ExistingEntityId + 1;
 
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), Claims = [new ClientClaim { Id = ExistingEntityId, Type = "role", Value = "admin", ClientId = ExistingEntityId }] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), Claims = [new ClientClaim { Id = ExistingEntityId, Type = ClaimType, Value = ClaimValue, ClientId = ExistingEntityId }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);

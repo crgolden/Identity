@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore;
 
 public class RedirectUrisModel : PageModel
 {
+    internal const string DetailsPageName = "/Admin/Clients/Details/RedirectUris";
+
     private readonly IConfigurationDbContext _context;
 
     public RedirectUrisModel(IConfigurationDbContext context) => _context = context;
@@ -65,9 +67,9 @@ public class RedirectUrisModel : PageModel
             client.RedirectUris.Add(new ClientRedirectUri { RedirectUri = posted.RedirectUri, ClientId = id });
         }
 
-        client.Updated = DateTime.UtcNow;
+        client.Updated = DateTimeOffset.UtcNow.UtcDateTime;
         await _context.SaveChangesAsync();
-        return RedirectToPage("/Admin/Clients/Details/RedirectUris", new { id });
+        return RedirectToPage(DetailsPageName, new { id });
     }
 
     public async Task<IActionResult> OnPostAddRowAsync(int id)

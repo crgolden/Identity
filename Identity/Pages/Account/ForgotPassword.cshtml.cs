@@ -21,7 +21,7 @@ public class ForgotPasswordModel : PageModel
         ThrowIfNull(userManager);
         ThrowIfNull(serviceBusClientFactory);
         _userManager = userManager;
-        _serviceBusClient = serviceBusClientFactory.CreateClient("crgolden");
+        _serviceBusClient = serviceBusClientFactory.CreateClient(ServiceBusNames.ClientName);
     }
 
     [BindProperty]
@@ -37,7 +37,7 @@ public class ForgotPasswordModel : PageModel
         var user = await _userManager.FindByEmailAsync(Input.Email);
         if (user is null || !(await _userManager.IsEmailConfirmedAsync(user)))
         {
-            return RedirectToPage("./ForgotPasswordConfirmation");
+            return RedirectToPage(PageRoutes.SiblingForgotPasswordConfirmation);
         }
 
         var code = await _userManager.GeneratePasswordResetTokenAsync(user);
@@ -55,14 +55,14 @@ public class ForgotPasswordModel : PageModel
             var message = new ServiceBusMessage(htmlMessage)
             {
                 ReplyTo = From,
-                Subject = "Reset Password",
+                Subject = UserMessages.ResetPasswordSubject,
                 To = Input.Email
             };
-            var serviceBusSender = _serviceBusClient.CreateSender("email");
+            var serviceBusSender = _serviceBusClient.CreateSender(ServiceBusNames.EmailQueueName);
             await serviceBusSender.SendMessageAsync(message, HttpContext.RequestAborted);
         }
 
-        return RedirectToPage("./ForgotPasswordConfirmation");
+        return RedirectToPage(PageRoutes.SiblingForgotPasswordConfirmation);
     }
 
     public class InputModel

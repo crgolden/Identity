@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 public class RolesModel : PageModel
 {
+    internal const string DetailsPageName = "/Admin/Users/Details/Roles";
+
     private readonly UserManager<IdentityUser<Guid>> _userManager;
 
     public RolesModel(UserManager<IdentityUser<Guid>> userManager) => _userManager = userManager;
@@ -43,7 +45,7 @@ public class RolesModel : PageModel
             await _userManager.AddToRolesAsync(user, Roles);
         }
 
-        return RedirectToPage("/Admin/Users/Details/Roles", new { id });
+        return RedirectToPage(DetailsPageName, new { id });
     }
 
     public async Task<IActionResult> OnPostAddRowAsync(string id)

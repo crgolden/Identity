@@ -11,6 +11,8 @@ using Moq;
 [Trait("Category", "Unit")]
 public class CreatecshtmlTests
 {
+    private static readonly string RoleName = TestValues.NewRoleName();
+
     [Fact]
     public void OnGet_ReturnsPage()
     {
@@ -23,18 +25,18 @@ public class CreatecshtmlTests
         var rm = MockHelpers.MockRoleManager();
         rm.Setup(m => m.CreateAsync(It.IsAny<IdentityRole<Guid>>())).ReturnsAsync(IdentityResult.Success);
 
-        var model = new CreateModel(rm.Object) { RoleName = "Admin" };
+        var model = new CreateModel(rm.Object) { RoleName = RoleName };
         var result = await model.OnPostAsync();
 
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./Details/Index", redirect.PageName);
+        Assert.Equal(PageRoutes.SiblingDetailsIndex, redirect.PageName);
     }
 
     [Fact]
     public async Task OnPostAsync_ReturnsPage_WhenInvalid()
     {
         var model = new CreateModel(MockHelpers.MockRoleManager().Object);
-        model.ModelState.AddModelError("RoleName", "Required");
+        model.ModelState.AddModelError(nameof(CreateModel.RoleName), TestValues.NewValidationMessage());
 
         Assert.IsType<PageResult>(await model.OnPostAsync());
     }

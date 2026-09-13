@@ -9,6 +9,10 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 [Trait("Category", "Unit")]
 public class IndexcshtmlTests
 {
+    private static readonly string FirstRoleName = TestValues.NewFirstAlphabeticalName();
+
+    private static readonly string LastRoleName = TestValues.NewLastAlphabeticalName();
+
     [Fact]
     public void IsPageModel()
     {
@@ -19,13 +23,14 @@ public class IndexcshtmlTests
     public async Task OnGetAsync_ReturnsSortedByName()
     {
         var rm = MockHelpers.MockRoleManager();
-        var mockSet = MockDbSetHelper.BuildMockDbSet(new[] { new IdentityRole<Guid>("z-role"), new IdentityRole<Guid>("a-role") });
+        var data = new[] { new IdentityRole<Guid>(LastRoleName), new IdentityRole<Guid>(FirstRoleName) };
+        var mockSet = MockDbSetHelper.BuildMockDbSet(data);
         rm.Setup(m => m.Roles).Returns(mockSet.Object);
 
         var model = new IndexModel(rm.Object);
         await model.OnGetAsync();
 
-        Assert.Equal(2, model.Roles.Count);
-        Assert.Equal("a-role", model.Roles[0].Name);
+        Assert.Equal(data.Length, model.Roles.Count);
+        Assert.Equal(FirstRoleName, model.Roles[0].Name);
     }
 }

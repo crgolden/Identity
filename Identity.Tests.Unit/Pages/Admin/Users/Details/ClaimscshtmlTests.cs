@@ -12,6 +12,10 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ClaimscshtmlTests
 {
+    private static readonly string ClaimType = TestValues.NewClaimType();
+
+    private static readonly string ClaimValue = TestValues.NewClaimValue();
+
     private static readonly string ExistingUserId = TestValues.NewUserId().ToString();
     private static readonly string MissingUserId = TestValues.NewUserId().ToString();
 
@@ -21,14 +25,14 @@ public class ClaimscshtmlTests
         var user = new IdentityUser<Guid> { UserName = TestValues.NewUserName() };
         var um = MockHelpers.MockUserManager();
         um.Setup(m => m.FindByIdAsync(ExistingUserId)).ReturnsAsync(user);
-        um.Setup(m => m.GetClaimsAsync(user)).ReturnsAsync([new Claim("role", "Admin")]);
+        um.Setup(m => m.GetClaimsAsync(user)).ReturnsAsync([new Claim(ClaimType, ClaimValue)]);
 
         var model = new ClaimsModel(um.Object);
         var result = await model.OnGetAsync(ExistingUserId);
 
         Assert.IsType<PageResult>(result);
         var onlyClaim = Assert.Single(model.Claims);
-        Assert.Equal("role", onlyClaim.Type);
+        Assert.Equal(ClaimType, onlyClaim.Type);
     }
 
     [Fact]

@@ -12,13 +12,15 @@ using Moq;
 [Trait("Category", "Unit")]
 public class IndexcshtmlTests
 {
+    private static readonly string AlgorithmName = TestValues.NewSigningAlgorithmName();
+
     private static readonly string ExistingKey = TestValues.NewUserId().ToString();
     private static readonly string MissingKey = TestValues.NewUserId().ToString();
 
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var key = new Key { Id = ExistingKey, Algorithm = "RS256" };
+        var key = new Key { Id = ExistingKey, Algorithm = AlgorithmName };
         var mockSet = MockDbSetHelper.BuildMockDbSet([key]);
         var ctx = new Mock<IPersistedGrantDbContext>();
         ctx.Setup(c => c.Keys).Returns(mockSet.Object);
@@ -27,7 +29,7 @@ public class IndexcshtmlTests
         var result = await model.OnGetAsync(ExistingKey);
 
         Assert.IsType<PageResult>(result);
-        Assert.Equal("RS256", model.Key.Algorithm);
+        Assert.Equal(AlgorithmName, model.Key.Algorithm);
     }
 
     [Fact]

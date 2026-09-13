@@ -25,7 +25,7 @@ public class ForgotPasswordModelTests
         var model = new ForgotPasswordModel(userManagerMock.Object, factory);
 
         model.PageContext = new PageContext { HttpContext = new DefaultHttpContext() };
-        model.ModelState.AddModelError("Email", "Required");
+        model.ModelState.AddModelError(TestValues.NewModelStateKey(), TestValues.NewValidationMessage());
 
         model.Input = new ForgotPasswordModel.InputModel { Email = TestValues.NewEmailAddress() };
 
@@ -103,7 +103,7 @@ public class ForgotPasswordModelTests
         Mock<ServiceBusSender> senderMock)
     {
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./ForgotPasswordConfirmation", redirect.PageName);
+        Assert.Equal(PageRoutes.SiblingForgotPasswordConfirmation, redirect.PageName);
         senderMock.Verify(
             s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()),
             Times.Never);
@@ -115,9 +115,9 @@ public class ForgotPasswordModelTests
         senderMock.Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
         var clientMock = new Mock<ServiceBusClient>(MockBehavior.Strict);
-        clientMock.Setup(c => c.CreateSender("email")).Returns(senderMock.Object);
+        clientMock.Setup(c => c.CreateSender(ServiceBusNames.EmailQueueName)).Returns(senderMock.Object);
         var factoryMock = new Mock<IAzureClientFactory<ServiceBusClient>>(MockBehavior.Strict);
-        factoryMock.Setup(f => f.CreateClient("crgolden")).Returns(clientMock.Object);
+        factoryMock.Setup(f => f.CreateClient(ServiceBusNames.ClientName)).Returns(clientMock.Object);
         return (factoryMock.Object, senderMock);
     }
 }

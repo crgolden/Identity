@@ -11,6 +11,10 @@ using Moq;
 [Trait("Category", "Unit")]
 public class IndexcshtmlTests
 {
+    private static readonly string FirstScopeName = TestValues.NewFirstAlphabeticalName();
+
+    private static readonly string LastScopeName = TestValues.NewLastAlphabeticalName();
+
     [Fact]
     public void IsPageModel()
     {
@@ -21,13 +25,13 @@ public class IndexcshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsSortedByName()
     {
-        var data = new[] { new ApiScope { Name = "z" }, new ApiScope { Name = "a" } };
+        var data = new[] { new ApiScope { Name = LastScopeName }, new ApiScope { Name = FirstScopeName } };
         var mockSet = MockDbSetHelper.BuildMockDbSet(data);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
         var model = new IndexModel(ctx.Object);
         await model.OnGetAsync();
-        Assert.Equal("a", model.ApiScopes[0].Name);
-        Assert.Equal("z", model.ApiScopes[1].Name);
+        Assert.Equal(FirstScopeName, model.ApiScopes[0].Name);
+        Assert.Equal(LastScopeName, model.ApiScopes[1].Name);
     }
 }

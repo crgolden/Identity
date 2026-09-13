@@ -7,6 +7,12 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 public class DeletePersonalDataModel : PageModel
 {
+    internal const string IncorrectPasswordMessage =
+        "Incorrect password.";
+
+    internal const string DeleteFailedMessage =
+        "Unexpected error occurred deleting user.";
+
     private readonly UserManager<IdentityUser<Guid>> _userManager;
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
 
@@ -28,7 +34,7 @@ public class DeletePersonalDataModel : PageModel
         var user = await _userManager.GetUserAsync(User);
         if (user is null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound(UserMessages.UnableToLoadUser(_userManager.GetUserId(User)));
         }
 
         RequirePassword = await _userManager.HasPasswordAsync(user);
@@ -40,24 +46,24 @@ public class DeletePersonalDataModel : PageModel
         var user = await _userManager.GetUserAsync(User);
         if (user is null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound(UserMessages.UnableToLoadUser(_userManager.GetUserId(User)));
         }
 
         RequirePassword = await _userManager.HasPasswordAsync(user);
         if (RequirePassword && (IsNullOrWhiteSpace(Input?.Password) || !await _userManager.CheckPasswordAsync(user, Input.Password)))
         {
-            ModelState.AddModelError(Empty, "Incorrect password.");
+            ModelState.AddModelError(Empty, IncorrectPasswordMessage);
             return Page();
         }
 
         var result = await _userManager.DeleteAsync(user);
         if (!result.Succeeded)
         {
-            throw new InvalidOperationException($"Unexpected error occurred deleting user.");
+            throw new InvalidOperationException(DeleteFailedMessage);
         }
 
         await _signInManager.SignOutAsync();
-        return Redirect("~/");
+        return Redirect(PageRoutes.ContentRoot);
     }
 
     public class InputModel

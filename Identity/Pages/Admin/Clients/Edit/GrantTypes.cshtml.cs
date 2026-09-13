@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore;
 
 public class GrantTypesModel : PageModel
 {
+    internal const string DetailsPageName = "/Admin/Clients/Details/GrantTypes";
+
     private readonly IConfigurationDbContext _context;
 
     public GrantTypesModel(IConfigurationDbContext context) => _context = context;
@@ -65,9 +67,9 @@ public class GrantTypesModel : PageModel
             client.AllowedGrantTypes.Add(new ClientGrantType { GrantType = posted.GrantType, ClientId = id });
         }
 
-        client.Updated = DateTime.UtcNow;
+        client.Updated = DateTimeOffset.UtcNow.UtcDateTime;
         await _context.SaveChangesAsync();
-        return RedirectToPage("/Admin/Clients/Details/GrantTypes", new { id });
+        return RedirectToPage(DetailsPageName, new { id });
     }
 
     public async Task<IActionResult> OnPostAddRowAsync(int id)

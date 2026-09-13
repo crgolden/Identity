@@ -11,6 +11,10 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 [Authorize]
 public class GrantsModel : PageModel
 {
+    internal const string GrantsPagePath = "/Account/Manage/Grants";
+
+    internal const string RevokeActivityName = "identity.grants.revoke";
+
     private readonly IIdentityServerInteractionService _interaction;
     private readonly IClientStore _clients;
     private readonly IResourceStore _resources;
@@ -77,9 +81,9 @@ public class GrantsModel : PageModel
         await _interaction.RevokeUserConsentAsync(ClientId, HttpContext.RequestAborted);
         await _events.RaiseAsync(new GrantsRevokedEvent(User.GetSubjectId(), ClientId), HttpContext.RequestAborted);
         Telemetry.Metrics.GrantsRevoked(ClientId);
-        using var activity = Telemetry.StartActivity("identity.grants.revoke");
-        activity?.SetTag("client_id", ClientId);
-        return RedirectToPage("/Account/Manage/Grants");
+        using var activity = Telemetry.StartActivity(RevokeActivityName);
+        activity?.SetTag(Telemetry.Metrics.ClientIdTagName, ClientId);
+        return RedirectToPage(GrantsPagePath);
     }
 
     public class ViewModel

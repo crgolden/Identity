@@ -21,8 +21,8 @@ public class IndexcshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsClientsOrderedByClientId()
     {
-        var firstAlphabetically = TestValues.NewTokenFromFirstHalfOfAlphabet(9);
-        var lastAlphabetically = TestValues.NewTokenFromSecondHalfOfAlphabet(9);
+        var firstAlphabetically = TestValues.NewFirstAlphabeticalName();
+        var lastAlphabetically = TestValues.NewLastAlphabeticalName();
         var clients = new[]
         {
             new Client { Id = TestValues.NewEntityId(), ClientId = lastAlphabetically },

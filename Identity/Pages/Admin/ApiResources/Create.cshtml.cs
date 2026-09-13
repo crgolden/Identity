@@ -25,6 +25,6 @@ public class CreateModel : PageModel
 
         _context.ApiResources.Add(Resource);
         await _context.SaveChangesAsync();
-        return RedirectToPage("./Details/Index", new { id = Resource.Id });
+        return RedirectToPage(PageRoutes.SiblingDetailsIndex, new { id = Resource.Id });
     }
 }

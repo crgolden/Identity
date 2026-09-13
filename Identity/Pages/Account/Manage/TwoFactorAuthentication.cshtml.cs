@@ -6,6 +6,9 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 public class TwoFactorAuthenticationModel : PageModel
 {
+    internal const string BrowserForgottenMessage =
+        "The current browser has been forgotten. When you login again from this browser you will be prompted for your 2fa code.";
+
     private readonly UserManager<IdentityUser<Guid>> _userManager;
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
 
@@ -34,7 +37,7 @@ public class TwoFactorAuthenticationModel : PageModel
         var user = await _userManager.GetUserAsync(User);
         if (user is null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound(UserMessages.UnableToLoadUser(_userManager.GetUserId(User)));
         }
 
         HasAuthenticator = await _userManager.GetAuthenticatorKeyAsync(user) is not null;
@@ -49,11 +52,11 @@ public class TwoFactorAuthenticationModel : PageModel
         var user = await _userManager.GetUserAsync(User);
         if (user is null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound(UserMessages.UnableToLoadUser(_userManager.GetUserId(User)));
         }
 
         await _signInManager.ForgetTwoFactorClientAsync();
-        StatusMessage = "The current browser has been forgotten. When you login again from this browser you will be prompted for your 2fa code.";
+        StatusMessage = BrowserForgottenMessage;
         return RedirectToPage();
     }
 }

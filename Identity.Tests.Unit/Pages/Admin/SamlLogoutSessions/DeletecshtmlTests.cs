@@ -12,13 +12,15 @@ using Moq;
 [Trait("Category", "Unit")]
 public class DeletecshtmlTests
 {
+    private static readonly string SamlLogoutId = TestValues.NewLogoutId();
+
     private static readonly int ExistingEntityId = TestValues.NewEntityId();
     private static readonly int MissingEntityId = ExistingEntityId + 1;
 
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var session = new SamlLogoutSession { Id = ExistingEntityId, LogoutId = "logout1" };
+        var session = new SamlLogoutSession { Id = ExistingEntityId, LogoutId = SamlLogoutId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([session]);
         var ctx = new Mock<IPersistedGrantDbContext>();
         ctx.Setup(c => c.SamlLogoutSessions).Returns(mockSet.Object);
@@ -27,7 +29,7 @@ public class DeletecshtmlTests
         var result = await model.OnGetAsync(ExistingEntityId);
 
         Assert.IsType<PageResult>(result);
-        Assert.Equal("logout1", model.SamlLogoutSession.LogoutId);
+        Assert.Equal(SamlLogoutId, model.SamlLogoutSession.LogoutId);
     }
 
     [Fact]
@@ -55,7 +57,7 @@ public class DeletecshtmlTests
 
         ctx.Verify(c => c.SamlLogoutSessions.Remove(session), Times.Once);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./Index", redirect.PageName);
+        Assert.Equal(PageRoutes.SiblingIndex, redirect.PageName);
     }
 
     [Fact]

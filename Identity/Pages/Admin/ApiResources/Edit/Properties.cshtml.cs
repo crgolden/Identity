@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore;
 
 public class PropertiesModel : PageModel
 {
+    internal const string DetailsPageName = "/Admin/ApiResources/Details/Properties";
+
     private readonly IConfigurationDbContext _context;
 
     public PropertiesModel(IConfigurationDbContext context) => _context = context;
@@ -57,7 +59,7 @@ public class PropertiesModel : PageModel
             Properties.Where(p => p.Id == 0).Select(p => new ApiResourceProperty { Key = p.Key, Value = p.Value, ApiResourceId = id }));
 
         await _context.SaveChangesAsync();
-        return RedirectToPage("/Admin/ApiResources/Details/Properties", new { id });
+        return RedirectToPage(DetailsPageName, new { id });
     }
 
     public async Task<IActionResult> OnPostAddRowAsync(int id)

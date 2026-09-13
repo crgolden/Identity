@@ -1,5 +1,6 @@
 namespace Identity.Tests.Unit.Pages.Admin.Clients.Edit;
 
+using Duende.IdentityServer;
 using Duende.IdentityServer.EntityFramework.Entities;
 using Duende.IdentityServer.EntityFramework.Interfaces;
 using Identity.Pages.Admin.Clients.Edit;
@@ -12,13 +13,21 @@ using Moq;
 [Trait("Category", "Unit")]
 public class SecretscshtmlTests
 {
+    private static readonly string ExistingSecretValue = TestValues.NewSecretValue();
+
+    private static readonly string PostedSecretValue = TestValues.NewSecretValue();
+
+    private static readonly string ExistingDescription = TestValues.NewDescription();
+
+    private static readonly string PostedDescription = TestValues.NewDescription();
+
     private static readonly int ExistingEntityId = TestValues.NewEntityId();
     private static readonly int MissingEntityId = ExistingEntityId + 1;
 
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), ClientSecrets = [new ClientSecret { Id = ExistingEntityId, Value = "hashed", Type = "SharedSecret", ClientId = ExistingEntityId }] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), ClientSecrets = [new ClientSecret { Id = ExistingEntityId, Value = ExistingSecretValue, Type = IdentityServerConstants.SecretTypes.SharedSecret, ClientId = ExistingEntityId }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -54,14 +63,14 @@ public class SecretscshtmlTests
 
         var model = new SecretsModel(ctx.Object)
         {
-            Secrets = [new ClientSecret { Id = 0, Value = "secret123", Type = "SharedSecret" }],
+            Secrets = [new ClientSecret { Id = 0, Value = PostedSecretValue, Type = IdentityServerConstants.SecretTypes.SharedSecret }],
         };
         var result = await model.OnPostAsync(ExistingEntityId);
 
         var onlyClientSecret = Assert.Single(client.ClientSecrets);
-        Assert.Equal("secret123", onlyClientSecret.Value);
+        Assert.Equal(PostedSecretValue, onlyClientSecret.Value);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("/Admin/Clients/Details/Secrets", redirect.PageName);
+        Assert.Equal(SecretsModel.DetailsPageName, redirect.PageName);
     }
 
     [Fact]
@@ -80,7 +89,7 @@ public class SecretscshtmlTests
     [Fact]
     public async Task OnPostAsync_UpdatesExistingSecret_WhenPostedWithId()
     {
-        var existing = new ClientSecret { Id = ExistingEntityId, Value = "hashed", Type = "SharedSecret", Description = "old", ClientId = ExistingEntityId };
+        var existing = new ClientSecret { Id = ExistingEntityId, Value = ExistingSecretValue, Type = IdentityServerConstants.SecretTypes.SharedSecret, Description = ExistingDescription, ClientId = ExistingEntityId };
         var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), ClientSecrets = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
@@ -89,18 +98,18 @@ public class SecretscshtmlTests
 
         var model = new SecretsModel(ctx.Object)
         {
-            Secrets = [new ClientSecret { Id = ExistingEntityId, Type = "SharedSecret", Description = "updated" }],
+            Secrets = [new ClientSecret { Id = ExistingEntityId, Type = IdentityServerConstants.SecretTypes.SharedSecret, Description = PostedDescription }],
         };
         await model.OnPostAsync(ExistingEntityId);
 
-        Assert.Equal("updated", existing.Description);
-        Assert.Equal("hashed", existing.Value);
+        Assert.Equal(PostedDescription, existing.Description);
+        Assert.Equal(ExistingSecretValue, existing.Value);
     }
 
     [Fact]
     public async Task OnPostAsync_RemovesSecret_WhenNotPosted()
     {
-        var existing = new ClientSecret { Id = ExistingEntityId, Value = "hashed", Type = "SharedSecret", ClientId = ExistingEntityId };
+        var existing = new ClientSecret { Id = ExistingEntityId, Value = ExistingSecretValue, Type = IdentityServerConstants.SecretTypes.SharedSecret, ClientId = ExistingEntityId };
         var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), ClientSecrets = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
@@ -126,7 +135,7 @@ public class SecretscshtmlTests
 
         Assert.IsType<PageResult>(result);
         var onlySecret = Assert.Single(model.Secrets);
-        Assert.Equal("SharedSecret", onlySecret.Type);
+        Assert.Equal(IdentityServerConstants.SecretTypes.SharedSecret, onlySecret.Type);
     }
 
     [Fact]
@@ -150,7 +159,7 @@ public class SecretscshtmlTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
 
-        var model = new SecretsModel(ctx.Object) { Secrets = [new ClientSecret { Id = ExistingEntityId, Value = "hashed", Type = "SharedSecret" }] };
+        var model = new SecretsModel(ctx.Object) { Secrets = [new ClientSecret { Id = ExistingEntityId, Value = ExistingSecretValue, Type = IdentityServerConstants.SecretTypes.SharedSecret }] };
         var result = await model.OnPostRemoveRowAsync(ExistingEntityId, 0);
 
         Assert.IsType<PageResult>(result);

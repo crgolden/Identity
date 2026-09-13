@@ -1,6 +1,8 @@
 namespace Identity.Tests.Unit.Pages.Account.Manage;
 
 using System.Security.Claims;
+using Duende.IdentityModel;
+using Duende.IdentityServer;
 using Duende.IdentityServer.Events;
 using Duende.IdentityServer.Models;
 using Duende.IdentityServer.Services;
@@ -18,6 +20,20 @@ using Moq;
 public class GrantsIndexModelTests
 {
     private static readonly string ExistingClientName = TestValues.NewClientName();
+
+    private static readonly string GrantedClientId = TestValues.NewClientIdentifier();
+
+    private static readonly string UnknownClientId = TestValues.NewClientIdentifier();
+
+    private static readonly string RevokedClientId = TestValues.NewClientIdentifier();
+
+    private static readonly string SignedInSubjectId = TestValues.NewSubjectId();
+
+    private static readonly string AuthenticationType = TestValues.NewSchemeName();
+
+    private static readonly string IdentityResourceDisplayName = TestValues.NewDisplayName();
+
+    private static readonly string ApiScopeDisplayName = TestValues.NewDisplayName();
 
     [Fact]
     public async Task OnGetAsync_NoGrants_SetsEmptyViewModel()
@@ -59,8 +75,8 @@ public class GrantsIndexModelTests
             .Returns(Task.CompletedTask);
 
         var httpContext = new DefaultHttpContext();
-        var claims = new[] { new Claim("sub", "user1") };
-        var identity = new ClaimsIdentity(claims, "test");
+        var claims = new[] { new Claim(JwtClaimTypes.Subject, SignedInSubjectId) };
+        var identity = new ClaimsIdentity(claims, AuthenticationType);
         httpContext.User = new ClaimsPrincipal(identity);
 
         var model = CreateModel(
@@ -69,39 +85,44 @@ public class GrantsIndexModelTests
             mockResources.Object,
             mockEvents.Object,
             httpContext);
-        model.ClientId = "client1";
+        model.ClientId = RevokedClientId;
 
         // Act
         var result = await model.OnPostAsync();
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("/Account/Manage/Grants", redirect.PageName);
+        Assert.Equal(GrantsModel.GrantsPagePath, redirect.PageName);
     }
 
     [Fact]
     public async Task OnGetAsync_WithGrants_ClientFound_PopulatesViewModelCorrectly()
     {
         // Arrange
-        var grant = new Grant { ClientId = "c1", Scopes = ["openid", "profile"], CreationTime = DateTime.UtcNow };
-        var client = new Client { ClientId = "c1", ClientName = ExistingClientName };
+        var grant = new Grant
+        {
+            ClientId = GrantedClientId,
+            Scopes = [IdentityServerConstants.StandardScopes.OpenId, IdentityServerConstants.StandardScopes.Profile],
+            CreationTime = TestValues.NewUtcDateTime(),
+        };
+        var client = new Client { ClientId = GrantedClientId, ClientName = ExistingClientName };
 
         var mockInteraction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
         mockInteraction.Setup(x => x.GetAllUserGrantsAsync(It.IsAny<CancellationToken>())).ReturnsAsync([grant]);
 
         var mockClients = new Mock<IClientStore>(MockBehavior.Strict);
-        mockClients.Setup(x => x.FindClientByIdAsync("c1", It.IsAny<CancellationToken>())).ReturnsAsync(client);
+        mockClients.Setup(x => x.FindClientByIdAsync(GrantedClientId, It.IsAny<CancellationToken>())).ReturnsAsync(client);
 
         var mockResources = new Mock<IResourceStore>(MockBehavior.Strict);
         mockResources
             .Setup(x => x.FindIdentityResourcesByScopeNameAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((IReadOnlyCollection<IdentityResource>)[new IdentityResource { Name = "openid", DisplayName = "Your user identifier" }]);
+            .ReturnsAsync((IReadOnlyCollection<IdentityResource>)[new IdentityResource { Name = IdentityServerConstants.StandardScopes.OpenId, DisplayName = IdentityResourceDisplayName }]);
         mockResources
             .Setup(x => x.FindApiResourcesByScopeNameAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyCollection<ApiResource>)[]);
         mockResources
             .Setup(x => x.FindApiScopesByNameAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((IReadOnlyCollection<ApiScope>)[new ApiScope { Name = "profile", DisplayName = "Profile" }]);
+            .ReturnsAsync((IReadOnlyCollection<ApiScope>)[new ApiScope { Name = IdentityServerConstants.StandardScopes.Profile, DisplayName = ApiScopeDisplayName }]);
 
         var mockEvents = new Mock<IEventService>(MockBehavior.Strict);
         var model = CreateModel(mockInteraction.Object, mockClients.Object, mockResources.Object, mockEvents.Object);
@@ -112,23 +133,28 @@ public class GrantsIndexModelTests
         // Assert
         var grants = model.View.Grants.ToList();
         var onlyGrant = Assert.Single(grants);
-        Assert.Equal("c1", onlyGrant.ClientId);
+        Assert.Equal(GrantedClientId, onlyGrant.ClientId);
         Assert.Equal(ExistingClientName, onlyGrant.ClientName);
-        Assert.Contains("Your user identifier", onlyGrant.IdentityGrantNames);
-        Assert.Contains("Profile", onlyGrant.ApiGrantNames);
+        Assert.Contains(IdentityResourceDisplayName, onlyGrant.IdentityGrantNames);
+        Assert.Contains(ApiScopeDisplayName, onlyGrant.ApiGrantNames);
     }
 
     [Fact]
     public async Task OnGetAsync_WithGrants_ClientNotFound_SkipsGrant()
     {
         // Arrange
-        var grant = new Grant { ClientId = "missing-client", Scopes = ["openid"], CreationTime = DateTime.UtcNow };
+        var grant = new Grant
+        {
+            ClientId = UnknownClientId,
+            Scopes = [IdentityServerConstants.StandardScopes.OpenId],
+            CreationTime = TestValues.NewUtcDateTime(),
+        };
 
         var mockInteraction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
         mockInteraction.Setup(x => x.GetAllUserGrantsAsync(It.IsAny<CancellationToken>())).ReturnsAsync([grant]);
 
         var mockClients = new Mock<IClientStore>(MockBehavior.Strict);
-        mockClients.Setup(x => x.FindClientByIdAsync("missing-client", It.IsAny<CancellationToken>()))
+        mockClients.Setup(x => x.FindClientByIdAsync(UnknownClientId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Client?)null);
 
         var mockResources = new Mock<IResourceStore>(MockBehavior.Strict);
@@ -146,16 +172,26 @@ public class GrantsIndexModelTests
     public async Task OnGetAsync_MultipleGrants_OnlyClientFoundGrantsIncluded()
     {
         // Arrange
-        var grant1 = new Grant { ClientId = "c1", Scopes = ["openid"], CreationTime = DateTime.UtcNow };
-        var grant2 = new Grant { ClientId = "c2-missing", Scopes = ["profile"], CreationTime = DateTime.UtcNow };
-        var client1 = new Client { ClientId = "c1", ClientName = TestValues.NewClientName() };
+        var grant1 = new Grant
+        {
+            ClientId = GrantedClientId,
+            Scopes = [IdentityServerConstants.StandardScopes.OpenId],
+            CreationTime = TestValues.NewUtcDateTime(),
+        };
+        var grant2 = new Grant
+        {
+            ClientId = UnknownClientId,
+            Scopes = [IdentityServerConstants.StandardScopes.Profile],
+            CreationTime = TestValues.NewUtcDateTime(),
+        };
+        var client1 = new Client { ClientId = GrantedClientId, ClientName = TestValues.NewClientName() };
 
         var mockInteraction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
         mockInteraction.Setup(x => x.GetAllUserGrantsAsync(It.IsAny<CancellationToken>())).ReturnsAsync([grant1, grant2]);
 
         var mockClients = new Mock<IClientStore>(MockBehavior.Strict);
-        mockClients.Setup(x => x.FindClientByIdAsync("c1", It.IsAny<CancellationToken>())).ReturnsAsync(client1);
-        mockClients.Setup(x => x.FindClientByIdAsync("c2-missing", It.IsAny<CancellationToken>()))
+        mockClients.Setup(x => x.FindClientByIdAsync(GrantedClientId, It.IsAny<CancellationToken>())).ReturnsAsync(client1);
+        mockClients.Setup(x => x.FindClientByIdAsync(UnknownClientId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Client?)null);
 
         var mockResources = new Mock<IResourceStore>(MockBehavior.Strict);
@@ -177,7 +213,7 @@ public class GrantsIndexModelTests
 
         // Assert
         var onlyGrant = Assert.Single(model.View.Grants);
-        Assert.Equal("c1", onlyGrant.ClientId);
+        Assert.Equal(GrantedClientId, onlyGrant.ClientId);
     }
 
     [Fact]
@@ -198,16 +234,16 @@ public class GrantsIndexModelTests
         mockEvents.Setup(x => x.RaiseAsync(It.IsAny<GrantsRevokedEvent>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
         var httpContext = new DefaultHttpContext();
-        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity([new Claim("sub", "user1")], "test"));
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(JwtClaimTypes.Subject, SignedInSubjectId)], AuthenticationType));
 
         var model = CreateModel(mockInteraction.Object, mockClients.Object, mockResources.Object, mockEvents.Object, httpContext);
-        model.ClientId = "client1";
+        model.ClientId = RevokedClientId;
 
         // Act
         await model.OnPostAsync();
 
         // Assert
-        Assert.Equal("client1", revokedClientId);
+        Assert.Equal(RevokedClientId, revokedClientId);
     }
 
     private static GrantsModel CreateModel(

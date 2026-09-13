@@ -16,6 +16,19 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ConfirmEmailChangeModelTests
 {
+    public static TheoryData<string?, string?, string?> MissingArgumentCases() => new()
+    {
+        { null, TestValues.NewEmailAddress(), TestValues.NewEmailConfirmationToken() },
+        { TestValues.NewUserId().ToString(), null, TestValues.NewEmailConfirmationToken() },
+        { TestValues.NewUserId().ToString(), TestValues.NewEmailAddress(), null },
+    };
+
+    public static TheoryData<string> BlankEmailCases() => new()
+    {
+        string.Empty,
+        TestValues.NewWhitespaceValue(),
+    };
+
     [Fact]
     public void Constructor_WithValidDependencies_DoesNotThrow()
     {
@@ -45,9 +58,7 @@ public class ConfirmEmailChangeModelTests
     }
 
     [Theory]
-    [InlineData(null, "user@example.com", "code")]
-    [InlineData("userId", null, "code")]
-    [InlineData("userId", "user@example.com", null)]
+    [MemberData(nameof(MissingArgumentCases))]
     public async Task OnGetAsync_NullParameters_RedirectsToIndex(string? userId, string? email, string? code)
     {
         // Arrange
@@ -60,7 +71,7 @@ public class ConfirmEmailChangeModelTests
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("/Index", redirect.PageName);
+        Assert.Equal(PageRoutes.Home, redirect.PageName);
     }
 
     [Fact]
@@ -81,7 +92,7 @@ public class ConfirmEmailChangeModelTests
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
-        Assert.Equal($"Unable to load user with ID '{userId}'.", notFound.Value);
+        Assert.Equal(UserMessages.UnableToLoadUser(userId), notFound.Value);
     }
 
     [Fact]
@@ -94,11 +105,11 @@ public class ConfirmEmailChangeModelTests
         var encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
         var user = new IdentityUser<Guid>
         {
-            Id = Guid.NewGuid()
+            Id = TestValues.NewUserId()
         };
         var userManagerMock = MockHelpers.MockUserManager();
         userManagerMock.Setup(um => um.FindByIdAsync(It.Is<string>(s => s == userId))).ReturnsAsync(user);
-        userManagerMock.Setup(um => um.ChangeEmailAsync(It.IsAny<IdentityUser<Guid>>(), It.Is<string>(s => s == email), It.Is<string>(s => s == token))).ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "invalid token" }));
+        userManagerMock.Setup(um => um.ChangeEmailAsync(It.IsAny<IdentityUser<Guid>>(), It.Is<string>(s => s == email), It.Is<string>(s => s == token))).ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = TestValues.NewFailureReason() }));
         var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
         var model = new ConfirmEmailChangeModel(userManagerMock.Object, signInManagerMock.Object);
 
@@ -107,7 +118,7 @@ public class ConfirmEmailChangeModelTests
 
         // Assert
         Assert.IsType<PageResult>(result);
-        Assert.Equal("Error changing email.", model.StatusMessage);
+        Assert.Equal(ConfirmEmailChangeModel.EmailChangeFailedMessage, model.StatusMessage);
     }
 
     [Fact]
@@ -120,12 +131,12 @@ public class ConfirmEmailChangeModelTests
         var encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
         var user = new IdentityUser<Guid>
         {
-            Id = Guid.NewGuid()
+            Id = TestValues.NewUserId()
         };
         var userManagerMock = MockHelpers.MockUserManager();
         userManagerMock.Setup(um => um.FindByIdAsync(It.Is<string>(s => s == userId))).ReturnsAsync(user);
         userManagerMock.Setup(um => um.ChangeEmailAsync(It.IsAny<IdentityUser<Guid>>(), It.Is<string>(s => s == email), It.Is<string>(s => s == token))).ReturnsAsync(IdentityResult.Success);
-        userManagerMock.Setup(um => um.SetUserNameAsync(It.IsAny<IdentityUser<Guid>>(), It.Is<string>(s => s == email))).ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "set user name failed" }));
+        userManagerMock.Setup(um => um.SetUserNameAsync(It.IsAny<IdentityUser<Guid>>(), It.Is<string>(s => s == email))).ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = TestValues.NewFailureReason() }));
         var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
         var model = new ConfirmEmailChangeModel(userManagerMock.Object, signInManagerMock.Object);
 
@@ -134,7 +145,7 @@ public class ConfirmEmailChangeModelTests
 
         // Assert
         Assert.IsType<PageResult>(result);
-        Assert.Equal("Error changing user name.", model.StatusMessage);
+        Assert.Equal(ConfirmEmailChangeModel.UserNameChangeFailedMessage, model.StatusMessage);
     }
 
     [Fact]
@@ -147,7 +158,7 @@ public class ConfirmEmailChangeModelTests
         var encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
         var user = new IdentityUser<Guid>
         {
-            Id = Guid.NewGuid()
+            Id = TestValues.NewUserId()
         };
         var userManagerMock = MockHelpers.MockUserManager();
         userManagerMock.Setup(um => um.FindByIdAsync(It.Is<string>(s => s == userId))).ReturnsAsync(user);
@@ -162,18 +173,17 @@ public class ConfirmEmailChangeModelTests
 
         // Assert
         Assert.IsType<PageResult>(result);
-        Assert.Equal("Thank you for confirming your email change.", model.StatusMessage);
+        Assert.Equal(ConfirmEmailChangeModel.EmailChangeConfirmedMessage, model.StatusMessage);
         signInManagerMock.Verify(s => s.RefreshSignInAsync(It.Is<IdentityUser<Guid>>(u => u == user)), Times.Once);
     }
 
     [Theory]
-    [InlineData("")]
-    [InlineData("   ")]
+    [MemberData(nameof(BlankEmailCases))]
     public async Task OnGetAsync_EmptyOrWhitespaceEmail_RedirectsToIndex(string email)
     {
         // Arrange
-        const string userId = "user-4";
-        const string token = "var-token";
+        var userId = TestValues.NewUserId().ToString();
+        var token = TestValues.NewEmailConfirmationToken();
         var encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
         var userManagerMock = MockHelpers.MockUserManager();
         var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
@@ -184,20 +194,20 @@ public class ConfirmEmailChangeModelTests
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("/Index", redirect.PageName);
+        Assert.Equal(PageRoutes.Home, redirect.PageName);
     }
 
     [Fact]
     public async Task OnGetAsync_SpecialCharacterEmail_ProceedsAndReturnSuccess()
     {
         // Arrange
-        const string userId = "user-4";
-        const string email = "user+special@ex\u00E4mple.com";
-        const string token = "var-token";
+        var userId = TestValues.NewUserId().ToString();
+        var email = TestValues.NewNonAsciiEmailAddress();
+        var token = TestValues.NewEmailConfirmationToken();
         var encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
         var user = new IdentityUser<Guid>
         {
-            Id = Guid.NewGuid()
+            Id = TestValues.NewUserId()
         };
         var userManagerMock = MockHelpers.MockUserManager();
         userManagerMock.Setup(um => um.FindByIdAsync(It.Is<string>(s => s == userId))).ReturnsAsync(user);
@@ -212,6 +222,6 @@ public class ConfirmEmailChangeModelTests
 
         // Assert
         Assert.IsType<PageResult>(result);
-        Assert.Equal("Thank you for confirming your email change.", model.StatusMessage);
+        Assert.Equal(ConfirmEmailChangeModel.EmailChangeConfirmedMessage, model.StatusMessage);
     }
 }

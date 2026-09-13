@@ -10,6 +10,10 @@ using Microsoft.AspNetCore.Mvc;
 [Authorize]
 public class DeviceModel : ConsentPageModelBase
 {
+    internal const string DeviceSuccessPagePath = "/Account/Manage/DeviceSuccess";
+
+    internal const string InvalidUserCodeMessage = "Invalid user code.";
+
     private readonly IDeviceFlowInteractionService _interaction;
     private readonly IEventService _events;
 
@@ -33,7 +37,7 @@ public class DeviceModel : ConsentPageModelBase
 
         if (!await SetViewModelAsync(userCode))
         {
-            ModelState.AddModelError(Empty, "Invalid user code.");
+            ModelState.AddModelError(Empty, InvalidUserCodeMessage);
             return Page();
         }
 
@@ -49,12 +53,12 @@ public class DeviceModel : ConsentPageModelBase
         var request = await _interaction.GetAuthorizationContextAsync(userCode, HttpContext.RequestAborted);
         if (request == null)
         {
-            return RedirectToPage("/Error");
+            return RedirectToPage(PageRoutes.Error);
         }
 
         ConsentResponse? grantedConsent = null;
 
-        if (string.Equals(Input.Button, "no", StringComparison.Ordinal))
+        if (string.Equals(Input.Button, ConsentModel.DenyButtonValue, StringComparison.Ordinal))
         {
             grantedConsent = new ConsentResponse { Error = InteractionError.AccessDenied };
             await _events.RaiseAsync(
@@ -67,7 +71,7 @@ public class DeviceModel : ConsentPageModelBase
                 request.Client.ClientId,
                 request.ValidatedResources.ParsedScopes.Select(s => s.ParsedName));
         }
-        else if (string.Equals(Input.Button, "yes", StringComparison.Ordinal))
+        else if (string.Equals(Input.Button, ConsentModel.GrantButtonValue, StringComparison.Ordinal))
         {
             if (Input.ScopesConsented.Any())
             {
@@ -115,12 +119,12 @@ public class DeviceModel : ConsentPageModelBase
         if (grantedConsent != null)
         {
             await _interaction.HandleRequestAsync(userCode, grantedConsent, HttpContext.RequestAborted);
-            return RedirectToPage("/Account/Manage/DeviceSuccess");
+            return RedirectToPage(DeviceSuccessPagePath);
         }
 
         if (!await SetViewModelAsync(userCode))
         {
-            return RedirectToPage("/Error");
+            return RedirectToPage(PageRoutes.Error);
         }
 
         return Page();

@@ -8,6 +8,13 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 public class Disable2faModel : PageModel
 #pragma warning restore S101
 {
+    internal const string TwoFactorNotEnabledMessage = "Cannot disable 2FA for user as it's not currently enabled.";
+
+    internal const string DisableFailedMessage = "Unexpected error occurred disabling 2FA.";
+
+    internal const string TwoFactorDisabledMessage =
+        "2fa has been disabled. You can reenable 2fa when you setup an authenticator app";
+
     private readonly UserManager<IdentityUser<Guid>> _userManager;
 
     public Disable2faModel(UserManager<IdentityUser<Guid>> userManager)
@@ -23,7 +30,7 @@ public class Disable2faModel : PageModel
         var user = await _userManager.GetUserAsync(User);
         if (user is null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound(UserMessages.UnableToLoadUser(_userManager.GetUserId(User)));
         }
 
         if (!await _userManager.GetTwoFactorEnabledAsync(user))
@@ -39,7 +46,7 @@ public class Disable2faModel : PageModel
         var user = await _userManager.GetUserAsync(User);
         if (user is null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound(UserMessages.UnableToLoadUser(_userManager.GetUserId(User)));
         }
 
         var disable2faResult = await _userManager.SetTwoFactorEnabledAsync(user, false);
@@ -49,6 +56,6 @@ public class Disable2faModel : PageModel
         }
 
         StatusMessage = "2fa has been disabled. You can reenable 2fa when you setup an authenticator app";
-        return RedirectToPage("./TwoFactorAuthentication");
+        return RedirectToPage(PageRoutes.SiblingTwoFactorAuthentication);
     }
 }

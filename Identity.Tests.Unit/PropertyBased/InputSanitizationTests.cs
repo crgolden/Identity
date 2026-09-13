@@ -1,18 +1,54 @@
 namespace Identity.Tests.Unit.PropertyBased;
 
+using System.Net.Mime;
 using System.Security.Cryptography;
 using System.Text;
 using CsCheck;
 using Infrastructure;
+using static SanitizationFixtureConstants;
 
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public sealed class InputSanitizationTests
 {
+    private static readonly string ProtocolRelativePrefix = Uri.SchemeDelimiter.TrimStart(SchemeSeparator);
+
+    private static readonly int Sha256HexLength =
+        Convert.ToHexString(new byte[SHA256.HashSizeInBytes]).Length;
+
+    public static TheoryData<string> ExternalUrls()
+    {
+        var host = TestValues.NewExternalHost();
+        var absoluteUrl = Uri.UriSchemeHttps + Uri.SchemeDelimiter + host;
+        return new TheoryData<string>
+        {
+            absoluteUrl,
+            Uri.UriSchemeHttp + Uri.SchemeDelimiter + host + TestValues.NewLocalPath() +
+                QueryStringStart + TestValues.NewPathSegment() + QueryStringAssignment + TestValues.NewEntityId(),
+            ProtocolRelativePrefix + host,
+            ProtocolRelativePrefix + host + TestValues.NewLocalPath(),
+            JavaScriptScheme + SchemeSeparator + TestValues.NewPathSegment(),
+            DataScheme + SchemeSeparator + MediaTypeNames.Text.Html + DataUrlSeparator + TestValues.NewPathSegment(),
+            absoluteUrl + TestValues.NewLocalPath() + QueryStringStart + TestValues.NewPathSegment() +
+                QueryStringAssignment + Uri.UriSchemeHttps + Uri.SchemeDelimiter + TestValues.NewExternalHost(),
+            TabCharacter + absoluteUrl,
+            SpaceCharacter + absoluteUrl,
+        };
+    }
+
+    public static TheoryData<string> LocalUrls() => new()
+    {
+        new string(PathSeparator, MinGeneratedInputLength),
+        TestValues.NewLocalPath(),
+        TestValues.NewLocalPath() + TestValues.NewLocalPath(),
+        TestValues.NewLocalPath() + TestValues.NewLocalPath() + TestValues.NewLocalPath(),
+        PageRoutes.ContentRoot + TestValues.NewPathSegment(),
+    };
+
     [Fact]
     public void GravatarHash_IsAlwaysLowercase()
     {
-        Gen.String[1, 200]
+        Gen.String[MinGeneratedInputLength, MaxGeneratedInputLength]
             .Sample(email =>
             {
                 var hash = ComputeGravatarHash(email);
@@ -23,11 +59,11 @@ public sealed class InputSanitizationTests
     [Fact]
     public void GravatarHash_IsAlways64HexChars()
     {
-        Gen.String[1, 200]
+        Gen.String[MinGeneratedInputLength, MaxGeneratedInputLength]
             .Sample(email =>
             {
                 var hash = ComputeGravatarHash(email);
-                Assert.Equal(64, hash.Length);
+                Assert.Equal(Sha256HexLength, hash.Length);
                 Assert.True(hash.All(c => char.IsAsciiHexDigitLower(c) || char.IsAsciiDigit(c)));
             });
     }
@@ -35,7 +71,7 @@ public sealed class InputSanitizationTests
     [Fact]
     public void GravatarHash_IsDeterministic()
     {
-        Gen.String[1, 200]
+        Gen.String[MinGeneratedInputLength, MaxGeneratedInputLength]
             .Sample(email =>
             {
                 var hash1 = ComputeGravatarHash(email);
@@ -47,7 +83,7 @@ public sealed class InputSanitizationTests
     [Fact]
     public void GravatarHash_EmailNormalization_CaseInsensitive()
     {
-        Gen.String[1, 50]
+        Gen.String[MinGeneratedInputLength, MaxNormalizedInputLength]
             .Select(s => s.Replace('\0', 'a').Trim())
             .Where(s => s.Length > 0)
             .Sample(input =>
@@ -62,31 +98,17 @@ public sealed class InputSanitizationTests
     public void GravatarHash_EmailWhitespaceTrimmed()
     {
         var trimmed = TestValues.NewEmailAddress();
-        var paddedWithWhitespace = $"  {trimmed}  ";
+        var paddedWithWhitespace = TestValues.NewWhitespaceValue() + trimmed + TestValues.NewWhitespaceValue();
         Assert.Equal(ComputeGravatarHash(paddedWithWhitespace), ComputeGravatarHash(trimmed));
     }
 
     [Theory]
-    [InlineData("https://evil.com")]
-    [InlineData("http://evil.com/path?query=1")]
-    [InlineData("//evil.com")]
-    [InlineData("//evil.com/path")]
-    [InlineData("javascript:alert(1)")]
-    [InlineData("data:text/html,<script>alert(1)</script>")]
-    [InlineData("https://evil.com/redirect?url=https://localhost")]
-    [InlineData("\thttps://evil.com")]
-    [InlineData(" https://evil.com")]
-    public void ExternalUrl_IsNotLocalUrl(string url) =>
-        Assert.False(IsLocalUrl(url), $"URL '{url}' was incorrectly classified as local.");
+    [MemberData(nameof(ExternalUrls))]
+    public void ExternalUrl_IsNotLocalUrl(string url) => Assert.False(IsLocalUrl(url));
 
     [Theory]
-    [InlineData("/")]
-    [InlineData("/Account/Login")]
-    [InlineData("/Account/Manage")]
-    [InlineData("/Account/Manage/ChangePassword")]
-    [InlineData("~/Account/Login")]
-    public void LocalUrl_IsLocalUrl(string url) =>
-        Assert.True(IsLocalUrl(url), $"URL '{url}' should be local.");
+    [MemberData(nameof(LocalUrls))]
+    public void LocalUrl_IsLocalUrl(string url) => Assert.True(IsLocalUrl(url));
 
     private static string ComputeGravatarHash(string identifier)
     {

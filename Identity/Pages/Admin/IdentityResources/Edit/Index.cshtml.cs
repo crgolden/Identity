@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore;
 
 public class IndexModel : PageModel
 {
+    internal const string DetailsPageName = "/Admin/IdentityResources/Details/Index";
+
     private readonly IConfigurationDbContext _context;
 
     public IndexModel(IConfigurationDbContext context) => _context = context;
@@ -47,8 +49,8 @@ public class IndexModel : PageModel
         resource.ShowInDiscoveryDocument = Resource.ShowInDiscoveryDocument;
         resource.Required = Resource.Required;
         resource.Emphasize = Resource.Emphasize;
-        resource.Updated = DateTime.UtcNow;
+        resource.Updated = DateTimeOffset.UtcNow.UtcDateTime;
         await _context.SaveChangesAsync();
-        return RedirectToPage("/Admin/IdentityResources/Details/Index", new { id });
+        return RedirectToPage(DetailsPageName, new { id });
     }
 }

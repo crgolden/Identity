@@ -13,14 +13,14 @@ public static class HttpContextExtensions
         if (exception is not null && activity is not null)
         {
             activity.SetStatus(ActivityStatusCode.Error, exception.Message);
-            activity.AddEvent(new ActivityEvent("exception", tags: new ActivityTagsCollection
+            activity.AddEvent(new ActivityEvent(Telemetry.Metrics.ExceptionEventName, tags: new ActivityTagsCollection
             {
                 { Telemetry.Metrics.ExceptionTypeTagName, exception.GetType().FullName },
-                { "exception.message", exception.Message },
+                { Telemetry.Metrics.ExceptionMessageTagName, exception.Message },
             }));
         }
 
-        Telemetry.Metrics.ExceptionOccurred(exception?.GetType().Name ?? "Unknown");
+        Telemetry.Metrics.ExceptionOccurred(exception?.GetType().Name ?? Telemetry.Metrics.UnknownExceptionType);
 
         if (context.Request.Headers.Accept.ToString().Contains("text/html", StringComparison.OrdinalIgnoreCase))
         {

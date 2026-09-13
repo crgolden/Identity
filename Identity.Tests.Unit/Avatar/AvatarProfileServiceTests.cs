@@ -1,6 +1,7 @@
 namespace Identity.Tests.Unit.Avatar;
 
 using System.Security.Claims;
+using Duende.IdentityModel;
 using Duende.IdentityServer.Models;
 using Identity.Avatar;
 using Infrastructure;
@@ -11,9 +12,10 @@ using Moq;
 [Trait("Category", "Unit")]
 public class AvatarProfileServiceTests
 {
-    private const string EmailClaimType = "email";
-    private const string SubjectClaimType = "sub";
-    private const string AuthenticationType = "test";
+    private const string EmailClaimType = JwtClaimTypes.Email;
+    private const string SubjectClaimType = JwtClaimTypes.Subject;
+
+    private static readonly string AuthenticationType = TestValues.NewSchemeName();
 
     [Fact]
     public async Task GetProfileDataAsync_PrefersAStoredPictureClaimOverTheComputedGravatarUrl()
@@ -21,7 +23,7 @@ public class AvatarProfileServiceTests
         // Arrange
         var googlePhotoUrl = $"https://lh3.googleusercontent.com/{Guid.NewGuid()}";
         var emailAddress = TestValues.NewEmailAddress();
-        var user = new IdentityUser<Guid> { Id = Guid.NewGuid(), Email = emailAddress, UserName = emailAddress };
+        var user = new IdentityUser<Guid> { Id = TestValues.NewUserId(), Email = emailAddress, UserName = emailAddress };
         var context = ProfileContextFor(user);
         var avatarService = new Mock<IAvatarService>(MockBehavior.Strict);
         avatarService.Setup(x => x.IsOwnComputedUrl(googlePhotoUrl)).Returns(false);
@@ -49,7 +51,7 @@ public class AvatarProfileServiceTests
         // Arrange
         var gravatarUrl = new Uri($"https://gravatar.com/avatar/{Guid.NewGuid():N}");
         var emailAddress = TestValues.NewEmailAddress();
-        var user = new IdentityUser<Guid> { Id = Guid.NewGuid(), Email = emailAddress, UserName = emailAddress };
+        var user = new IdentityUser<Guid> { Id = TestValues.NewUserId(), Email = emailAddress, UserName = emailAddress };
         var context = ProfileContextFor(user);
         var avatarService = new Mock<IAvatarService>(MockBehavior.Strict);
         avatarService
@@ -74,7 +76,7 @@ public class AvatarProfileServiceTests
         var legacyUrl = $"https://0.gravatar.com/avatar/{Guid.NewGuid():N}";
         var recomputed = new Uri($"https://gravatar.com/avatar/{Guid.NewGuid():N}?s=2048&d=identicon");
         var emailAddress = TestValues.NewEmailAddress();
-        var user = new IdentityUser<Guid> { Id = Guid.NewGuid(), Email = emailAddress, UserName = emailAddress };
+        var user = new IdentityUser<Guid> { Id = TestValues.NewUserId(), Email = emailAddress, UserName = emailAddress };
         var context = ProfileContextFor(user);
         var avatarService = new Mock<IAvatarService>(MockBehavior.Strict);
         avatarService.Setup(x => x.IsOwnComputedUrl(legacyUrl)).Returns(true);
@@ -101,7 +103,7 @@ public class AvatarProfileServiceTests
     {
         // Arrange
         var emailAddress = TestValues.NewEmailAddress();
-        var user = new IdentityUser<Guid> { Id = Guid.NewGuid(), Email = emailAddress, UserName = emailAddress };
+        var user = new IdentityUser<Guid> { Id = TestValues.NewUserId(), Email = emailAddress, UserName = emailAddress };
         var context = ProfileContextFor(user, [EmailClaimType]);
         var avatarService = new Mock<IAvatarService>(MockBehavior.Strict);
         var service = ServiceFor(user, avatarService.Object, storedClaims: []);

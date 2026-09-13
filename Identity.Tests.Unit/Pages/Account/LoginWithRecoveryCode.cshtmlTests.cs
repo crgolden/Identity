@@ -11,20 +11,23 @@ using Moq;
 [Trait("Category", "Unit")]
 public class LoginWithRecoveryCodeModelTests
 {
+    private const char QueryStringStart = '?';
+    private const char QueryStringAssignment = '=';
+
+    private static readonly string KnownRecoveryCode = TestValues.NewRecoveryCode();
+
+    private static readonly string UnknownRecoveryCode = TestValues.NewRecoveryCode();
+
     public static TheoryData<string?> ReturnUrlValues() => new()
     {
         (string?)null,
         string.Empty,
-        " ",
-        "/account/manage?return=true",
-        "/path/with/special?param=����d�&x=1",
-        new string('a', 2048),
-    };
-
-    public static TheoryData<string?, string> GetReturnUrlCases() => new()
-    {
-        { null, "/" },
-        { "/some/local/path", "/some/local/path" },
+        TestValues.NewWhitespaceValue(),
+        TestValues.NewLocalPath() + QueryStringStart + TestValues.NewPathSegment() + QueryStringAssignment +
+            TestValues.NewPathSegment(),
+        TestValues.NewLocalPath() + TestValues.NewLocalPath() + QueryStringStart + TestValues.NewPathSegment() +
+            QueryStringAssignment + TestValues.NewControlAndSymbolValue(),
+        TestValues.NewOverlongValue(),
     };
 
     [Theory]
@@ -32,7 +35,7 @@ public class LoginWithRecoveryCodeModelTests
     public async Task OnGetAsync_TwoFactorUserExists_SetsReturnUrlAndReturnsPage(string? returnUrl)
     {
         // Arrange
-        var twoFactorUser = new IdentityUser<Guid> { Id = Guid.NewGuid(), UserName = TestValues.NewUserName() };
+        var twoFactorUser = new IdentityUser<Guid> { Id = TestValues.NewUserId(), UserName = TestValues.NewUserName() };
         var signInManagerMock = CreateSignInManagerMock();
 
         signInManagerMock
@@ -55,8 +58,8 @@ public class LoginWithRecoveryCodeModelTests
         // Arrange
         var signInManagerMock = CreateSignInManagerMock();
         var model = new LoginWithRecoveryCodeModel(signInManagerMock.Object);
-        model.ModelState.AddModelError("key", "error");
-        model.Input = new LoginWithRecoveryCodeModel.InputModel { RecoveryCode = "irrelevant" };
+        model.ModelState.AddModelError(TestValues.NewModelStateKey(), TestValues.NewValidationMessage());
+        model.Input = new LoginWithRecoveryCodeModel.InputModel { RecoveryCode = TestValues.NewRecoveryCode() };
 
         // Act
         var result = await model.OnPostAsync(null);
@@ -75,14 +78,14 @@ public class LoginWithRecoveryCodeModelTests
         signInManagerMock.Setup(s => s.GetTwoFactorAuthenticationUserAsync()).ReturnsAsync((IdentityUser<Guid>?)null);
 
         var model = new LoginWithRecoveryCodeModel(signInManagerMock.Object);
-        model.Input = new LoginWithRecoveryCodeModel.InputModel { RecoveryCode = "code" };
+        model.Input = new LoginWithRecoveryCodeModel.InputModel { RecoveryCode = KnownRecoveryCode };
 
         // Act
         var exception = await Record.ExceptionAsync(() => model.OnPostAsync(null));
 
         // Assert
         var ex = Assert.IsType<InvalidOperationException>(exception);
-        Assert.Equal("Unable to load two-factor authentication user.", ex.Message);
+        Assert.Equal(UserMessages.UnableToLoadTwoFactorUser, ex.Message);
         signInManagerMock.Verify(s => s.TwoFactorRecoveryCodeSignInAsync(It.IsAny<string>()), Times.Never);
     }
 
@@ -99,7 +102,7 @@ public class LoginWithRecoveryCodeModelTests
 
         // Assert
         var ex = Assert.IsType<InvalidOperationException>(exception);
-        Assert.Equal("Unable to load two-factor authentication user.", ex.Message);
+        Assert.Equal(UserMessages.UnableToLoadTwoFactorUser, ex.Message);
     }
 
     [Fact]
@@ -109,9 +112,12 @@ public class LoginWithRecoveryCodeModelTests
         var user = new IdentityUser<Guid>();
         var signInManagerMock = CreateSignInManagerMock();
         signInManagerMock.Setup(s => s.GetTwoFactorAuthenticationUserAsync()).ReturnsAsync(user);
-        signInManagerMock.Setup(s => s.TwoFactorRecoveryCodeSignInAsync("ABCD1234")).ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Success);
+        signInManagerMock.Setup(s => s.TwoFactorRecoveryCodeSignInAsync(KnownRecoveryCode)).ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Success);
         var model = new LoginWithRecoveryCodeModel(signInManagerMock.Object);
-        model.Input = new LoginWithRecoveryCodeModel.InputModel { RecoveryCode = "ABCD 1234" };
+        model.Input = new LoginWithRecoveryCodeModel.InputModel
+        {
+            RecoveryCode = TestValues.WithEmbeddedWhitespace(KnownRecoveryCode)
+        };
         var mockUrl = new Mock<IUrlHelper>(MockBehavior.Strict);
         mockUrl.Setup(u => u.IsLocalUrl(It.IsAny<string?>())).Returns(false);
         model.Url = mockUrl.Object;
@@ -121,7 +127,7 @@ public class LoginWithRecoveryCodeModelTests
 
         // Assert
         var redirect = Assert.IsType<LocalRedirectResult>(result);
-        Assert.Equal("~/", redirect.Url);
+        Assert.Equal(PageRoutes.ContentRoot, redirect.Url);
     }
 
     [Fact]
@@ -131,16 +137,16 @@ public class LoginWithRecoveryCodeModelTests
         var user = new IdentityUser<Guid>();
         var signInManagerMock = CreateSignInManagerMock();
         signInManagerMock.Setup(s => s.GetTwoFactorAuthenticationUserAsync()).ReturnsAsync(user);
-        signInManagerMock.Setup(s => s.TwoFactorRecoveryCodeSignInAsync("code")).ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.LockedOut);
+        signInManagerMock.Setup(s => s.TwoFactorRecoveryCodeSignInAsync(KnownRecoveryCode)).ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.LockedOut);
         var model = new LoginWithRecoveryCodeModel(signInManagerMock.Object);
-        model.Input = new LoginWithRecoveryCodeModel.InputModel { RecoveryCode = "code" };
+        model.Input = new LoginWithRecoveryCodeModel.InputModel { RecoveryCode = KnownRecoveryCode };
 
         // Act
         var result = await model.OnPostAsync(null);
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./Lockout", redirect.PageName);
+        Assert.Equal(PageRoutes.SiblingLockout, redirect.PageName);
     }
 
     [Fact]
@@ -150,9 +156,9 @@ public class LoginWithRecoveryCodeModelTests
         var user = new IdentityUser<Guid>();
         var signInManagerMock = CreateSignInManagerMock();
         signInManagerMock.Setup(s => s.GetTwoFactorAuthenticationUserAsync()).ReturnsAsync(user);
-        signInManagerMock.Setup(s => s.TwoFactorRecoveryCodeSignInAsync("badcode")).ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Failed);
+        signInManagerMock.Setup(s => s.TwoFactorRecoveryCodeSignInAsync(UnknownRecoveryCode)).ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Failed);
         var model = new LoginWithRecoveryCodeModel(signInManagerMock.Object);
-        model.Input = new LoginWithRecoveryCodeModel.InputModel { RecoveryCode = "badcode" };
+        model.Input = new LoginWithRecoveryCodeModel.InputModel { RecoveryCode = UnknownRecoveryCode };
 
         // Act
         var result = await model.OnPostAsync(null);

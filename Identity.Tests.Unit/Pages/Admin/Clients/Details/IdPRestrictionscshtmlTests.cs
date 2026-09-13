@@ -12,13 +12,15 @@ using Moq;
 [Trait("Category", "Unit")]
 public class IdPRestrictionscshtmlTests
 {
+    private static readonly string ProviderName = TestValues.NewSchemeName();
+
     private static readonly int ExistingEntityId = TestValues.NewEntityId();
     private static readonly int MissingEntityId = ExistingEntityId + 1;
 
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), IdentityProviderRestrictions = [new ClientIdPRestriction { Id = ExistingEntityId, Provider = "Google", ClientId = ExistingEntityId }] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), IdentityProviderRestrictions = [new ClientIdPRestriction { Id = ExistingEntityId, Provider = ProviderName, ClientId = ExistingEntityId }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);

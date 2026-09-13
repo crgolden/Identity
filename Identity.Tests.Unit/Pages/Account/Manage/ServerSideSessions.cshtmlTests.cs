@@ -58,7 +58,7 @@ public class ServerSideSessionsIndexModelTests
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("/Account/Manage/ServerSideSessions", redirect.PageName);
+        Assert.Equal(ServerSideSessionsModel.ServerSideSessionsPagePath, redirect.PageName);
     }
 
     [Fact]
@@ -71,7 +71,7 @@ public class ServerSideSessionsIndexModelTests
             .Returns(Task.CompletedTask);
 
         var model = CreateModel(mockService.Object);
-        model.SessionId = "session-abc";
+        model.SessionId = TestValues.NewSessionKey();
 
         // Act
         var result = await model.OnPostAsync();
@@ -79,7 +79,7 @@ public class ServerSideSessionsIndexModelTests
         // Assert
         mockService.Verify(x => x.RemoveSessionsAsync(It.IsAny<RemoveSessionsContext>(), It.IsAny<CancellationToken>()), Times.Once);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("/Account/Manage/ServerSideSessions", redirect.PageName);
+        Assert.Equal(ServerSideSessionsModel.ServerSideSessionsPagePath, redirect.PageName);
     }
 
     private static ServerSideSessionsModel CreateModel(ISessionManagementService? sessionManagement)

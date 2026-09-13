@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 
 public class ApplicationDbContext : IdentityDbContext<IdentityUser<Guid>, IdentityRole<Guid>, Guid, IdentityUserClaim<Guid>, IdentityUserRole<Guid>, IdentityUserLogin<Guid>, IdentityRoleClaim<Guid>, IdentityUserToken<Guid>, IdentityUserPasskey<Guid>>, IConfigurationDbContext, IPersistedGrantDbContext
 {
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
-        : base(options)
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext>? options)
+        : base(options ?? throw new ArgumentNullException(nameof(options)))
     {
     }
 

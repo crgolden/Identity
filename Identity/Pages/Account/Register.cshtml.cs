@@ -14,6 +14,8 @@ using Microsoft.Extensions.Azure;
 [AllowAnonymous]
 public class RegisterModel : PageModel
 {
+    internal const string RegisterConfirmationPageName = "RegisterConfirmation";
+
     private const string From = "noreply@crgolden.com";
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
     private readonly UserManager<IdentityUser<Guid>> _userManager;
@@ -28,7 +30,7 @@ public class RegisterModel : PageModel
     {
         _userManager = userManager;
         _signInManager = signInManager;
-        _serviceBusClient = serviceBusClientFactory.CreateClient("crgolden");
+        _serviceBusClient = serviceBusClientFactory.CreateClient(ServiceBusNames.ClientName);
         _captchaService = captchaService;
     }
 
@@ -50,7 +52,7 @@ public class RegisterModel : PageModel
 
     public async Task<IActionResult> OnPostAsync(string? returnUrl = null)
     {
-        returnUrl ??= Url.Content("~/");
+        returnUrl ??= Url.Content(PageRoutes.ContentRoot);
         ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
         if (!ModelState.IsValid || IsNullOrWhiteSpace(Input.Email) || IsNullOrWhiteSpace(Input.Password))
         {
@@ -89,10 +91,10 @@ public class RegisterModel : PageModel
                 var sbMessage = new ServiceBusMessage(htmlMessage)
                 {
                     ReplyTo = From,
-                    Subject = "Confirm your email",
+                    Subject = UserMessages.ConfirmEmailSubject,
                     To = Input.Email
                 };
-                var emailSender = _serviceBusClient.CreateSender("email");
+                var emailSender = _serviceBusClient.CreateSender(ServiceBusNames.EmailQueueName);
                 await emailSender.SendMessageAsync(sbMessage, HttpContext.RequestAborted);
             }
 
@@ -100,7 +102,7 @@ public class RegisterModel : PageModel
 
             if (_userManager.Options.SignIn.RequireConfirmedAccount)
             {
-                return RedirectToPage("RegisterConfirmation", new { email = Input.Email, returnUrl });
+                return RedirectToPage(RegisterConfirmationPageName, new { email = Input.Email, returnUrl });
             }
 
             await _signInManager.SignInAsync(user, isPersistent: false);

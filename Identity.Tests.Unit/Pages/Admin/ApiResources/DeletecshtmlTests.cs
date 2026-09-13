@@ -12,13 +12,15 @@ using Moq;
 [Trait("Category", "Unit")]
 public class DeletecshtmlTests
 {
+    private static readonly string ResourceName = TestValues.NewApiResourceName();
+
     private static readonly int ExistingEntityId = TestValues.NewEntityId();
     private static readonly int MissingEntityId = ExistingEntityId + 1;
 
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var resource = new ApiResource { Id = ExistingEntityId, Name = "my-api" };
+        var resource = new ApiResource { Id = ExistingEntityId, Name = ResourceName };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
@@ -27,7 +29,7 @@ public class DeletecshtmlTests
         var result = await model.OnGetAsync(ExistingEntityId);
 
         Assert.IsType<PageResult>(result);
-        Assert.Equal("my-api", model.Resource.Name);
+        Assert.Equal(ResourceName, model.Resource.Name);
     }
 
     [Fact]
@@ -43,7 +45,7 @@ public class DeletecshtmlTests
     [Fact]
     public async Task OnPostAsync_Deletes_WhenFound()
     {
-        var resource = new ApiResource { Id = ExistingEntityId, Name = "my-api" };
+        var resource = new ApiResource { Id = ExistingEntityId, Name = ResourceName };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
@@ -54,7 +56,7 @@ public class DeletecshtmlTests
 
         ctx.Verify(c => c.ApiResources.Remove(resource), Times.Once);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./Index", redirect.PageName);
+        Assert.Equal(PageRoutes.SiblingIndex, redirect.PageName);
     }
 
     [Fact]

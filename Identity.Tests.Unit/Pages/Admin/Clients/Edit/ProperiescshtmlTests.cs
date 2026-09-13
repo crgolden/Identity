@@ -12,13 +12,27 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ProperiescshtmlTests
 {
+    private static readonly string ExistingKey = TestValues.NewPropertyKey();
+
+    private static readonly string ExistingValue = TestValues.NewPropertyValue();
+
+    private static readonly string PostedKey = TestValues.NewPropertyKey();
+
+    private static readonly string PostedValue = TestValues.NewPropertyValue();
+
+    private static readonly string RemovedKey = TestValues.NewPropertyKey();
+
+    private static readonly string RemovedValue = TestValues.NewPropertyValue();
+
+    private static readonly string PriorValue = TestValues.NewPropertyValue();
+
     private static readonly int ExistingEntityId = TestValues.NewEntityId();
     private static readonly int MissingEntityId = ExistingEntityId + 1;
 
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), Properties = [new ClientProperty { Id = ExistingEntityId, Key = "k", Value = "v", ClientId = ExistingEntityId }] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), Properties = [new ClientProperty { Id = ExistingEntityId, Key = ExistingKey, Value = ExistingValue, ClientId = ExistingEntityId }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -54,14 +68,14 @@ public class ProperiescshtmlTests
 
         var model = new PropertiesModel(ctx.Object)
         {
-            Properties = [new ClientProperty { Id = 0, Key = "env", Value = "prod" }],
+            Properties = [new ClientProperty { Id = 0, Key = PostedKey, Value = PostedValue }],
         };
         var result = await model.OnPostAsync(ExistingEntityId);
 
         var onlyProperty = Assert.Single(client.Properties);
-        Assert.Equal("env", onlyProperty.Key);
+        Assert.Equal(PostedKey, onlyProperty.Key);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("/Admin/Clients/Details/Properties", redirect.PageName);
+        Assert.Equal(PropertiesModel.DetailsPageName, redirect.PageName);
     }
 
     [Fact]
@@ -80,7 +94,7 @@ public class ProperiescshtmlTests
     [Fact]
     public async Task OnPostAsync_RemovesProperty_WhenNotPosted()
     {
-        var existing = new ClientProperty { Id = ExistingEntityId, Key = "old", Value = "val", ClientId = ExistingEntityId };
+        var existing = new ClientProperty { Id = ExistingEntityId, Key = RemovedKey, Value = RemovedValue, ClientId = ExistingEntityId };
         var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), Properties = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
@@ -96,7 +110,7 @@ public class ProperiescshtmlTests
     [Fact]
     public async Task OnPostAsync_UpdatesExistingProperty_WhenPostedWithId()
     {
-        var existing = new ClientProperty { Id = ExistingEntityId, Key = "env", Value = "staging", ClientId = ExistingEntityId };
+        var existing = new ClientProperty { Id = ExistingEntityId, Key = PostedKey, Value = PriorValue, ClientId = ExistingEntityId };
         var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), Properties = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
@@ -105,11 +119,11 @@ public class ProperiescshtmlTests
 
         var model = new PropertiesModel(ctx.Object)
         {
-            Properties = [new ClientProperty { Id = ExistingEntityId, Key = "env", Value = "prod" }],
+            Properties = [new ClientProperty { Id = ExistingEntityId, Key = PostedKey, Value = PostedValue }],
         };
         await model.OnPostAsync(ExistingEntityId);
 
-        Assert.Equal("prod", existing.Value);
+        Assert.Equal(PostedValue, existing.Value);
     }
 
     [Fact]
@@ -148,7 +162,7 @@ public class ProperiescshtmlTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
 
-        var model = new PropertiesModel(ctx.Object) { Properties = [new ClientProperty { Id = ExistingEntityId, Key = "k", Value = "v" }] };
+        var model = new PropertiesModel(ctx.Object) { Properties = [new ClientProperty { Id = ExistingEntityId, Key = ExistingKey, Value = ExistingValue }] };
         var result = await model.OnPostRemoveRowAsync(ExistingEntityId, 0);
 
         Assert.IsType<PageResult>(result);

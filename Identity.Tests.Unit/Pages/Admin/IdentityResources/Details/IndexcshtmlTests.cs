@@ -1,5 +1,6 @@
 namespace Identity.Tests.Unit.Pages.Admin.IdentityResources.Details;
 
+using Duende.IdentityServer;
 using Duende.IdentityServer.EntityFramework.Entities;
 using Duende.IdentityServer.EntityFramework.Interfaces;
 using Identity.Pages.Admin.IdentityResources.Details;
@@ -18,14 +19,14 @@ public class IndexcshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var resource = new IdentityResource { Id = ExistingEntityId, Name = "openid" };
+        var resource = new IdentityResource { Id = ExistingEntityId, Name = IdentityServerConstants.StandardScopes.OpenId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         var model = new IndexModel(ctx.Object);
         var result = await model.OnGetAsync(ExistingEntityId);
         Assert.IsType<PageResult>(result);
-        Assert.Equal("openid", model.Resource.Name);
+        Assert.Equal(IdentityServerConstants.StandardScopes.OpenId, model.Resource.Name);
     }
 
     [Fact]

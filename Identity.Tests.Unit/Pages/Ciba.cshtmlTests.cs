@@ -29,7 +29,7 @@ public class CibaIndexModelTests
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("/Error", redirect.PageName);
+        Assert.Equal(PageRoutes.Error, redirect.PageName);
     }
 
     [Fact]
@@ -48,7 +48,7 @@ public class CibaIndexModelTests
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("/Error", redirect.PageName);
+        Assert.Equal(PageRoutes.Error, redirect.PageName);
     }
 
     [Fact]

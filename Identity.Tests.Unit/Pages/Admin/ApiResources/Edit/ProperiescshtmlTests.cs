@@ -12,13 +12,25 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ProperiescshtmlTests
 {
+    private static readonly string ExistingKey = TestValues.NewPropertyKey();
+
+    private static readonly string ExistingValue = TestValues.NewPropertyValue();
+
+    private static readonly string PostedKey = TestValues.NewPropertyKey();
+
+    private static readonly string PostedValue = TestValues.NewPropertyValue();
+
+    private static readonly string RemovedKey = TestValues.NewPropertyKey();
+
+    private static readonly string RemovedValue = TestValues.NewPropertyValue();
+
     private static readonly int ExistingEntityId = TestValues.NewEntityId();
     private static readonly int MissingEntityId = ExistingEntityId + 1;
 
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var resource = new ApiResource { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), Properties = [new ApiResourceProperty { Id = ExistingEntityId, Key = "k", Value = "v" }] };
+        var resource = new ApiResource { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), Properties = [new ApiResourceProperty { Id = ExistingEntityId, Key = ExistingKey, Value = ExistingValue }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
@@ -49,13 +61,13 @@ public class ProperiescshtmlTests
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
 
-        var model = new PropertiesModel(ctx.Object) { Properties = [new ApiResourceProperty { Id = 0, Key = "env", Value = "prod" }] };
+        var model = new PropertiesModel(ctx.Object) { Properties = [new ApiResourceProperty { Id = 0, Key = PostedKey, Value = PostedValue }] };
         var result = await model.OnPostAsync(ExistingEntityId);
 
         var onlyProperty = Assert.Single(resource.Properties);
-        Assert.Equal("env", onlyProperty.Key);
+        Assert.Equal(PostedKey, onlyProperty.Key);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("/Admin/ApiResources/Details/Properties", redirect.PageName);
+        Assert.Equal(PropertiesModel.DetailsPageName, redirect.PageName);
     }
 
     [Fact]
@@ -72,7 +84,7 @@ public class ProperiescshtmlTests
     [Fact]
     public async Task OnPostAsync_RemovesAbsentProperty()
     {
-        var existing = new ApiResourceProperty { Id = ExistingEntityId, Key = "old", Value = "val", ApiResourceId = ExistingEntityId };
+        var existing = new ApiResourceProperty { Id = ExistingEntityId, Key = RemovedKey, Value = RemovedValue, ApiResourceId = ExistingEntityId };
         var resource = new ApiResource { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), Properties = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
@@ -119,7 +131,7 @@ public class ProperiescshtmlTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
 
-        var model = new PropertiesModel(ctx.Object) { Properties = [new ApiResourceProperty { Id = ExistingEntityId, Key = "k", Value = "v" }] };
+        var model = new PropertiesModel(ctx.Object) { Properties = [new ApiResourceProperty { Id = ExistingEntityId, Key = ExistingKey, Value = ExistingValue }] };
         var result = await model.OnPostRemoveRowAsync(ExistingEntityId, 0);
 
         Assert.IsType<PageResult>(result);

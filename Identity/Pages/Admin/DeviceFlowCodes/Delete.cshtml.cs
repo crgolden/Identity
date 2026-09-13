@@ -36,6 +36,6 @@ public class DeleteModel : PageModel
 
         _context.DeviceFlowCodes.Remove(code);
         await _context.SaveChangesAsync();
-        return RedirectToPage("./Index");
+        return RedirectToPage(PageRoutes.SiblingIndex);
     }
 }

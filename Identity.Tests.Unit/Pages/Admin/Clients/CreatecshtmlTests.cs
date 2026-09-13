@@ -26,7 +26,7 @@ public class CreatecshtmlTests
     {
         var ctx = new Mock<IConfigurationDbContext>();
         var model = new CreateModel(ctx.Object);
-        model.ModelState.AddModelError("ClientId", "Required");
+        model.ModelState.AddModelError(nameof(Client.ClientId), TestValues.NewValidationMessage());
         var result = await model.OnPostAsync();
         Assert.IsType<PageResult>(result);
     }
@@ -43,6 +43,6 @@ public class CreatecshtmlTests
         var result = await model.OnPostAsync();
 
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./Details/Index", redirect.PageName);
+        Assert.Equal(PageRoutes.SiblingDetailsIndex, redirect.PageName);
     }
 }

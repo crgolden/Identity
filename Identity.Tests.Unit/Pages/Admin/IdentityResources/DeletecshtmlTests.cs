@@ -1,5 +1,6 @@
 namespace Identity.Tests.Unit.Pages.Admin.IdentityResources;
 
+using Duende.IdentityServer;
 using Duende.IdentityServer.EntityFramework.Entities;
 using Duende.IdentityServer.EntityFramework.Interfaces;
 using Identity.Pages.Admin.IdentityResources;
@@ -18,14 +19,14 @@ public class DeletecshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var resource = new IdentityResource { Id = ExistingEntityId, Name = "openid" };
+        var resource = new IdentityResource { Id = ExistingEntityId, Name = IdentityServerConstants.StandardScopes.OpenId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         var model = new DeleteModel(ctx.Object);
         var result = await model.OnGetAsync(ExistingEntityId);
         Assert.IsType<PageResult>(result);
-        Assert.Equal("openid", model.Resource.Name);
+        Assert.Equal(IdentityServerConstants.StandardScopes.OpenId, model.Resource.Name);
     }
 
     [Fact]
@@ -41,7 +42,7 @@ public class DeletecshtmlTests
     [Fact]
     public async Task OnPostAsync_Redirects_WhenFound()
     {
-        var resource = new IdentityResource { Id = ExistingEntityId, Name = "openid" };
+        var resource = new IdentityResource { Id = ExistingEntityId, Name = IdentityServerConstants.StandardScopes.OpenId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
@@ -49,7 +50,7 @@ public class DeletecshtmlTests
         var model = new DeleteModel(ctx.Object);
         var result = await model.OnPostAsync(ExistingEntityId);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./Index", redirect.PageName);
+        Assert.Equal(PageRoutes.SiblingIndex, redirect.PageName);
     }
 
     [Fact]

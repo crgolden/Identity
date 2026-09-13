@@ -12,13 +12,19 @@ using Moq;
 [Trait("Category", "Unit")]
 public class CorsOriginscshtmlTests
 {
+    private static readonly string ExistingOrigin = TestValues.NewOrigin();
+
+    private static readonly string PostedOrigin = TestValues.NewOrigin();
+
+    private static readonly string ReplacedOrigin = TestValues.NewOrigin();
+
     private static readonly int ExistingEntityId = TestValues.NewEntityId();
     private static readonly int MissingEntityId = ExistingEntityId + 1;
 
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), AllowedCorsOrigins = [new ClientCorsOrigin { Id = ExistingEntityId, Origin = "https://example.com", ClientId = ExistingEntityId }] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), AllowedCorsOrigins = [new ClientCorsOrigin { Id = ExistingEntityId, Origin = ExistingOrigin, ClientId = ExistingEntityId }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -54,14 +60,14 @@ public class CorsOriginscshtmlTests
 
         var model = new CorsOriginsModel(ctx.Object)
         {
-            CorsOrigins = [new ClientCorsOrigin { Id = 0, Origin = "https://new.com" }],
+            CorsOrigins = [new ClientCorsOrigin { Id = 0, Origin = PostedOrigin }],
         };
         var result = await model.OnPostAsync(ExistingEntityId);
 
         var onlyCorsOrigin = Assert.Single(client.AllowedCorsOrigins);
-        Assert.Equal("https://new.com", onlyCorsOrigin.Origin);
+        Assert.Equal(PostedOrigin, onlyCorsOrigin.Origin);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("/Admin/Clients/Details/CorsOrigins", redirect.PageName);
+        Assert.Equal(CorsOriginsModel.DetailsPageName, redirect.PageName);
     }
 
     [Fact]
@@ -80,7 +86,7 @@ public class CorsOriginscshtmlTests
     [Fact]
     public async Task OnPostAsync_RemovesOrigin_WhenNotPosted()
     {
-        var existing = new ClientCorsOrigin { Id = ExistingEntityId, Origin = "https://old.com", ClientId = ExistingEntityId };
+        var existing = new ClientCorsOrigin { Id = ExistingEntityId, Origin = ReplacedOrigin, ClientId = ExistingEntityId };
         var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), AllowedCorsOrigins = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
@@ -96,7 +102,7 @@ public class CorsOriginscshtmlTests
     [Fact]
     public async Task OnPostAsync_UpdatesExistingCorsOrigin_WhenPostedWithId()
     {
-        var existing = new ClientCorsOrigin { Id = ExistingEntityId, Origin = "https://old.com", ClientId = ExistingEntityId };
+        var existing = new ClientCorsOrigin { Id = ExistingEntityId, Origin = ReplacedOrigin, ClientId = ExistingEntityId };
         var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), AllowedCorsOrigins = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
@@ -105,11 +111,11 @@ public class CorsOriginscshtmlTests
 
         var model = new CorsOriginsModel(ctx.Object)
         {
-            CorsOrigins = [new ClientCorsOrigin { Id = ExistingEntityId, Origin = "https://new.com" }],
+            CorsOrigins = [new ClientCorsOrigin { Id = ExistingEntityId, Origin = PostedOrigin }],
         };
         await model.OnPostAsync(ExistingEntityId);
 
-        Assert.Equal("https://new.com", existing.Origin);
+        Assert.Equal(PostedOrigin, existing.Origin);
     }
 
     [Fact]
@@ -148,7 +154,7 @@ public class CorsOriginscshtmlTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
 
-        var model = new CorsOriginsModel(ctx.Object) { CorsOrigins = [new ClientCorsOrigin { Id = ExistingEntityId, Origin = "https://example.com" }] };
+        var model = new CorsOriginsModel(ctx.Object) { CorsOrigins = [new ClientCorsOrigin { Id = ExistingEntityId, Origin = ExistingOrigin }] };
         var result = await model.OnPostRemoveRowAsync(ExistingEntityId, 0);
 
         Assert.IsType<PageResult>(result);

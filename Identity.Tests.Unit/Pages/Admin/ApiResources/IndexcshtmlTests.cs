@@ -21,10 +21,12 @@ public class IndexcshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsSortedByName()
     {
+        var firstAlphabetically = TestValues.NewFirstAlphabeticalName();
+        var lastAlphabetically = TestValues.NewLastAlphabeticalName();
         var data = new[]
         {
-            new ApiResource { Name = TestValues.NewApiResourceName() },
-            new ApiResource { Name = "a-api" },
+            new ApiResource { Name = lastAlphabetically },
+            new ApiResource { Name = firstAlphabetically },
         };
         var mockSet = MockDbSetHelper.BuildMockDbSet(data);
         var ctx = new Mock<IConfigurationDbContext>();
@@ -33,7 +35,7 @@ public class IndexcshtmlTests
         var model = new IndexModel(ctx.Object);
         await model.OnGetAsync();
 
-        Assert.Equal(2, model.ApiResources.Count);
-        Assert.Equal("a-api", model.ApiResources[0].Name);
+        Assert.Equal(data.Length, model.ApiResources.Count);
+        Assert.Equal(firstAlphabetically, model.ApiResources[0].Name);
     }
 }

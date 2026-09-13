@@ -17,7 +17,7 @@ public class Disable2faModelTests
     public async Task OnGet_UserIsNull_ReturnsNotFoundWithUserIdInMessage()
     {
         // Arrange
-        var expectedId = "expected-user-id";
+        var expectedId = TestValues.NewUserId().ToString();
         var userManagerMock = MockHelpers.MockUserManager();
 
         userManagerMock
@@ -45,7 +45,7 @@ public class Disable2faModelTests
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
         var message = Assert.IsType<string>(notFound.Value);
-        Assert.Equal($"Unable to load user with ID '{expectedId}'.", message);
+        Assert.Equal(UserMessages.UnableToLoadUser(expectedId), message);
     }
 
     [Fact]
@@ -72,14 +72,14 @@ public class Disable2faModelTests
 
         // Assert
         var ex = Assert.IsType<InvalidOperationException>(exception);
-        Assert.Equal("Cannot disable 2FA for user as it's not currently enabled.", ex.Message);
+        Assert.Equal(Disable2faModel.TwoFactorNotEnabledMessage, ex.Message);
     }
 
     [Fact]
     public async Task OnPostAsync_UserNotFound_ReturnsNotFoundObjectResult()
     {
         // Arrange
-        var userId = "missing-user-id";
+        var userId = TestValues.NewUserId().ToString();
         var userManagerMock = MockHelpers.MockUserManager();
         userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
             .ReturnsAsync((IdentityUser<Guid>?)null);
@@ -102,7 +102,7 @@ public class Disable2faModelTests
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
-        Assert.Equal($"Unable to load user with ID '{userId}'.", notFound.Value);
+        Assert.Equal(UserMessages.UnableToLoadUser(userId), notFound.Value);
         Assert.Null(model.StatusMessage);
     }
 
@@ -112,11 +112,11 @@ public class Disable2faModelTests
         // Arrange
         var userManagerMock = MockHelpers.MockUserManager();
 
-        var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
+        var user = new IdentityUser<Guid> { Id = TestValues.NewUserId() };
         userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
             .ReturnsAsync(user);
         userManagerMock.Setup(um => um.SetTwoFactorEnabledAsync(user, false))
-            .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "some-error" }));
+            .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = TestValues.NewFailureReason() }));
 
         var model = new Disable2faModel(userManagerMock.Object)
         {
@@ -134,17 +134,17 @@ public class Disable2faModelTests
 
         // Assert
         var ex = Assert.IsType<InvalidOperationException>(exception);
-        Assert.Equal("Unexpected error occurred disabling 2FA.", ex.Message);
+        Assert.Equal(Disable2faModel.DisableFailedMessage, ex.Message);
     }
 
     [Fact]
     public async Task OnPostAsync_Succeeds_RedirectsAndSetsStatusMessage()
     {
         // Arrange
-        var userId = "user-123";
+        var userId = TestValues.NewUserId().ToString();
         var userManagerMock = MockHelpers.MockUserManager();
 
-        var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
+        var user = new IdentityUser<Guid> { Id = TestValues.NewUserId() };
         userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
             .ReturnsAsync(user);
         userManagerMock.Setup(um => um.SetTwoFactorEnabledAsync(user, false))
@@ -168,8 +168,8 @@ public class Disable2faModelTests
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./TwoFactorAuthentication", redirect.PageName);
-        Assert.Equal("2fa has been disabled. You can reenable 2fa when you setup an authenticator app", model.StatusMessage);
+        Assert.Equal(PageRoutes.SiblingTwoFactorAuthentication, redirect.PageName);
+        Assert.Equal(Disable2faModel.TwoFactorDisabledMessage, model.StatusMessage);
     }
 
     private static Disable2faModel CreateModelWithTwoFactorState(bool twoFactorEnabled)

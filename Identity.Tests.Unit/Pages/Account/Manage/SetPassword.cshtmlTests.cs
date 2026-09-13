@@ -17,6 +17,10 @@ using Moq;
 [Trait("Category", "Unit")]
 public class SetPasswordModelTests
 {
+    private static readonly string ReplacementPassword = TestValues.NewPassword();
+
+    private static readonly string PasswordRejectionReason = TestValues.NewFailureReason();
+
     [Fact]
     public void Constructor_WithNonNullDependencies_NotImplemented()
     {
@@ -74,7 +78,7 @@ public class SetPasswordModelTests
         var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
 
         var pageModel = new SetPasswordModel(userManagerMock.Object, signInManagerMock.Object);
-        pageModel.ModelState.AddModelError("Test", "Invalid");
+        pageModel.ModelState.AddModelError(TestValues.NewModelStateKey(), TestValues.NewValidationMessage());
 
         // Act
         var result = await pageModel.OnPostAsync();
@@ -90,7 +94,7 @@ public class SetPasswordModelTests
     public async Task OnPostAsync_UserNotFound_ReturnsNotFoundWithMessage()
     {
         // Arrange
-        var expectedUserId = "user-123";
+        var expectedUserId = TestValues.NewUserId().ToString();
         var userManagerMock = MockHelpers.MockUserManager();
         userManagerMock
             .Setup(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
@@ -102,7 +106,7 @@ public class SetPasswordModelTests
         var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
 
         var pageModel = new SetPasswordModel(userManagerMock.Object, signInManagerMock.Object);
-        pageModel.Input = new SetPasswordModel.InputModel { NewPassword = "NewP@ss1!" };
+        pageModel.Input = new SetPasswordModel.InputModel { NewPassword = ReplacementPassword };
 
         // Act
         var result = await pageModel.OnPostAsync();
@@ -110,7 +114,7 @@ public class SetPasswordModelTests
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
         var message = Assert.IsType<string>(notFound.Value);
-        Assert.Equal($"Unable to load user with ID '{expectedUserId}'.", message);
+        Assert.Equal(UserMessages.UnableToLoadUser(expectedUserId), message);
         userManagerMock.Verify(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>()), Times.Once);
     }
 
@@ -122,7 +126,7 @@ public class SetPasswordModelTests
 
         var mockSignInManager = MockHelpers.MockSignInManager(mockUserManager.Object);
 
-        const string expectedId = "expected-user-id";
+        var expectedId = TestValues.NewUserId().ToString();
         mockUserManager
             .Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
             .ReturnsAsync((IdentityUser<Guid>?)null);
@@ -146,7 +150,7 @@ public class SetPasswordModelTests
         var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
         var value = Assert.IsType<string>(notFoundResult.Value);
         Assert.Contains(expectedId, value, StringComparison.Ordinal);
-        Assert.Contains("Unable to load user with ID", value, StringComparison.Ordinal);
+        Assert.Equal(UserMessages.UnableToLoadUser(expectedId), value);
     }
 
     [Fact]
@@ -160,7 +164,7 @@ public class SetPasswordModelTests
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./ChangePassword", redirect.PageName);
+        Assert.Equal(SetPasswordModel.ChangePasswordPageName, redirect.PageName);
     }
 
     [Fact]
@@ -185,12 +189,12 @@ public class SetPasswordModelTests
         userManagerMock.Setup(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
         userManagerMock
             .Setup(u => u.AddPasswordAsync(user, It.IsAny<string>()))
-            .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "Password too weak." }));
+            .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = PasswordRejectionReason }));
 
         var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
 
         var model = new SetPasswordModel(userManagerMock.Object, signInManagerMock.Object);
-        model.Input = new SetPasswordModel.InputModel { NewPassword = "weak" };
+        model.Input = new SetPasswordModel.InputModel { NewPassword = TestValues.NewPassword() };
 
         // Act
         var result = await model.OnPostAsync();
@@ -198,7 +202,7 @@ public class SetPasswordModelTests
         // Assert
         Assert.IsType<PageResult>(result);
         Assert.False(model.ModelState.IsValid);
-        Assert.Contains(model.ModelState.Values, v => v.Errors.Any(e => string.Equals(e.ErrorMessage, "Password too weak.", StringComparison.Ordinal)));
+        Assert.Contains(model.ModelState.Values, v => v.Errors.Any(e => string.Equals(e.ErrorMessage, PasswordRejectionReason, StringComparison.Ordinal)));
     }
 
     [Fact]
@@ -214,7 +218,7 @@ public class SetPasswordModelTests
         signInManagerMock.Setup(s => s.RefreshSignInAsync(user)).Returns(Task.CompletedTask);
 
         var model = new SetPasswordModel(userManagerMock.Object, signInManagerMock.Object);
-        model.Input = new SetPasswordModel.InputModel { NewPassword = "ValidP@ss1!" };
+        model.Input = new SetPasswordModel.InputModel { NewPassword = TestValues.NewPassword() };
         model.TempData = new Mock<ITempDataDictionary>(MockBehavior.Strict).Object;
 
         // Act

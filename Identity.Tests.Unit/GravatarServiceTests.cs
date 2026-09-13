@@ -10,15 +10,19 @@ using Infrastructure;
 [Trait("Category", "Unit")]
 public class GravatarServiceTests
 {
+    public static TheoryData<string, bool> CandidateAvatarUrls() => new()
+    {
+        { AbsoluteUrlOn(GravatarService.GravatarHost), true },
+        { AbsoluteUrlOn(TestValues.LowercaseToken(1) + '.' + GravatarService.GravatarHost), true },
+        { AbsoluteUrlOn(TestValues.NewHostLabel() + '.' + GravatarService.GravatarHost), true },
+        { AbsoluteUrlOn(GravatarService.GravatarHost.ToUpperInvariant()), true },
+        { AbsoluteUrlOn(TestValues.NewExternalHost()), false },
+        { AbsoluteUrlOn(TestValues.NewHostLabel() + GravatarService.GravatarHost), false },
+        { TestValues.NewValidationMessage(), false },
+    };
+
     [Theory]
-    [InlineData("https://" + GravatarService.GravatarHost + "/avatar/abc", true)]
-    [InlineData("https://0." + GravatarService.GravatarHost + "/avatar/abc", true)]
-    [InlineData("https://secure." + GravatarService.GravatarHost + "/avatar/abc", true)]
-    [InlineData("https://GRAVATAR.COM/avatar/abc", true)]
-    [InlineData("https://lh3.googleusercontent.com/abc", false)]
-    [InlineData("https://example.test/avatar.jpg", false)]
-    [InlineData("https://not" + GravatarService.GravatarHost + "/avatar/abc", false)]
-    [InlineData("not a url", false)]
+    [MemberData(nameof(CandidateAvatarUrls))]
     public void IsOwnComputedUrl_RecognizesEveryGravatarHostAndNothingElse(string candidate, bool expected)
     {
         // Arrange
@@ -35,8 +39,7 @@ public class GravatarServiceTests
     public async Task GetAvatarUrlAsync_NormalizesTheEmailBeforeHashing()
     {
         // Arrange
-        var localPart = Guid.NewGuid().ToString();
-        var canonicalAddress = $"{localPart}@example.com";
+        var canonicalAddress = TestValues.NewEmailAddress();
         var expectedHash = ExpectedHash(canonicalAddress);
         var service = new GravatarService();
 
@@ -46,10 +49,10 @@ public class GravatarServiceTests
             canonicalAddress.ToUpperInvariant(),
             TestContext.Current.CancellationToken);
         var fromPadded = await service.GetAvatarUrlAsync(
-            $"  {canonicalAddress}  ",
+            TestValues.NewWhitespaceValue() + canonicalAddress + TestValues.NewWhitespaceValue(),
             TestContext.Current.CancellationToken);
         var fromMixedCase = await service.GetAvatarUrlAsync(
-            $"{localPart}@Example.COM",
+            WithUpperCaseDomain(canonicalAddress),
             TestContext.Current.CancellationToken);
 
         // Assert
@@ -71,7 +74,7 @@ public class GravatarServiceTests
 
         // Assert
         Assert.Equal(
-            $"{GravatarService.ImageBaseUrl}{ExpectedHash(emailAddress)}{GravatarService.DefaultImageQuery}",
+            GravatarService.ImageBaseUrl + ExpectedHash(emailAddress) + GravatarService.DefaultImageQuery,
             result?.ToString());
     }
 
@@ -128,8 +131,8 @@ public class GravatarServiceTests
     public async Task GetAvatarUrlAsync_TagsTheActivityWithTheNormalizedHash()
     {
         // Arrange
-        var localPart = Guid.NewGuid().ToString();
-        var expectedHash = ExpectedHash($"{localPart}@example.com");
+        var canonicalAddress = TestValues.NewEmailAddress();
+        var expectedHash = ExpectedHash(canonicalAddress);
         string? capturedOperationName = null;
         string? capturedHashTag = null;
         const string activitySourceName = nameof(Identity);
@@ -147,11 +150,20 @@ public class GravatarServiceTests
         var service = new GravatarService();
 
         // Act
-        await service.GetAvatarUrlAsync($"{localPart}@Example.COM", TestContext.Current.CancellationToken);
+        await service.GetAvatarUrlAsync(WithUpperCaseDomain(canonicalAddress), TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(GravatarService.ActivityName, capturedOperationName);
         Assert.Equal(expectedHash, capturedHashTag);
+    }
+
+    private static string AbsoluteUrlOn(string host) =>
+        Uri.UriSchemeHttps + Uri.SchemeDelimiter + host + '/' + TestValues.NewPathSegment();
+
+    private static string WithUpperCaseDomain(string emailAddress)
+    {
+        var atIndex = emailAddress.IndexOf('@', StringComparison.Ordinal);
+        return emailAddress[..atIndex] + emailAddress[atIndex..].ToUpperInvariant();
     }
 
     private static string ExpectedHash(string address) =>

@@ -12,13 +12,15 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ClaimTypescshtmlTests
 {
+    private static readonly string ClaimType = TestValues.NewClaimType();
+
     private static readonly int ExistingEntityId = TestValues.NewEntityId();
     private static readonly int MissingEntityId = ExistingEntityId + 1;
 
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var scope = new ApiScope { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), UserClaims = [new ApiScopeClaim { Type = "sub" }] };
+        var scope = new ApiScope { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), UserClaims = [new ApiScopeClaim { Type = ClaimType }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([scope]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
@@ -47,13 +49,13 @@ public class ClaimTypescshtmlTests
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new ClaimTypesModel(ctx.Object)
         {
-            ClaimTypes = [new ApiScopeClaim { Id = 0, Type = "sub" }],
+            ClaimTypes = [new ApiScopeClaim { Id = 0, Type = ClaimType }],
         };
         var result = await model.OnPostAsync(ExistingEntityId);
         var onlyUserClaim = Assert.Single(scope.UserClaims);
-        Assert.Equal("sub", onlyUserClaim.Type);
+        Assert.Equal(ClaimType, onlyUserClaim.Type);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("/Admin/ApiScopes/Details/ClaimTypes", redirect.PageName);
+        Assert.Equal(ClaimTypesModel.DetailsPageName, redirect.PageName);
     }
 
     [Fact]
@@ -69,7 +71,7 @@ public class ClaimTypescshtmlTests
     [Fact]
     public async Task OnPostAsync_RemovesAbsentClaimType()
     {
-        var existing = new ApiScopeClaim { Id = ExistingEntityId, Type = "sub", ScopeId = ExistingEntityId };
+        var existing = new ApiScopeClaim { Id = ExistingEntityId, Type = ClaimType, ScopeId = ExistingEntityId };
         var scope = new ApiScope { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), UserClaims = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([scope]);
         var ctx = new Mock<IConfigurationDbContext>();
@@ -114,7 +116,7 @@ public class ClaimTypescshtmlTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
 
-        var model = new ClaimTypesModel(ctx.Object) { ClaimTypes = [new ApiScopeClaim { Id = ExistingEntityId, Type = "sub" }] };
+        var model = new ClaimTypesModel(ctx.Object) { ClaimTypes = [new ApiScopeClaim { Id = ExistingEntityId, Type = ClaimType }] };
         var result = await model.OnPostRemoveRowAsync(ExistingEntityId, 0);
 
         Assert.IsType<PageResult>(result);

@@ -14,6 +14,17 @@ using Moq;
 [Trait("Category", "Unit")]
 public class LogoutModelTests
 {
+    private static readonly string SignOutIFrameUrl = TestValues.NewCallbackUrl();
+
+    private static readonly string PostLogoutRedirectUri = TestValues.NewCallbackUrl();
+
+    public static TheoryData<string?> BlankLogoutIds() => new()
+    {
+        (string?)null,
+        string.Empty,
+        TestValues.NewWhitespaceValue(),
+    };
+
     [Fact]
     public async Task OnGetAsync_AuthenticatedUser_ShowsPromptWithoutCallingInteractionService()
     {
@@ -49,10 +60,10 @@ public class LogoutModelTests
     [Fact]
     public async Task OnGetAsync_UnauthenticatedWithLogoutId_SetsContextProperties()
     {
-        const string logoutId = "test-logout-id";
+        var logoutId = TestValues.NewLogoutId();
         var logoutRequest = new LogoutRequest(
-            "https://signout.example.com/iframe",
-            new LogoutMessage { PostLogoutRedirectUri = "https://client.example.com/signout-callback" });
+            SignOutIFrameUrl,
+            new LogoutMessage { PostLogoutRedirectUri = PostLogoutRedirectUri });
         var interaction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
         interaction.Setup(s => s.GetLogoutContextAsync(logoutId, It.IsAny<CancellationToken>())).ReturnsAsync(logoutRequest);
         var model = BuildModel(interaction.Object);
@@ -62,8 +73,8 @@ public class LogoutModelTests
 
         Assert.IsType<PageResult>(result);
         Assert.False(model.ShowLogoutPrompt);
-        Assert.Equal("https://client.example.com/signout-callback", model.PostLogoutRedirectUri);
-        Assert.Equal("https://signout.example.com/iframe", model.SignOutIFrameUrl);
+        Assert.Equal(PostLogoutRedirectUri, model.PostLogoutRedirectUri);
+        Assert.Equal(SignOutIFrameUrl, model.SignOutIFrameUrl);
         interaction.Verify(s => s.GetLogoutContextAsync(logoutId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -77,7 +88,7 @@ public class LogoutModelTests
         var result = await model.OnPostAsync();
 
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Null(redirect.RouteValues?["logoutId"]);
+        Assert.Null(redirect.RouteValues?[LogoutModel.LogoutIdRouteValueName]);
         Assert.Null(model.PostLogoutRedirectUri);
         Assert.Null(model.SignOutIFrameUrl);
         interaction.VerifyNoOtherCalls();
@@ -86,7 +97,7 @@ public class LogoutModelTests
     [Fact]
     public async Task OnPostAsync_WithLogoutId_SignsOutAndRedirectsToSelfWithLogoutId()
     {
-        const string logoutId = "client-logout-id";
+        var logoutId = TestValues.NewLogoutId();
         var interaction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
         var model = BuildModel(interaction.Object);
         model.PageContext = BuildAnonymousPageContext();
@@ -94,16 +105,14 @@ public class LogoutModelTests
         var result = await model.OnPostAsync(logoutId);
 
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal(logoutId, redirect.RouteValues?["logoutId"]);
+        Assert.Equal(logoutId, redirect.RouteValues?[LogoutModel.LogoutIdRouteValueName]);
         Assert.Null(model.PostLogoutRedirectUri);
         Assert.Null(model.SignOutIFrameUrl);
         interaction.VerifyNoOtherCalls();
     }
 
     [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("   ")]
+    [MemberData(nameof(BlankLogoutIds))]
     public async Task OnPostAsync_NullOrWhitespaceLogoutId_DoesNotCallInteractionService(string? logoutId)
     {
         var interaction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
@@ -127,7 +136,7 @@ public class LogoutModelTests
 
     private static PageContext BuildAuthenticatedPageContext()
     {
-        var identity = new ClaimsIdentity([new Claim(ClaimTypes.Name, "testuser")], "TestAuth");
+        var identity = new ClaimsIdentity([new Claim(ClaimTypes.Name, TestValues.NewUserName())], TestValues.NewSchemeName());
         var principal = new ClaimsPrincipal(identity);
         var httpContext = new DefaultHttpContext { User = principal };
         return new PageContext { HttpContext = httpContext };

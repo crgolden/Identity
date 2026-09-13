@@ -11,20 +11,21 @@ using Serilog.Events;
 [Trait("Category", "Unit")]
 public class DuendeLicenseNoticeTests
 {
-    private const string LicenseValidatorSourceContext = "Duende.Private.Licencing.V2.LicenseValidator";
-    private const int NoValidLicenseKeyEventId = 263521618;
-    private const int FeatureUsedNoLicenseEventId = 1549918610;
-    private const int QuantizedNoLicenseEventId = 1746542900;
-    private const int ErrorValidatingV2LicenseKeyEventId = 2133976702;
-    private const int LicenseExpiredEventId = 244747909;
-    private const int FeatureNotLicensedEventId = 554619973;
-    private const int QuantizedExceedsGraceEventId = 1919810387;
+    private const string LicenseValidatorSourceContext = DuendeLicenseNotice.LicenseValidatorSourceContext;
+    private const int NoValidLicenseKeyEventId = DuendeLicenseEventConstants.NoValidLicenseKeyEventId;
+    private const string ErrorValidatingV2LicenseKeyEventName = DuendeLicenseEventConstants.ErrorValidatingV2LicenseKeyEventName;
+    private const string LicenseExpiredEventName = DuendeLicenseEventConstants.LicenseExpiredEventName;
+    private const string FeatureNotLicensedEventName = DuendeLicenseEventConstants.FeatureNotLicensedEventName;
+    private const string QuantizedExceedsLimitEventName = DuendeLicenseEventConstants.QuantizedExceedsLimitEventName;
+    private const string QuantizedExceedsGraceEventName = DuendeLicenseEventConstants.QuantizedExceedsGraceEventName;
+    private const string LicenseValidUntilEventName = DuendeLicenseEventConstants.LicenseValidUntilEventName;
+    private const string LicenseValidEventName = DuendeLicenseEventConstants.LicenseValidEventName;
 
     [Fact]
     public void IsNoLicenseConfiguredNotice_DropsTheUnlicensedNotice()
     {
         // Arrange
-        var eventId = new EventId(NoValidLicenseKeyEventId, "NoValidLicenseKey");
+        var eventId = new EventId(TestValues.NewEntityId(), DuendeLicenseNotice.NoValidLicenseKeyEventName);
 
         // Act
         var reachedTheSink = WriteThroughFilter(LicenseValidatorSourceContext, eventId, LogLevel.Error);
@@ -37,7 +38,7 @@ public class DuendeLicenseNoticeTests
     public void IsNoLicenseConfiguredNotice_DropsTheUnlicensedFeatureWarningThatNamesPar()
     {
         // Arrange
-        var eventId = new EventId(FeatureUsedNoLicenseEventId, "FeatureUsedNoLicense");
+        var eventId = new EventId(TestValues.NewEntityId(), DuendeLicenseNotice.FeatureUsedNoLicenseEventName);
 
         // Act
         var reachedTheSink = WriteThroughFilter(LicenseValidatorSourceContext, eventId, LogLevel.Warning);
@@ -50,7 +51,7 @@ public class DuendeLicenseNoticeTests
     public void IsNoLicenseConfiguredNotice_DropsTheUnlicensedEntitlementCountWarning()
     {
         // Arrange
-        var eventId = new EventId(QuantizedNoLicenseEventId, "QuantizedNoLicense");
+        var eventId = new EventId(TestValues.NewEntityId(), DuendeLicenseNotice.QuantizedNoLicenseEventName);
 
         // Act
         var reachedTheSink = WriteThroughFilter(LicenseValidatorSourceContext, eventId, LogLevel.Warning);
@@ -63,7 +64,7 @@ public class DuendeLicenseNoticeTests
     public void IsNoLicenseConfiguredNotice_KeepsTheMalformedLicenseKeyEventFromTheSameSource()
     {
         // Arrange
-        var eventId = new EventId(ErrorValidatingV2LicenseKeyEventId, "ErrorValidatingV2LicenseKey");
+        var eventId = new EventId(TestValues.NewEntityId(), ErrorValidatingV2LicenseKeyEventName);
 
         // Act
         var reachedTheSink = WriteThroughFilter(LicenseValidatorSourceContext, eventId, LogLevel.Critical);
@@ -76,7 +77,7 @@ public class DuendeLicenseNoticeTests
     public void IsNoLicenseConfiguredNotice_KeepsTheExpiredLicenseEventFromTheSameSource()
     {
         // Arrange
-        var eventId = new EventId(LicenseExpiredEventId, "LicenseExpired");
+        var eventId = new EventId(TestValues.NewEntityId(), LicenseExpiredEventName);
 
         // Act
         var reachedTheSink = WriteThroughFilter(LicenseValidatorSourceContext, eventId, LogLevel.Error);
@@ -89,7 +90,7 @@ public class DuendeLicenseNoticeTests
     public void IsNoLicenseConfiguredNotice_KeepsAFeatureMissingFromAConfiguredLicense()
     {
         // Arrange
-        var eventId = new EventId(FeatureNotLicensedEventId, "FeatureNotLicensed");
+        var eventId = new EventId(TestValues.NewEntityId(), FeatureNotLicensedEventName);
 
         // Act
         var reachedTheSink = WriteThroughFilter(LicenseValidatorSourceContext, eventId, LogLevel.Warning);
@@ -99,10 +100,49 @@ public class DuendeLicenseNoticeTests
     }
 
     [Fact]
+    public void IsNoLicenseConfiguredNotice_KeepsAnEntitlementBeyondItsLicensedLimit()
+    {
+        // Arrange
+        var eventId = new EventId(TestValues.NewEntityId(), QuantizedExceedsLimitEventName);
+
+        // Act
+        var reachedTheSink = WriteThroughFilter(LicenseValidatorSourceContext, eventId, LogLevel.Warning);
+
+        // Assert
+        Assert.Single(reachedTheSink);
+    }
+
+    [Fact]
+    public void IsNoLicenseConfiguredNotice_KeepsTheLicenseValidUntilNotice()
+    {
+        // Arrange
+        var eventId = new EventId(TestValues.NewEntityId(), LicenseValidUntilEventName);
+
+        // Act
+        var reachedTheSink = WriteThroughFilter(LicenseValidatorSourceContext, eventId, LogLevel.Information);
+
+        // Assert
+        Assert.Single(reachedTheSink);
+    }
+
+    [Fact]
+    public void IsNoLicenseConfiguredNotice_KeepsTheValidLicenseNotice()
+    {
+        // Arrange
+        var eventId = new EventId(TestValues.NewEntityId(), LicenseValidEventName);
+
+        // Act
+        var reachedTheSink = WriteThroughFilter(LicenseValidatorSourceContext, eventId, LogLevel.Information);
+
+        // Assert
+        Assert.Single(reachedTheSink);
+    }
+
+    [Fact]
     public void IsNoLicenseConfiguredNotice_KeepsAnEntitlementBeyondItsLicensedGrace()
     {
         // Arrange
-        var eventId = new EventId(QuantizedExceedsGraceEventId, "QuantizedExceedsGrace");
+        var eventId = new EventId(TestValues.NewEntityId(), QuantizedExceedsGraceEventName);
 
         // Act
         var reachedTheSink = WriteThroughFilter(LicenseValidatorSourceContext, eventId, LogLevel.Error);
@@ -116,7 +156,7 @@ public class DuendeLicenseNoticeTests
     {
         // Arrange
         var sourceContext = $"Contoso.Licensing.{Guid.NewGuid():N}";
-        var eventId = new EventId(NoValidLicenseKeyEventId, "NoValidLicenseKey");
+        var eventId = new EventId(TestValues.NewEntityId(), DuendeLicenseNotice.NoValidLicenseKeyEventName);
 
         // Act
         var reachedTheSink = WriteThroughFilter(sourceContext, eventId, LogLevel.Error);
@@ -152,7 +192,7 @@ public class DuendeLicenseNoticeTests
         {
             loggerFactory
                 .CreateLogger(sourceContext)
-                .Log(logLevel, eventId, "Please start a conversation with us: https://duende.link/l/contact");
+                .Log(logLevel, eventId, TestValues.NewValidationMessage());
         }
 
         return sink.Events;

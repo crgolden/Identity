@@ -9,6 +9,9 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 [AllowAnonymous]
 public class ResetPasswordModel : PageModel
 {
+    internal const string CodeRequiredMessage =
+        "A code must be supplied for password reset.";
+
     private readonly UserManager<IdentityUser<Guid>> _userManager;
 
     public ResetPasswordModel(UserManager<IdentityUser<Guid>> userManager)
@@ -23,7 +26,7 @@ public class ResetPasswordModel : PageModel
     {
         if (IsNullOrWhiteSpace(code))
         {
-            return BadRequest("A code must be supplied for password reset.");
+            return BadRequest(CodeRequiredMessage);
         }
 
         var bytes = Base64UrlDecode(code);
@@ -46,13 +49,13 @@ public class ResetPasswordModel : PageModel
         var user = await _userManager.FindByEmailAsync(Input.Email);
         if (user is null)
         {
-            return RedirectToPage("./ResetPasswordConfirmation");
+            return RedirectToPage(PageRoutes.SiblingResetPasswordConfirmation);
         }
 
         var result = await _userManager.ResetPasswordAsync(user, Input.Code, Input.Password);
         if (result.Succeeded)
         {
-            return RedirectToPage("./ResetPasswordConfirmation");
+            return RedirectToPage(PageRoutes.SiblingResetPasswordConfirmation);
         }
 
         foreach (var error in result.Errors)

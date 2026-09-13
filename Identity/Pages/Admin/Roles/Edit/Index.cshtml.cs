@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 public class IndexModel : PageModel
 {
+    internal const string DetailsPageName = "/Admin/Roles/Details/Index";
+
     private readonly RoleManager<IdentityRole<Guid>> _roleManager;
 
     public IndexModel(RoleManager<IdentityRole<Guid>> roleManager) => _roleManager = roleManager;
@@ -40,6 +42,6 @@ public class IndexModel : PageModel
 
         role.Name = AppRole.Name;
         await _roleManager.UpdateAsync(role);
-        return RedirectToPage("/Admin/Roles/Details/Index", new { id });
+        return RedirectToPage(DetailsPageName, new { id });
     }
 }

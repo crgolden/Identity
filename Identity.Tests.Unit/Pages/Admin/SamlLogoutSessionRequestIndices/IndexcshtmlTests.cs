@@ -27,12 +27,12 @@ public class IndexcshtmlTests
             new SamlLogoutSessionRequestIndex
             {
                 Id = lowerId + 1,
-                RequestId = TestValues.NewTokenFromFirstHalfOfAlphabet(9),
+                RequestId = TestValues.NewFirstAlphabeticalName(),
             },
             new SamlLogoutSessionRequestIndex
             {
                 Id = lowerId,
-                RequestId = TestValues.NewTokenFromSecondHalfOfAlphabet(9),
+                RequestId = TestValues.NewLastAlphabeticalName(),
             },
         };
         var mockSet = MockDbSetHelper.BuildMockDbSet(data);

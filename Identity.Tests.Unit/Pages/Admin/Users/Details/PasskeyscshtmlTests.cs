@@ -40,16 +40,16 @@ public class PasskeyscshtmlTests
 
     private static UserPasskeyInfo BuildPasskey() =>
         new(
-            credentialId: [1, 2, 3],
-            publicKey: [4, 5, 6],
+            credentialId: TestValues.NewCredentialIdBytes(),
+            publicKey: TestValues.NewPublicKeyBytes(),
             createdAt: DateTimeOffset.UnixEpoch,
             signCount: 0,
             transports: null,
             isUserVerified: false,
             isBackupEligible: false,
             isBackedUp: false,
-            attestationObject: [7, 8, 9],
-            clientDataJson: [10, 11, 12])
+            attestationObject: TestValues.NewAttestationObjectBytes(),
+            clientDataJson: TestValues.NewClientDataJsonBytes())
         {
             Name = TestValues.NewApiResourceName(),
         };

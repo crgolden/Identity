@@ -17,13 +17,13 @@ public partial class ConfirmEmailModelTests
 {
     public static TheoryData<string?, string?> RedirectNullOrWhitespaceCases() => new()
     {
-        { null, "non-null-code" },
-        { "non-null-user", null },
+        { null, TestValues.NewEmailConfirmationToken() },
+        { TestValues.NewUserId().ToString(), null },
         { null, null },
-        { string.Empty, "non-null-code" },
-        { "  ", "non-null-code" },
-        { "non-null-user", string.Empty },
-        { "non-null-user", "  " },
+        { string.Empty, TestValues.NewEmailConfirmationToken() },
+        { TestValues.NewWhitespaceValue(), TestValues.NewEmailConfirmationToken() },
+        { TestValues.NewUserId().ToString(), string.Empty },
+        { TestValues.NewUserId().ToString(), TestValues.NewWhitespaceValue() },
     };
 
     [Theory]
@@ -39,15 +39,15 @@ public partial class ConfirmEmailModelTests
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("/Index", redirect.PageName);
+        Assert.Equal(PageRoutes.Home, redirect.PageName);
     }
 
     [Fact]
     public async Task OnGetAsync_UserNotFound_ReturnsNotFoundObjectResult()
     {
         // Arrange
-        const string userId = "missing-user-id";
-        const string code = "unused-code";
+        var userId = TestValues.NewUserId().ToString();
+        var code = TestValues.NewEmailConfirmationToken();
         var userManagerMock = MockHelpers.MockUserManager();
         userManagerMock
             .Setup(u => u.FindByIdAsync(userId))
@@ -60,17 +60,17 @@ public partial class ConfirmEmailModelTests
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
-        Assert.Equal($"Unable to load user with ID '{userId}'.", notFound.Value);
+        Assert.Equal(UserMessages.UnableToLoadUser(userId), notFound.Value);
     }
 
     [Fact]
     public async Task OnGetAsync_ConfirmEmailSucceeds_ReturnsPageWithSuccessMessage()
     {
         // Arrange
-        const string userId = "user-1";
-        const string token = "valid-token";
+        var userId = TestValues.NewUserId().ToString();
+        var token = TestValues.NewEmailConfirmationToken();
         var code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
-        var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
+        var user = new IdentityUser<Guid> { Id = TestValues.NewUserId() };
         var userManagerMock = MockHelpers.MockUserManager();
         userManagerMock.Setup(m => m.FindByIdAsync(userId)).ReturnsAsync(user);
         userManagerMock.Setup(m => m.ConfirmEmailAsync(user, token)).ReturnsAsync(IdentityResult.Success);
@@ -81,20 +81,20 @@ public partial class ConfirmEmailModelTests
 
         // Assert
         Assert.IsType<PageResult>(result);
-        Assert.Equal("Thank you for confirming your email.", model.StatusMessage);
+        Assert.Equal(ConfirmEmailModel.EmailConfirmedMessage, model.StatusMessage);
     }
 
     [Fact]
     public async Task OnGetAsync_ConfirmEmailFails_ReturnsPageWithErrorMessage()
     {
         // Arrange
-        const string userId = "user-2";
-        const string token = "bad-token";
+        var userId = TestValues.NewUserId().ToString();
+        var token = TestValues.NewEmailConfirmationToken();
         var code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
-        var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
+        var user = new IdentityUser<Guid> { Id = TestValues.NewUserId() };
         var userManagerMock = MockHelpers.MockUserManager();
         userManagerMock.Setup(m => m.FindByIdAsync(userId)).ReturnsAsync(user);
-        userManagerMock.Setup(m => m.ConfirmEmailAsync(user, token)).ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "Invalid token." }));
+        userManagerMock.Setup(m => m.ConfirmEmailAsync(user, token)).ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = TestValues.NewFailureReason() }));
         var model = new ConfirmEmailModel(userManagerMock.Object);
 
         // Act
@@ -102,7 +102,7 @@ public partial class ConfirmEmailModelTests
 
         // Assert
         Assert.IsType<PageResult>(result);
-        Assert.Equal("Error confirming your email.", model.StatusMessage);
+        Assert.Equal(ConfirmEmailModel.EmailConfirmationFailedMessage, model.StatusMessage);
     }
 
     [Fact]

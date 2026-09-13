@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore;
 
 public class PostLogoutRedirectUrisModel : PageModel
 {
+    internal const string DetailsPageName = "/Admin/Clients/Details/PostLogoutRedirectUris";
+
     private readonly IConfigurationDbContext _context;
 
     public PostLogoutRedirectUrisModel(IConfigurationDbContext context) => _context = context;
@@ -65,9 +67,9 @@ public class PostLogoutRedirectUrisModel : PageModel
             client.PostLogoutRedirectUris.Add(new ClientPostLogoutRedirectUri { PostLogoutRedirectUri = posted.PostLogoutRedirectUri, ClientId = id });
         }
 
-        client.Updated = DateTime.UtcNow;
+        client.Updated = DateTimeOffset.UtcNow.UtcDateTime;
         await _context.SaveChangesAsync();
-        return RedirectToPage("/Admin/Clients/Details/PostLogoutRedirectUris", new { id });
+        return RedirectToPage(DetailsPageName, new { id });
     }
 
     public async Task<IActionResult> OnPostAddRowAsync(int id)

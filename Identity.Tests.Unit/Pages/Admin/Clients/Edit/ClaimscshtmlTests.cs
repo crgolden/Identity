@@ -12,13 +12,19 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ClaimscshtmlTests
 {
+    private static readonly string ClaimType = TestValues.NewClaimType();
+
+    private static readonly string ClaimValue = TestValues.NewClaimValue();
+
+    private static readonly string OtherClaimValue = TestValues.NewClaimValue();
+
     private static readonly int ExistingEntityId = TestValues.NewEntityId();
     private static readonly int MissingEntityId = ExistingEntityId + 1;
 
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), Claims = [new ClientClaim { Id = ExistingEntityId, Type = "role", Value = "admin", ClientId = ExistingEntityId }] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), Claims = [new ClientClaim { Id = ExistingEntityId, Type = ClaimType, Value = ClaimValue, ClientId = ExistingEntityId }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -54,14 +60,14 @@ public class ClaimscshtmlTests
 
         var model = new ClaimsModel(ctx.Object)
         {
-            Claims = [new ClientClaim { Id = 0, Type = "role", Value = "admin" }],
+            Claims = [new ClientClaim { Id = 0, Type = ClaimType, Value = ClaimValue }],
         };
         var result = await model.OnPostAsync(ExistingEntityId);
 
         var onlyClaim = Assert.Single(client.Claims);
-        Assert.Equal("role", onlyClaim.Type);
+        Assert.Equal(ClaimType, onlyClaim.Type);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("/Admin/Clients/Details/Claims", redirect.PageName);
+        Assert.Equal(ClaimsModel.DetailsPageName, redirect.PageName);
     }
 
     [Fact]
@@ -80,7 +86,7 @@ public class ClaimscshtmlTests
     [Fact]
     public async Task OnPostAsync_RemovesClaim_WhenNotPosted()
     {
-        var existing = new ClientClaim { Id = ExistingEntityId, Type = "role", Value = "admin", ClientId = ExistingEntityId };
+        var existing = new ClientClaim { Id = ExistingEntityId, Type = ClaimType, Value = ClaimValue, ClientId = ExistingEntityId };
         var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), Claims = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
@@ -96,7 +102,7 @@ public class ClaimscshtmlTests
     [Fact]
     public async Task OnPostAsync_UpdatesExistingClaim_WhenPostedWithId()
     {
-        var existing = new ClientClaim { Id = ExistingEntityId, Type = "role", Value = "user", ClientId = ExistingEntityId };
+        var existing = new ClientClaim { Id = ExistingEntityId, Type = ClaimType, Value = OtherClaimValue, ClientId = ExistingEntityId };
         var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), Claims = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
@@ -105,11 +111,11 @@ public class ClaimscshtmlTests
 
         var model = new ClaimsModel(ctx.Object)
         {
-            Claims = [new ClientClaim { Id = ExistingEntityId, Type = "role", Value = "admin" }],
+            Claims = [new ClientClaim { Id = ExistingEntityId, Type = ClaimType, Value = ClaimValue }],
         };
         await model.OnPostAsync(ExistingEntityId);
 
-        Assert.Equal("admin", existing.Value);
+        Assert.Equal(ClaimValue, existing.Value);
     }
 
     [Fact]
@@ -148,7 +154,7 @@ public class ClaimscshtmlTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
 
-        var model = new ClaimsModel(ctx.Object) { Claims = [new ClientClaim { Id = ExistingEntityId, Type = "role", Value = "admin" }] };
+        var model = new ClaimsModel(ctx.Object) { Claims = [new ClientClaim { Id = ExistingEntityId, Type = ClaimType, Value = ClaimValue }] };
         var result = await model.OnPostRemoveRowAsync(ExistingEntityId, 0);
 
         Assert.IsType<PageResult>(result);

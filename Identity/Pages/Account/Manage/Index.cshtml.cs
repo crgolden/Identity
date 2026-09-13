@@ -7,6 +7,12 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 public class IndexModel : PageModel
 {
+    internal const string PhoneNumberUpdateFailedMessage =
+        "Unexpected error when trying to set phone number.";
+
+    internal const string ProfileUpdatedMessage =
+        "Your profile has been updated";
+
     private readonly UserManager<IdentityUser<Guid>> _userManager;
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
 
@@ -31,7 +37,7 @@ public class IndexModel : PageModel
         var user = await _userManager.GetUserAsync(User);
         if (user == null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound(UserMessages.UnableToLoadUser(_userManager.GetUserId(User)));
         }
 
         await LoadAsync(user);
@@ -43,7 +49,7 @@ public class IndexModel : PageModel
         var user = await _userManager.GetUserAsync(User);
         if (user is null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound(UserMessages.UnableToLoadUser(_userManager.GetUserId(User)));
         }
 
         if (!ModelState.IsValid)
@@ -60,13 +66,13 @@ public class IndexModel : PageModel
             var setPhoneResult = await _userManager.SetPhoneNumberAsync(user, Input.PhoneNumber);
             if (!setPhoneResult.Succeeded)
             {
-                StatusMessage = "Unexpected error when trying to set phone number.";
+                StatusMessage = PhoneNumberUpdateFailedMessage;
                 return RedirectToPage();
             }
         }
 
         await _signInManager.RefreshSignInAsync(user);
-        StatusMessage = "Your profile has been updated";
+        StatusMessage = ProfileUpdatedMessage;
         return RedirectToPage();
     }
 

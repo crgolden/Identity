@@ -12,13 +12,15 @@ using Moq;
 [Trait("Category", "Unit")]
 public class DeletecshtmlTests
 {
+    private static readonly string SessionSubjectId = TestValues.NewSubjectId();
+
     private static readonly string ExistingKey = TestValues.NewUserId().ToString();
     private static readonly string MissingKey = TestValues.NewUserId().ToString();
 
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var session = new ServerSideSession { Key = ExistingKey, SubjectId = "sub" };
+        var session = new ServerSideSession { Key = ExistingKey, SubjectId = SessionSubjectId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([session]);
         var ctx = new Mock<IPersistedGrantDbContext>();
         ctx.Setup(c => c.ServerSideSessions).Returns(mockSet.Object);
@@ -27,7 +29,7 @@ public class DeletecshtmlTests
         var result = await model.OnGetAsync(ExistingKey);
 
         Assert.IsType<PageResult>(result);
-        Assert.Equal("sub", model.ServerSideSession.SubjectId);
+        Assert.Equal(SessionSubjectId, model.ServerSideSession.SubjectId);
     }
 
     [Fact]
@@ -44,7 +46,7 @@ public class DeletecshtmlTests
     [Fact]
     public async Task OnPostAsync_Deletes_WhenFound()
     {
-        var session = new ServerSideSession { Key = ExistingKey, SubjectId = "sub" };
+        var session = new ServerSideSession { Key = ExistingKey, SubjectId = SessionSubjectId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([session]);
         var ctx = new Mock<IPersistedGrantDbContext>();
         ctx.Setup(c => c.ServerSideSessions).Returns(mockSet.Object);
@@ -55,7 +57,7 @@ public class DeletecshtmlTests
 
         ctx.Verify(c => c.ServerSideSessions.Remove(session), Times.Once);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./Index", redirect.PageName);
+        Assert.Equal(PageRoutes.SiblingIndex, redirect.PageName);
     }
 
     [Fact]

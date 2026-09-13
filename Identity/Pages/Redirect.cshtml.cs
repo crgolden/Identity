@@ -13,7 +13,7 @@ public class RedirectModel : PageModel
     {
         if (!Url.IsLocalUrl(redirectUri))
         {
-            return RedirectToPage("/Error");
+            return RedirectToPage(PageRoutes.Error);
         }
 
         RedirectUri = redirectUri;

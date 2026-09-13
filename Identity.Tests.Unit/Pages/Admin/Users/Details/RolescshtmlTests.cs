@@ -11,6 +11,8 @@ using Moq;
 [Trait("Category", "Unit")]
 public class RolescshtmlTests
 {
+    private static readonly string RoleName = TestValues.NewRoleName();
+
     private static readonly string ExistingUserId = TestValues.NewUserId().ToString();
     private static readonly string MissingUserId = TestValues.NewUserId().ToString();
 
@@ -20,14 +22,14 @@ public class RolescshtmlTests
         var user = new IdentityUser<Guid> { UserName = TestValues.NewUserName() };
         var um = MockHelpers.MockUserManager();
         um.Setup(m => m.FindByIdAsync(ExistingUserId)).ReturnsAsync(user);
-        um.Setup(m => m.GetRolesAsync(user)).ReturnsAsync(["Admin"]);
+        um.Setup(m => m.GetRolesAsync(user)).ReturnsAsync([RoleName]);
 
         var model = new RolesModel(um.Object);
         var result = await model.OnGetAsync(ExistingUserId);
 
         Assert.IsType<PageResult>(result);
         var onlyRole = Assert.Single(model.Roles);
-        Assert.Equal("Admin", onlyRole);
+        Assert.Equal(RoleName, onlyRole);
     }
 
     [Fact]

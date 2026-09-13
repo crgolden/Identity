@@ -22,13 +22,13 @@ public class RegisterConfirmationModel : PageModel
     {
         if (IsNullOrWhiteSpace(email))
         {
-            return RedirectToPage("/Index");
+            return RedirectToPage(PageRoutes.Home);
         }
 
         var user = await _userManager.FindByEmailAsync(email);
         if (user is null)
         {
-            return NotFound($"Unable to load user with email '{email}'.");
+            return NotFound(UserMessages.UnableToLoadUserByEmail(email));
         }
 
         Email = email;

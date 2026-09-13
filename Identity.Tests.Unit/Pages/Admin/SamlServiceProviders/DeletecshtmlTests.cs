@@ -12,13 +12,15 @@ using Moq;
 [Trait("Category", "Unit")]
 public class DeletecshtmlTests
 {
+    private static readonly string EntityId = TestValues.NewEntityIdUrn();
+
     private static readonly int ExistingEntityId = TestValues.NewEntityId();
     private static readonly int MissingEntityId = ExistingEntityId + 1;
 
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var sp = new SamlServiceProvider { Id = ExistingEntityId, EntityId = "urn:sp" };
+        var sp = new SamlServiceProvider { Id = ExistingEntityId, EntityId = EntityId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([sp]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.SamlServiceProviders).Returns(mockSet.Object);
@@ -27,7 +29,7 @@ public class DeletecshtmlTests
         var result = await model.OnGetAsync(ExistingEntityId);
 
         Assert.IsType<PageResult>(result);
-        Assert.Equal("urn:sp", model.SamlServiceProvider.EntityId);
+        Assert.Equal(EntityId, model.SamlServiceProvider.EntityId);
     }
 
     [Fact]
@@ -43,7 +45,7 @@ public class DeletecshtmlTests
     [Fact]
     public async Task OnPostAsync_Deletes_WhenFound()
     {
-        var sp = new SamlServiceProvider { Id = ExistingEntityId, EntityId = "urn:sp" };
+        var sp = new SamlServiceProvider { Id = ExistingEntityId, EntityId = EntityId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([sp]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.SamlServiceProviders).Returns(mockSet.Object);
@@ -54,7 +56,7 @@ public class DeletecshtmlTests
 
         ctx.Verify(c => c.SamlServiceProviders.Remove(sp), Times.Once);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./Index", redirect.PageName);
+        Assert.Equal(PageRoutes.SiblingIndex, redirect.PageName);
     }
 
     [Fact]

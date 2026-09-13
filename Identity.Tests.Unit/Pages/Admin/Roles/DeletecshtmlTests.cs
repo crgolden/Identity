@@ -11,12 +11,14 @@ using Moq;
 [Trait("Category", "Unit")]
 public class DeletecshtmlTests
 {
+    private static readonly string RoleName = TestValues.NewRoleName();
+
     private static readonly string MissingUserId = TestValues.NewUserId().ToString();
 
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var role = new IdentityRole<Guid>("Admin");
+        var role = new IdentityRole<Guid>(RoleName);
         var rm = MockHelpers.MockRoleManager();
         rm.Setup(m => m.FindByIdAsync(role.Id.ToString())).ReturnsAsync(role);
 
@@ -24,7 +26,7 @@ public class DeletecshtmlTests
         var result = await model.OnGetAsync(role.Id.ToString());
 
         Assert.IsType<PageResult>(result);
-        Assert.Equal("Admin", model.AppRole.Name);
+        Assert.Equal(RoleName, model.AppRole.Name);
     }
 
     [Fact]
@@ -39,7 +41,7 @@ public class DeletecshtmlTests
     [Fact]
     public async Task OnPostAsync_Deletes_WhenFound()
     {
-        var role = new IdentityRole<Guid>("Admin");
+        var role = new IdentityRole<Guid>(RoleName);
         var rm = MockHelpers.MockRoleManager();
         rm.Setup(m => m.FindByIdAsync(role.Id.ToString())).ReturnsAsync(role);
         rm.Setup(m => m.DeleteAsync(role)).ReturnsAsync(IdentityResult.Success);
@@ -48,7 +50,7 @@ public class DeletecshtmlTests
 
         rm.Verify(m => m.DeleteAsync(role), Times.Once);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./Index", redirect.PageName);
+        Assert.Equal(PageRoutes.SiblingIndex, redirect.PageName);
     }
 
     [Fact]

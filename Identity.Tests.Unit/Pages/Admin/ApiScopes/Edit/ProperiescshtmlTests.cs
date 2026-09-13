@@ -12,13 +12,17 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ProperiescshtmlTests
 {
+    private static readonly string PropertyKey = TestValues.NewPropertyKey();
+
+    private static readonly string PropertyValue = TestValues.NewPropertyValue();
+
     private static readonly int ExistingEntityId = TestValues.NewEntityId();
     private static readonly int MissingEntityId = ExistingEntityId + 1;
 
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var scope = new ApiScope { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), Properties = [new ApiScopeProperty { Key = "k", Value = "v" }] };
+        var scope = new ApiScope { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), Properties = [new ApiScopeProperty { Key = PropertyKey, Value = PropertyValue }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([scope]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
@@ -47,13 +51,13 @@ public class ProperiescshtmlTests
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new PropertiesModel(ctx.Object)
         {
-            Properties = [new ApiScopeProperty { Id = 0, Key = "k", Value = "v" }],
+            Properties = [new ApiScopeProperty { Id = 0, Key = PropertyKey, Value = PropertyValue }],
         };
         var result = await model.OnPostAsync(ExistingEntityId);
         var onlyProperty = Assert.Single(scope.Properties);
-        Assert.Equal("k", onlyProperty.Key);
+        Assert.Equal(PropertyKey, onlyProperty.Key);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("/Admin/ApiScopes/Details/Properties", redirect.PageName);
+        Assert.Equal(PropertiesModel.DetailsPageName, redirect.PageName);
     }
 
     [Fact]
@@ -69,7 +73,7 @@ public class ProperiescshtmlTests
     [Fact]
     public async Task OnPostAsync_RemovesAbsentProperty()
     {
-        var existing = new ApiScopeProperty { Id = ExistingEntityId, Key = "k", Value = "v", ScopeId = ExistingEntityId };
+        var existing = new ApiScopeProperty { Id = ExistingEntityId, Key = PropertyKey, Value = PropertyValue, ScopeId = ExistingEntityId };
         var scope = new ApiScope { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), Properties = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([scope]);
         var ctx = new Mock<IConfigurationDbContext>();
@@ -114,7 +118,7 @@ public class ProperiescshtmlTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
 
-        var model = new PropertiesModel(ctx.Object) { Properties = [new ApiScopeProperty { Id = ExistingEntityId, Key = "k", Value = "v" }] };
+        var model = new PropertiesModel(ctx.Object) { Properties = [new ApiScopeProperty { Id = ExistingEntityId, Key = PropertyKey, Value = PropertyValue }] };
         var result = await model.OnPostRemoveRowAsync(ExistingEntityId, 0);
 
         Assert.IsType<PageResult>(result);

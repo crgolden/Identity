@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore;
 
 public class ClaimsModel : PageModel
 {
+    internal const string DetailsPageName = "/Admin/Clients/Details/Claims";
+
     private readonly IConfigurationDbContext _context;
 
     public ClaimsModel(IConfigurationDbContext context) => _context = context;
@@ -66,9 +68,9 @@ public class ClaimsModel : PageModel
             client.Claims.Add(new ClientClaim { Type = posted.Type, Value = posted.Value, ClientId = id });
         }
 
-        client.Updated = DateTime.UtcNow;
+        client.Updated = DateTimeOffset.UtcNow.UtcDateTime;
         await _context.SaveChangesAsync();
-        return RedirectToPage("/Admin/Clients/Details/Claims", new { id });
+        return RedirectToPage(DetailsPageName, new { id });
     }
 
     public async Task<IActionResult> OnPostAddRowAsync(int id)

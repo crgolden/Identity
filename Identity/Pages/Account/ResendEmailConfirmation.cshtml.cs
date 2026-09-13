@@ -12,6 +12,9 @@ using Microsoft.Extensions.Azure;
 [AllowAnonymous]
 public class ResendEmailConfirmationModel : PageModel
 {
+    internal const string VerificationEmailSentMessage =
+        "Verification email sent. Please check your email.";
+
     private const string From = "noreply@crgolden.com";
     private readonly UserManager<IdentityUser<Guid>> _userManager;
     private readonly ServiceBusClient _serviceBusClient;
@@ -21,7 +24,7 @@ public class ResendEmailConfirmationModel : PageModel
         ThrowIfNull(userManager);
         ThrowIfNull(serviceBusClientFactory);
         _userManager = userManager;
-        _serviceBusClient = serviceBusClientFactory.CreateClient("crgolden");
+        _serviceBusClient = serviceBusClientFactory.CreateClient(ServiceBusNames.ClientName);
     }
 
     [BindProperty]
@@ -37,7 +40,7 @@ public class ResendEmailConfirmationModel : PageModel
         var user = await _userManager.FindByEmailAsync(Input.Email);
         if (user is null)
         {
-            ModelState.AddModelError(Empty, "Verification email sent. Please check your email.");
+            ModelState.AddModelError(Empty, VerificationEmailSentMessage);
             return Page();
         }
 
@@ -56,14 +59,14 @@ public class ResendEmailConfirmationModel : PageModel
             var message = new ServiceBusMessage(htmlMessage)
             {
                 ReplyTo = From,
-                Subject = "Confirm your email",
+                Subject = UserMessages.ConfirmEmailSubject,
                 To = Input.Email
             };
-            var serviceBusSender = _serviceBusClient.CreateSender("email");
+            var serviceBusSender = _serviceBusClient.CreateSender(ServiceBusNames.EmailQueueName);
             await serviceBusSender.SendMessageAsync(message, HttpContext.RequestAborted);
         }
 
-        ModelState.AddModelError(Empty, "Verification email sent. Please check your email.");
+        ModelState.AddModelError(Empty, VerificationEmailSentMessage);
         return Page();
     }
 

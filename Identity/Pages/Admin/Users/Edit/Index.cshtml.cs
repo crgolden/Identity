@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 public class IndexModel : PageModel
 {
+    internal const string DetailsPageName = "/Admin/Users/Details/Index";
+
     private readonly UserManager<IdentityUser<Guid>> _userManager;
 
     public IndexModel(UserManager<IdentityUser<Guid>> userManager) => _userManager = userManager;
@@ -44,6 +46,6 @@ public class IndexModel : PageModel
         user.LockoutEnabled = AppUser.LockoutEnabled;
         user.EmailConfirmed = AppUser.EmailConfirmed;
         await _userManager.UpdateAsync(user);
-        return RedirectToPage("/Admin/Users/Details/Index", new { id });
+        return RedirectToPage(DetailsPageName, new { id });
     }
 }

@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 public class ClaimsModel : PageModel
 {
+    internal const string DetailsPageName = "/Admin/Roles/Details/Claims";
+
     private readonly RoleManager<IdentityRole<Guid>> _roleManager;
 
     public ClaimsModel(RoleManager<IdentityRole<Guid>> roleManager) => _roleManager = roleManager;
@@ -49,7 +51,7 @@ public class ClaimsModel : PageModel
             await _roleManager.AddClaimAsync(role, new Claim(claim.Type ?? Empty, claim.Value ?? Empty));
         }
 
-        return RedirectToPage("/Admin/Roles/Details/Claims", new { id });
+        return RedirectToPage(DetailsPageName, new { id });
     }
 
     public async Task<IActionResult> OnPostAddRowAsync(string id)

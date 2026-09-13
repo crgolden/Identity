@@ -13,7 +13,7 @@ public sealed class ConfigurationExtensionsTests
     {
         // Arrange
         var googleClientIdKey = Guid.NewGuid().ToString();
-        var googleClientId = Guid.NewGuid().ToString();
+        var googleClientId = TestValues.NewClientIdentifier();
         var configuration = ConfigurationWith(googleClientIdKey, googleClientId);
 
         // Act
@@ -45,7 +45,8 @@ public sealed class ConfigurationExtensionsTests
         // Arrange
         var configuredKey = Guid.NewGuid().ToString();
         var absentKey = Guid.NewGuid().ToString();
-        var configuration = ConfigurationWith(configuredKey, Guid.NewGuid().ToString());
+        var configuredValue = Guid.NewGuid().ToString();
+        var configuration = ConfigurationWith(configuredKey, configuredValue);
 
         // Act
         var exception = Assert.Throws<InvalidOperationException>(

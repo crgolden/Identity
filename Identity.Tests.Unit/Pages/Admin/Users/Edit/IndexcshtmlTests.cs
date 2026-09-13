@@ -57,7 +57,7 @@ public class IndexcshtmlTests
 
         Assert.Equal(updatedUserName, user.UserName);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("/Admin/Users/Details/Index", redirect.PageName);
+        Assert.Equal(IndexModel.DetailsPageName, redirect.PageName);
     }
 
     [Fact]

@@ -14,9 +14,16 @@ using Microsoft.Extensions.Azure;
 [AllowAnonymous]
 public class ExternalLoginModel : PageModel
 {
-    private const string LoginPageName = "./Login";
+    internal const string LoginPageName = "./Login";
+    internal const string ExternalLoginPagePath = "/Account/ExternalLogin";
+    internal const string CallbackPageHandler = "Callback";
+    internal const string RegisterConfirmationPageName = "./RegisterConfirmation";
+    internal const string EmailVerifiedClaimType = "email_verified";
+    internal const string LoadExternalLoginFailedMessage = "Error loading external login information.";
+    internal const string LoadExternalLoginDuringConfirmationFailedMessage =
+        "Error loading external login information during confirmation.";
+
     private const string From = "noreply@crgolden.com";
-    private const string EmailVerifiedClaimType = "email_verified";
 
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
     private readonly UserManager<IdentityUser<Guid>> _userManager;
@@ -34,7 +41,7 @@ public class ExternalLoginModel : PageModel
         _userManager = userManager;
         _userStore = userStore;
         _emailStore = (IUserEmailStore<IdentityUser<Guid>>)_userStore;
-        _serviceBusClient = serviceBusClientFactory.CreateClient("crgolden");
+        _serviceBusClient = serviceBusClientFactory.CreateClient(ServiceBusNames.ClientName);
     }
 
     [BindProperty]
@@ -51,14 +58,14 @@ public class ExternalLoginModel : PageModel
 
     public IActionResult OnPost(string provider, string? returnUrl = null)
     {
-        var redirectUrl = Url.Page("./ExternalLogin", pageHandler: "Callback", values: new { returnUrl });
+        var redirectUrl = Url.Page(ExternalLoginPagePath, pageHandler: CallbackPageHandler, values: new { returnUrl });
         var properties = _signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl);
         return new ChallengeResult(provider, properties);
     }
 
     public async Task<IActionResult> OnGetCallbackAsync(string? returnUrl = null, string? remoteError = null)
     {
-        returnUrl ??= Url.Content("~/");
+        returnUrl ??= Url.Content(PageRoutes.ContentRoot);
         if (!IsNullOrWhiteSpace(remoteError))
         {
             ErrorMessage = $"Error from external provider: {remoteError}";
@@ -68,19 +75,19 @@ public class ExternalLoginModel : PageModel
         var info = await _signInManager.GetExternalLoginInfoAsync();
         if (info is null)
         {
-            ErrorMessage = "Error loading external login information.";
+            ErrorMessage = LoadExternalLoginFailedMessage;
             return RedirectToPage(LoginPageName, new { ReturnUrl = returnUrl });
         }
 
         var result = await _signInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, isPersistent: false, bypassTwoFactor: true);
         if (result.Succeeded)
         {
-            return Url.IsLocalUrl(returnUrl) ? LocalRedirect(returnUrl) : LocalRedirect("~/");
+            return Url.IsLocalUrl(returnUrl) ? LocalRedirect(returnUrl) : LocalRedirect(PageRoutes.ContentRoot);
         }
 
         if (result.IsLockedOut)
         {
-            return RedirectToPage("./Lockout");
+            return RedirectToPage(PageRoutes.SiblingLockout);
         }
 
         var externalEmail = info.Principal.HasClaim(c => string.Equals(c.Type, ClaimTypes.Email, StringComparison.Ordinal))
@@ -128,11 +135,11 @@ public class ExternalLoginModel : PageModel
 
     public async Task<IActionResult> OnPostConfirmationAsync(string? returnUrl = null)
     {
-        returnUrl ??= Url.Content("~/");
+        returnUrl ??= Url.Content(PageRoutes.ContentRoot);
         var info = await _signInManager.GetExternalLoginInfoAsync();
         if (info is null)
         {
-            ErrorMessage = "Error loading external login information during confirmation.";
+            ErrorMessage = LoadExternalLoginDuringConfirmationFailedMessage;
             return RedirectToPage(LoginPageName, new { ReturnUrl = returnUrl });
         }
 
@@ -203,21 +210,21 @@ public class ExternalLoginModel : PageModel
                 var sbMessage = new ServiceBusMessage(htmlMessage)
                 {
                     ReplyTo = From,
-                    Subject = "Confirm your email",
+                    Subject = UserMessages.ConfirmEmailSubject,
                     To = email
                 };
-                var serviceBusSender = _serviceBusClient.CreateSender("email");
+                var serviceBusSender = _serviceBusClient.CreateSender(ServiceBusNames.EmailQueueName);
                 await serviceBusSender.SendMessageAsync(sbMessage, HttpContext.RequestAborted);
             }
 
             if (_userManager.Options.SignIn.RequireConfirmedAccount)
             {
-                return RedirectToPage("./RegisterConfirmation", new { email });
+                return RedirectToPage(RegisterConfirmationPageName, new { email });
             }
         }
 
         await _signInManager.SignInAsync(user, isPersistent: false, info.LoginProvider);
-        return Url.IsLocalUrl(returnUrl) ? LocalRedirect(returnUrl) : LocalRedirect("~/");
+        return Url.IsLocalUrl(returnUrl) ? LocalRedirect(returnUrl) : LocalRedirect(PageRoutes.ContentRoot);
     }
 
     public class InputModel

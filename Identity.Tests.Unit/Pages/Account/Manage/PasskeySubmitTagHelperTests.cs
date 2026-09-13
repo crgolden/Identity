@@ -72,7 +72,7 @@ public class PasskeySubmitTagHelperTests
         var antiforgeryMock = new Mock<IAntiforgery>(MockBehavior.Strict);
         antiforgeryMock
             .Setup(a => a.GetTokens(httpContext))
-            .Returns(new AntiforgeryTokenSet(null, "cookie", "__RequestVerificationToken", null));
+            .Returns(new AntiforgeryTokenSet(null, TestValues.NewSessionKey(), TestValues.NewPropertyKey(), null));
 
         var helper = new PasskeySubmitTagHelper(httpAccessorMock.Object, antiforgeryMock.Object)
         {
@@ -81,23 +81,27 @@ public class PasskeySubmitTagHelperTests
             EmailName = null
         };
 
+        var passThroughName = TestValues.NewAttributeName();
+        var passThroughValue = TestValues.NewAttributeValue();
         var attributes = new TagHelperAttributeList
             {
-                new TagHelperAttribute("operation", "op-should-be-ignored"),
-                new TagHelperAttribute("name", "name-should-be-ignored"),
-                new TagHelperAttribute("email-name", "email-should-be-ignored"),
-                new TagHelperAttribute("class", "btn-primary")
+                new TagHelperAttribute(PasskeySubmitTagHelper.OperationAttributeName, TestValues.NewAttributeValue()),
+                new TagHelperAttribute(PasskeySubmitTagHelper.NameAttributeName, TestValues.NewAttributeValue()),
+                new TagHelperAttribute(PasskeySubmitTagHelper.EmailNameAttributeName, TestValues.NewAttributeValue()),
+                new TagHelperAttribute(passThroughName, passThroughValue)
             };
 
+        var buttonLabel = TestValues.NewButtonLabel();
         var childContent = new DefaultTagHelperContent();
-        childContent.SetContent("ClickMe");
+        childContent.SetContent(buttonLabel);
 
         var output = new TagHelperOutput(
-            "passkey-submit",
+            PasskeySubmitTagHelper.TagName,
             attributes,
             (useCachedResult, encoder) => Task.FromResult<TagHelperContent>(childContent));
 
-        var context = new TagHelperContext([], new Dictionary<object, object>(), Guid.NewGuid().ToString());
+        var uniqueId = Guid.NewGuid().ToString();
+        var context = new TagHelperContext([], new Dictionary<object, object>(), uniqueId);
 
         // Act
         await helper.ProcessAsync(context, output);
@@ -106,20 +110,41 @@ public class PasskeySubmitTagHelperTests
         Assert.Null(output.TagName);
         Assert.Empty(output.Attributes);
         var html = output.Content.GetContent(NullHtmlEncoder.Default);
-        Assert.Contains("<button", html, StringComparison.Ordinal);
-        Assert.Contains("class=\"btn-primary\"", html, StringComparison.Ordinal);
-        Assert.Contains(">ClickMe</button>", html, StringComparison.Ordinal);
-        Assert.Contains($"operation=\"{helper.Operation}\"", html, StringComparison.Ordinal);
-        Assert.Contains($"name=\"{helper.Name}\"", html, StringComparison.Ordinal);
-        Assert.Contains("email-name=\"\"", html, StringComparison.Ordinal);
-        Assert.Contains("request-token-name=\"\"", html, StringComparison.Ordinal);
-        Assert.Contains("request-token-value=\"\"", html, StringComparison.Ordinal);
-        Assert.Contains("autofill=\"on\"", html, StringComparison.Ordinal);
+        Assert.Contains(PasskeySubmitTagHelper.ButtonOpeningTag, html, StringComparison.Ordinal);
+        Assert.Contains(
+            PasskeySubmitTagHelper.Attribute(passThroughName, passThroughValue),
+            html,
+            StringComparison.Ordinal);
+        Assert.Contains(buttonLabel + PasskeySubmitTagHelper.ButtonClosingTag, html, StringComparison.Ordinal);
+        Assert.Contains(
+            PasskeySubmitTagHelper.Attribute(PasskeySubmitTagHelper.OperationAttributeName, helper.Operation?.ToString()),
+            html,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            PasskeySubmitTagHelper.Attribute(PasskeySubmitTagHelper.NameAttributeName, helper.Name),
+            html,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            PasskeySubmitTagHelper.Attribute(PasskeySubmitTagHelper.EmailNameAttributeName, null),
+            html,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            PasskeySubmitTagHelper.Attribute(PasskeySubmitTagHelper.RequestTokenNameAttributeName, null),
+            html,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            PasskeySubmitTagHelper.Attribute(PasskeySubmitTagHelper.RequestTokenValueAttributeName, null),
+            html,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            PasskeySubmitTagHelper.Attribute(PasskeySubmitTagHelper.AutofillAttributeName, PasskeySubmitTagHelper.AutofillOn),
+            html,
+            StringComparison.Ordinal);
     }
 
     [Theory]
-    [InlineData(true, "on")]
-    [InlineData(false, "off")]
+    [InlineData(true, PasskeySubmitTagHelper.AutofillOn)]
+    [InlineData(false, PasskeySubmitTagHelper.AutofillOff)]
     public async Task ProcessAsync_RendersTheAutofillState_SoAFailedAttemptDoesNotRetryItself(
         bool autofill,
         string expected)
@@ -133,7 +158,7 @@ public class PasskeySubmitTagHelperTests
         var antiforgeryMock = new Mock<IAntiforgery>(MockBehavior.Strict);
         antiforgeryMock
             .Setup(a => a.GetTokens(httpContext))
-            .Returns(new AntiforgeryTokenSet(null, "cookie", "__RequestVerificationToken", null));
+            .Returns(new AntiforgeryTokenSet(null, TestValues.NewSessionKey(), TestValues.NewPropertyKey(), null));
 
         var helper = new PasskeySubmitTagHelper(httpAccessorMock.Object, antiforgeryMock.Object)
         {
@@ -142,27 +167,32 @@ public class PasskeySubmitTagHelperTests
             Autofill = autofill
         };
 
+        var suppressedAutofillValue = TestValues.NewAttributeValue();
         var attributes = new TagHelperAttributeList
             {
-                new TagHelperAttribute("autofill", "should-not-reach-the-button")
+                new TagHelperAttribute(PasskeySubmitTagHelper.AutofillAttributeName, suppressedAutofillValue)
             };
 
         var childContent = new DefaultTagHelperContent();
         childContent.SetContent(TestValues.NewClaimValue());
 
         var output = new TagHelperOutput(
-            "passkey-submit",
+            PasskeySubmitTagHelper.TagName,
             attributes,
             (useCachedResult, encoder) => Task.FromResult<TagHelperContent>(childContent));
 
-        var context = new TagHelperContext([], new Dictionary<object, object>(), Guid.NewGuid().ToString());
+        var uniqueId = Guid.NewGuid().ToString();
+        var context = new TagHelperContext([], new Dictionary<object, object>(), uniqueId);
 
         // Act
         await helper.ProcessAsync(context, output);
 
         // Assert
         var html = output.Content.GetContent(NullHtmlEncoder.Default);
-        Assert.Contains($"autofill=\"{expected}\"", html, StringComparison.Ordinal);
-        Assert.DoesNotContain("should-not-reach-the-button", html, StringComparison.Ordinal);
+        Assert.Contains(
+            PasskeySubmitTagHelper.Attribute(PasskeySubmitTagHelper.AutofillAttributeName, expected),
+            html,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain(suppressedAutofillValue, html, StringComparison.Ordinal);
     }
 }

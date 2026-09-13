@@ -11,6 +11,8 @@ using Moq;
 
 internal static class MockHelpers
 {
+    public const string PageRouteValueName = "page";
+
     public static Mock<UserManager<IdentityUser<Guid>>> MockUserManager() =>
         MockUserManager(new IdentityOptions());
 
@@ -61,6 +63,9 @@ internal static class MockHelpers
             new IdentityErrorDescriber(),
             NullLogger<RoleManager<IdentityRole<Guid>>>.Instance);
 
-    public static IdentityUser<Guid> TestUser() =>
-        new() { Id = Guid.NewGuid(), UserName = "test@example.com", Email = "test@example.com" };
+    public static IdentityUser<Guid> TestUser()
+    {
+        var emailAddress = TestValues.NewEmailAddress();
+        return new IdentityUser<Guid> { Id = TestValues.NewUserId(), UserName = emailAddress, Email = emailAddress };
+    }
 }

@@ -9,6 +9,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 [AllowAnonymous]
 public class LogoutModel : PageModel
 {
+    internal const string LogoutIdRouteValueName = "logoutId";
+
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
     private readonly IIdentityServerInteractionService _interactionService;
 
@@ -43,7 +45,7 @@ public class LogoutModel : PageModel
     public async Task<IActionResult> OnPostAsync(string? logoutId = null)
     {
         await _signInManager.SignOutAsync();
-        return RedirectToPage(new { logoutId });
+        return RedirectToPage(new RouteValueDictionary { [LogoutIdRouteValueName] = logoutId });
     }
 
     private async Task SetLogoutContextAsync(string? logoutId)

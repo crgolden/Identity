@@ -45,8 +45,8 @@ public class EditModel : PageModel
         provider.Enabled = IdentityProvider.Enabled;
         provider.Type = IdentityProvider.Type;
         provider.Properties = IdentityProvider.Properties;
-        provider.Updated = DateTime.UtcNow;
+        provider.Updated = DateTimeOffset.UtcNow.UtcDateTime;
         await _context.SaveChangesAsync();
-        return RedirectToPage("./Details", new { id });
+        return RedirectToPage(PageRoutes.SiblingDetails, new { id });
     }
 }

@@ -1,82 +1,89 @@
 namespace Identity.Tests.Unit.Extensions;
 
+using System.Net.Mime;
+using System.Text;
 using Identity.Extensions;
 using Infrastructure;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Net.Http.Headers;
+using SecurityHeaders = Identity.Extensions.ApplicationBuilderExtensions;
 
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
 public sealed class ApplicationBuilderExtensionsTests
 {
-    private const string ExpectedContentSecurityPolicy =
-        "default-src 'self'; script-src 'self' https://www.google.com https://www.gstatic.com; " +
-        "style-src 'self'; img-src 'self' data: https:; connect-src 'self' https://www.google.com; " +
-        "frame-src https://www.google.com; object-src 'none'; frame-ancestors 'none'; base-uri 'self';";
-
     [Fact]
     public async Task UseSecurityHeaders_HtmlResponse_SetsXContentTypeOptionsNosniff()
     {
         // Arrange
-        var (context, responseFeature) = MakeContext("text/html; charset=utf-8");
+        var (context, responseFeature) = MakeContext(HtmlContentType());
 
         // Act
         await RunAsync(context, responseFeature);
 
         // Assert
-        Assert.Equal("nosniff", (string?)context.Response.Headers.XContentTypeOptions);
+        Assert.Equal(
+            SecurityHeaders.ContentTypeOptionsNoSniff,
+            (string?)context.Response.Headers.XContentTypeOptions);
     }
 
     [Fact]
     public async Task UseSecurityHeaders_HtmlResponse_SetsXFrameOptionsDenyMatchingFrameAncestorsNone()
     {
         // Arrange
-        var (context, responseFeature) = MakeContext("text/html; charset=utf-8");
+        var (context, responseFeature) = MakeContext(HtmlContentType());
 
         // Act
         await RunAsync(context, responseFeature);
 
         // Assert
-        Assert.Equal("DENY", (string?)context.Response.Headers.XFrameOptions);
+        Assert.Equal(
+            SecurityHeaders.FrameOptionsDeny,
+            (string?)context.Response.Headers.XFrameOptions);
     }
 
     [Fact]
     public async Task UseSecurityHeaders_HtmlResponse_SetsReferrerPolicyNoReferrer()
     {
         // Arrange
-        var (context, responseFeature) = MakeContext("text/html; charset=utf-8");
+        var (context, responseFeature) = MakeContext(HtmlContentType());
 
         // Act
         await RunAsync(context, responseFeature);
 
         // Assert
-        Assert.Equal("no-referrer", (string?)context.Response.Headers["Referrer-Policy"]);
+        Assert.Equal(
+            SecurityHeaders.ReferrerPolicyNoReferrer,
+            (string?)context.Response.Headers[SecurityHeaders.ReferrerPolicyHeaderName]);
     }
 
     [Fact]
     public async Task UseSecurityHeaders_HtmlResponse_SetsDefaultContentSecurityPolicy()
     {
         // Arrange
-        var (context, responseFeature) = MakeContext("text/html; charset=utf-8");
+        var (context, responseFeature) = MakeContext(HtmlContentType());
 
         // Act
         await RunAsync(context, responseFeature);
 
         // Assert
-        Assert.Equal(ExpectedContentSecurityPolicy, (string?)context.Response.Headers.ContentSecurityPolicy);
+        Assert.Equal(
+            SecurityHeaders.ContentSecurityPolicy,
+            (string?)context.Response.Headers.ContentSecurityPolicy);
     }
 
     [Theory]
-    [InlineData("script-src", "https://www.google.com")]
-    [InlineData("script-src", "https://www.gstatic.com")]
-    [InlineData("connect-src", "https://www.google.com")]
-    [InlineData("frame-src", "https://www.google.com")]
+    [InlineData(SecurityHeaders.ScriptSrcDirective, SecurityHeaders.GoogleRecaptchaHost)]
+    [InlineData(SecurityHeaders.ScriptSrcDirective, SecurityHeaders.GoogleStaticHost)]
+    [InlineData(SecurityHeaders.ConnectSrcDirective, SecurityHeaders.GoogleRecaptchaHost)]
+    [InlineData(SecurityHeaders.FrameSrcDirective, SecurityHeaders.GoogleRecaptchaHost)]
     public async Task UseSecurityHeaders_CspAllowsRecaptchaHost(string directive, string host)
     {
         // Arrange
-        var (context, responseFeature) = MakeContext("text/html; charset=utf-8");
+        var (context, responseFeature) = MakeContext(HtmlContentType());
 
         // Act
         await RunAsync(context, responseFeature);
@@ -84,18 +91,14 @@ public sealed class ApplicationBuilderExtensionsTests
         // Assert
         var csp = (string?)context.Response.Headers.ContentSecurityPolicy;
         Assert.NotNull(csp);
-        var clause = csp.Split(';').Single(x => x.Trim().StartsWith(directive, StringComparison.Ordinal));
-        Assert.Contains(host, clause, StringComparison.Ordinal);
+        Assert.Contains(host, ClauseFor(csp, directive), StringComparison.Ordinal);
     }
 
-    [Theory]
-    [InlineData("https://cdn.jsdelivr.net")]
-    [InlineData("https://code.jquery.com")]
-    [InlineData("https://cdnjs.cloudflare.com")]
-    public async Task UseSecurityHeaders_CspExcludesSelfHostedLibraryCdn(string host)
+    [Fact]
+    public async Task UseSecurityHeaders_CspNamesOnlyTheAllowedExternalHosts()
     {
         // Arrange
-        var (context, responseFeature) = MakeContext("text/html; charset=utf-8");
+        var (context, responseFeature) = MakeContext(HtmlContentType());
 
         // Act
         await RunAsync(context, responseFeature);
@@ -103,14 +106,16 @@ public sealed class ApplicationBuilderExtensionsTests
         // Assert
         var csp = (string?)context.Response.Headers.ContentSecurityPolicy;
         Assert.NotNull(csp);
-        Assert.DoesNotContain(host, csp, StringComparison.Ordinal);
+        Assert.Equal(
+            [SecurityHeaders.GoogleRecaptchaHost, SecurityHeaders.GoogleStaticHost],
+            ExternalHostsIn(csp));
     }
 
     [Fact]
     public async Task UseSecurityHeaders_CspAllowsExternalClientLogoImages()
     {
         // Arrange
-        var (context, responseFeature) = MakeContext("text/html; charset=utf-8");
+        var (context, responseFeature) = MakeContext(HtmlContentType());
 
         // Act
         await RunAsync(context, responseFeature);
@@ -118,14 +123,16 @@ public sealed class ApplicationBuilderExtensionsTests
         // Assert
         var csp = (string?)context.Response.Headers.ContentSecurityPolicy;
         Assert.NotNull(csp);
-        var clause = csp.Split(';').Single(x => x.Trim().StartsWith("img-src", StringComparison.Ordinal));
-        Assert.Contains("https:", clause, StringComparison.Ordinal);
+        Assert.Contains(
+            SecurityHeaders.AnyHttpsSource,
+            ClauseFor(csp, SecurityHeaders.ImgSrcDirective),
+            StringComparison.Ordinal);
     }
 
     [Theory]
-    [InlineData("text/css")]
-    [InlineData("application/javascript")]
-    [InlineData("application/json")]
+    [InlineData(MediaTypeNames.Text.Css)]
+    [InlineData(MediaTypeNames.Text.JavaScript)]
+    [InlineData(MediaTypeNames.Application.Json)]
     [InlineData(null)]
     public async Task UseSecurityHeaders_NonHtmlResponse_DoesNotSetAnyHeaders(string? contentType)
     {
@@ -137,34 +144,41 @@ public sealed class ApplicationBuilderExtensionsTests
 
         // Assert
         var headers = context.Response.Headers;
-        Assert.False(headers.ContainsKey("X-Content-Type-Options"));
-        Assert.False(headers.ContainsKey("X-Frame-Options"));
-        Assert.False(headers.ContainsKey("Referrer-Policy"));
-        Assert.False(headers.ContainsKey("Content-Security-Policy"));
+        Assert.False(headers.ContainsKey(HeaderNames.XContentTypeOptions));
+        Assert.False(headers.ContainsKey(HeaderNames.XFrameOptions));
+        Assert.False(headers.ContainsKey(SecurityHeaders.ReferrerPolicyHeaderName));
+        Assert.False(headers.ContainsKey(HeaderNames.ContentSecurityPolicy));
     }
 
     [Fact]
     public async Task UseSecurityHeaders_ExistingCspNotOverwritten()
     {
         // Arrange
-        var (context, responseFeature) = MakeContext("text/html; charset=utf-8");
-        context.Response.Headers.ContentSecurityPolicy = "script-src 'none'";
+        var existingPolicy = SecurityHeaders.ScriptSrcDirective + ' ' + TestValues.NewPolicyDirectiveSource();
+        var (context, responseFeature) = MakeContext(HtmlContentType());
+        context.Response.Headers.ContentSecurityPolicy = existingPolicy;
 
         // Act
         await RunAsync(context, responseFeature);
 
         // Assert
-        Assert.Equal("script-src 'none'", (string?)context.Response.Headers.ContentSecurityPolicy);
-        Assert.Equal("nosniff", (string?)context.Response.Headers.XContentTypeOptions);
-        Assert.Equal("DENY", (string?)context.Response.Headers.XFrameOptions);
-        Assert.Equal("no-referrer", (string?)context.Response.Headers["Referrer-Policy"]);
+        Assert.Equal(existingPolicy, (string?)context.Response.Headers.ContentSecurityPolicy);
+        Assert.Equal(
+            SecurityHeaders.ContentTypeOptionsNoSniff,
+            (string?)context.Response.Headers.XContentTypeOptions);
+        Assert.Equal(
+            SecurityHeaders.FrameOptionsDeny,
+            (string?)context.Response.Headers.XFrameOptions);
+        Assert.Equal(
+            SecurityHeaders.ReferrerPolicyNoReferrer,
+            (string?)context.Response.Headers[SecurityHeaders.ReferrerPolicyHeaderName]);
     }
 
     [Fact]
     public void UseSecurityHeaders_NullApplicationBuilder_Throws()
     {
         // Arrange
-        IApplicationBuilder applicationBuilder = null!;
+        IApplicationBuilder? applicationBuilder = null;
 
         // Act
         var exception = Record.Exception(() => applicationBuilder.UseSecurityHeaders());
@@ -172,6 +186,20 @@ public sealed class ApplicationBuilderExtensionsTests
         // Assert
         Assert.IsType<ArgumentNullException>(exception);
     }
+
+    private static string HtmlContentType() =>
+        new MediaTypeHeaderValue(MediaTypeNames.Text.Html) { Charset = Encoding.UTF8.WebName }.ToString();
+
+    private static string ClauseFor(string contentSecurityPolicy, string directive) =>
+        contentSecurityPolicy.Split(';').Single(clause => clause.Trim().StartsWith(directive, StringComparison.Ordinal));
+
+    private static string[] ExternalHostsIn(string contentSecurityPolicy) =>
+        contentSecurityPolicy
+            .Split([';', ' '], StringSplitOptions.RemoveEmptyEntries)
+            .Where(token => token.StartsWith(Uri.UriSchemeHttps + Uri.SchemeDelimiter, StringComparison.Ordinal))
+            .Distinct(StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
 
     private static (DefaultHttpContext Context, CapturingResponseFeature ResponseFeature) MakeContext(string? contentType)
     {
@@ -209,7 +237,7 @@ public sealed class ApplicationBuilderExtensionsTests
 
         public string? ReasonPhrase { get; set; }
 
-        public int StatusCode { get; set; } = 200;
+        public int StatusCode { get; set; } = StatusCodes.Status200OK;
 
         public void OnCompleted(Func<object, Task> callback, object state)
         {

@@ -12,13 +12,15 @@ using Moq;
 [Trait("Category", "Unit")]
 public class IndexcshtmlTests
 {
+    private static readonly string GrantSubjectId = TestValues.NewSubjectId();
+
     private static readonly string ExistingKey = TestValues.NewUserId().ToString();
     private static readonly string MissingKey = TestValues.NewUserId().ToString();
 
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var grant = new PersistedGrant { Key = ExistingKey, SubjectId = "sub" };
+        var grant = new PersistedGrant { Key = ExistingKey, SubjectId = GrantSubjectId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([grant]);
         var ctx = new Mock<IPersistedGrantDbContext>();
         ctx.Setup(c => c.PersistedGrants).Returns(mockSet.Object);
@@ -27,7 +29,7 @@ public class IndexcshtmlTests
         var result = await model.OnGetAsync(ExistingKey);
 
         Assert.IsType<PageResult>(result);
-        Assert.Equal("sub", model.PersistedGrant.SubjectId);
+        Assert.Equal(GrantSubjectId, model.PersistedGrant.SubjectId);
     }
 
     [Fact]

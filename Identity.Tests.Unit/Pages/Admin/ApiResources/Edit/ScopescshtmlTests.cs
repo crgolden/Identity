@@ -12,13 +12,17 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ScopescshtmlTests
 {
+    private static readonly string ExistingScopeName = TestValues.NewApiScopeName();
+
+    private static readonly string PostedScopeName = TestValues.NewApiScopeName();
+
     private static readonly int ExistingEntityId = TestValues.NewEntityId();
     private static readonly int MissingEntityId = ExistingEntityId + 1;
 
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var resource = new ApiResource { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), Scopes = [new ApiResourceScope { Id = ExistingEntityId, Scope = "my-api.read" }] };
+        var resource = new ApiResource { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), Scopes = [new ApiResourceScope { Id = ExistingEntityId, Scope = ExistingScopeName }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
@@ -49,13 +53,13 @@ public class ScopescshtmlTests
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
 
-        var model = new ScopesModel(ctx.Object) { Scopes = [new ApiResourceScope { Id = 0, Scope = "my-api.write" }] };
+        var model = new ScopesModel(ctx.Object) { Scopes = [new ApiResourceScope { Id = 0, Scope = PostedScopeName }] };
         var result = await model.OnPostAsync(ExistingEntityId);
 
         var onlyScope = Assert.Single(resource.Scopes);
-        Assert.Equal("my-api.write", onlyScope.Scope);
+        Assert.Equal(PostedScopeName, onlyScope.Scope);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("/Admin/ApiResources/Details/Scopes", redirect.PageName);
+        Assert.Equal(ScopesModel.DetailsPageName, redirect.PageName);
     }
 
     [Fact]
@@ -72,7 +76,7 @@ public class ScopescshtmlTests
     [Fact]
     public async Task OnPostAsync_RemovesAbsentScope()
     {
-        var existing = new ApiResourceScope { Id = ExistingEntityId, Scope = "my-api.read", ApiResourceId = ExistingEntityId };
+        var existing = new ApiResourceScope { Id = ExistingEntityId, Scope = ExistingScopeName, ApiResourceId = ExistingEntityId };
         var resource = new ApiResource { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), Scopes = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
@@ -119,7 +123,7 @@ public class ScopescshtmlTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
 
-        var model = new ScopesModel(ctx.Object) { Scopes = [new ApiResourceScope { Id = ExistingEntityId, Scope = "my-api.read" }] };
+        var model = new ScopesModel(ctx.Object) { Scopes = [new ApiResourceScope { Id = ExistingEntityId, Scope = ExistingScopeName }] };
         var result = await model.OnPostRemoveRowAsync(ExistingEntityId, 0);
 
         Assert.IsType<PageResult>(result);

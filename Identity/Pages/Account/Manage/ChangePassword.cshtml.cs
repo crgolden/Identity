@@ -7,6 +7,11 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 public class ChangePasswordModel : PageModel
 {
+    internal const string SetPasswordPageName = "./SetPassword";
+
+    internal const string PasswordChangedMessage =
+        "Your password has been changed.";
+
     private readonly UserManager<IdentityUser<Guid>> _userManager;
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
 
@@ -31,13 +36,13 @@ public class ChangePasswordModel : PageModel
         var user = await _userManager.GetUserAsync(User);
         if (user is null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound(UserMessages.UnableToLoadUser(_userManager.GetUserId(User)));
         }
 
         var hasPassword = await _userManager.HasPasswordAsync(user);
         if (!hasPassword)
         {
-            return RedirectToPage("./SetPassword");
+            return RedirectToPage(SetPasswordPageName);
         }
 
         return Page();
@@ -53,7 +58,7 @@ public class ChangePasswordModel : PageModel
         var user = await _userManager.GetUserAsync(User);
         if (user is null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound(UserMessages.UnableToLoadUser(_userManager.GetUserId(User)));
         }
 
         var changePasswordResult = await _userManager.ChangePasswordAsync(user, Input.OldPassword, Input.NewPassword);
@@ -68,7 +73,7 @@ public class ChangePasswordModel : PageModel
         }
 
         await _signInManager.RefreshSignInAsync(user);
-        StatusMessage = "Your password has been changed.";
+        StatusMessage = PasswordChangedMessage;
 
         return RedirectToPage();
     }

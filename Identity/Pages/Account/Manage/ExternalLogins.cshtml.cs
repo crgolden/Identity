@@ -8,6 +8,19 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 public class ExternalLoginsModel : PageModel
 {
+    internal const string ExternalLoginsPagePath = "/Account/Manage/ExternalLogins";
+
+    internal const string LinkLoginCallbackPageHandler = "LinkLoginCallback";
+
+    internal const string LoginAddedMessage = "The external login was added.";
+
+    internal const string LoginNotAddedMessage =
+        "The external login was not added. External logins can only be associated with one account.";
+
+    internal const string LoginRemovedMessage = "The external login was removed.";
+
+    internal const string LoginNotRemovedMessage = "The external login was not removed.";
+
     private readonly UserManager<IdentityUser<Guid>> _userManager;
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
     private readonly IUserStore<IdentityUser<Guid>> _userStore;
@@ -39,7 +52,7 @@ public class ExternalLoginsModel : PageModel
         var user = await _userManager.GetUserAsync(User);
         if (user is null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound(UserMessages.UnableToLoadUser(_userManager.GetUserId(User)));
         }
 
         CurrentLogins = await _userManager.GetLoginsAsync(user);
@@ -62,25 +75,25 @@ public class ExternalLoginsModel : PageModel
         var user = await _userManager.GetUserAsync(User);
         if (user is null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound(UserMessages.UnableToLoadUser(_userManager.GetUserId(User)));
         }
 
         var result = await _userManager.RemoveLoginAsync(user, loginProvider, providerKey);
         if (!result.Succeeded)
         {
-            StatusMessage = "The external login was not removed.";
+            StatusMessage = LoginNotRemovedMessage;
             return RedirectToPage();
         }
 
         await _signInManager.RefreshSignInAsync(user);
-        StatusMessage = "The external login was removed.";
+        StatusMessage = LoginRemovedMessage;
         return RedirectToPage();
     }
 
     public async Task<IActionResult> OnPostLinkLoginAsync(string provider)
     {
         await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
-        var redirectUrl = Url.Page("./ExternalLogins", pageHandler: "LinkLoginCallback");
+        var redirectUrl = Url.Page(ExternalLoginsPagePath, pageHandler: LinkLoginCallbackPageHandler);
         var properties = _signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl, _userManager.GetUserId(User));
         return new ChallengeResult(provider, properties);
     }
@@ -90,27 +103,27 @@ public class ExternalLoginsModel : PageModel
         var user = await _userManager.GetUserAsync(User);
         if (user is null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound(UserMessages.UnableToLoadUser(_userManager.GetUserId(User)));
         }
 
         var userId = await _userManager.GetUserIdAsync(user);
         var info = await _signInManager.GetExternalLoginInfoAsync(userId);
         if (info is null)
         {
-            throw new InvalidOperationException($"Unexpected error occurred loading external login info.");
+            throw new InvalidOperationException(UserMessages.UnexpectedErrorLoadingExternalLoginInfo);
         }
 
         var result = await _userManager.AddLoginAsync(user, info);
         if (!result.Succeeded)
         {
-            StatusMessage = "The external login was not added. External logins can only be associated with one account.";
+            StatusMessage = LoginNotAddedMessage;
             return RedirectToPage();
         }
 
         await _userManager.AddMissingClaimsAsync(user, info.Principal);
 
         await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
-        StatusMessage = "The external login was added.";
+        StatusMessage = LoginAddedMessage;
         return RedirectToPage();
     }
 }

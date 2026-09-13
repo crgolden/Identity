@@ -13,11 +13,20 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ResetPasswordModelTests
 {
+    private const char InvalidBase64UrlCharacter = '!';
+    private const char PercentCharacter = '%';
+
     public static TheoryData<string> GetValidEncodedCases() => new()
     {
-        "abc",
-        "p@$$w0rd!",
-        "??????",
+        TestValues.NewEmailConfirmationToken(),
+        TestValues.NewPassword(),
+        TestValues.NewControlAndSymbolValue(),
+    };
+
+    public static TheoryData<string> MalformedCodes() => new()
+    {
+        TestValues.NewUserName() + InvalidBase64UrlCharacter,
+        TestValues.NewPathSegment() + PercentCharacter,
     };
 
     [Fact]
@@ -64,7 +73,7 @@ public class ResetPasswordModelTests
 
         // Assert
         var badRequest = Assert.IsType<BadRequestObjectResult>(result);
-        Assert.Equal("A code must be supplied for password reset.", badRequest.Value);
+        Assert.Equal(ResetPasswordModel.CodeRequiredMessage, badRequest.Value);
     }
 
     [Theory]
@@ -88,8 +97,7 @@ public class ResetPasswordModelTests
     }
 
     [Theory]
-    [InlineData("invalid!")]
-    [InlineData("%%%")]
+    [MemberData(nameof(MalformedCodes))]
     public void OnGet_MalformedCode_ThrowsFormatException(string malformed)
     {
         // Arrange
@@ -147,7 +155,7 @@ public class ResetPasswordModelTests
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(actionResult);
-        Assert.Equal("./ResetPasswordConfirmation", redirect.PageName);
+        Assert.Equal(PageRoutes.SiblingResetPasswordConfirmation, redirect.PageName);
         userManagerMock.Verify(um => um.FindByEmailAsync(unknownEmail), Times.Once);
         userManagerMock.Verify(
             um => um.ResetPasswordAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>(), It.IsAny<string>()),
@@ -161,7 +169,7 @@ public class ResetPasswordModelTests
         var resettingEmail = TestValues.NewEmailAddress();
         var resettingUser = new IdentityUser<Guid>
         {
-            Id = Guid.NewGuid(),
+            Id = TestValues.NewUserId(),
             Email = resettingEmail,
             UserName = resettingEmail
         };
@@ -181,7 +189,7 @@ public class ResetPasswordModelTests
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(actionResult);
-        Assert.Equal("./ResetPasswordConfirmation", redirect.PageName);
+        Assert.Equal(PageRoutes.SiblingResetPasswordConfirmation, redirect.PageName);
         userManagerMock.Verify(um => um.FindByEmailAsync(resettingEmail), Times.Once);
         userManagerMock.Verify(um => um.ResetPasswordAsync(resettingUser, resetCode, newPassword), Times.Once);
     }
@@ -199,7 +207,7 @@ public class ResetPasswordModelTests
         var secondError = TestValues.NewFailureReason();
         var foundUser = new IdentityUser<Guid>
         {
-            Id = Guid.NewGuid(),
+            Id = TestValues.NewUserId(),
             Email = resettingEmail,
             UserName = TestValues.NewUserName()
         };
@@ -253,8 +261,8 @@ public class ResetPasswordModelTests
         out string resetCode,
         out string newPassword)
     {
-        resetCode = Guid.NewGuid().ToString("N");
-        newPassword = $"NewP@ss{Guid.NewGuid():N}";
+        resetCode = TestValues.NewEmailConfirmationToken();
+        newPassword = TestValues.NewPassword();
 
         return new ResetPasswordModel(userManagerMock.Object)
         {

@@ -12,6 +12,8 @@ using Moq;
 [Trait("Category", "Unit")]
 public class CreatecshtmlTests
 {
+    private static readonly string EntityId = TestValues.NewEntityIdUrn();
+
     [Fact]
     public void OnGet_ReturnsPage()
     {
@@ -25,12 +27,12 @@ public class CreatecshtmlTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.SamlServiceProviders.Add(It.IsAny<SamlServiceProvider>()));
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
-        var model = new CreateModel(ctx.Object) { SamlServiceProvider = new SamlServiceProvider { EntityId = "urn:sp" } };
+        var model = new CreateModel(ctx.Object) { SamlServiceProvider = new SamlServiceProvider { EntityId = EntityId } };
 
         var result = await model.OnPostAsync();
 
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./Details", redirect.PageName);
+        Assert.Equal(PageRoutes.SiblingDetails, redirect.PageName);
     }
 
     [Fact]
@@ -38,7 +40,7 @@ public class CreatecshtmlTests
     {
         var ctx = new Mock<IConfigurationDbContext>();
         var model = new CreateModel(ctx.Object);
-        model.ModelState.AddModelError("SamlServiceProvider.EntityId", "Required");
+        model.ModelState.AddModelError(nameof(SamlServiceProvider.EntityId), TestValues.NewValidationMessage());
 
         Assert.IsType<PageResult>(await model.OnPostAsync());
     }

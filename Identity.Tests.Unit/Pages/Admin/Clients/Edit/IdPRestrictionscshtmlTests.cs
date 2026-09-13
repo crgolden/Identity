@@ -12,13 +12,17 @@ using Moq;
 [Trait("Category", "Unit")]
 public class IdPRestrictionscshtmlTests
 {
+    private static readonly string ExistingProvider = TestValues.NewSchemeName();
+
+    private static readonly string PostedProvider = TestValues.NewSchemeName();
+
     private static readonly int ExistingEntityId = TestValues.NewEntityId();
     private static readonly int MissingEntityId = ExistingEntityId + 1;
 
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), IdentityProviderRestrictions = [new ClientIdPRestriction { Id = ExistingEntityId, Provider = "Google", ClientId = ExistingEntityId }] };
+        var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), IdentityProviderRestrictions = [new ClientIdPRestriction { Id = ExistingEntityId, Provider = ExistingProvider, ClientId = ExistingEntityId }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
@@ -54,14 +58,14 @@ public class IdPRestrictionscshtmlTests
 
         var model = new IdPRestrictionsModel(ctx.Object)
         {
-            IdPRestrictions = [new ClientIdPRestriction { Id = 0, Provider = "Facebook" }],
+            IdPRestrictions = [new ClientIdPRestriction { Id = 0, Provider = PostedProvider }],
         };
         var result = await model.OnPostAsync(ExistingEntityId);
 
         var onlyProviderRestriction = Assert.Single(client.IdentityProviderRestrictions);
-        Assert.Equal("Facebook", onlyProviderRestriction.Provider);
+        Assert.Equal(PostedProvider, onlyProviderRestriction.Provider);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("/Admin/Clients/Details/IdPRestrictions", redirect.PageName);
+        Assert.Equal(IdPRestrictionsModel.DetailsPageName, redirect.PageName);
     }
 
     [Fact]
@@ -80,7 +84,7 @@ public class IdPRestrictionscshtmlTests
     [Fact]
     public async Task OnPostAsync_RemovesRestriction_WhenNotPosted()
     {
-        var existing = new ClientIdPRestriction { Id = ExistingEntityId, Provider = "Google", ClientId = ExistingEntityId };
+        var existing = new ClientIdPRestriction { Id = ExistingEntityId, Provider = ExistingProvider, ClientId = ExistingEntityId };
         var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), IdentityProviderRestrictions = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
@@ -96,7 +100,7 @@ public class IdPRestrictionscshtmlTests
     [Fact]
     public async Task OnPostAsync_UpdatesExistingIdPRestriction_WhenPostedWithId()
     {
-        var existing = new ClientIdPRestriction { Id = ExistingEntityId, Provider = "Google", ClientId = ExistingEntityId };
+        var existing = new ClientIdPRestriction { Id = ExistingEntityId, Provider = ExistingProvider, ClientId = ExistingEntityId };
         var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), IdentityProviderRestrictions = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
@@ -105,11 +109,11 @@ public class IdPRestrictionscshtmlTests
 
         var model = new IdPRestrictionsModel(ctx.Object)
         {
-            IdPRestrictions = [new ClientIdPRestriction { Id = ExistingEntityId, Provider = "Facebook" }],
+            IdPRestrictions = [new ClientIdPRestriction { Id = ExistingEntityId, Provider = PostedProvider }],
         };
         await model.OnPostAsync(ExistingEntityId);
 
-        Assert.Equal("Facebook", existing.Provider);
+        Assert.Equal(PostedProvider, existing.Provider);
     }
 
     [Fact]
@@ -148,7 +152,7 @@ public class IdPRestrictionscshtmlTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
 
-        var model = new IdPRestrictionsModel(ctx.Object) { IdPRestrictions = [new ClientIdPRestriction { Id = ExistingEntityId, Provider = "Google" }] };
+        var model = new IdPRestrictionsModel(ctx.Object) { IdPRestrictions = [new ClientIdPRestriction { Id = ExistingEntityId, Provider = ExistingProvider }] };
         var result = await model.OnPostRemoveRowAsync(ExistingEntityId, 0);
 
         Assert.IsType<PageResult>(result);

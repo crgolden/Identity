@@ -12,10 +12,10 @@ using Moq;
 public class IndexcshtmlTests
 {
     private static readonly string FirstClientIdAlphabetically =
-        TestValues.NewTokenFromFirstHalfOfAlphabet(9);
+        TestValues.NewFirstAlphabeticalName();
 
     private static readonly string LastClientIdAlphabetically =
-        TestValues.NewTokenFromSecondHalfOfAlphabet(9);
+        TestValues.NewLastAlphabeticalName();
 
     [Fact]
     public void IsPageModel()

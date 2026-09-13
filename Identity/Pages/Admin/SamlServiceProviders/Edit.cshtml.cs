@@ -46,8 +46,8 @@ public class EditModel : PageModel
         sp.Enabled = SamlServiceProvider.Enabled;
         sp.AllowIdpInitiated = SamlServiceProvider.AllowIdpInitiated;
         sp.DefaultNameIdFormat = SamlServiceProvider.DefaultNameIdFormat;
-        sp.Updated = DateTime.UtcNow;
+        sp.Updated = DateTimeOffset.UtcNow.UtcDateTime;
         await _context.SaveChangesAsync();
-        return RedirectToPage("./Details", new { id });
+        return RedirectToPage(PageRoutes.SiblingDetails, new { id });
     }
 }

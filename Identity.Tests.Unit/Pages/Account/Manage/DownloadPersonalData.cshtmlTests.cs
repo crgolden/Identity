@@ -23,14 +23,14 @@ public class DownloadPersonalDataModelTests
 
         // Assert
         var notFound = Assert.IsType<NotFoundResult>(result);
-        Assert.Equal(404, notFound.StatusCode);
+        Assert.Equal(StatusCodes.Status404NotFound, notFound.StatusCode);
     }
 
     [Fact]
     public async Task OnPostAsync_UserNotFound_ReturnsNotFoundObjectResult()
     {
         // Arrange
-        var userId = "sentinel-user-id";
+        var userId = TestValues.NewUserId().ToString();
         var userManagerMock = MockHelpers.MockUserManager();
 
         userManagerMock

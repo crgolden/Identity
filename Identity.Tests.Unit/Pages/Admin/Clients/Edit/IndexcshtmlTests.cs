@@ -50,7 +50,7 @@ public class IndexcshtmlTests
     {
         var ctx = new Mock<IConfigurationDbContext>();
         var model = new IndexModel(ctx.Object);
-        model.ModelState.AddModelError("ClientId", "Required");
+        model.ModelState.AddModelError(nameof(Client.ClientId), TestValues.NewValidationMessage());
         var result = await model.OnPostAsync(ExistingEntityId);
         Assert.IsType<PageResult>(result);
     }
@@ -69,7 +69,7 @@ public class IndexcshtmlTests
 
         Assert.Equal(ExistingClientId, client.ClientId);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("/Admin/Clients/Details/Index", redirect.PageName);
+        Assert.Equal(IndexModel.DetailsPageName, redirect.PageName);
     }
 
     [Fact]

@@ -404,13 +404,9 @@ startup, one per orphaned row).
 
 ### Azure credential strategy
 
-| Environment | Credentials enabled |
-|---|---|
-| `Development` | `AzureCliCredential`, `VisualStudioCredential` |
-| `CI` | `AzureCliCredential` only |
-| `Production` | Full `DefaultAzureCredential` chain (managed identity) |
+No Azure credential is constructed outside Production. `DefaultAzureCredential` and the `DefaultAzureCredentialOptions` section it binds are read only inside `Program.cs`'s `IsProduction()` branch, which is also the only branch that needs one — Data Protection's blob and Key Vault clients and the Service Bus client. Development and CI reach Service Bus by connection string and keep Data Protection keys on disk, so neither has an Azure dependency to authenticate.
 
-Options are sourced from `DefaultAzureCredentialOptions` in User Secrets (development) or environment variables (CI/production) — not from `appsettings.Development.json`, which is not loaded in CI.
+`appsettings.Production.json` excludes every interactive and developer-tool credential in the chain, leaving Managed Identity (`ExcludeManagedIdentityCredential` is overridden to `false` as an App Service setting).
 
 ---
 
@@ -553,19 +549,21 @@ UseSerilogRequestLogging
 
 ## CI/CD Pipeline
 
-Defined in `.github/workflows/main_crgolden-identity.yml`. Triggers: push to `main`, pull request events, manual dispatch, and weekly schedule (mutation tests, Monday 02:00 UTC).
+Defined in `.github/workflows/main_crgolden-identity.yml`. Triggers: push to `main`, pull request events, and manual dispatch. There is no schedule; the only scheduled workflow is the synthetic walker below.
 
 ### Build job (`windows-latest`)
 
-1. Set up Java 17 (SonarCloud scanner), .NET 10, restore NuGet cache.
+1. Set up Java 21 (SonarCloud scanner), .NET 10, restore NuGet cache.
 2. Begin SonarCloud scan.
 3. `dotnet build --no-incremental --configuration Release` — builds all projects including the `.dacpac`.
 4. Run unit tests with `coverlet.console` (OpenCover); write `coverage.opencover.xml`.
-5. Azure OIDC login → deploy `.dacpac` to E2E test database.
+5. Deploy the `.dacpac` to the E2E test database with `SqlPackage`, using the SQL login in the workflow's secrets. The build job performs no Azure login.
 6. Run E2E tests (`ASPNETCORE_ENVIRONMENT=CI`); write `coverage-e2e.xml`.
 7. End SonarCloud scan (reads both coverage files).
 8. Publish web app (`-r win-x86 --self-contained false`).
 9. Upload artifacts: published app, `.dacpac`, test results.
+
+Steps 5, 6 and the SonarCloud steps are skipped for Dependabot (`if: github.actor != 'dependabot[bot]'`), so a dependency bump is verified by unit tests alone. The publish and artifact-upload steps carry no such condition — but they follow the test steps, so a failing test skips them and the whole deploy job with them.
 
 ### Deploy job (`windows-latest`, after build)
 
@@ -577,19 +575,24 @@ The database is always deployed before the application to ensure schema readines
 
 ### Synthetic walker (`windows-latest`, scheduled — separate workflow)
 
-`synthetic.yml` builds `Identity.Tests.E2E` and runs the `Category=Walker` suite against the deployed site (`WALKER_BASE_URL`), signing in by passkey as a member account and then as an admin, then uploads the TRX and Playwright artifacts. It replaced the post-deploy smoke job and is never a merge gate; its schedule ships commented out until a green manual dispatch.
+`synthetic.yml` builds `Identity.Tests.E2E` and runs the `Category=Walker` suite against the deployed site (`WALKER_BASE_URL` → `WalkerBaseUrl`), signing in by passkey as a member account and then as an admin, then uploads the TRX and Playwright artifacts. It replaced the post-deploy smoke job and is never a merge gate. It runs twice daily on `schedule`, plus `workflow_dispatch` with optional seed and step-budget inputs, under `concurrency: synthetic-walker`.
 
-### Mutation job (`windows-latest`, `schedule` or `workflow_dispatch`)
+### Mutation job (`windows-latest`)
 
-Builds the solution and runs Stryker.NET (`stryker-config.json`), uploading the report as the `stryker-report` artifact.
+Builds the solution and runs Stryker.NET (`stryker-config.json`), uploading the report as the `stryker-report` artifact. It runs on every push and on pull requests from this repository; only a fork's pull request skips it.
 
 ### Environment differences
 
+`Program.cs` branches once, on `IsProduction()`. Everything Azure- and telemetry-shaped sits inside that branch, so Development and CI differ from each other only in where configuration comes from and which database they reach.
+
 | Setting | Development | CI | Production |
 |---|---|---|---|
-| Azure credentials | `AzureCliCredential`, `VisualStudioCredential` | `AzureCliCredential` | Full `DefaultAzureCredential` |
-| Config source | User Secrets | Environment variables (no `appsettings.CI.json`) | Key Vault + env vars |
-| Serilog | Console only | Elasticsearch (`BootstrapMethod.Failure`) | Elasticsearch + OpenTelemetry |
-| Passkey origin | Relaxed (`localhost:7261`) | Strict | Strict |
-| IdentityServer events | All (errors, info, failures, successes) | Default | Default |
-| DB name | `Identity` (User Secrets) | `IdentityTest` / `E2E_DB_NAME` | `Identity` |
+| Azure credentials | none constructed | none constructed | `DefaultAzureCredential`, with every interactive and developer-tool credential excluded |
+| Config source | User Secrets + `appsettings.Development.json` | Environment variables (no `appsettings.CI.json`) | App Service settings, several of them Key Vault references |
+| Serilog | Console (`Information`) | Console, from configuration | Elasticsearch data stream (`BootstrapMethod.Failure`) + OpenTelemetry |
+| Data Protection | local `.dataprotection-keys` directory | local directory | Azure Blob key ring, keys wrapped by Key Vault |
+| Service Bus | connection string | connection string | namespace + Managed Identity |
+| Passkey origin | `https://localhost:7261` | the Kestrel origin | the deployed site |
+| DB | `(localdb)\MSSQLLocalDB`, integrated security | `DB_SERVER` / `DB_NAME_E2E`, SQL login | SQL login from Key Vault |
+
+`IdentityPasskeyOptions.ValidateOrigin` and all four `Events.Raise*` flags are registered unconditionally, so they behave identically in every environment.

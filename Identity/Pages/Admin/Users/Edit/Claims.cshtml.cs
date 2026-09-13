@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 public class ClaimsModel : PageModel
 {
+    internal const string DetailsPageName = "/Admin/Users/Details/Claims";
+
     private readonly UserManager<IdentityUser<Guid>> _userManager;
 
     public ClaimsModel(UserManager<IdentityUser<Guid>> userManager) => _userManager = userManager;
@@ -45,7 +47,7 @@ public class ClaimsModel : PageModel
             await _userManager.AddClaimsAsync(user, Claims.Select(c => new Claim(c.Type ?? Empty, c.Value ?? Empty)));
         }
 
-        return RedirectToPage("/Admin/Users/Details/Claims", new { id });
+        return RedirectToPage(DetailsPageName, new { id });
     }
 
     public async Task<IActionResult> OnPostAddRowAsync(string id)

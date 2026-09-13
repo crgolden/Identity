@@ -1341,7 +1341,7 @@ Closing that gap means testing `Program.cs`, not reviving an empty extension cla
 ### Log Filter Tests
 
 `Identity.Logging.DuendeLicenseNotice.IsNoLicenseConfiguredNotice` is the Serilog exclusion wired into
-the Production sink chain at `Program.cs:78`. **The line it draws is "no license is configured" versus
+the Production sink chain as `.Filter.ByExcluding(...)` in `Program.cs`. **The line it draws is "no license is configured" versus
 "a license exists and something is wrong with it".** Duende reports the first fact three ways — once as
 an Error and twice as a Warning naming whichever feature or entitlement triggered the check — and all
 three are the same single fact. Every other event from that logger requires a configured license to fire
@@ -1630,7 +1630,7 @@ The following paths have no meaningful behavioral test coverage and are candidat
 ASPNETCORE_ENVIRONMENT=Development SqlConnectionStringBuilder__InitialCatalog=IdentityTest dotnet test --project Identity.Tests.E2E --configuration Debug -- --filter-trait "Category=Load"
 ```
 
-Load tests use `Parallel.ForEachAsync` + `HttpClient` (self-signed cert ignored) against the real Kestrel server started by `PlaywrightFixture`. They are excluded from normal CI runs and only execute on `schedule` or `workflow_dispatch`.
+Load tests use `Parallel.ForEachAsync` + `HttpClient` (self-signed cert ignored) against the real Kestrel server started by `PlaywrightFixture`. They are excluded from normal CI runs and only execute on `workflow_dispatch`; the workflow has no `schedule`.
 
 > **Test parallelism note:** `Identity.Tests.E2E/xunit.runner.json` sets `parallelizeTestCollections: false`. This is required because `PlaywrightFixture` initializes `WebApplicationFactory<Program>`, whose startup makes concurrent external calls. When many E2E tests run in parallel, thread pool saturation causes those async calls to time out and the factory throws "The entry point exited without ever building an IHost." Serializing collections eliminates the contention at the cost of a longer combined run. If you see this error, do not change the parallelism setting — diagnose the Azure credential or network path instead. `Identity.Tests.Unit` has no such constraint and runs with `parallelizeTestCollections: true` since Playwright/`WebApplicationFactory` left with the E2E split.
 

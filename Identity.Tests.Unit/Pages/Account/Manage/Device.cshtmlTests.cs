@@ -1,6 +1,8 @@
 namespace Identity.Tests.Unit.Pages.Account.Manage;
 
 using System.Security.Claims;
+using Duende.IdentityModel;
+using Duende.IdentityServer;
 using Duende.IdentityServer.Events;
 using Duende.IdentityServer.Models;
 using Duende.IdentityServer.Services;
@@ -19,6 +21,14 @@ public class DeviceIndexModelTests
 {
     private static readonly string ExistingClientId = TestValues.NewClientIdentifier();
     private static readonly string ExistingClientName = TestValues.NewClientName();
+    private static readonly string KnownUserCode = TestValues.NewVerificationCode();
+    private static readonly string UnknownUserCode = TestValues.NewVerificationCode();
+    private static readonly string ApiScopeName = TestValues.NewApiScopeName();
+    private static readonly string ApiScopeDisplayName = TestValues.NewDisplayName();
+    private static readonly string ApiResourceName = TestValues.NewApiResourceName();
+    private static readonly string ApiResourceDisplayName = TestValues.NewDisplayName();
+    private static readonly string SignedInSubjectId = TestValues.NewSubjectId();
+    private static readonly string AuthenticationType = TestValues.NewSchemeName();
 
     [Fact]
     public void Constructor_ValidDependencies_CreatesPageModel()
@@ -58,7 +68,7 @@ public class DeviceIndexModelTests
         var model = CreateModel(interaction.Object);
 
         // Act
-        var result = await model.OnGetAsync("invalid-code");
+        var result = await model.OnGetAsync(UnknownUserCode);
 
         // Assert
         Assert.IsType<PageResult>(result);
@@ -76,11 +86,11 @@ public class DeviceIndexModelTests
         var model = CreateModel(interaction.Object);
 
         // Act
-        var result = await model.OnGetAsync("device-code");
+        var result = await model.OnGetAsync(KnownUserCode);
 
         // Assert
         Assert.IsType<PageResult>(result);
-        Assert.Equal("device-code", model.Input.UserCode);
+        Assert.Equal(KnownUserCode, model.Input.UserCode);
         Assert.Equal(ExistingClientName, model.View.ClientName);
         Assert.NotEmpty(model.View.IdentityScopes);
     }
@@ -96,13 +106,13 @@ public class DeviceIndexModelTests
         var model = CreateModel(interaction.Object);
 
         // Act
-        var result = await model.OnGetAsync("device-code");
+        var result = await model.OnGetAsync(KnownUserCode);
 
         // Assert
         Assert.IsType<PageResult>(result);
         Assert.Equal(ExistingClientId, model.View.ClientName);
-        Assert.Contains(model.View.ApiScopes, s => string.Equals(s.Value, "api.read", StringComparison.Ordinal));
-        Assert.Contains(model.View.ApiScopes, s => string.Equals(s.Value, "offline_access", StringComparison.Ordinal));
+        Assert.Contains(model.View.ApiScopes, s => string.Equals(s.Value, ApiScopeName, StringComparison.Ordinal));
+        Assert.Contains(model.View.ApiScopes, s => string.Equals(s.Value, IdentityServerConstants.StandardScopes.OfflineAccess, StringComparison.Ordinal));
     }
 
     [Fact]
@@ -114,13 +124,13 @@ public class DeviceIndexModelTests
             .Setup(x => x.GetAuthorizationContextAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((DeviceFlowAuthorizationRequest?)null);
         var model = CreateModel(interaction.Object);
-        model.Input = new DeviceModel.InputModel { UserCode = "device-code" };
+        model.Input = new DeviceModel.InputModel { UserCode = KnownUserCode };
 
         // Act
         var result = await model.OnPostAsync();
 
         // Assert
-        Assert.Equal("/Error", Assert.IsType<RedirectToPageResult>(result).PageName);
+        Assert.Equal(PageRoutes.Error, Assert.IsType<RedirectToPageResult>(result).PageName);
     }
 
     [Fact]
@@ -135,15 +145,15 @@ public class DeviceIndexModelTests
         var events = new Mock<IEventService>(MockBehavior.Strict);
         events.Setup(e => e.RaiseAsync(It.IsAny<Event>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
         var model = CreateModel(interaction.Object, events.Object);
-        model.Input = new DeviceModel.InputModel { Button = "no", UserCode = "device-code" };
+        model.Input = new DeviceModel.InputModel { Button = ConsentModel.DenyButtonValue, UserCode = KnownUserCode };
 
         // Act
         var result = await model.OnPostAsync();
 
         // Assert
-        Assert.Equal("/Account/Manage/DeviceSuccess", Assert.IsType<RedirectToPageResult>(result).PageName);
+        Assert.Equal(DeviceModel.DeviceSuccessPagePath, Assert.IsType<RedirectToPageResult>(result).PageName);
         events.Verify(e => e.RaiseAsync(It.IsAny<ConsentDeniedEvent>(), It.IsAny<CancellationToken>()), Times.Once);
-        interaction.Verify(x => x.HandleRequestAsync("device-code", It.IsAny<ConsentResponse>(), It.IsAny<CancellationToken>()), Times.Once);
+        interaction.Verify(x => x.HandleRequestAsync(KnownUserCode, It.IsAny<ConsentResponse>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -158,15 +168,15 @@ public class DeviceIndexModelTests
         var events = new Mock<IEventService>(MockBehavior.Strict);
         events.Setup(e => e.RaiseAsync(It.IsAny<Event>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
         var model = CreateModel(interaction.Object, events.Object);
-        model.Input = new DeviceModel.InputModel { Button = "yes", ScopesConsented = ["openid"], UserCode = "device-code" };
+        model.Input = new DeviceModel.InputModel { Button = ConsentModel.GrantButtonValue, ScopesConsented = [IdentityServerConstants.StandardScopes.OpenId], UserCode = KnownUserCode };
 
         // Act
         var result = await model.OnPostAsync();
 
         // Assert
-        Assert.Equal("/Account/Manage/DeviceSuccess", Assert.IsType<RedirectToPageResult>(result).PageName);
+        Assert.Equal(DeviceModel.DeviceSuccessPagePath, Assert.IsType<RedirectToPageResult>(result).PageName);
         events.Verify(e => e.RaiseAsync(It.IsAny<ConsentGrantedEvent>(), It.IsAny<CancellationToken>()), Times.Once);
-        interaction.Verify(x => x.HandleRequestAsync("device-code", It.IsAny<ConsentResponse>(), It.IsAny<CancellationToken>()), Times.Once);
+        interaction.Verify(x => x.HandleRequestAsync(KnownUserCode, It.IsAny<ConsentResponse>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -176,7 +186,7 @@ public class DeviceIndexModelTests
         var interaction = new Mock<IDeviceFlowInteractionService>(MockBehavior.Strict);
         interaction.Setup(x => x.GetAuthorizationContextAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(BuildRequest());
         var model = CreateModel(interaction.Object);
-        model.Input = new DeviceModel.InputModel { Button = "yes", ScopesConsented = [], UserCode = "device-code" };
+        model.Input = new DeviceModel.InputModel { Button = ConsentModel.GrantButtonValue, ScopesConsented = [], UserCode = KnownUserCode };
 
         // Act
         var result = await model.OnPostAsync();
@@ -196,13 +206,13 @@ public class DeviceIndexModelTests
             .ReturnsAsync(BuildRequest())
             .ReturnsAsync((DeviceFlowAuthorizationRequest?)null);
         var model = CreateModel(interaction.Object);
-        model.Input = new DeviceModel.InputModel { Button = "maybe", UserCode = "device-code" };
+        model.Input = new DeviceModel.InputModel { Button = TestValues.NewButtonValue(), UserCode = KnownUserCode };
 
         // Act
         var result = await model.OnPostAsync();
 
         // Assert
-        Assert.Equal("/Error", Assert.IsType<RedirectToPageResult>(result).PageName);
+        Assert.Equal(PageRoutes.Error, Assert.IsType<RedirectToPageResult>(result).PageName);
         Assert.False(model.ModelState.IsValid);
     }
 
@@ -241,10 +251,10 @@ public class DeviceIndexModelTests
     {
         var resources = new Resources();
         resources.IdentityResources.Add(new IdentityResources.OpenId());
-        resources.ApiScopes.Add(new ApiScope("api.read", "API Read"));
-        resources.ApiResources.Add(new ApiResource("api1", "API One") { Scopes = { "api.read" } });
+        resources.ApiScopes.Add(new ApiScope(ApiScopeName, ApiScopeDisplayName));
+        resources.ApiResources.Add(new ApiResource(ApiResourceName, ApiResourceDisplayName) { Scopes = { ApiScopeName } });
         resources.OfflineAccess = true;
-        var parsed = new[] { new ParsedScopeValue("api.read") };
+        var parsed = new[] { new ParsedScopeValue(ApiScopeName) };
         return new DeviceFlowAuthorizationRequest
         {
             Client = new Client { ClientId = ExistingClientId },
@@ -257,7 +267,7 @@ public class DeviceIndexModelTests
         IEventService? events = null)
     {
         var model = new DeviceModel(interaction, events ?? Mock.Of<IEventService>());
-        var principal = new ClaimsPrincipal(new ClaimsIdentity([new Claim("sub", "user-123")], "test"));
+        var principal = new ClaimsPrincipal(new ClaimsIdentity([new Claim(JwtClaimTypes.Subject, SignedInSubjectId)], AuthenticationType));
         model.PageContext = new PageContext
         {
             ActionDescriptor = new CompiledPageActionDescriptor(),

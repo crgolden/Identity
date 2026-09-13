@@ -12,13 +12,19 @@ using Moq;
 [Trait("Category", "Unit")]
 public class EditcshtmlTests
 {
+    private static readonly string EntityId = TestValues.NewEntityIdUrn();
+
+    private static readonly string UpdatedEntityId = TestValues.NewEntityIdUrn();
+
+    private static readonly string UnmatchedEntityId = TestValues.NewEntityIdUrn();
+
     private static readonly int ExistingEntityId = TestValues.NewEntityId();
     private static readonly int MissingEntityId = ExistingEntityId + 1;
 
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var sp = new SamlServiceProvider { Id = ExistingEntityId, EntityId = "urn:sp" };
+        var sp = new SamlServiceProvider { Id = ExistingEntityId, EntityId = EntityId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([sp]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.SamlServiceProviders).Returns(mockSet.Object);
@@ -27,7 +33,7 @@ public class EditcshtmlTests
         var result = await model.OnGetAsync(ExistingEntityId);
 
         Assert.IsType<PageResult>(result);
-        Assert.Equal("urn:sp", model.SamlServiceProvider.EntityId);
+        Assert.Equal(EntityId, model.SamlServiceProvider.EntityId);
     }
 
     [Fact]
@@ -43,18 +49,18 @@ public class EditcshtmlTests
     [Fact]
     public async Task OnPostAsync_UpdatesAndRedirects_WhenValid()
     {
-        var sp = new SamlServiceProvider { Id = ExistingEntityId, EntityId = "urn:sp" };
+        var sp = new SamlServiceProvider { Id = ExistingEntityId, EntityId = EntityId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([sp]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.SamlServiceProviders).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
 
-        var model = new EditModel(ctx.Object) { SamlServiceProvider = new SamlServiceProvider { EntityId = "urn:sp-updated", Enabled = true } };
+        var model = new EditModel(ctx.Object) { SamlServiceProvider = new SamlServiceProvider { EntityId = UpdatedEntityId, Enabled = true } };
         var result = await model.OnPostAsync(ExistingEntityId);
 
-        Assert.Equal("urn:sp-updated", sp.EntityId);
+        Assert.Equal(UpdatedEntityId, sp.EntityId);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./Details", redirect.PageName);
+        Assert.Equal(PageRoutes.SiblingDetails, redirect.PageName);
     }
 
     [Fact]
@@ -64,7 +70,7 @@ public class EditcshtmlTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.SamlServiceProviders).Returns(mockSet.Object);
 
-        var model = new EditModel(ctx.Object) { SamlServiceProvider = new SamlServiceProvider { EntityId = "urn:x" } };
+        var model = new EditModel(ctx.Object) { SamlServiceProvider = new SamlServiceProvider { EntityId = UnmatchedEntityId } };
         Assert.IsType<NotFoundResult>(await model.OnPostAsync(MissingEntityId));
     }
 }

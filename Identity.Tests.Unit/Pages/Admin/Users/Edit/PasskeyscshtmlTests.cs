@@ -1,5 +1,6 @@
 namespace Identity.Tests.Unit.Pages.Admin.Users.Edit;
 
+using System.Buffers.Text;
 using Identity.Pages.Admin.Users.Edit;
 using Infrastructure;
 using Microsoft.AspNetCore.Identity;
@@ -11,7 +12,9 @@ using Moq;
 [Trait("Category", "Unit")]
 public class PasskeyscshtmlTests
 {
-    private const string ValidCredentialId = "AQID";
+    private static readonly byte[] CredentialIdBytes = TestValues.NewCredentialIdBytes();
+
+    private static readonly string ValidCredentialId = Base64Url.EncodeToString(CredentialIdBytes);
 
     private static readonly string ExistingUserId = TestValues.NewUserId().ToString();
     private static readonly string MissingUserId = TestValues.NewUserId().ToString();
@@ -65,16 +68,16 @@ public class PasskeyscshtmlTests
 
     private static UserPasskeyInfo BuildPasskey() =>
         new(
-            credentialId: [1, 2, 3],
-            publicKey: [4, 5, 6],
+            credentialId: CredentialIdBytes,
+            publicKey: TestValues.NewPublicKeyBytes(),
             createdAt: DateTimeOffset.UnixEpoch,
             signCount: 0,
             transports: null,
             isUserVerified: false,
             isBackupEligible: false,
             isBackedUp: false,
-            attestationObject: [7, 8, 9],
-            clientDataJson: [10, 11, 12])
+            attestationObject: TestValues.NewAttestationObjectBytes(),
+            clientDataJson: TestValues.NewClientDataJsonBytes())
         {
             Name = TestValues.NewApiResourceName(),
         };

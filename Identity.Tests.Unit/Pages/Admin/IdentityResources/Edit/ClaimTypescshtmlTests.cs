@@ -1,5 +1,6 @@
 namespace Identity.Tests.Unit.Pages.Admin.IdentityResources.Edit;
 
+using Duende.IdentityServer;
 using Duende.IdentityServer.EntityFramework.Entities;
 using Duende.IdentityServer.EntityFramework.Interfaces;
 using Identity.Pages.Admin.IdentityResources.Edit;
@@ -12,13 +13,15 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ClaimTypescshtmlTests
 {
+    private static readonly string ClaimType = TestValues.NewClaimType();
+
     private static readonly int ExistingEntityId = TestValues.NewEntityId();
     private static readonly int MissingEntityId = ExistingEntityId + 1;
 
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
-        var resource = new IdentityResource { Id = ExistingEntityId, Name = "openid", UserClaims = [new IdentityResourceClaim { Type = "sub" }] };
+        var resource = new IdentityResource { Id = ExistingEntityId, Name = IdentityServerConstants.StandardScopes.OpenId, UserClaims = [new IdentityResourceClaim { Type = ClaimType }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
@@ -41,20 +44,20 @@ public class ClaimTypescshtmlTests
     [Fact]
     public async Task OnPostAsync_AddsNewClaimType()
     {
-        var resource = new IdentityResource { Id = ExistingEntityId, Name = "openid", UserClaims = [] };
+        var resource = new IdentityResource { Id = ExistingEntityId, Name = IdentityServerConstants.StandardScopes.OpenId, UserClaims = [] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new ClaimTypesModel(ctx.Object)
         {
-            ClaimTypes = [new IdentityResourceClaim { Id = 0, Type = "sub" }],
+            ClaimTypes = [new IdentityResourceClaim { Id = 0, Type = ClaimType }],
         };
         var result = await model.OnPostAsync(ExistingEntityId);
         var onlyUserClaim = Assert.Single(resource.UserClaims);
-        Assert.Equal("sub", onlyUserClaim.Type);
+        Assert.Equal(ClaimType, onlyUserClaim.Type);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("/Admin/IdentityResources/Details/ClaimTypes", redirect.PageName);
+        Assert.Equal(ClaimTypesModel.DetailsPageName, redirect.PageName);
     }
 
     [Fact]
@@ -70,8 +73,8 @@ public class ClaimTypescshtmlTests
     [Fact]
     public async Task OnPostAsync_RemovesAbsentClaimType()
     {
-        var existing = new IdentityResourceClaim { Id = ExistingEntityId, Type = "sub", IdentityResourceId = ExistingEntityId };
-        var resource = new IdentityResource { Id = ExistingEntityId, Name = "openid", UserClaims = [existing] };
+        var existing = new IdentityResourceClaim { Id = ExistingEntityId, Type = ClaimType, IdentityResourceId = ExistingEntityId };
+        var resource = new IdentityResource { Id = ExistingEntityId, Name = IdentityServerConstants.StandardScopes.OpenId, UserClaims = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
@@ -84,7 +87,7 @@ public class ClaimTypescshtmlTests
     [Fact]
     public async Task OnPostAddRowAsync_AddsBlankRow_WhenFound()
     {
-        var resource = new IdentityResource { Id = ExistingEntityId, Name = "openid" };
+        var resource = new IdentityResource { Id = ExistingEntityId, Name = IdentityServerConstants.StandardScopes.OpenId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
@@ -110,12 +113,12 @@ public class ClaimTypescshtmlTests
     [Fact]
     public async Task OnPostRemoveRowAsync_RemovesRow_WhenValidIndex()
     {
-        var resource = new IdentityResource { Id = ExistingEntityId, Name = "openid" };
+        var resource = new IdentityResource { Id = ExistingEntityId, Name = IdentityServerConstants.StandardScopes.OpenId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
 
-        var model = new ClaimTypesModel(ctx.Object) { ClaimTypes = [new IdentityResourceClaim { Id = ExistingEntityId, Type = "sub" }] };
+        var model = new ClaimTypesModel(ctx.Object) { ClaimTypes = [new IdentityResourceClaim { Id = ExistingEntityId, Type = ClaimType }] };
         var result = await model.OnPostRemoveRowAsync(ExistingEntityId, 0);
 
         Assert.IsType<PageResult>(result);

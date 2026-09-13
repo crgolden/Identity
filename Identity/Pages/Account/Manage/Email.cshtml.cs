@@ -13,6 +13,15 @@ using static String;
 
 public class EmailModel : PageModel
 {
+    internal const string EmailChangeLinkSentMessage =
+        "Confirmation link to change email sent. Please check your email.";
+
+    internal const string EmailUnchangedMessage =
+        "Your email is unchanged.";
+
+    internal const string VerificationEmailSentMessage =
+        "Verification email sent. Please check your email.";
+
     private const string From = "noreply@crgolden.com";
     private readonly UserManager<IdentityUser<Guid>> _userManager;
     private readonly ServiceBusClient _serviceBusClient;
@@ -20,7 +29,7 @@ public class EmailModel : PageModel
     public EmailModel(UserManager<IdentityUser<Guid>> userManager, IAzureClientFactory<ServiceBusClient> serviceBusClientFactory)
     {
         _userManager = userManager;
-        _serviceBusClient = serviceBusClientFactory.CreateClient("crgolden");
+        _serviceBusClient = serviceBusClientFactory.CreateClient(ServiceBusNames.ClientName);
     }
 
     public string? Email { get; set; }
@@ -38,7 +47,7 @@ public class EmailModel : PageModel
         var user = await _userManager.GetUserAsync(User);
         if (user is null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound(UserMessages.UnableToLoadUser(_userManager.GetUserId(User)));
         }
 
         var email = await _userManager.GetEmailAsync(user);
@@ -57,7 +66,7 @@ public class EmailModel : PageModel
         var user = await _userManager.GetUserAsync(User);
         if (user is null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound(UserMessages.UnableToLoadUser(_userManager.GetUserId(User)));
         }
 
         var email = await _userManager.GetEmailAsync(user);
@@ -91,18 +100,18 @@ public class EmailModel : PageModel
                 var sbMessage = new ServiceBusMessage(htmlMessage)
                 {
                     ReplyTo = From,
-                    Subject = "Confirm your email",
+                    Subject = UserMessages.ConfirmEmailSubject,
                     To = Input.NewEmail
                 };
-                var serviceBusSender = _serviceBusClient.CreateSender("email");
+                var serviceBusSender = _serviceBusClient.CreateSender(ServiceBusNames.EmailQueueName);
                 await serviceBusSender.SendMessageAsync(sbMessage, HttpContext.RequestAborted);
             }
 
-            StatusMessage = "Confirmation link to change email sent. Please check your email.";
+            StatusMessage = EmailChangeLinkSentMessage;
             return RedirectToPage();
         }
 
-        StatusMessage = "Your email is unchanged.";
+        StatusMessage = EmailUnchangedMessage;
         return RedirectToPage();
     }
 
@@ -111,7 +120,7 @@ public class EmailModel : PageModel
         var user = await _userManager.GetUserAsync(User);
         if (user is null)
         {
-            return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            return NotFound(UserMessages.UnableToLoadUser(_userManager.GetUserId(User)));
         }
 
         var email = await _userManager.GetEmailAsync(user);
@@ -143,14 +152,14 @@ public class EmailModel : PageModel
             var sbMessage = new ServiceBusMessage(htmlMessage)
             {
                 ReplyTo = From,
-                Subject = "Confirm your email",
+                Subject = UserMessages.ConfirmEmailSubject,
                 To = email
             };
-            var serviceBusSender = _serviceBusClient.CreateSender("email");
+            var serviceBusSender = _serviceBusClient.CreateSender(ServiceBusNames.EmailQueueName);
             await serviceBusSender.SendMessageAsync(sbMessage, HttpContext.RequestAborted);
         }
 
-        StatusMessage = "Verification email sent. Please check your email.";
+        StatusMessage = VerificationEmailSentMessage;
         return RedirectToPage();
     }
 

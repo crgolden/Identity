@@ -16,11 +16,19 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ChangePasswordModelTests
 {
+    private static readonly string CurrentPassword = TestValues.NewPassword();
+
+    private static readonly string ReplacementPassword = TestValues.NewPassword();
+
+    private static readonly string MissingUserId = TestValues.NewUserId().ToString();
+
+    private static readonly string PasswordRejectionReason = TestValues.NewFailureReason();
+
     public static IEnumerable<object?[]> GetUserIdValues()
     {
         yield return
         [
-            "test-user-123"
+            TestValues.NewUserId().ToString()
         ];
         yield return
         [
@@ -44,7 +52,7 @@ public class ChangePasswordModelTests
             }
         };
 
-        model.ModelState.AddModelError("SomeKey", "Some error");
+        model.ModelState.AddModelError(TestValues.NewModelStateKey(), TestValues.NewValidationMessage());
 
         // Act
         var result = await model.OnPostAsync();
@@ -71,17 +79,17 @@ public class ChangePasswordModelTests
             }
         };
 
-        const string expectedId = "expected-user-id";
+        var expectedId = TestValues.NewUserId().ToString();
         userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync((IdentityUser<Guid>?)null);
         userManagerMock.Setup(um => um.GetUserId(It.IsAny<ClaimsPrincipal>())).Returns(expectedId);
-        model.Input = new ChangePasswordModel.InputModel { OldPassword = "OldP@ss1!", NewPassword = "NewP@ss1!" };
+        model.Input = new ChangePasswordModel.InputModel { OldPassword = CurrentPassword, NewPassword = ReplacementPassword };
 
         // Act
         var result = await model.OnPostAsync();
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
-        Assert.Equal($"Unable to load user with ID '{expectedId}'.", notFound.Value);
+        Assert.Equal(UserMessages.UnableToLoadUser(expectedId), notFound.Value);
     }
 
     [Fact]
@@ -118,7 +126,7 @@ public class ChangePasswordModelTests
         // Arrange
         var (userManagerMock, signInManagerMock) = CreateMocks();
         userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync((IdentityUser<Guid>?)null);
-        userManagerMock.Setup(um => um.GetUserId(It.IsAny<ClaimsPrincipal>())).Returns("some-user-id");
+        userManagerMock.Setup(um => um.GetUserId(It.IsAny<ClaimsPrincipal>())).Returns(MissingUserId);
 
         var model = CreateModel(userManagerMock.Object, signInManagerMock.Object);
 
@@ -128,7 +136,7 @@ public class ChangePasswordModelTests
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
         var message = Assert.IsType<string>(notFound.Value);
-        Assert.Contains("some-user-id", message, StringComparison.Ordinal);
+        Assert.Contains(MissingUserId, message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -147,7 +155,7 @@ public class ChangePasswordModelTests
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("./SetPassword", redirect.PageName);
+        Assert.Equal(ChangePasswordModel.SetPasswordPageName, redirect.PageName);
     }
 
     [Fact]
@@ -174,7 +182,7 @@ public class ChangePasswordModelTests
         // Arrange
         var (userManagerMock, signInManagerMock) = CreateMocks();
         var model = CreateModel(userManagerMock.Object, signInManagerMock.Object);
-        model.Input = new ChangePasswordModel.InputModel { OldPassword = null, NewPassword = "NewP@ss1!" };
+        model.Input = new ChangePasswordModel.InputModel { OldPassword = null, NewPassword = ReplacementPassword };
 
         // Act
         var result = await model.OnPostAsync();
@@ -190,14 +198,14 @@ public class ChangePasswordModelTests
         // Arrange
         var (userManagerMock, signInManagerMock) = CreateMocks();
         var user = new IdentityUser<Guid>();
-        var failedResult = IdentityResult.Failed(new IdentityError { Description = "Password too weak." });
+        var failedResult = IdentityResult.Failed(new IdentityError { Description = PasswordRejectionReason });
         userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
         userManagerMock
-            .Setup(um => um.ChangePasswordAsync(user, "OldP@ss1!", "NewP@ss1!"))
+            .Setup(um => um.ChangePasswordAsync(user, CurrentPassword, ReplacementPassword))
             .ReturnsAsync(failedResult);
 
         var model = CreateModel(userManagerMock.Object, signInManagerMock.Object);
-        model.Input = new ChangePasswordModel.InputModel { OldPassword = "OldP@ss1!", NewPassword = "NewP@ss1!" };
+        model.Input = new ChangePasswordModel.InputModel { OldPassword = CurrentPassword, NewPassword = ReplacementPassword };
 
         // Act
         var result = await model.OnPostAsync();
@@ -205,7 +213,7 @@ public class ChangePasswordModelTests
         // Assert
         Assert.IsType<PageResult>(result);
         Assert.False(model.ModelState.IsValid);
-        Assert.Contains(model.ModelState.Values.SelectMany(v => v.Errors), e => string.Equals(e.ErrorMessage, "Password too weak.", StringComparison.Ordinal));
+        Assert.Contains(model.ModelState.Values.SelectMany(v => v.Errors), e => string.Equals(e.ErrorMessage, PasswordRejectionReason, StringComparison.Ordinal));
     }
 
     [Fact]
@@ -216,21 +224,21 @@ public class ChangePasswordModelTests
         var user = new IdentityUser<Guid>();
         userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
         userManagerMock
-            .Setup(um => um.ChangePasswordAsync(user, "OldP@ss1!", "NewP@ss1!"))
+            .Setup(um => um.ChangePasswordAsync(user, CurrentPassword, ReplacementPassword))
             .ReturnsAsync(IdentityResult.Success);
         signInManagerMock
             .Setup(sm => sm.RefreshSignInAsync(user))
             .Returns(Task.CompletedTask);
 
         var model = CreateModel(userManagerMock.Object, signInManagerMock.Object);
-        model.Input = new ChangePasswordModel.InputModel { OldPassword = "OldP@ss1!", NewPassword = "NewP@ss1!" };
+        model.Input = new ChangePasswordModel.InputModel { OldPassword = CurrentPassword, NewPassword = ReplacementPassword };
 
         // Act
         var result = await model.OnPostAsync();
 
         // Assert
         signInManagerMock.Verify(sm => sm.RefreshSignInAsync(user), Times.Once);
-        Assert.Equal("Your password has been changed.", model.StatusMessage);
+        Assert.Equal(ChangePasswordModel.PasswordChangedMessage, model.StatusMessage);
         Assert.IsType<RedirectToPageResult>(result);
     }
 

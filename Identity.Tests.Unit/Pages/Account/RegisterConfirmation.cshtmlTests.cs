@@ -12,6 +12,17 @@ using Moq;
 [Trait("Category", "Unit")]
 public class RegisterConfirmationModelTests
 {
+    public static TheoryData<string> UnknownEmailAddresses() => new()
+    {
+        TestValues.NewEmailAddress(),
+    };
+
+    public static TheoryData<string?> ReturnUrlValues() => new()
+    {
+        (string?)null,
+        TestValues.NewLocalPath(),
+    };
+
     [Fact]
     public void Constructor_WithValidDependencies_DoesNotThrow()
     {
@@ -59,18 +70,18 @@ public class RegisterConfirmationModelTests
 
         // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("/Index", redirect.PageName);
+        Assert.Equal(PageRoutes.Home, redirect.PageName);
     }
 
     [Theory]
-    [InlineData("nonexistent@example.com")]
+    [MemberData(nameof(UnknownEmailAddresses))]
     public async Task OnGetAsync_UserNotFound_ReturnsNotFoundObjectResult_ForVariousEmails(string email)
     {
         // Arrange
         var mockUserManager = MockHelpers.MockUserManager();
         mockUserManager.Setup(m => m.FindByEmailAsync(It.IsAny<string>())).ReturnsAsync((IdentityUser<Guid>?)null);
         var mockUrl = new Mock<IUrlHelper>(MockBehavior.Strict);
-        mockUrl.Setup(u => u.Content("~/")).Returns("/");
+        mockUrl.Setup(u => u.Content(PageRoutes.ContentRoot)).Returns(TestValues.NewLocalPath());
         var model = new RegisterConfirmationModel(mockUserManager.Object);
         model.Url = mockUrl.Object;
 
@@ -79,13 +90,12 @@ public class RegisterConfirmationModelTests
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
-        Assert.Equal($"Unable to load user with email '{email}'.", notFound.Value);
+        Assert.Equal(UserMessages.UnableToLoadUserByEmail(email), notFound.Value);
         Assert.Null(model.Email);
     }
 
     [Theory]
-    [InlineData(null)]
-    [InlineData("/custom")]
+    [MemberData(nameof(ReturnUrlValues))]
     public async Task OnGetAsync_UserFound_SetsPropertiesAndDoesNotGenerateConfirmationUrl_UrlContentBehavior(string? returnUrl)
     {
         // Arrange

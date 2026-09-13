@@ -10,6 +10,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 [Authorize]
 public class ServerSideSessionsModel : PageModel
 {
+    internal const string ServerSideSessionsPagePath = "/Account/Manage/ServerSideSessions";
+
     private readonly ISessionManagementService? _sessionManagement;
 
     public ServerSideSessionsModel(ISessionManagementService? sessionManagement = null)
@@ -66,7 +68,7 @@ public class ServerSideSessionsModel : PageModel
                 HttpContext.RequestAborted);
         }
 
-        return RedirectToPage("/Account/Manage/ServerSideSessions", new
+        return RedirectToPage(ServerSideSessionsPagePath, new
         {
             Token,
             DisplayNameFilter,

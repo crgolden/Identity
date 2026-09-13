@@ -21,22 +21,23 @@ public class EmailModelTests
 {
     public static TheoryData<string?> ValidEmailCases() => new()
     {
-        "user@example.com",
-        "user+tag@exa-mple.co.uk",
+        TestValues.NewEmailAddress(),
+        TestValues.NewTaggedEmailAddress(),
     };
 
     [Fact]
     public async Task OnPostSendVerificationEmailAsync_UserNotFound_ReturnsNotFoundWithUserId()
     {
         // Arrange
+        var expectedUserId = TestValues.NewUserId().ToString();
         var userManagerMock = MockHelpers.MockUserManager();
-        var principal = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "ignored")]));
+        var principal = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, TestValues.NewUserId().ToString())]));
         userManagerMock
             .Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
             .ReturnsAsync((IdentityUser<Guid>?)null);
         userManagerMock
             .Setup(um => um.GetUserId(It.IsAny<ClaimsPrincipal>()))
-            .Returns("expected-user-id");
+            .Returns(expectedUserId);
 
         var model = new EmailModel(userManagerMock.Object, CreateSenderFactory())
         {
@@ -52,7 +53,7 @@ public class EmailModelTests
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
         Assert.NotNull(notFound.Value);
-        Assert.Contains("expected-user-id", notFound.Value.ToString(), StringComparison.Ordinal);
+        Assert.Contains(expectedUserId, notFound.Value.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -60,7 +61,7 @@ public class EmailModelTests
     {
         // Arrange
         var userManagerMock = MockHelpers.MockUserManager();
-        var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
+        var user = new IdentityUser<Guid> { Id = TestValues.NewUserId() };
         var principal = new ClaimsPrincipal(new ClaimsIdentity());
 
         userManagerMock
@@ -76,7 +77,7 @@ public class EmailModelTests
             }
         };
 
-        model.ModelState.AddModelError("Input.NewEmail", "Required");
+        model.ModelState.AddModelError(TestValues.NewModelStateKey(), TestValues.NewValidationMessage());
 
         // Act
         var result = await model.OnPostSendVerificationEmailAsync();
@@ -92,7 +93,7 @@ public class EmailModelTests
     {
         // Arrange
         var userManagerMock = MockHelpers.MockUserManager();
-        var user = new IdentityUser<Guid> { Id = Guid.NewGuid() };
+        var user = new IdentityUser<Guid> { Id = TestValues.NewUserId() };
         var principal = new ClaimsPrincipal(new ClaimsIdentity());
 
         userManagerMock
@@ -100,18 +101,17 @@ public class EmailModelTests
             .ReturnsAsync(user);
         userManagerMock
             .Setup(um => um.GetUserIdAsync(It.IsAny<IdentityUser<Guid>>()))
-            .ReturnsAsync("the-user-id");
+            .ReturnsAsync(TestValues.NewUserId().ToString());
         userManagerMock
             .Setup(um => um.GetEmailAsync(It.IsAny<IdentityUser<Guid>>()))
             .ReturnsAsync(returnedEmail);
         userManagerMock
             .Setup(um => um.GenerateEmailConfirmationTokenAsync(It.IsAny<IdentityUser<Guid>>()))
-            .ReturnsAsync("raw-token");
+            .ReturnsAsync(TestValues.NewEmailConfirmationToken());
 
-        const string fixedCallbackUrl = "https://example.test/Account/ConfirmEmail?userId=the-user-id&code=abc";
+        var fixedCallbackUrl = TestValues.NewCallbackUrl();
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
         var urlRouteData = new RouteData();
-        urlRouteData.Values["page"] = "/Account/Manage/Email";
         urlHelperMock.SetupGet(u => u.ActionContext).Returns(
             new ActionContext(new DefaultHttpContext(), urlRouteData, new ActionDescriptor()));
 
@@ -124,9 +124,9 @@ public class EmailModelTests
             .Returns(Task.CompletedTask)
             .Callback<ServiceBusMessage, CancellationToken>((msg, _) => capturedMessage = msg);
         var clientMock = new Mock<ServiceBusClient>(MockBehavior.Strict);
-        clientMock.Setup(c => c.CreateSender("email")).Returns(senderMock.Object);
+        clientMock.Setup(c => c.CreateSender(ServiceBusNames.EmailQueueName)).Returns(senderMock.Object);
         var factoryMock = new Mock<IAzureClientFactory<ServiceBusClient>>(MockBehavior.Strict);
-        factoryMock.Setup(f => f.CreateClient("crgolden")).Returns(clientMock.Object);
+        factoryMock.Setup(f => f.CreateClient(ServiceBusNames.ClientName)).Returns(clientMock.Object);
 
         var model = new EmailModel(userManagerMock.Object, factoryMock.Object)
         {
@@ -140,19 +140,19 @@ public class EmailModelTests
             Url = urlHelperMock.Object
         };
 
-        model.PageContext.HttpContext.Request.Scheme = "https";
+        model.PageContext.HttpContext.Request.Scheme = Uri.UriSchemeHttps;
 
         // Act
         var result = await model.OnPostSendVerificationEmailAsync();
 
         // Assert
         Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal("Verification email sent. Please check your email.", model.StatusMessage);
+        Assert.Equal(EmailModel.VerificationEmailSentMessage, model.StatusMessage);
 
         senderMock.Verify(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()), Times.Once);
 
         Assert.NotNull(capturedMessage);
-        Assert.Equal("Confirm your email", capturedMessage.Subject);
+        Assert.Equal(UserMessages.ConfirmEmailSubject, capturedMessage.Subject);
         Assert.Equal(returnedEmail, capturedMessage.To);
         var capturedBody = capturedMessage.Body.ToString();
         var expectedEncodedUrl = HtmlEncoder.Default.Encode(fixedCallbackUrl);
@@ -205,13 +205,14 @@ public class EmailModelTests
     public async Task OnPostChangeEmailAsync_UserNotFound_ReturnsNotFound()
     {
         // Arrange
+        var missingUserId = TestValues.NewUserId().ToString();
         var userManagerMock = MockHelpers.MockUserManager();
         userManagerMock
             .Setup(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
             .ReturnsAsync((IdentityUser<Guid>?)null);
         userManagerMock
             .Setup(u => u.GetUserId(It.IsAny<ClaimsPrincipal>()))
-            .Returns("missing-user-id");
+            .Returns(missingUserId);
 
         var model = new EmailModel(userManagerMock.Object, CreateSenderFactory())
         {
@@ -224,7 +225,7 @@ public class EmailModelTests
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
         var message = Assert.IsType<string>(notFound.Value);
-        Assert.Contains("Unable to load user with ID 'missing-user-id'", message, StringComparison.Ordinal);
+        Assert.Equal(UserMessages.UnableToLoadUser(missingUserId), message);
     }
 
     private static IAzureClientFactory<ServiceBusClient> CreateSenderFactory()
@@ -233,9 +234,9 @@ public class EmailModelTests
         senderMock.Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
         var clientMock = new Mock<ServiceBusClient>(MockBehavior.Strict);
-        clientMock.Setup(c => c.CreateSender("email")).Returns(senderMock.Object);
+        clientMock.Setup(c => c.CreateSender(ServiceBusNames.EmailQueueName)).Returns(senderMock.Object);
         var factoryMock = new Mock<IAzureClientFactory<ServiceBusClient>>(MockBehavior.Strict);
-        factoryMock.Setup(f => f.CreateClient("crgolden")).Returns(clientMock.Object);
+        factoryMock.Setup(f => f.CreateClient(ServiceBusNames.ClientName)).Returns(clientMock.Object);
         return factoryMock.Object;
     }
 
@@ -245,9 +246,9 @@ public class EmailModelTests
         senderMock.Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
         var clientMock = new Mock<ServiceBusClient>(MockBehavior.Strict);
-        clientMock.Setup(c => c.CreateSender("email")).Returns(senderMock.Object);
+        clientMock.Setup(c => c.CreateSender(ServiceBusNames.EmailQueueName)).Returns(senderMock.Object);
         var factoryMock = new Mock<IAzureClientFactory<ServiceBusClient>>(MockBehavior.Strict);
-        factoryMock.Setup(f => f.CreateClient("crgolden")).Returns(clientMock.Object);
+        factoryMock.Setup(f => f.CreateClient(ServiceBusNames.ClientName)).Returns(clientMock.Object);
         return (factoryMock.Object, senderMock);
     }
 

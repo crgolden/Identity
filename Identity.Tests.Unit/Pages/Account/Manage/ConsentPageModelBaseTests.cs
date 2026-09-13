@@ -9,14 +9,19 @@ using Infrastructure;
 [Trait("Category", "Unit")]
 public class ConsentPageModelBaseTests
 {
+    private const char ScopeParameterSeparator = ':';
+
     [Fact]
     public void CreateScopeViewModel_ApiScope_NoParsedParameter_MapsFieldsCorrectly()
     {
         // Arrange
-        var parsed = new ParsedScopeValue("api1");
-        var apiScope = new ApiScope("api1", "My API")
+        var scopeName = TestValues.NewApiScopeName();
+        var scopeDisplayName = TestValues.NewDisplayName();
+        var scopeDescription = TestValues.NewDescription();
+        var parsed = new ParsedScopeValue(scopeName);
+        var apiScope = new ApiScope(scopeName, scopeDisplayName)
         {
-            Description = "desc",
+            Description = scopeDescription,
             Emphasize = true,
             Required = false,
         };
@@ -25,10 +30,10 @@ public class ConsentPageModelBaseTests
         var vm = TestableBase.CallCreateScopeViewModel(parsed, apiScope, false);
 
         // Assert
-        Assert.Equal("api1", vm.Name);
-        Assert.Equal("api1", vm.Value);
-        Assert.Equal("My API", vm.DisplayName);
-        Assert.Equal("desc", vm.Description);
+        Assert.Equal(scopeName, vm.Name);
+        Assert.Equal(scopeName, vm.Value);
+        Assert.Equal(scopeDisplayName, vm.DisplayName);
+        Assert.Equal(scopeDescription, vm.Description);
         Assert.True(vm.Emphasize);
         Assert.False(vm.Required);
         Assert.False(vm.Checked);
@@ -38,18 +43,20 @@ public class ConsentPageModelBaseTests
     public void CreateScopeViewModel_ApiScope_WithParsedParameter_AppendsToDisplayName()
     {
         // Arrange
-        var parsed = new ParsedScopeValue("api1:tenant1")
+        var scopeName = TestValues.NewApiScopeName();
+        var scopeParameter = TestValues.NewPropertyValue();
+        var parsed = new ParsedScopeValue(scopeName + ScopeParameterSeparator + scopeParameter)
         {
-            ParsedName = "api1",
-            ParsedParameter = "tenant1",
+            ParsedName = scopeName,
+            ParsedParameter = scopeParameter,
         };
-        var apiScope = new ApiScope("api1", "My API");
+        var apiScope = new ApiScope(scopeName, TestValues.NewDisplayName());
 
         // Act
         var vm = TestableBase.CallCreateScopeViewModel(parsed, apiScope, true);
 
         // Assert
-        Assert.EndsWith(":tenant1", vm.DisplayName, StringComparison.Ordinal);
+        Assert.EndsWith(ScopeParameterSeparator + scopeParameter, vm.DisplayName, StringComparison.Ordinal);
         Assert.True(vm.Checked);
     }
 
@@ -68,16 +75,20 @@ public class ConsentPageModelBaseTests
     [Fact]
     public void ResourceViewModel_PropertiesRoundTrip()
     {
+        // Arrange
+        var resourceName = TestValues.NewApiResourceName();
+        var resourceDisplayName = TestValues.NewDisplayName();
+
         // Act
         var resource = new ConsentPageModelBase.ResourceViewModel
         {
-            Name = "res1",
-            DisplayName = "Resource One",
+            Name = resourceName,
+            DisplayName = resourceDisplayName,
         };
 
         // Assert
-        Assert.Equal("res1", resource.Name);
-        Assert.Equal("Resource One", resource.DisplayName);
+        Assert.Equal(resourceName, resource.Name);
+        Assert.Equal(resourceDisplayName, resource.DisplayName);
     }
 
     private sealed class TestableBase : ConsentPageModelBase

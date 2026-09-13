@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore;
 
 public class ScopesModel : PageModel
 {
+    internal const string DetailsPageName = "/Admin/Clients/Details/Scopes";
+
     private readonly IConfigurationDbContext _context;
 
     public ScopesModel(IConfigurationDbContext context) => _context = context;
@@ -65,9 +67,9 @@ public class ScopesModel : PageModel
             client.AllowedScopes.Add(new ClientScope { Scope = posted.Scope, ClientId = id });
         }
 
-        client.Updated = DateTime.UtcNow;
+        client.Updated = DateTimeOffset.UtcNow.UtcDateTime;
         await _context.SaveChangesAsync();
-        return RedirectToPage("/Admin/Clients/Details/Scopes", new { id });
+        return RedirectToPage(DetailsPageName, new { id });
     }
 
     public async Task<IActionResult> OnPostAddRowAsync(int id)
