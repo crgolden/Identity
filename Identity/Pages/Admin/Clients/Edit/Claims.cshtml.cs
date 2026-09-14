@@ -30,7 +30,7 @@ public class ClaimsModel : PageModel
         }
 
         Client = client;
-        Claims = client.Claims ?? [];
+        Claims = client.Claims;
         return Page();
     }
 
@@ -49,7 +49,6 @@ public class ClaimsModel : PageModel
             return NotFound();
         }
 
-        client.Claims ??= [];
         var postedIds = Claims.Where(c => c.Id > 0).Select(c => c.Id).ToHashSet();
         client.Claims.RemoveAll(c => !postedIds.Contains(c.Id));
 

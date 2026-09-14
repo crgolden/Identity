@@ -30,7 +30,7 @@ public class PropertiesModel : PageModel
         }
 
         Client = client;
-        Properties = client.Properties ?? [];
+        Properties = client.Properties;
         return Page();
     }
 
@@ -49,7 +49,6 @@ public class PropertiesModel : PageModel
             return NotFound();
         }
 
-        client.Properties ??= [];
         var postedIds = Properties.Where(p => p.Id > 0).Select(p => p.Id).ToHashSet();
         client.Properties.RemoveAll(p => !postedIds.Contains(p.Id));
 

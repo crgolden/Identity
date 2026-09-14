@@ -30,7 +30,7 @@ public class RedirectUrisModel : PageModel
         }
 
         Client = client;
-        RedirectUris = client.RedirectUris ?? [];
+        RedirectUris = client.RedirectUris;
         return Page();
     }
 
@@ -49,7 +49,6 @@ public class RedirectUrisModel : PageModel
             return NotFound();
         }
 
-        client.RedirectUris ??= [];
         var postedIds = RedirectUris.Where(u => u.Id > 0).Select(u => u.Id).ToHashSet();
         client.RedirectUris.RemoveAll(u => !postedIds.Contains(u.Id));
 

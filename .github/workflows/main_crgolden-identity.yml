@@ -367,6 +367,8 @@ jobs:
 
       - name: Upload Stryker report
         uses: actions/upload-artifact@v7
+        if: always()
         with:
           name: stryker-report
+          if-no-files-found: warn
           path: Identity/StrykerOutput/**/*

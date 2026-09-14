@@ -30,7 +30,7 @@ public class ScopesModel : PageModel
         }
 
         Client = client;
-        Scopes = client.AllowedScopes ?? [];
+        Scopes = client.AllowedScopes;
         return Page();
     }
 
@@ -49,7 +49,6 @@ public class ScopesModel : PageModel
             return NotFound();
         }
 
-        client.AllowedScopes ??= [];
         var postedIds = Scopes.Where(s => s.Id > 0).Select(s => s.Id).ToHashSet();
         client.AllowedScopes.RemoveAll(s => !postedIds.Contains(s.Id));
 

@@ -30,7 +30,7 @@ public class CorsOriginsModel : PageModel
         }
 
         Client = client;
-        CorsOrigins = client.AllowedCorsOrigins ?? [];
+        CorsOrigins = client.AllowedCorsOrigins;
         return Page();
     }
 
@@ -49,7 +49,6 @@ public class CorsOriginsModel : PageModel
             return NotFound();
         }
 
-        client.AllowedCorsOrigins ??= [];
         var postedIds = CorsOrigins.Where(o => o.Id > 0).Select(o => o.Id).ToHashSet();
         client.AllowedCorsOrigins.RemoveAll(o => !postedIds.Contains(o.Id));
 

@@ -30,7 +30,7 @@ public class GrantTypesModel : PageModel
         }
 
         Client = client;
-        GrantTypes = client.AllowedGrantTypes ?? [];
+        GrantTypes = client.AllowedGrantTypes;
         return Page();
     }
 
@@ -49,7 +49,6 @@ public class GrantTypesModel : PageModel
             return NotFound();
         }
 
-        client.AllowedGrantTypes ??= [];
         var postedIds = GrantTypes.Where(g => g.Id > 0).Select(g => g.Id).ToHashSet();
         client.AllowedGrantTypes.RemoveAll(g => !postedIds.Contains(g.Id));
 

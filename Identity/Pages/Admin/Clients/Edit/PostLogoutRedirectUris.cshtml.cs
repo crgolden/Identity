@@ -30,7 +30,7 @@ public class PostLogoutRedirectUrisModel : PageModel
         }
 
         Client = client;
-        PostLogoutRedirectUris = client.PostLogoutRedirectUris ?? [];
+        PostLogoutRedirectUris = client.PostLogoutRedirectUris;
         return Page();
     }
 
@@ -49,7 +49,6 @@ public class PostLogoutRedirectUrisModel : PageModel
             return NotFound();
         }
 
-        client.PostLogoutRedirectUris ??= [];
         var postedIds = PostLogoutRedirectUris.Where(u => u.Id > 0).Select(u => u.Id).ToHashSet();
         client.PostLogoutRedirectUris.RemoveAll(u => !postedIds.Contains(u.Id));
 

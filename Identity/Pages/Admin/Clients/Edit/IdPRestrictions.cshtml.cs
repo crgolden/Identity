@@ -30,7 +30,7 @@ public class IdPRestrictionsModel : PageModel
         }
 
         Client = client;
-        IdPRestrictions = client.IdentityProviderRestrictions ?? [];
+        IdPRestrictions = client.IdentityProviderRestrictions;
         return Page();
     }
 
@@ -49,7 +49,6 @@ public class IdPRestrictionsModel : PageModel
             return NotFound();
         }
 
-        client.IdentityProviderRestrictions ??= [];
         var postedIds = IdPRestrictions.Where(r => r.Id > 0).Select(r => r.Id).ToHashSet();
         client.IdentityProviderRestrictions.RemoveAll(r => !postedIds.Contains(r.Id));
 

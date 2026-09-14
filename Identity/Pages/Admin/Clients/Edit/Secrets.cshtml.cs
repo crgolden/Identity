@@ -30,7 +30,7 @@ public class SecretsModel : PageModel
         }
 
         Client = client;
-        Secrets = client.ClientSecrets ?? [];
+        Secrets = client.ClientSecrets;
         return Page();
     }
 
@@ -49,7 +49,6 @@ public class SecretsModel : PageModel
             return NotFound();
         }
 
-        client.ClientSecrets ??= [];
         var postedIds = Secrets.Where(s => s.Id > 0).Select(s => s.Id).ToHashSet();
         client.ClientSecrets.RemoveAll(s => !postedIds.Contains(s.Id));
 
