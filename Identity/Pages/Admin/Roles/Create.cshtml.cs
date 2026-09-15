@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 public class CreateModel : PageModel
 {
+    internal const string RoleNameRequiredMessage = "Role name is required.";
+
     private readonly RoleManager<IdentityRole<Guid>> _roleManager;
 
     public CreateModel(RoleManager<IdentityRole<Guid>> roleManager) => _roleManager = roleManager;
@@ -22,7 +24,14 @@ public class CreateModel : PageModel
             return Page();
         }
 
-        var role = new IdentityRole<Guid>(RoleName);
+        var roleName = RoleName;
+        if (IsNullOrWhiteSpace(roleName))
+        {
+            ModelState.AddModelError(nameof(RoleName), RoleNameRequiredMessage);
+            return Page();
+        }
+
+        var role = new IdentityRole<Guid>(roleName);
         var result = await _roleManager.CreateAsync(role);
         if (!result.Succeeded)
         {

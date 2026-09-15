@@ -16,18 +16,28 @@ public class CreatecshtmlTests
     [Fact]
     public void OnGet_ReturnsPage()
     {
-        Assert.IsType<PageResult>(new CreateModel(MockHelpers.MockRoleManager().Object).OnGet());
+        // Arrange
+        var model = new CreateModel(MockHelpers.MockRoleManager().Object);
+
+        // Act
+        var result = model.OnGet();
+
+        // Assert
+        Assert.IsType<PageResult>(result);
     }
 
     [Fact]
     public async Task OnPostAsync_Redirects_WhenValid()
     {
+        // Arrange
         var rm = MockHelpers.MockRoleManager();
         rm.Setup(m => m.CreateAsync(It.IsAny<IdentityRole<Guid>>())).ReturnsAsync(IdentityResult.Success);
-
         var model = new CreateModel(rm.Object) { RoleName = RoleName };
+
+        // Act
         var result = await model.OnPostAsync();
 
+        // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal(PageRoutes.SiblingDetailsIndex, redirect.PageName);
     }
@@ -35,9 +45,30 @@ public class CreatecshtmlTests
     [Fact]
     public async Task OnPostAsync_ReturnsPage_WhenInvalid()
     {
+        // Arrange
         var model = new CreateModel(MockHelpers.MockRoleManager().Object);
         model.ModelState.AddModelError(nameof(CreateModel.RoleName), TestValues.NewValidationMessage());
 
-        Assert.IsType<PageResult>(await model.OnPostAsync());
+        // Act
+        var result = await model.OnPostAsync();
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_RoleNameIsBlank_ReturnsPageWithoutCreatingTheRole()
+    {
+        // Arrange
+        var rm = MockHelpers.MockRoleManager();
+        var model = new CreateModel(rm.Object);
+
+        // Act
+        var result = await model.OnPostAsync();
+
+        // Assert
+        rm.Verify(m => m.CreateAsync(It.IsAny<IdentityRole<Guid>>()), Times.Never);
+        Assert.IsType<PageResult>(result);
+        Assert.True(model.ModelState.ContainsKey(nameof(CreateModel.RoleName)));
     }
 }

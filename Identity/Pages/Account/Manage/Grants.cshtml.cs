@@ -93,9 +93,9 @@ public class GrantsModel : PageModel
 
     public class GrantViewModel
     {
-        public required string ClientId { get; set; }
+        required public string ClientId { get; set; }
 
-        public required string ClientName { get; set; }
+        required public string ClientName { get; set; }
 
         public string? ClientLogoUrl { get; set; }
 

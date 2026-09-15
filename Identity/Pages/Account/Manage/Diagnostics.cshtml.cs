@@ -50,7 +50,7 @@ public class DiagnosticsModel : PageModel
 
     public class AuthenticationTokenViewModel
     {
-        public required string Name { get; set; }
+        required public string Name { get; set; }
 
         public string? Value { get; set; }
     }

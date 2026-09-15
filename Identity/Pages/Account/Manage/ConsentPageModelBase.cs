@@ -72,9 +72,9 @@ public abstract class ConsentPageModelBase : PageModel
     {
         public string? Name { get; set; }
 
-        public required string Value { get; set; }
+        required public string Value { get; set; }
 
-        public required string DisplayName { get; set; }
+        required public string DisplayName { get; set; }
 
         public string? Description { get; set; }
 
@@ -89,8 +89,8 @@ public abstract class ConsentPageModelBase : PageModel
 
     public class ResourceViewModel
     {
-        public required string Name { get; set; }
+        required public string Name { get; set; }
 
-        public required string DisplayName { get; set; }
+        required public string DisplayName { get; set; }
     }
 }
