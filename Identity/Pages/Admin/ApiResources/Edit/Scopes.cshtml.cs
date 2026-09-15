@@ -16,7 +16,7 @@ public class ScopesModel : PageModel
 
     public int ResourceId { get; private set; }
 
-    public string ResourceName { get; private set; } = Empty;
+    public string? ResourceName { get; private set; }
 
     [BindProperty]
     public List<ApiResourceScope> Scopes { get; set; } = [];

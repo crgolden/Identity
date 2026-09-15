@@ -82,12 +82,12 @@ public class PasskeySubmitTagHelper : TagHelper
         await htmlWriter.WriteAsync(ButtonClosingTag);
         await htmlWriter.WriteLineAsync();
         await htmlWriter.WriteAsync($"<{TagName} ");
-        await htmlWriter.WriteAsync(Attribute(OperationAttributeName, Operation?.ToString()));
-        await htmlWriter.WriteAsync(Attribute(NameAttributeName, Name));
-        await htmlWriter.WriteAsync(Attribute(EmailNameAttributeName, EmailName));
-        await htmlWriter.WriteAsync(Attribute(RequestTokenNameAttributeName, tokens.HeaderName));
-        await htmlWriter.WriteAsync(Attribute(RequestTokenValueAttributeName, tokens.RequestToken));
-        await htmlWriter.WriteAsync(Attribute(AutofillAttributeName, Autofill ? AutofillOn : AutofillOff));
+        await WriteAttributeAsync(htmlWriter, OperationAttributeName, Operation?.ToString());
+        await WriteAttributeAsync(htmlWriter, NameAttributeName, Name);
+        await WriteAttributeAsync(htmlWriter, EmailNameAttributeName, EmailName);
+        await WriteAttributeAsync(htmlWriter, RequestTokenNameAttributeName, tokens.HeaderName);
+        await WriteAttributeAsync(htmlWriter, RequestTokenValueAttributeName, tokens.RequestToken);
+        await WriteAttributeAsync(htmlWriter, AutofillAttributeName, Autofill ? AutofillOn : AutofillOff);
         await htmlWriter.WriteAsync(">");
         await htmlWriter.WriteAsync($"</{TagName}>");
         output.TagName = null;
@@ -97,6 +97,11 @@ public class PasskeySubmitTagHelper : TagHelper
         await base.ProcessAsync(context, output);
     }
 
-    internal static string Attribute(string name, string? value) =>
-        $"{name}=\"{value ?? Empty}\" ";
+    private static async Task WriteAttributeAsync(TextWriter writer, string name, string? value)
+    {
+        if (!IsNullOrWhiteSpace(value))
+        {
+            await writer.WriteAsync($"{name}=\"{value}\" ");
+        }
+    }
 }

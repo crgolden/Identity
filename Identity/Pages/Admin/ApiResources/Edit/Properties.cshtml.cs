@@ -16,7 +16,7 @@ public class PropertiesModel : PageModel
 
     public int ResourceId { get; private set; }
 
-    public string ResourceName { get; private set; } = Empty;
+    public string? ResourceName { get; private set; }
 
     [BindProperty]
     public List<ApiResourceProperty> Properties { get; set; } = [];

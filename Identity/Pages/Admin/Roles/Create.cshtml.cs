@@ -11,7 +11,7 @@ public class CreateModel : PageModel
     public CreateModel(RoleManager<IdentityRole<Guid>> roleManager) => _roleManager = roleManager;
 
     [BindProperty]
-    public string RoleName { get; set; } = Empty;
+    public string? RoleName { get; set; }
 
     public IActionResult OnGet() => Page();
 

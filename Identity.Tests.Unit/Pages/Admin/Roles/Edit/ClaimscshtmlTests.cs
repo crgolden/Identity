@@ -31,14 +31,17 @@ public class ClaimscshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
+        // Arrange
         var role = new IdentityRole<Guid>(RoleName) { Name = RoleName };
         var rm = MockHelpers.MockRoleManager();
         rm.Setup(m => m.FindByIdAsync(role.Id.ToString())).ReturnsAsync(role);
         rm.Setup(m => m.GetClaimsAsync(role)).ReturnsAsync([new Claim(ClaimType, ClaimValue)]);
-
         var model = new ClaimsModel(rm.Object);
+
+        // Act
         var result = await model.OnGetAsync(role.Id.ToString());
 
+        // Assert
         Assert.IsType<PageResult>(result);
         Assert.Equal(RoleName, model.RoleName);
         Assert.Single(model.Claims);
@@ -47,15 +50,21 @@ public class ClaimscshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var rm = MockHelpers.MockRoleManager();
         rm.Setup(m => m.FindByIdAsync(It.IsAny<string>())).ReturnsAsync((IdentityRole<Guid>?)null);
 
-        Assert.IsType<NotFoundResult>(await new ClaimsModel(rm.Object).OnGetAsync(MissingUserId));
+        // Act
+        var result = await new ClaimsModel(rm.Object).OnGetAsync(MissingUserId);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]
     public async Task OnPostAsync_ReplacesClaims_WhenFound()
     {
+        // Arrange
         var role = new IdentityRole<Guid>(RoleName);
         var existing = new Claim(RemovedClaimType, RemovedClaimValue);
         var rm = MockHelpers.MockRoleManager();
@@ -63,10 +72,12 @@ public class ClaimscshtmlTests
         rm.Setup(m => m.GetClaimsAsync(role)).ReturnsAsync([existing]);
         rm.Setup(m => m.RemoveClaimAsync(role, existing)).ReturnsAsync(IdentityResult.Success);
         rm.Setup(m => m.AddClaimAsync(role, It.IsAny<Claim>())).ReturnsAsync(IdentityResult.Success);
-
         var model = new ClaimsModel(rm.Object) { Claims = [new ClaimsModel.ClaimInputModel { Type = PostedClaimType, Value = PostedClaimValue }] };
+
+        // Act
         var result = await model.OnPostAsync(role.Id.ToString());
 
+        // Assert
         rm.Verify(m => m.RemoveClaimAsync(role, existing), Times.Once);
         rm.Verify(m => m.AddClaimAsync(role, It.IsAny<Claim>()), Times.Once);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
@@ -74,24 +85,81 @@ public class ClaimscshtmlTests
     }
 
     [Fact]
+    public async Task OnPostAsync_RowWasAddedButNeverFilledIn_DropsItAndKeepsTheRest()
+    {
+        // Arrange
+        var role = new IdentityRole<Guid>(RoleName);
+        var rm = MockHelpers.MockRoleManager();
+        rm.Setup(m => m.FindByIdAsync(role.Id.ToString())).ReturnsAsync(role);
+        rm.Setup(m => m.GetClaimsAsync(role)).ReturnsAsync([]);
+        var saved = new List<Claim>();
+        rm.Setup(m => m.AddClaimAsync(role, It.IsAny<Claim>()))
+            .Callback<IdentityRole<Guid>, Claim>((_, claim) => saved.Add(claim))
+            .ReturnsAsync(IdentityResult.Success);
+
+        var model = new ClaimsModel(rm.Object)
+        {
+            Claims =
+            [
+                new ClaimsModel.ClaimInputModel { Type = PostedClaimType, Value = PostedClaimValue },
+                new ClaimsModel.ClaimInputModel(),
+            ],
+        };
+
+        // Act
+        await model.OnPostAsync(role.Id.ToString());
+
+        // Assert
+        var onlySaved = Assert.Single(saved);
+        Assert.Equal(PostedClaimType, onlySaved.Type);
+        Assert.Equal(PostedClaimValue, onlySaved.Value);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_EveryRowIsBlank_SavesNothing()
+    {
+        // Arrange
+        var role = new IdentityRole<Guid>(RoleName);
+        var rm = MockHelpers.MockRoleManager();
+        rm.Setup(m => m.FindByIdAsync(role.Id.ToString())).ReturnsAsync(role);
+        rm.Setup(m => m.GetClaimsAsync(role)).ReturnsAsync([]);
+        var model = new ClaimsModel(rm.Object) { Claims = [new ClaimsModel.ClaimInputModel()] };
+
+        // Act
+        var result = await model.OnPostAsync(role.Id.ToString());
+
+        // Assert
+        rm.Verify(m => m.AddClaimAsync(role, It.IsAny<Claim>()), Times.Never);
+        Assert.IsType<RedirectToPageResult>(result);
+    }
+
+    [Fact]
     public async Task OnPostAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var rm = MockHelpers.MockRoleManager();
         rm.Setup(m => m.FindByIdAsync(It.IsAny<string>())).ReturnsAsync((IdentityRole<Guid>?)null);
 
-        Assert.IsType<NotFoundResult>(await new ClaimsModel(rm.Object).OnPostAsync(MissingUserId));
+        // Act
+        var result = await new ClaimsModel(rm.Object).OnPostAsync(MissingUserId);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]
     public async Task OnPostAddRowAsync_AddsBlankRow_WhenFound()
     {
+        // Arrange
         var role = new IdentityRole<Guid>(RoleName) { Name = RoleName };
         var rm = MockHelpers.MockRoleManager();
         rm.Setup(m => m.FindByIdAsync(role.Id.ToString())).ReturnsAsync(role);
-
         var model = new ClaimsModel(rm.Object) { Claims = [] };
+
+        // Act
         var result = await model.OnPostAddRowAsync(role.Id.ToString());
 
+        // Assert
         Assert.IsType<PageResult>(result);
         Assert.Single(model.Claims);
     }
@@ -99,23 +167,31 @@ public class ClaimscshtmlTests
     [Fact]
     public async Task OnPostAddRowAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var rm = MockHelpers.MockRoleManager();
         rm.Setup(m => m.FindByIdAsync(It.IsAny<string>())).ReturnsAsync((IdentityRole<Guid>?)null);
-
         var model = new ClaimsModel(rm.Object) { Claims = [] };
-        Assert.IsType<NotFoundResult>(await model.OnPostAddRowAsync(MissingUserId));
+
+        // Act
+        var result = await model.OnPostAddRowAsync(MissingUserId);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]
     public async Task OnPostRemoveRowAsync_RemovesRow_WhenValidIndex()
     {
+        // Arrange
         var role = new IdentityRole<Guid>(RoleName) { Name = RoleName };
         var rm = MockHelpers.MockRoleManager();
         rm.Setup(m => m.FindByIdAsync(role.Id.ToString())).ReturnsAsync(role);
-
         var model = new ClaimsModel(rm.Object) { Claims = [new ClaimsModel.ClaimInputModel { Type = ClaimType, Value = ClaimValue }] };
+
+        // Act
         var result = await model.OnPostRemoveRowAsync(role.Id.ToString(), 0);
 
+        // Assert
         Assert.IsType<PageResult>(result);
         Assert.Empty(model.Claims);
     }
@@ -123,10 +199,15 @@ public class ClaimscshtmlTests
     [Fact]
     public async Task OnPostRemoveRowAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var rm = MockHelpers.MockRoleManager();
         rm.Setup(m => m.FindByIdAsync(It.IsAny<string>())).ReturnsAsync((IdentityRole<Guid>?)null);
-
         var model = new ClaimsModel(rm.Object) { Claims = [] };
-        Assert.IsType<NotFoundResult>(await model.OnPostRemoveRowAsync(MissingUserId, 0));
+
+        // Act
+        var result = await model.OnPostRemoveRowAsync(MissingUserId, 0);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
     }
 }

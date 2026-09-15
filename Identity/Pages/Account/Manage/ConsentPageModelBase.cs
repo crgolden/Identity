@@ -55,7 +55,7 @@ public abstract class ConsentPageModelBase : PageModel
 
     public class ViewModel
     {
-        public string ClientName { get; set; } = Empty;
+        public string? ClientName { get; set; }
 
         public string? ClientUrl { get; set; }
 
@@ -70,11 +70,11 @@ public abstract class ConsentPageModelBase : PageModel
 
     public class ScopeViewModel
     {
-        public string Name { get; set; } = Empty;
+        public string? Name { get; set; }
 
-        public string Value { get; set; } = Empty;
+        public required string Value { get; set; }
 
-        public string DisplayName { get; set; } = Empty;
+        public required string DisplayName { get; set; }
 
         public string? Description { get; set; }
 
@@ -89,8 +89,8 @@ public abstract class ConsentPageModelBase : PageModel
 
     public class ResourceViewModel
     {
-        public string Name { get; set; } = Empty;
+        public required string Name { get; set; }
 
-        public string DisplayName { get; set; } = Empty;
+        public required string DisplayName { get; set; }
     }
 }

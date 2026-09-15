@@ -205,7 +205,7 @@ public class ConsentModel : ConsentPageModelBase
 
     public class InputModel
     {
-        public string Button { get; set; } = Empty;
+        public string? Button { get; set; }
 
         public List<string> ScopesConsented { get; set; } = [];
 

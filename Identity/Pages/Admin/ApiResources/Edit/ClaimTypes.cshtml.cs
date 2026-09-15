@@ -16,7 +16,7 @@ public class ClaimTypesModel : PageModel
 
     public int ResourceId { get; private set; }
 
-    public string ResourceName { get; private set; } = Empty;
+    public string? ResourceName { get; private set; }
 
     [BindProperty]
     public List<ApiResourceClaim> ClaimTypes { get; set; } = [];

@@ -13,7 +13,7 @@ public class ClaimsModel : PageModel
 
     public ClaimsModel(RoleManager<IdentityRole<Guid>> roleManager) => _roleManager = roleManager;
 
-    public string RoleName { get; private set; } = Empty;
+    public string? RoleName { get; private set; }
 
     [BindProperty]
     public List<ClaimInputModel> Claims { get; set; } = [];
@@ -26,7 +26,7 @@ public class ClaimsModel : PageModel
             return NotFound();
         }
 
-        RoleName = role.Name ?? Empty;
+        RoleName = role.Name;
         var existing = await _roleManager.GetClaimsAsync(role);
         Claims = existing.Select(c => new ClaimInputModel { Type = c.Type, Value = c.Value }).ToList();
         return Page();
@@ -48,7 +48,12 @@ public class ClaimsModel : PageModel
 
         foreach (var claim in Claims)
         {
-            await _roleManager.AddClaimAsync(role, new Claim(claim.Type ?? Empty, claim.Value ?? Empty));
+            if (IsNullOrWhiteSpace(claim.Type) || IsNullOrWhiteSpace(claim.Value))
+            {
+                continue;
+            }
+
+            await _roleManager.AddClaimAsync(role, new Claim(claim.Type, claim.Value));
         }
 
         return RedirectToPage(DetailsPageName, new { id });
@@ -62,7 +67,7 @@ public class ClaimsModel : PageModel
             return NotFound();
         }
 
-        RoleName = role.Name ?? Empty;
+        RoleName = role.Name;
         Claims.Add(new ClaimInputModel());
         return Page();
     }
@@ -75,7 +80,7 @@ public class ClaimsModel : PageModel
             return NotFound();
         }
 
-        RoleName = role.Name ?? Empty;
+        RoleName = role.Name;
         if (index >= 0 && index < Claims.Count)
         {
             Claims.RemoveAt(index);

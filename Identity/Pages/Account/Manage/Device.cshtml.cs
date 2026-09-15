@@ -185,7 +185,7 @@ public class DeviceModel : ConsentPageModelBase
     {
         public string? UserCode { get; set; }
 
-        public string Button { get; set; } = Empty;
+        public string? Button { get; set; }
 
         public IEnumerable<string> ScopesConsented { get; set; } = [];
 

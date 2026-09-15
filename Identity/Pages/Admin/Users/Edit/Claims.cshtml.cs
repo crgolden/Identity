@@ -42,9 +42,20 @@ public class ClaimsModel : PageModel
 
         var existing = await _userManager.GetClaimsAsync(user);
         await _userManager.RemoveClaimsAsync(user, existing);
-        if (Claims.Count > 0)
+        var claims = new List<Claim>();
+        foreach (var input in Claims)
         {
-            await _userManager.AddClaimsAsync(user, Claims.Select(c => new Claim(c.Type ?? Empty, c.Value ?? Empty)));
+            if (IsNullOrWhiteSpace(input.Type) || IsNullOrWhiteSpace(input.Value))
+            {
+                continue;
+            }
+
+            claims.Add(new Claim(input.Type, input.Value));
+        }
+
+        if (claims.Count > 0)
+        {
+            await _userManager.AddClaimsAsync(user, claims);
         }
 
         return RedirectToPage(DetailsPageName, new { id });

@@ -61,7 +61,7 @@ public class PasskeySubmitTagHelperTests
     }
 
     [Fact]
-    public async Task ProcessAsync_NullAntiforgeryTokens_EmitsEmptyTokenAttributes()
+    public async Task ProcessAsync_AntiforgeryTokensAreAbsent_OmitsTheTokenAttributes()
     {
         // Arrange
         var httpContext = new DefaultHttpContext();
@@ -111,35 +111,23 @@ public class PasskeySubmitTagHelperTests
         Assert.Empty(output.Attributes);
         var html = output.Content.GetContent(NullHtmlEncoder.Default);
         Assert.Contains(PasskeySubmitTagHelper.ButtonOpeningTag, html, StringComparison.Ordinal);
-        Assert.Contains(
-            PasskeySubmitTagHelper.Attribute(passThroughName, passThroughValue),
-            html,
-            StringComparison.Ordinal);
+        Assert.Contains($"{passThroughName}=\"{passThroughValue}\"", html, StringComparison.Ordinal);
         Assert.Contains(buttonLabel + PasskeySubmitTagHelper.ButtonClosingTag, html, StringComparison.Ordinal);
         Assert.Contains(
-            PasskeySubmitTagHelper.Attribute(PasskeySubmitTagHelper.OperationAttributeName, helper.Operation?.ToString()),
+            $"{PasskeySubmitTagHelper.OperationAttributeName}=\"{helper.Operation}\" ",
             html,
             StringComparison.Ordinal);
         Assert.Contains(
-            PasskeySubmitTagHelper.Attribute(PasskeySubmitTagHelper.NameAttributeName, helper.Name),
+            $"{PasskeySubmitTagHelper.NameAttributeName}=\"{helper.Name}\" ",
             html,
             StringComparison.Ordinal);
         Assert.Contains(
-            PasskeySubmitTagHelper.Attribute(PasskeySubmitTagHelper.EmailNameAttributeName, null),
+            $"{PasskeySubmitTagHelper.AutofillAttributeName}=\"{PasskeySubmitTagHelper.AutofillOn}\" ",
             html,
             StringComparison.Ordinal);
-        Assert.Contains(
-            PasskeySubmitTagHelper.Attribute(PasskeySubmitTagHelper.RequestTokenNameAttributeName, null),
-            html,
-            StringComparison.Ordinal);
-        Assert.Contains(
-            PasskeySubmitTagHelper.Attribute(PasskeySubmitTagHelper.RequestTokenValueAttributeName, null),
-            html,
-            StringComparison.Ordinal);
-        Assert.Contains(
-            PasskeySubmitTagHelper.Attribute(PasskeySubmitTagHelper.AutofillAttributeName, PasskeySubmitTagHelper.AutofillOn),
-            html,
-            StringComparison.Ordinal);
+        Assert.DoesNotContain(PasskeySubmitTagHelper.EmailNameAttributeName, html, StringComparison.Ordinal);
+        Assert.DoesNotContain(PasskeySubmitTagHelper.RequestTokenNameAttributeName, html, StringComparison.Ordinal);
+        Assert.DoesNotContain(PasskeySubmitTagHelper.RequestTokenValueAttributeName, html, StringComparison.Ordinal);
     }
 
     [Theory]
@@ -190,7 +178,7 @@ public class PasskeySubmitTagHelperTests
         // Assert
         var html = output.Content.GetContent(NullHtmlEncoder.Default);
         Assert.Contains(
-            PasskeySubmitTagHelper.Attribute(PasskeySubmitTagHelper.AutofillAttributeName, expected),
+            $"{PasskeySubmitTagHelper.AutofillAttributeName}=\"{expected}\" ",
             html,
             StringComparison.Ordinal);
         Assert.DoesNotContain(suppressedAutofillValue, html, StringComparison.Ordinal);
