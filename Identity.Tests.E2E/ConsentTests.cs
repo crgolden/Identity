@@ -68,8 +68,7 @@ public sealed class ConsentTests(PlaywrightFixture fixture)
 
             var request = await page.RunAndWaitForRequestAsync(
                 async () => await page.ClickAsync("#consent-allow"),
-                r => r.Url.Contains("localhost:9999", StringComparison.Ordinal),
-                new PageRunAndWaitForRequestOptions { Timeout = 15_000 });
+                r => r.Url.Contains("localhost:9999", StringComparison.Ordinal));
 
             Assert.Contains("code=", request.Url, StringComparison.Ordinal);
         }
@@ -108,8 +107,7 @@ public sealed class ConsentTests(PlaywrightFixture fixture)
 
             Assert.Contains("/Account/Manage/Consent", page.Url, StringComparison.Ordinal);
             await Assertions.Expect(page.Locator("#validation-errors")).ToContainTextAsync(
-                ConsentOptions.MustChooseOneErrorMessage,
-                new LocatorAssertionsToContainTextOptions { Timeout = 15_000 });
+                ConsentOptions.MustChooseOneErrorMessage);
         }
     }
 
@@ -126,6 +124,6 @@ public sealed class ConsentTests(PlaywrightFixture fixture)
         await page.FillAsync("input[name='Input.Email']", email);
         await page.FillAsync("input[name='Input.Password']", password);
         await page.ClickAsync("#login-submit");
-        await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+        await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"));
     }
 }

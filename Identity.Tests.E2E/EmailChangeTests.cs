@@ -21,7 +21,7 @@ public sealed class EmailChangeTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Email']", originalEmail);
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("#login-submit");
-            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"));
 
             await page.GotoAsync("/Account/Manage/Email");
             await page.WaitForURLAsync("**/Account/Manage/Email**");
@@ -29,12 +29,12 @@ public sealed class EmailChangeTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.NewEmail']", newEmail);
             await page.ClickAsync("#change-email-button");
 
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/Manage/Email"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/Manage/Email"));
             var bodyText = await page.TextContentAsync("body");
             Assert.Contains("confirmation", bodyText, StringComparison.OrdinalIgnoreCase);
         }
 
-        var confirmEmail = await fixture.Email.WaitForEmailAsync(newEmail);
+        var confirmEmail = fixture.Email.TakeEmail(newEmail);
         var confirmLink = EmailCaptureSender.ExtractLink(confirmEmail.HtmlBody, "http");
 
         var (ctx2, page2) = await fixture.NewPageAsync();
@@ -53,7 +53,7 @@ public sealed class EmailChangeTests(PlaywrightFixture fixture)
             await page3.FillAsync("input[name='Input.Email']", newEmail);
             await page3.FillAsync("input[name='Input.Password']", password);
             await page3.ClickAsync("#login-submit");
-            await Assertions.Expect(page3).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page3).Not.ToHaveURLAsync(new Regex("/Account/Login"));
             Assert.DoesNotContain("/Account/Login", page3.Url, StringComparison.Ordinal);
         }
     }
@@ -70,13 +70,13 @@ public sealed class EmailChangeTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("#login-submit");
-            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"));
 
             await page.GotoAsync("/Account/Manage/Email");
             await page.FillAsync("input[name='Input.NewEmail']", email);
             await page.ClickAsync("#change-email-button");
 
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/Manage/Email"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/Manage/Email"));
             var bodyText = await page.TextContentAsync("body");
             Assert.DoesNotContain("confirmation link has been sent", bodyText, StringComparison.OrdinalIgnoreCase);
         }

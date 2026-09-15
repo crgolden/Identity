@@ -22,7 +22,7 @@ public sealed class SamlServiceProvidersTests(PlaywrightFixture fixture)
             await page.FillAsync("#SamlServiceProvider_EntityId", entityId);
             await page.FillAsync("#SamlServiceProvider_DisplayName", "E2E Created SAML SP");
             await page.ClickAsync("#create-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/SamlServiceProviders/Details"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/SamlServiceProviders/Details"));
             await Assertions.Expect(page.Locator("#btn-edit")).ToBeVisibleAsync();
         }
     }
@@ -41,10 +41,10 @@ public sealed class SamlServiceProvidersTests(PlaywrightFixture fixture)
             await CreateSamlServiceProviderAsync(page, entityId);
 
             await page.ClickAsync("#btn-edit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/SamlServiceProviders/Edit"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/SamlServiceProviders/Edit"));
             await page.FillAsync("#SamlServiceProvider_DisplayName", updatedDisplayName);
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/SamlServiceProviders/Details"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/SamlServiceProviders/Details"));
             await Assertions.Expect(page.Locator("#sp-display-name")).ToHaveTextAsync(updatedDisplayName);
         }
     }
@@ -64,7 +64,7 @@ public sealed class SamlServiceProvidersTests(PlaywrightFixture fixture)
             await page.ClickAsync("#btn-delete");
             await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("Delete");
             await page.ClickAsync("#delete-submit");
-            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("Delete"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("Delete"));
             await page.GotoAsync("/Admin/SamlServiceProviders");
             await Assertions.Expect(page.Locator("#page-table")).Not.ToContainTextAsync(entityId);
         }
@@ -76,7 +76,7 @@ public sealed class SamlServiceProvidersTests(PlaywrightFixture fixture)
         await page.FillAsync("#SamlServiceProvider_EntityId", entityId);
         await page.FillAsync("#SamlServiceProvider_DisplayName", "E2E SAML SP");
         await page.ClickAsync("#create-submit");
-        await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/SamlServiceProviders/Details"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+        await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/SamlServiceProviders/Details"));
     }
 
     private static async Task LoginAsync(IPage page, string email, string password)
@@ -85,6 +85,6 @@ public sealed class SamlServiceProvidersTests(PlaywrightFixture fixture)
         await page.FillAsync("input[name='Input.Email']", email);
         await page.FillAsync("input[name='Input.Password']", password);
         await page.ClickAsync("#login-submit");
-        await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+        await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"));
     }
 }

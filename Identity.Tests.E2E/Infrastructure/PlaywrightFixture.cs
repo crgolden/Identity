@@ -278,11 +278,6 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         await page.Context.AddInitScriptAsync("window.grecaptcha = { ready: cb => cb(), execute: () => Promise.resolve('e2e-test-token') };");
         await page.Context.RouteAsync("https://www.google.com/recaptcha/**", route => route.AbortAsync());
 
-        if (CI)
-        {
-            page.SetDefaultTimeout(60_000);
-        }
-
         return (session, page);
     }
 

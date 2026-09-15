@@ -40,7 +40,7 @@ public sealed class AdminLandingTests(PlaywrightFixture fixture)
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin");
             await page.ClickAsync($"#{cardId}");
-            await Assertions.Expect(page.Locator("#page-heading")).ToHaveTextAsync(expectedHeading, new LocatorAssertionsToHaveTextOptions { Timeout = 60_000 });
+            await Assertions.Expect(page.Locator("#page-heading")).ToHaveTextAsync(expectedHeading);
         }
     }
 
@@ -50,6 +50,6 @@ public sealed class AdminLandingTests(PlaywrightFixture fixture)
         await page.FillAsync("input[name='Input.Email']", email);
         await page.FillAsync("input[name='Input.Password']", password);
         await page.ClickAsync("#login-submit");
-        await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+        await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"));
     }
 }

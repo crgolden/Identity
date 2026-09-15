@@ -33,7 +33,7 @@ public sealed class ExternalLoginTests(PlaywrightFixture fixture)
             await page.GotoAsync("/Account/Login");
             await page.ClickAsync("#external-login-button-GoogleOpenIdConnect");
 
-            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"));
             Assert.DoesNotContain("/Account/RegisterConfirmation", page.Url, StringComparison.Ordinal);
         }
 
@@ -73,7 +73,7 @@ public sealed class ExternalLoginTests(PlaywrightFixture fixture)
             await page.GotoAsync("/Account/Login");
             await page.ClickAsync("#external-login-button-GoogleOpenIdConnect");
 
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/RegisterConfirmation"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/RegisterConfirmation"));
         }
 
         await using var scope = fixture.Factory.Services.CreateAsyncScope();
@@ -101,7 +101,7 @@ public sealed class ExternalLoginTests(PlaywrightFixture fixture)
             await page.GotoAsync("/Account/Login");
             await page.ClickAsync("#external-login-button-GoogleOpenIdConnect");
 
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/Login"));
             var body = await page.TextContentAsync("body");
             Assert.Contains(email, body, StringComparison.Ordinal);
             Assert.Contains("Google", body, StringComparison.Ordinal);
@@ -136,7 +136,7 @@ public sealed class ExternalLoginTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("#login-submit");
-            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"));
 
             await SetGoogleClaimsAsync(page, new FakeGoogleClaims
             {
@@ -150,7 +150,7 @@ public sealed class ExternalLoginTests(PlaywrightFixture fixture)
             await page.GotoAsync("/Account/Manage/ExternalLogins");
             await page.ClickAsync("#link-login-button-GoogleOpenIdConnect");
 
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/Manage/ExternalLogins"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/Manage/ExternalLogins"));
             var body = await page.TextContentAsync("body");
             Assert.Contains("added", body, StringComparison.OrdinalIgnoreCase);
         }

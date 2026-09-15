@@ -11,8 +11,6 @@ using Moq;
 
 internal static class MockHelpers
 {
-    public const string PageRouteValueName = "page";
-
     public static Mock<UserManager<IdentityUser<Guid>>> MockUserManager() =>
         MockUserManager(new IdentityOptions());
 

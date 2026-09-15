@@ -38,7 +38,7 @@ public sealed class IdentityResourcesTests(PlaywrightFixture fixture)
             await page.FillAsync("#Resource_Name", name);
             await page.FillAsync("#Resource_DisplayName", "E2E Created Identity Resource");
             await page.ClickAsync("#create-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/IdentityResources/Details"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/IdentityResources/Details"));
             await Assertions.Expect(page.Locator("#btn-edit")).ToBeVisibleAsync();
         }
     }
@@ -57,7 +57,7 @@ public sealed class IdentityResourcesTests(PlaywrightFixture fixture)
             await page.ClickAsync($"#delete-{resourceId}");
             await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("Delete");
             await page.ClickAsync("#delete-submit");
-            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("Delete"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("Delete"));
             await Assertions.Expect(page.Locator($"#delete-{resourceId}")).Not.ToBeVisibleAsync();
         }
     }
@@ -77,7 +77,7 @@ public sealed class IdentityResourcesTests(PlaywrightFixture fixture)
             await page.ClickAsync("#btn-add-row");
             await page.FillAsync("#claimtype-0", claimType);
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/IdentityResources/Details/ClaimTypes"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/IdentityResources/Details/ClaimTypes"));
             await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(claimType);
         }
     }
@@ -98,7 +98,7 @@ public sealed class IdentityResourcesTests(PlaywrightFixture fixture)
             await page.GotoAsync($"/Admin/IdentityResources/Edit/ClaimTypes/{resourceId}");
             await page.ClickAsync("#claimtype-remove-0");
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/IdentityResources/Details/ClaimTypes"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/IdentityResources/Details/ClaimTypes"));
             await Assertions.Expect(page.Locator("#page-table")).Not.ToContainTextAsync(claimType);
         }
     }
@@ -120,7 +120,7 @@ public sealed class IdentityResourcesTests(PlaywrightFixture fixture)
             await page.GotoAsync($"/Admin/IdentityResources/Edit/ClaimTypes/{resourceId}");
             await page.FillAsync("#claimtype-0", updatedClaimType);
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/IdentityResources/Details/ClaimTypes"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/IdentityResources/Details/ClaimTypes"));
             await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(updatedClaimType);
         }
     }
@@ -141,7 +141,7 @@ public sealed class IdentityResourcesTests(PlaywrightFixture fixture)
             await page.FillAsync("#property-key-0", key);
             await page.FillAsync("#property-value-0", "e2e-value");
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/IdentityResources/Details/Properties"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/IdentityResources/Details/Properties"));
             await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(key);
         }
     }
@@ -162,7 +162,7 @@ public sealed class IdentityResourcesTests(PlaywrightFixture fixture)
             await page.GotoAsync($"/Admin/IdentityResources/Edit/Properties/{resourceId}");
             await page.ClickAsync("#property-remove-0");
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/IdentityResources/Details/Properties"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/IdentityResources/Details/Properties"));
             await Assertions.Expect(page.Locator("#page-table")).Not.ToContainTextAsync(key);
         }
     }
@@ -184,7 +184,7 @@ public sealed class IdentityResourcesTests(PlaywrightFixture fixture)
             await page.GotoAsync($"/Admin/IdentityResources/Edit/Properties/{resourceId}");
             await page.FillAsync("#property-value-0", updatedValue);
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/IdentityResources/Details/Properties"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/IdentityResources/Details/Properties"));
             await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(updatedValue);
         }
     }
@@ -195,7 +195,7 @@ public sealed class IdentityResourcesTests(PlaywrightFixture fixture)
         await page.ClickAsync("#btn-add-row");
         await page.FillAsync("#claimtype-0", claimType);
         await page.ClickAsync("#save-submit");
-        await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/IdentityResources/Details/ClaimTypes"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+        await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/IdentityResources/Details/ClaimTypes"));
     }
 
     private static async Task AddIdentityResourcePropertyRowAsync(IPage page, int resourceId, string key, string value)
@@ -205,7 +205,7 @@ public sealed class IdentityResourcesTests(PlaywrightFixture fixture)
         await page.FillAsync("#property-key-0", key);
         await page.FillAsync("#property-value-0", value);
         await page.ClickAsync("#save-submit");
-        await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/IdentityResources/Details/Properties"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+        await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/IdentityResources/Details/Properties"));
     }
 
     private static async Task LoginAsync(IPage page, string email, string password)
@@ -214,6 +214,6 @@ public sealed class IdentityResourcesTests(PlaywrightFixture fixture)
         await page.FillAsync("input[name='Input.Email']", email);
         await page.FillAsync("input[name='Input.Password']", password);
         await page.ClickAsync("#login-submit");
-        await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+        await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"));
     }
 }

@@ -22,7 +22,7 @@ public sealed class RegistrationTests(PlaywrightFixture fixture)
             await page1.FillAsync("input[name='Input.Password']", password);
             await page1.FillAsync("input[name='Input.ConfirmPassword']", password);
             await page1.ClickAsync("#registerSubmit");
-            await Assertions.Expect(page1).ToHaveURLAsync(new Regex("/Account/RegisterConfirmation"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page1).ToHaveURLAsync(new Regex("/Account/RegisterConfirmation"));
         }
 
         var (ctx2, page2) = await fixture.NewPageAsync();
@@ -34,7 +34,7 @@ public sealed class RegistrationTests(PlaywrightFixture fixture)
             await page2.FillAsync("input[name='Input.ConfirmPassword']", password);
             await page2.ClickAsync("#registerSubmit");
 
-            await Assertions.Expect(page2).ToHaveURLAsync(new Regex("/Account/Register"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page2).ToHaveURLAsync(new Regex("/Account/Register"));
             var errorText = await page2.TextContentAsync("#validation-errors");
             Assert.NotNull(errorText);
         }
@@ -54,7 +54,7 @@ public sealed class RegistrationTests(PlaywrightFixture fixture)
             await page1.FillAsync("input[name='Input.Password']", password);
             await page1.FillAsync("input[name='Input.ConfirmPassword']", password);
             await page1.ClickAsync("#registerSubmit");
-            await Assertions.Expect(page1).ToHaveURLAsync(new Regex("/Account/RegisterConfirmation"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page1).ToHaveURLAsync(new Regex("/Account/RegisterConfirmation"));
         }
 
         var (ctx2, page2) = await fixture.NewPageAsync();
@@ -65,7 +65,7 @@ public sealed class RegistrationTests(PlaywrightFixture fixture)
             await page2.FillAsync("input[name='Input.Password']", password);
             await page2.ClickAsync("#login-submit");
 
-            await Assertions.Expect(page2).ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page2).ToHaveURLAsync(new Regex("/Account/Login"));
             var errorText = await page2.TextContentAsync("#validation-errors");
             Assert.NotNull(errorText);
         }
@@ -86,9 +86,9 @@ public sealed class RegistrationTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.ConfirmPassword']", password);
             await page.ClickAsync("#registerSubmit");
 
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/RegisterConfirmation"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/RegisterConfirmation"));
 
-            var captured = await fixture.Email.WaitForEmailAsync(email);
+            var captured = fixture.Email.TakeEmail(email);
             var confirmLink = EmailCaptureSender.ExtractLink(captured.HtmlBody, "http");
 
             await page.GotoAsync(confirmLink);
@@ -99,7 +99,7 @@ public sealed class RegistrationTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("#login-submit");
 
-            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"));
             Assert.DoesNotContain("/Account/Login", page.Url, StringComparison.Ordinal);
         }
     }

@@ -4,33 +4,25 @@ using System.Text.Json;
 using Microsoft.Playwright;
 
 internal sealed record SyntheticAccount(
-    string Email,
     string RpId,
     string CredentialId,
     string UserHandle,
     string PrivateKey)
 {
     private const string LoginPath = "/Account/Login";
-    private const float PasskeySubmitTimeoutMs = 15_000;
-    private const float LoginTimeoutMs = 30_000;
-    private const float AutofillGraceMs = 5_000;
 
     public static SyntheticAccount Resolve(int slot)
     {
-        var emailName = $"EMAIL{slot}";
         var credentialName = $"PASSKEY_CREDENTIAL{slot}";
-        var email = Environment.GetEnvironmentVariable(emailName);
         var rawCredential = Environment.GetEnvironmentVariable(credentialName);
-        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(rawCredential))
+        if (string.IsNullOrWhiteSpace(rawCredential))
         {
-            throw new InvalidOperationException(
-                $"{emailName} and {credentialName} must both be set for a synthetic walk.");
+            throw new InvalidOperationException($"{credentialName} must be set for a synthetic walk.");
         }
 
         using var document = JsonDocument.Parse(rawCredential);
         var root = document.RootElement;
         return new SyntheticAccount(
-            email,
             RequiredField(root, "rpId", credentialName),
             RequiredField(root, "id", credentialName),
             RequiredField(root, "userHandle", credentialName),
@@ -48,29 +40,7 @@ internal sealed record SyntheticAccount(
     {
         await SeedPasskeyAsync(page);
         await page.GotoAsync($"{LoginPath}?ReturnUrl=%2F");
-        if (await AutofillNavigatedAwayAsync(page))
-        {
-            return;
-        }
-
-        try
-        {
-            await page.FillAsync("input[name='Input.Email']", Email);
-            await page.ClickAsync(PasskeySelectors.SignIn, new PageClickOptions { Timeout = PasskeySubmitTimeoutMs });
-        }
-        catch (Exception exception) when (exception is TimeoutException or PlaywrightException)
-        {
-            if (IsLoginPath(page.Url))
-            {
-                throw;
-            }
-
-            return;
-        }
-
-        await page.WaitForURLAsync(
-            url => !IsLoginPath(url),
-            new PageWaitForURLOptions { Timeout = LoginTimeoutMs });
+        await page.WaitForURLAsync(url => !IsLoginPath(url));
     }
 
     private static string ToStandardBase64(string base64Url)
@@ -120,21 +90,6 @@ internal sealed record SyntheticAccount(
         });
 
         await CredentialSerialization.InstallAsync(page.Context);
-    }
-
-    private static async Task<bool> AutofillNavigatedAwayAsync(IPage page)
-    {
-        try
-        {
-            await page.WaitForURLAsync(
-                url => !IsLoginPath(url),
-                new PageWaitForURLOptions { Timeout = AutofillGraceMs });
-            return true;
-        }
-        catch (Exception exception) when (exception is TimeoutException or PlaywrightException)
-        {
-            return false;
-        }
     }
 
     private static bool IsLoginPath(string url) =>

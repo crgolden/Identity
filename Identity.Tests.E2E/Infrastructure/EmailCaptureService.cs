@@ -27,21 +27,13 @@ public sealed class EmailCaptureSender : ServiceBusSender
         return Task.CompletedTask;
     }
 
-    public async Task<CapturedEmail> WaitForEmailAsync(string toAddress, TimeSpan? timeout = null)
+    public CapturedEmail TakeEmail(string toAddress)
     {
-        var deadline = DateTimeOffset.UtcNow + (timeout ?? TimeSpan.FromSeconds(10));
         var queue = _messagesByAddress.GetOrAdd(toAddress, _ => new ConcurrentQueue<ServiceBusMessage>());
-        while (DateTimeOffset.UtcNow < deadline)
-        {
-            if (queue.TryDequeue(out var msg))
-            {
-                return new CapturedEmail(msg.To, msg.Subject, msg.Body.ToString());
-            }
-
-            await Task.Delay(100);
-        }
-
-        throw new TimeoutException($"No email received for '{toAddress}' within {timeout ?? TimeSpan.FromSeconds(10)}.");
+        return queue.TryDequeue(out var message)
+            ? new CapturedEmail(message.To, message.Subject, message.Body.ToString())
+            : throw new InvalidOperationException(
+                $"No email has been sent to '{toAddress}'. Identity awaits every send before it responds, so assert the page the submit lands on before taking the email.");
     }
 
     public void Clear() => _messagesByAddress.Clear();

@@ -21,7 +21,7 @@ public sealed class LoginTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("#login-submit");
 
-            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"));
             Assert.DoesNotContain("/Account/Login", page.Url, StringComparison.Ordinal);
         }
     }
@@ -39,7 +39,7 @@ public sealed class LoginTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Password']", "WrongPassword!99");
             await page.ClickAsync("#login-submit");
 
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/Login"));
             var errorText = await page.TextContentAsync("#validation-errors");
             Assert.NotNull(errorText);
         }

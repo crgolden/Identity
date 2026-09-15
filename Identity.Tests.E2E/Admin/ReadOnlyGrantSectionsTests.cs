@@ -24,13 +24,13 @@ public sealed class ReadOnlyGrantSectionsTests(PlaywrightFixture fixture)
 
             var grantKey = await fixture.GetPersistedGrantKeyAsync(clientId);
             await page.ClickAsync($"[id='details-{grantKey}']");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/PersistedGrants/Details"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/PersistedGrants/Details"));
             await Assertions.Expect(page.Locator("#grant-client-id")).ToHaveTextAsync(clientId);
 
             await page.ClickAsync("#btn-delete");
             await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("Delete");
             await page.ClickAsync("#delete-submit");
-            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("Delete"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("Delete"));
             await page.GotoAsync("/Admin/PersistedGrants");
             await Assertions.Expect(page.Locator("#page-table")).Not.ToContainTextAsync(clientId);
         }
@@ -61,8 +61,7 @@ public sealed class ReadOnlyGrantSectionsTests(PlaywrightFixture fixture)
 
             await page.RunAndWaitForRequestAsync(
                 async () => await page.ClickAsync("#consent-allow"),
-                r => r.Url.Contains("localhost:9999", StringComparison.Ordinal),
-                new PageRunAndWaitForRequestOptions { Timeout = 15_000 });
+                r => r.Url.Contains("localhost:9999", StringComparison.Ordinal));
         }
 
         return clientId;
@@ -81,6 +80,6 @@ public sealed class ReadOnlyGrantSectionsTests(PlaywrightFixture fixture)
         await page.FillAsync("input[name='Input.Email']", email);
         await page.FillAsync("input[name='Input.Password']", password);
         await page.ClickAsync("#login-submit");
-        await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+        await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"));
     }
 }

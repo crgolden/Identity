@@ -68,9 +68,7 @@ jobs:
           WalkerBaseUrl: ${{ vars.WALKER_BASE_URL }}
           SYNTHETIC_SEED: ${{ steps.seed.outputs.value }}
           SYNTHETIC_STEPS: ${{ inputs.steps }}
-          EMAIL1: ${{ secrets.EMAIL1 }}
           PASSKEY_CREDENTIAL1: ${{ secrets.PASSKEY_CREDENTIAL1 }}
-          EMAIL3: ${{ secrets.EMAIL3 }}
           PASSKEY_CREDENTIAL3: ${{ secrets.PASSKEY_CREDENTIAL3 }}
         run: |
           $resultsDir = "${{ github.workspace }}\Identity.Tests.E2E\bin\Release\net10.0\TestResults"

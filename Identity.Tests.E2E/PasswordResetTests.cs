@@ -20,9 +20,9 @@ public sealed class PasswordResetTests(PlaywrightFixture fixture)
             await page.GotoAsync("/Account/ForgotPassword");
             await page.FillAsync("input[name='Input.Email']", email);
             await page.ClickAsync("#forgot-password-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/ForgotPasswordConfirmation"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/ForgotPasswordConfirmation"));
 
-            var resetEmail = await fixture.Email.WaitForEmailAsync(email);
+            var resetEmail = fixture.Email.TakeEmail(email);
             var resetLink = EmailCaptureSender.ExtractLink(resetEmail.HtmlBody, "http");
 
             await page.GotoAsync(resetLink);
@@ -30,13 +30,13 @@ public sealed class PasswordResetTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Password']", newPassword);
             await page.FillAsync("input[name='Input.ConfirmPassword']", newPassword);
             await page.ClickAsync("#reset-password-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/ResetPasswordConfirmation"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/ResetPasswordConfirmation"));
 
             await page.GotoAsync("/Account/Login");
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", newPassword);
             await page.ClickAsync("#login-submit");
-            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"));
             Assert.DoesNotContain("/Account/Login", page.Url, StringComparison.Ordinal);
         }
     }
@@ -53,9 +53,9 @@ public sealed class PasswordResetTests(PlaywrightFixture fixture)
             await page.GotoAsync("/Account/ForgotPassword");
             await page.FillAsync("input[name='Input.Email']", email);
             await page.ClickAsync("#forgot-password-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/ForgotPasswordConfirmation"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/ForgotPasswordConfirmation"));
 
-            var resetEmail = await fixture.Email.WaitForEmailAsync(email);
+            var resetEmail = fixture.Email.TakeEmail(email);
             var resetLink = EmailCaptureSender.ExtractLink(resetEmail.HtmlBody, "http");
 
             await page.GotoAsync(resetLink);
@@ -63,13 +63,13 @@ public sealed class PasswordResetTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Password']", newPassword);
             await page.FillAsync("input[name='Input.ConfirmPassword']", newPassword);
             await page.ClickAsync("#reset-password-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/ResetPasswordConfirmation"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/ResetPasswordConfirmation"));
 
             await page.GotoAsync("/Account/Login");
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", oldPassword);
             await page.ClickAsync("#login-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/Login"));
             var errorText = await page.TextContentAsync("#validation-errors");
             Assert.NotNull(errorText);
         }

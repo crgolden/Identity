@@ -21,12 +21,12 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("#login-submit");
-            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"));
 
             await page.GotoAsync("/Account/Manage/TwoFactorAuthentication");
             await page.ClickAsync("#enable-authenticator");
 
-            await Assertions.Expect(page.Locator("#shared-key")).ToBeVisibleAsync(new LocatorAssertionsToBeVisibleOptions { Timeout = 60_000 });
+            await Assertions.Expect(page.Locator("#shared-key")).ToBeVisibleAsync();
 
             var sharedKey = await ReadSharedKeyAsync(page);
 
@@ -37,7 +37,7 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Code']", code);
             await page.ClickAsync("#verify-authenticator-submit");
 
-            await Assertions.Expect(page.Locator("#status-message")).ToContainTextAsync("verified", new LocatorAssertionsToContainTextOptions { Timeout = 60_000 });
+            await Assertions.Expect(page.Locator("#status-message")).ToContainTextAsync("verified");
         }
     }
 
@@ -54,11 +54,11 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
             await setupPage.FillAsync("input[name='Input.Email']", email);
             await setupPage.FillAsync("input[name='Input.Password']", password);
             await setupPage.ClickAsync("#login-submit");
-            await Assertions.Expect(setupPage).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(setupPage).Not.ToHaveURLAsync(new Regex("/Account/Login"));
 
             await setupPage.GotoAsync("/Account/Manage/TwoFactorAuthentication");
             await setupPage.ClickAsync("#enable-authenticator");
-            await Assertions.Expect(setupPage.Locator("#shared-key")).ToBeVisibleAsync(new LocatorAssertionsToBeVisibleOptions { Timeout = 60_000 });
+            await Assertions.Expect(setupPage.Locator("#shared-key")).ToBeVisibleAsync();
 
             var sharedKey = await ReadSharedKeyAsync(setupPage);
             var keyBytes = Base32Encoding.ToBytes(sharedKey);
@@ -71,7 +71,7 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
             await setupPage.GotoAsync("/Account/Manage/GenerateRecoveryCodes");
             await setupPage.ClickAsync("#generate-codes-submit");
 
-            await Assertions.Expect(setupPage.Locator("#recovery-code-0")).ToBeVisibleAsync(new LocatorAssertionsToBeVisibleOptions { Timeout = 60_000 });
+            await Assertions.Expect(setupPage.Locator("#recovery-code-0")).ToBeVisibleAsync();
 
             var recoveryCodeText = await setupPage.Locator("#recovery-code-0").TextContentAsync();
             Assert.NotNull(recoveryCodeText);
@@ -86,14 +86,14 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
             await loginPage.FillAsync("input[name='Input.Password']", password);
             await loginPage.ClickAsync("#login-submit");
 
-            await Assertions.Expect(loginPage).ToHaveURLAsync(new Regex("/Account/LoginWith2fa"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(loginPage).ToHaveURLAsync(new Regex("/Account/LoginWith2fa"));
 
             await loginPage.ClickAsync("#recovery-code-login");
-            await Assertions.Expect(loginPage).ToHaveURLAsync(new Regex("/Account/LoginWithRecoveryCode"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(loginPage).ToHaveURLAsync(new Regex("/Account/LoginWithRecoveryCode"));
             await loginPage.FillAsync("input[name='Input.RecoveryCode']", recoveryCode);
             await loginPage.ClickAsync("#recovery-code-submit");
 
-            await Assertions.Expect(loginPage).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(loginPage).Not.ToHaveURLAsync(new Regex("/Account/Login"));
             Assert.DoesNotContain("/Account/Login", loginPage.Url, StringComparison.Ordinal);
         }
     }
@@ -110,25 +110,25 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("#login-submit");
-            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"));
 
             await page.GotoAsync("/Account/Manage/TwoFactorAuthentication");
             await page.ClickAsync("#enable-authenticator");
-            await Assertions.Expect(page.Locator("#shared-key")).ToBeVisibleAsync(new LocatorAssertionsToBeVisibleOptions { Timeout = 60_000 });
+            await Assertions.Expect(page.Locator("#shared-key")).ToBeVisibleAsync();
 
             var sharedKey = await ReadSharedKeyAsync(page);
             var totp = new Totp(Base32Encoding.ToBytes(sharedKey));
             await page.FillAsync("input[name='Input.Code']", totp.ComputeTotp());
             await page.ClickAsync("#verify-authenticator-submit");
 
-            await Assertions.Expect(page.Locator("#status-message")).ToContainTextAsync("verified", new LocatorAssertionsToContainTextOptions { Timeout = 60_000 });
+            await Assertions.Expect(page.Locator("#status-message")).ToContainTextAsync("verified");
 
             await page.GotoAsync("/Account/Manage/TwoFactorAuthentication");
             await page.ClickAsync("#reset-authenticator");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/Manage/ResetAuthenticator"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/Manage/ResetAuthenticator"));
             await page.ClickAsync("#reset-authenticator-button");
 
-            await Assertions.Expect(page.Locator("#shared-key")).ToBeVisibleAsync(new LocatorAssertionsToBeVisibleOptions { Timeout = 60_000 });
+            await Assertions.Expect(page.Locator("#shared-key")).ToBeVisibleAsync();
             Assert.Contains("EnableAuthenticator", page.Url, StringComparison.Ordinal);
         }
     }

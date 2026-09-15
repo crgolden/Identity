@@ -318,7 +318,7 @@ public class ExternalLoginsModelTests
         var expectedRedirect = TestValues.NewLocalPath();
         var mockUrlHelper = new Mock<IUrlHelper>(MockBehavior.Strict);
         var urlRouteData = new RouteData();
-        urlRouteData.Values[MockHelpers.PageRouteValueName] = ExternalLoginsModel.ExternalLoginsPagePath;
+        urlRouteData.Values[AspNetRouteConstants.PageRouteValueName] = ExternalLoginsModel.ExternalLoginsPagePath;
         mockUrlHelper.SetupGet(u => u.ActionContext).Returns(
             new ActionContext(new DefaultHttpContext(), urlRouteData, new ActionDescriptor()));
 

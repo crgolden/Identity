@@ -4,9 +4,6 @@ using Microsoft.Playwright;
 
 internal static class Walker
 {
-    private const int ThinkTimeMinMs = 1_500;
-    private const int ThinkTimeMaxMs = 4_000;
-
     public static async Task<int> WalkAsync(
         IPage page,
         IReadOnlyList<WalkerAction> actions,
@@ -38,7 +35,6 @@ internal static class Walker
             }
 
             executedSteps += 1;
-            await page.WaitForTimeoutAsync(ThinkTimeMinMs + rng.Int(ThinkTimeMaxMs - ThinkTimeMinMs));
         }
 
         return executedSteps;

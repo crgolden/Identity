@@ -513,7 +513,7 @@ public sealed class ExternalLoginModelTests
         url.Setup(u => u.Content(PageRoutes.ContentRoot)).Returns(TestValues.NewLocalPath());
         url.Setup(u => u.IsLocalUrl(It.IsAny<string?>())).Returns<string?>(u => u is not null && u.StartsWith('/'));
         var routeData = new RouteData();
-        routeData.Values[MockHelpers.PageRouteValueName] = ExternalLoginModel.ExternalLoginPagePath;
+        routeData.Values[AspNetRouteConstants.PageRouteValueName] = ExternalLoginModel.ExternalLoginPagePath;
         url.SetupGet(u => u.ActionContext).Returns(new ActionContext(new DefaultHttpContext(), routeData, new ActionDescriptor()));
         url.Setup(u => u.RouteUrl(It.IsAny<UrlRouteContext>())).Returns(TestValues.NewCallbackUrl());
 

@@ -20,7 +20,7 @@ public sealed class RolesTests(PlaywrightFixture fixture)
             await NavigateToAdminRoleDetailsAsync(page);
 
             await page.ClickAsync("#nav-claims");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Details/Claims"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Details/Claims"));
             await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
         }
     }
@@ -37,7 +37,7 @@ public sealed class RolesTests(PlaywrightFixture fixture)
             await NavigateToAdminRoleDetailsAsync(page);
 
             await page.ClickAsync("#nav-users");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Details/Users"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Details/Users"));
             await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(email);
         }
     }
@@ -56,10 +56,10 @@ public sealed class RolesTests(PlaywrightFixture fixture)
             await CreateRoleAsync(page, roleName);
 
             await page.ClickAsync("#btn-edit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Edit/(?!Claims|Users)"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Edit/(?!Claims|Users)"));
             await page.FillAsync("#AppRole_Name", renamedTo);
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Details/(?!Claims|Users)"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Details/(?!Claims|Users)"));
             await Assertions.Expect(page.Locator("#role-name")).ToHaveTextAsync(renamedTo);
         }
     }
@@ -97,10 +97,10 @@ public sealed class RolesTests(PlaywrightFixture fixture)
             await AddRoleClaimRowAsync(page, claimType);
 
             await page.ClickAsync("#btn-edit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Edit/Claims"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Edit/Claims"));
             await page.ClickAsync("#claim-remove-0");
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Details/Claims"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Details/Claims"));
             await Assertions.Expect(page.Locator("#page-table")).Not.ToContainTextAsync(claimType);
         }
     }
@@ -121,10 +121,10 @@ public sealed class RolesTests(PlaywrightFixture fixture)
             await AddRoleClaimRowAsync(page, claimType);
 
             await page.ClickAsync("#btn-edit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Edit/Claims"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Edit/Claims"));
             await page.FillAsync("#claim-value-0", updatedValue);
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Details/Claims"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Details/Claims"));
             await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(updatedValue);
         }
     }
@@ -133,12 +133,12 @@ public sealed class RolesTests(PlaywrightFixture fixture)
     {
         await page.ClickAsync("#nav-claims");
         await page.ClickAsync("#btn-edit");
-        await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Edit/Claims"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+        await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Edit/Claims"));
         await page.ClickAsync("#btn-add-row");
         await page.FillAsync("#claim-type-0", claimType);
         await page.FillAsync("#claim-value-0", "e2e-value");
         await page.ClickAsync("#save-submit");
-        await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Details/Claims"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+        await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Details/Claims"));
     }
 
     private static async Task CreateRoleAsync(IPage page, string roleName)
@@ -146,7 +146,7 @@ public sealed class RolesTests(PlaywrightFixture fixture)
         await page.GotoAsync("/Admin/Roles/Create");
         await page.FillAsync("#RoleName", roleName);
         await page.ClickAsync("#create-submit");
-        await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Details"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+        await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Details"));
     }
 
     private static async Task LoginAsync(IPage page, string email, string password)
@@ -155,7 +155,7 @@ public sealed class RolesTests(PlaywrightFixture fixture)
         await page.FillAsync("input[name='Input.Email']", email);
         await page.FillAsync("input[name='Input.Password']", password);
         await page.ClickAsync("#login-submit");
-        await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+        await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"));
     }
 
     private async Task NavigateToAdminRoleDetailsAsync(IPage page)
@@ -163,6 +163,6 @@ public sealed class RolesTests(PlaywrightFixture fixture)
         var adminRoleId = await fixture.GetRoleIdAsync("Admin");
         await page.GotoAsync("/Admin/Roles");
         await page.ClickAsync($"#details-{adminRoleId}");
-        await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Details/(?!Claims|Users)"), new PageAssertionsToHaveURLOptions { Timeout = 60_000 });
+        await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Details/(?!Claims|Users)"));
     }
 }

@@ -49,9 +49,7 @@ public sealed class IdentityWalkerFixture : IAsyncLifetime
             UserAgent = SyntheticUserAgent,
         };
 
-        var (session, page) = await PlaywrightArtifactRecorder.CreateSessionAsync(browser, "Identity", suiteName, contextOptions);
-        page.SetDefaultTimeout(60_000);
-        return (session, page);
+        return await PlaywrightArtifactRecorder.CreateSessionAsync(browser, "Identity", suiteName, contextOptions);
     }
 
     public async ValueTask DisposeAsync()
