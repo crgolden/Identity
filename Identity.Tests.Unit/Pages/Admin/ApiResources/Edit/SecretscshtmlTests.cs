@@ -27,14 +27,17 @@ public class SecretscshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
+        // Arrange
         var resource = new ApiResource { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), Secrets = [new ApiResourceSecret { Id = ExistingEntityId, Description = ExistingDescription }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
-
         var model = new SecretsModel(ctx.Object);
+
+        // Act
         var result = await model.OnGetAsync(ExistingEntityId);
 
+        // Assert
         Assert.IsType<PageResult>(result);
         Assert.Single(model.Secrets);
     }
@@ -42,25 +45,34 @@ public class SecretscshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<ApiResource>());
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
+        var model = new SecretsModel(ctx.Object);
 
-        Assert.IsType<NotFoundResult>(await new SecretsModel(ctx.Object).OnGetAsync(MissingEntityId));
+        // Act
+        var result = await model.OnGetAsync(MissingEntityId);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]
     public async Task OnPostAsync_AddsNewSecret()
     {
+        // Arrange
         var resource = new ApiResource { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), Secrets = [] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
-
         var model = new SecretsModel(ctx.Object) { Secrets = [new ApiResourceSecret { Id = 0, Description = PostedDescription, Value = PostedSecretValue, Type = IdentityServerConstants.SecretTypes.SharedSecret }] };
+
+        // Act
         var result = await model.OnPostAsync(ExistingEntityId);
 
+        // Assert
         var onlySecret = Assert.Single(resource.Secrets);
         Assert.Equal(PostedDescription, onlySecret.Description);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
@@ -70,41 +82,52 @@ public class SecretscshtmlTests
     [Fact]
     public async Task OnPostAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<ApiResource>());
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
-
         var model = new SecretsModel(ctx.Object) { Secrets = [] };
-        Assert.IsType<NotFoundResult>(await model.OnPostAsync(MissingEntityId));
+
+        // Act
+        var result = await model.OnPostAsync(MissingEntityId);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]
     public async Task OnPostAsync_RemovesAbsentSecret()
     {
+        // Arrange
         var existing = new ApiResourceSecret { Id = ExistingEntityId, Description = RemovedDescription, ApiResourceId = ExistingEntityId };
         var resource = new ApiResource { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), Secrets = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
-
         var model = new SecretsModel(ctx.Object) { Secrets = [] };
+
+        // Act
         await model.OnPostAsync(ExistingEntityId);
 
+        // Assert
         Assert.Empty(resource.Secrets);
     }
 
     [Fact]
     public async Task OnPostAddRowAsync_AddsBlankRowWithDefaultType_WhenFound()
     {
+        // Arrange
         var resource = new ApiResource { Id = ExistingEntityId, Name = TestValues.NewApiResourceName() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
-
         var model = new SecretsModel(ctx.Object) { Secrets = [] };
+
+        // Act
         var result = await model.OnPostAddRowAsync(ExistingEntityId);
 
+        // Assert
         Assert.IsType<PageResult>(result);
         var onlySecret = Assert.Single(model.Secrets);
         Assert.Equal(IdentityServerConstants.SecretTypes.SharedSecret, onlySecret.Type);
@@ -113,25 +136,33 @@ public class SecretscshtmlTests
     [Fact]
     public async Task OnPostAddRowAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<ApiResource>());
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
-
         var model = new SecretsModel(ctx.Object) { Secrets = [] };
-        Assert.IsType<NotFoundResult>(await model.OnPostAddRowAsync(MissingEntityId));
+
+        // Act
+        var result = await model.OnPostAddRowAsync(MissingEntityId);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]
     public async Task OnPostRemoveRowAsync_RemovesRow_WhenValidIndex()
     {
+        // Arrange
         var resource = new ApiResource { Id = ExistingEntityId, Name = TestValues.NewApiResourceName() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
-
         var model = new SecretsModel(ctx.Object) { Secrets = [new ApiResourceSecret { Id = ExistingEntityId, Description = ExistingDescription }] };
+
+        // Act
         var result = await model.OnPostRemoveRowAsync(ExistingEntityId, 0);
 
+        // Assert
         Assert.IsType<PageResult>(result);
         Assert.Empty(model.Secrets);
     }
@@ -139,11 +170,16 @@ public class SecretscshtmlTests
     [Fact]
     public async Task OnPostRemoveRowAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<ApiResource>());
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
-
         var model = new SecretsModel(ctx.Object) { Secrets = [] };
-        Assert.IsType<NotFoundResult>(await model.OnPostRemoveRowAsync(MissingEntityId, 0));
+
+        // Act
+        var result = await model.OnPostRemoveRowAsync(MissingEntityId, 0);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
     }
 }

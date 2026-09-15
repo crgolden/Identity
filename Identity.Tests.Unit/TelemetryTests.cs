@@ -235,25 +235,43 @@ public sealed class TelemetryTests
     [Fact]
     public void PasskeySignInCounterName_IsTheNameTheWalkerDashboardQueries()
     {
-        Assert.Equal("identity.login.passkey_signins", Telemetry.Metrics.PasskeySignInCounterName);
+        // Act
+        var counterName = Telemetry.Metrics.PasskeySignInCounterName;
+
+        // Assert
+        Assert.Equal("identity.login.passkey_signins", counterName);
     }
 
     [Fact]
     public void SyntheticUserAgentToken_IsTheSuffixTheWalkersSend()
     {
-        Assert.Equal("crgolden-synthetic", Telemetry.Metrics.SyntheticUserAgentToken);
+        // Act
+        var token = Telemetry.Metrics.SyntheticUserAgentToken;
+
+        // Assert
+        Assert.Equal("crgolden-synthetic", token);
     }
 
     [Fact]
     public void MetricTagNames_AreTheNamesTheDashboardGroupsAndFiltersBy()
     {
-        Assert.Equal("client_id", Telemetry.Metrics.ClientIdTagName);
-        Assert.Equal("remember", Telemetry.Metrics.RememberTagName);
-        Assert.Equal("scope_count", Telemetry.Metrics.ScopeCountTagName);
-        Assert.Equal("succeeded", Telemetry.Metrics.SucceededTagName);
-        Assert.Equal("synthetic", Telemetry.Metrics.SyntheticTagName);
-        Assert.Equal("true", Telemetry.Metrics.TrueLabel);
-        Assert.Equal("false", Telemetry.Metrics.FalseLabel);
+        // Arrange
+        string[] expected = ["client_id", "remember", "scope_count", "succeeded", "synthetic", "true", "false"];
+
+        // Act
+        string[] actual =
+        [
+            Telemetry.Metrics.ClientIdTagName,
+            Telemetry.Metrics.RememberTagName,
+            Telemetry.Metrics.ScopeCountTagName,
+            Telemetry.Metrics.SucceededTagName,
+            Telemetry.Metrics.SyntheticTagName,
+            Telemetry.Metrics.TrueLabel,
+            Telemetry.Metrics.FalseLabel,
+        ];
+
+        // Assert
+        Assert.Equal(expected, actual);
     }
 
     [Fact]

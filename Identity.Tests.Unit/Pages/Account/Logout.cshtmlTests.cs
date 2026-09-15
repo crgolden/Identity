@@ -28,12 +28,15 @@ public class LogoutModelTests
     [Fact]
     public async Task OnGetAsync_AuthenticatedUser_ShowsPromptWithoutCallingInteractionService()
     {
+        // Arrange
         var interaction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
         var model = BuildModel(interaction.Object);
         model.PageContext = BuildAuthenticatedPageContext();
 
+        // Act
         var result = await model.OnGetAsync();
 
+        // Assert
         Assert.IsType<PageResult>(result);
         Assert.True(model.ShowLogoutPrompt);
         Assert.Null(model.PostLogoutRedirectUri);
@@ -44,12 +47,15 @@ public class LogoutModelTests
     [Fact]
     public async Task OnGetAsync_UnauthenticatedNoLogoutId_ReturnsPageWithoutCallingInteractionService()
     {
+        // Arrange
         var interaction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
         var model = BuildModel(interaction.Object);
         model.PageContext = BuildAnonymousPageContext();
 
+        // Act
         var result = await model.OnGetAsync();
 
+        // Assert
         Assert.IsType<PageResult>(result);
         Assert.False(model.ShowLogoutPrompt);
         Assert.Null(model.PostLogoutRedirectUri);
@@ -60,6 +66,7 @@ public class LogoutModelTests
     [Fact]
     public async Task OnGetAsync_UnauthenticatedWithLogoutId_SetsContextProperties()
     {
+        // Arrange
         var logoutId = TestValues.NewLogoutId();
         var logoutRequest = new LogoutRequest(
             SignOutIFrameUrl,
@@ -69,8 +76,10 @@ public class LogoutModelTests
         var model = BuildModel(interaction.Object);
         model.PageContext = BuildAnonymousPageContext();
 
+        // Act
         var result = await model.OnGetAsync(logoutId);
 
+        // Assert
         Assert.IsType<PageResult>(result);
         Assert.False(model.ShowLogoutPrompt);
         Assert.Equal(PostLogoutRedirectUri, model.PostLogoutRedirectUri);
@@ -81,12 +90,15 @@ public class LogoutModelTests
     [Fact]
     public async Task OnPostAsync_NoLogoutId_SignsOutAndRedirectsWithoutCallingInteractionService()
     {
+        // Arrange
         var interaction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
         var model = BuildModel(interaction.Object);
         model.PageContext = BuildAnonymousPageContext();
 
+        // Act
         var result = await model.OnPostAsync();
 
+        // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Null(redirect.RouteValues?[LogoutModel.LogoutIdRouteValueName]);
         Assert.Null(model.PostLogoutRedirectUri);
@@ -97,13 +109,16 @@ public class LogoutModelTests
     [Fact]
     public async Task OnPostAsync_WithLogoutId_SignsOutAndRedirectsToSelfWithLogoutId()
     {
+        // Arrange
         var logoutId = TestValues.NewLogoutId();
         var interaction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
         var model = BuildModel(interaction.Object);
         model.PageContext = BuildAnonymousPageContext();
 
+        // Act
         var result = await model.OnPostAsync(logoutId);
 
+        // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal(logoutId, redirect.RouteValues?[LogoutModel.LogoutIdRouteValueName]);
         Assert.Null(model.PostLogoutRedirectUri);
@@ -115,12 +130,15 @@ public class LogoutModelTests
     [MemberData(nameof(BlankLogoutIds))]
     public async Task OnPostAsync_NullOrWhitespaceLogoutId_DoesNotCallInteractionService(string? logoutId)
     {
+        // Arrange
         var interaction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
         var model = BuildModel(interaction.Object);
         model.PageContext = BuildAnonymousPageContext();
 
+        // Act
         var result = await model.OnPostAsync(logoutId);
 
+        // Assert
         Assert.IsType<RedirectToPageResult>(result);
         interaction.VerifyNoOtherCalls();
     }

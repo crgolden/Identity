@@ -14,13 +14,20 @@ public class IndexcshtmlTests
     [Fact]
     public void IsPageModel()
     {
+        // Arrange
         var ctx = new Mock<IPersistedGrantDbContext>();
-        Assert.IsType<PageModel>(new IndexModel(ctx.Object), exactMatch: false);
+
+        // Act
+        var model = new IndexModel(ctx.Object);
+
+        // Assert
+        Assert.IsType<PageModel>(model, exactMatch: false);
     }
 
     [Fact]
     public async Task OnGetAsync_ReturnsSortedDescending()
     {
+        // Arrange
         var expiringEarlier = TestValues.NewUtcDateTime();
         var expiringLaterId = TestValues.NewEntityId();
         var data = new[]
@@ -31,10 +38,12 @@ public class IndexcshtmlTests
         var mockSet = MockDbSetHelper.BuildMockDbSet(data);
         var ctx = new Mock<IPersistedGrantDbContext>();
         ctx.Setup(c => c.SamlSigninStates).Returns(mockSet.Object);
-
         var model = new IndexModel(ctx.Object);
+
+        // Act
         await model.OnGetAsync();
 
+        // Assert
         Assert.Equal(data.Length, model.SamlSigninStates.Count);
         Assert.Equal(expiringLaterId, model.SamlSigninStates[0].Id);
     }

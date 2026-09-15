@@ -20,14 +20,17 @@ public class IndexcshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
+        // Arrange
         var key = new Key { Id = ExistingKey, Algorithm = AlgorithmName };
         var mockSet = MockDbSetHelper.BuildMockDbSet([key]);
         var ctx = new Mock<IPersistedGrantDbContext>();
         ctx.Setup(c => c.Keys).Returns(mockSet.Object);
-
         var model = new IndexModel(ctx.Object);
+
+        // Act
         var result = await model.OnGetAsync(ExistingKey);
 
+        // Assert
         Assert.IsType<PageResult>(result);
         Assert.Equal(AlgorithmName, model.Key.Algorithm);
     }
@@ -35,11 +38,16 @@ public class IndexcshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<Key>());
         var ctx = new Mock<IPersistedGrantDbContext>();
         ctx.Setup(c => c.Keys).Returns(mockSet.Object);
-
         var model = new IndexModel(ctx.Object);
-        Assert.IsType<NotFoundResult>(await model.OnGetAsync(MissingKey));
+
+        // Act
+        var result = await model.OnGetAsync(MissingKey);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
     }
 }

@@ -184,13 +184,21 @@ public class ManageNavPagesTests
     [Fact]
     public void Index_Property_ReturnsExpected()
     {
-        Assert.Equal("Index", ManageNavPages.Index);
+        // Act
+        var page = ManageNavPages.Index;
+
+        // Assert
+        Assert.Equal("Index", page);
     }
 
     [Fact]
     public void ExternalLogins_Property_ReturnsExpected()
     {
-        Assert.Equal("ExternalLogins", ManageNavPages.ExternalLogins);
+        // Act
+        var page = ManageNavPages.ExternalLogins;
+
+        // Assert
+        Assert.Equal("ExternalLogins", page);
     }
 
     [Theory]
@@ -353,20 +361,26 @@ public class ManageNavPagesTests
     [Fact]
     public void DownloadPersonalData_Property_ReturnsExpected()
     {
-        Assert.Equal("DownloadPersonalData", ManageNavPages.DownloadPersonalData);
+        // Act
+        var page = ManageNavPages.DownloadPersonalData;
+
+        // Assert
+        Assert.Equal("DownloadPersonalData", page);
     }
 
     [Fact]
     public void PersonalData_Property_ReturnsExpected()
     {
-        Assert.Equal("PersonalData", ManageNavPages.PersonalData);
+        // Act
+        var page = ManageNavPages.PersonalData;
+
+        // Assert
+        Assert.Equal("PersonalData", page);
     }
 
     [Fact]
     public void PersonalData_Property_IsStableAcrossAccesses()
     {
-        // Arrange
-
         // Act
         var first = ManageNavPages.PersonalData;
         var second = ManageNavPages.PersonalData;
@@ -438,13 +452,16 @@ public class ManageNavPagesTests
     [Fact]
     public void ChangePassword_Property_ReturnsExpected()
     {
-        Assert.Equal("ChangePassword", ManageNavPages.ChangePassword);
+        // Act
+        var page = ManageNavPages.ChangePassword;
+
+        // Assert
+        Assert.Equal("ChangePassword", page);
     }
 
     [Fact]
     public void ChangePassword_Property_IsStableAcrossAccesses()
     {
-        // Arrange
         // Act
         var first = ManageNavPages.ChangePassword;
         var second = ManageNavPages.ChangePassword;
@@ -458,7 +475,11 @@ public class ManageNavPagesTests
     [Fact]
     public void TwoFactorAuthentication_Property_ReturnsExpected()
     {
-        Assert.Equal("TwoFactorAuthentication", ManageNavPages.TwoFactorAuthentication);
+        // Act
+        var page = ManageNavPages.TwoFactorAuthentication;
+
+        // Assert
+        Assert.Equal("TwoFactorAuthentication", page);
     }
 
     [Theory]
@@ -619,26 +640,36 @@ public class ManageNavPagesTests
     [Fact]
     public void Email_Property_ReturnsExpected()
     {
-        Assert.Equal("Email", ManageNavPages.Email);
+        // Act
+        var page = ManageNavPages.Email;
+
+        // Assert
+        Assert.Equal("Email", page);
     }
 
     [Fact]
     public void DeletePersonalData_Property_ReturnsExpected()
     {
-        Assert.Equal("DeletePersonalData", ManageNavPages.DeletePersonalData);
+        // Act
+        var page = ManageNavPages.DeletePersonalData;
+
+        // Assert
+        Assert.Equal("DeletePersonalData", page);
     }
 
     [Fact]
     public void Passkeys_Property_ReturnsExpected()
     {
-        Assert.Equal("Passkeys", ManageNavPages.Passkeys);
+        // Act
+        var page = ManageNavPages.Passkeys;
+
+        // Assert
+        Assert.Equal("Passkeys", page);
     }
 
     [Fact]
     public void Passkeys_Property_IsStableAcrossAccesses()
     {
-        // Arrange
-
         // Act
         var first = ManageNavPages.Passkeys;
         var second = ManageNavPages.Passkeys;

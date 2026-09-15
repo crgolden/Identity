@@ -22,14 +22,17 @@ public class IdPRestrictionscshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
+        // Arrange
         var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), IdentityProviderRestrictions = [new ClientIdPRestriction { Id = ExistingEntityId, Provider = ExistingProvider, ClientId = ExistingEntityId }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
-
         var model = new IdPRestrictionsModel(ctx.Object);
+
+        // Act
         var result = await model.OnGetAsync(ExistingEntityId);
 
+        // Assert
         Assert.IsType<PageResult>(result);
         Assert.Single(model.IdPRestrictions);
     }
@@ -37,31 +40,37 @@ public class IdPRestrictionscshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<Client>());
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
-
         var model = new IdPRestrictionsModel(ctx.Object);
+
+        // Act
         var result = await model.OnGetAsync(MissingEntityId);
 
+        // Assert
         Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]
     public async Task OnPostAsync_AddsNewRestriction_WhenValid()
     {
+        // Arrange
         var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), IdentityProviderRestrictions = [] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
-
         var model = new IdPRestrictionsModel(ctx.Object)
         {
             IdPRestrictions = [new ClientIdPRestriction { Id = 0, Provider = PostedProvider }],
         };
+
+        // Act
         var result = await model.OnPostAsync(ExistingEntityId);
 
+        // Assert
         var onlyProviderRestriction = Assert.Single(client.IdentityProviderRestrictions);
         Assert.Equal(PostedProvider, onlyProviderRestriction.Provider);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
@@ -71,62 +80,74 @@ public class IdPRestrictionscshtmlTests
     [Fact]
     public async Task OnPostAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<Client>());
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
-
         var model = new IdPRestrictionsModel(ctx.Object) { IdPRestrictions = [] };
+
+        // Act
         var result = await model.OnPostAsync(MissingEntityId);
 
+        // Assert
         Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]
     public async Task OnPostAsync_RemovesRestriction_WhenNotPosted()
     {
+        // Arrange
         var existing = new ClientIdPRestriction { Id = ExistingEntityId, Provider = ExistingProvider, ClientId = ExistingEntityId };
         var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), IdentityProviderRestrictions = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
-
         var model = new IdPRestrictionsModel(ctx.Object) { IdPRestrictions = [] };
+
+        // Act
         await model.OnPostAsync(ExistingEntityId);
 
+        // Assert
         Assert.Empty(client.IdentityProviderRestrictions);
     }
 
     [Fact]
     public async Task OnPostAsync_UpdatesExistingIdPRestriction_WhenPostedWithId()
     {
+        // Arrange
         var existing = new ClientIdPRestriction { Id = ExistingEntityId, Provider = ExistingProvider, ClientId = ExistingEntityId };
         var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), IdentityProviderRestrictions = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
-
         var model = new IdPRestrictionsModel(ctx.Object)
         {
             IdPRestrictions = [new ClientIdPRestriction { Id = ExistingEntityId, Provider = PostedProvider }],
         };
+
+        // Act
         await model.OnPostAsync(ExistingEntityId);
 
+        // Assert
         Assert.Equal(PostedProvider, existing.Provider);
     }
 
     [Fact]
     public async Task OnPostAddRowAsync_AddsBlankRow_WhenFound()
     {
+        // Arrange
         var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
-
         var model = new IdPRestrictionsModel(ctx.Object) { IdPRestrictions = [] };
+
+        // Act
         var result = await model.OnPostAddRowAsync(ExistingEntityId);
 
+        // Assert
         Assert.IsType<PageResult>(result);
         Assert.Single(model.IdPRestrictions);
     }
@@ -134,27 +155,33 @@ public class IdPRestrictionscshtmlTests
     [Fact]
     public async Task OnPostAddRowAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<Client>());
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
-
         var model = new IdPRestrictionsModel(ctx.Object) { IdPRestrictions = [] };
+
+        // Act
         var result = await model.OnPostAddRowAsync(MissingEntityId);
 
+        // Assert
         Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]
     public async Task OnPostRemoveRowAsync_RemovesRow_WhenValidIndex()
     {
+        // Arrange
         var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
-
         var model = new IdPRestrictionsModel(ctx.Object) { IdPRestrictions = [new ClientIdPRestriction { Id = ExistingEntityId, Provider = ExistingProvider }] };
+
+        // Act
         var result = await model.OnPostRemoveRowAsync(ExistingEntityId, 0);
 
+        // Assert
         Assert.IsType<PageResult>(result);
         Assert.Empty(model.IdPRestrictions);
     }
@@ -162,13 +189,16 @@ public class IdPRestrictionscshtmlTests
     [Fact]
     public async Task OnPostRemoveRowAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<Client>());
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
-
         var model = new IdPRestrictionsModel(ctx.Object) { IdPRestrictions = [] };
+
+        // Act
         var result = await model.OnPostRemoveRowAsync(MissingEntityId, 0);
 
+        // Assert
         Assert.IsType<NotFoundResult>(result);
     }
 }

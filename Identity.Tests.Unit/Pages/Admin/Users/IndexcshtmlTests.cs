@@ -18,13 +18,20 @@ public class IndexcshtmlTests
     [Fact]
     public void IsPageModel()
     {
+        // Arrange
         var um = MockHelpers.MockUserManager();
-        Assert.IsType<PageModel>(new IndexModel(um.Object), exactMatch: false);
+
+        // Act
+        var model = new IndexModel(um.Object);
+
+        // Assert
+        Assert.IsType<PageModel>(model, exactMatch: false);
     }
 
     [Fact]
     public async Task OnGetAsync_ReturnsSortedByUsername()
     {
+        // Arrange
         var data = new[]
         {
             new IdentityUser<Guid> { UserName = LastUserNameAlphabetically },
@@ -33,10 +40,12 @@ public class IndexcshtmlTests
         var mockSet = MockDbSetHelper.BuildMockDbSet(data);
         var um = MockHelpers.MockUserManager();
         um.Setup(m => m.Users).Returns(mockSet.Object);
-
         var model = new IndexModel(um.Object);
+
+        // Act
         await model.OnGetAsync();
 
+        // Assert
         Assert.Equal(data.Length, model.Users.Count);
         Assert.Equal(FirstUserNameAlphabetically, model.Users[0].UserName);
     }

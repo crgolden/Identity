@@ -20,14 +20,17 @@ public class DeletecshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
+        // Arrange
         var session = new SamlLogoutSession { Id = ExistingEntityId, LogoutId = SamlLogoutId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([session]);
         var ctx = new Mock<IPersistedGrantDbContext>();
         ctx.Setup(c => c.SamlLogoutSessions).Returns(mockSet.Object);
-
         var model = new DeleteModel(ctx.Object);
+
+        // Act
         var result = await model.OnGetAsync(ExistingEntityId);
 
+        // Assert
         Assert.IsType<PageResult>(result);
         Assert.Equal(SamlLogoutId, model.SamlLogoutSession.LogoutId);
     }
@@ -35,26 +38,34 @@ public class DeletecshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<SamlLogoutSession>());
         var ctx = new Mock<IPersistedGrantDbContext>();
         ctx.Setup(c => c.SamlLogoutSessions).Returns(mockSet.Object);
-
         var model = new DeleteModel(ctx.Object);
-        Assert.IsType<NotFoundResult>(await model.OnGetAsync(MissingEntityId));
+
+        // Act
+        var result = await model.OnGetAsync(MissingEntityId);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]
     public async Task OnPostAsync_Deletes_WhenFound()
     {
+        // Arrange
         var session = new SamlLogoutSession { Id = ExistingEntityId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([session]);
         var ctx = new Mock<IPersistedGrantDbContext>();
         ctx.Setup(c => c.SamlLogoutSessions).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
-
         var model = new DeleteModel(ctx.Object);
+
+        // Act
         var result = await model.OnPostAsync(ExistingEntityId);
 
+        // Assert
         ctx.Verify(c => c.SamlLogoutSessions.Remove(session), Times.Once);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal(PageRoutes.SiblingIndex, redirect.PageName);
@@ -63,11 +74,16 @@ public class DeletecshtmlTests
     [Fact]
     public async Task OnPostAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<SamlLogoutSession>());
         var ctx = new Mock<IPersistedGrantDbContext>();
         ctx.Setup(c => c.SamlLogoutSessions).Returns(mockSet.Object);
-
         var model = new DeleteModel(ctx.Object);
-        Assert.IsType<NotFoundResult>(await model.OnPostAsync(MissingEntityId));
+
+        // Act
+        var result = await model.OnPostAsync(MissingEntityId);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
     }
 }

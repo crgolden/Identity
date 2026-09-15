@@ -19,14 +19,17 @@ public class ScopescshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
+        // Arrange
         var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), AllowedScopes = [new ClientScope { Id = ExistingEntityId, Scope = IdentityServerConstants.StandardScopes.OpenId, ClientId = ExistingEntityId }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
-
         var model = new ScopesModel(ctx.Object);
+
+        // Act
         var result = await model.OnGetAsync(ExistingEntityId);
 
+        // Assert
         Assert.IsType<PageResult>(result);
         Assert.Single(model.Client.AllowedScopes);
     }
@@ -34,13 +37,16 @@ public class ScopescshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<Client>());
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
-
         var model = new ScopesModel(ctx.Object);
+
+        // Act
         var result = await model.OnGetAsync(MissingEntityId);
 
+        // Assert
         Assert.IsType<NotFoundResult>(result);
     }
 }

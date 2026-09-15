@@ -18,13 +18,20 @@ public class IndexcshtmlTests
     [Fact]
     public void IsPageModel()
     {
+        // Arrange
         var ctx = new Mock<IPersistedGrantDbContext>();
-        Assert.IsType<PageModel>(new IndexModel(ctx.Object), exactMatch: false);
+
+        // Act
+        var model = new IndexModel(ctx.Object);
+
+        // Assert
+        Assert.IsType<PageModel>(model, exactMatch: false);
     }
 
     [Fact]
     public async Task OnGetAsync_ReturnsSorted()
     {
+        // Arrange
         var data = new[]
         {
             new ServerSideSession { Key = LastSubjectId, SubjectId = LastSubjectId },
@@ -33,10 +40,12 @@ public class IndexcshtmlTests
         var mockSet = MockDbSetHelper.BuildMockDbSet(data);
         var ctx = new Mock<IPersistedGrantDbContext>();
         ctx.Setup(c => c.ServerSideSessions).Returns(mockSet.Object);
-
         var model = new IndexModel(ctx.Object);
+
+        // Act
         await model.OnGetAsync();
 
+        // Assert
         Assert.Equal(data.Length, model.ServerSideSessions.Count);
         Assert.Equal(FirstSubjectId, model.ServerSideSessions[0].SubjectId);
     }

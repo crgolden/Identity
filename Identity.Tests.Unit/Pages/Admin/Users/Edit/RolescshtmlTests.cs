@@ -21,14 +21,17 @@ public class RolescshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
+        // Arrange
         var user = new IdentityUser<Guid> { UserName = TestValues.NewUserName() };
         var um = MockHelpers.MockUserManager();
         um.Setup(m => m.FindByIdAsync(ExistingUserId)).ReturnsAsync(user);
         um.Setup(m => m.GetRolesAsync(user)).ReturnsAsync([RoleName]);
-
         var model = new RolesModel(um.Object);
+
+        // Act
         var result = await model.OnGetAsync(ExistingUserId);
 
+        // Assert
         Assert.IsType<PageResult>(result);
         var onlyRole = Assert.Single(model.Roles);
         Assert.Equal(RoleName, onlyRole);
@@ -37,25 +40,34 @@ public class RolescshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var um = MockHelpers.MockUserManager();
         um.Setup(m => m.FindByIdAsync(MissingUserId)).ReturnsAsync((IdentityUser<Guid>?)null);
+        var model = new RolesModel(um.Object);
 
-        Assert.IsType<NotFoundResult>(await new RolesModel(um.Object).OnGetAsync(MissingUserId));
+        // Act
+        var result = await model.OnGetAsync(MissingUserId);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]
     public async Task OnPostAsync_ReplacesRoles_WhenFound()
     {
+        // Arrange
         var user = new IdentityUser<Guid> { UserName = TestValues.NewUserName() };
         var um = MockHelpers.MockUserManager();
         um.Setup(m => m.FindByIdAsync(ExistingUserId)).ReturnsAsync(user);
         um.Setup(m => m.GetRolesAsync(user)).ReturnsAsync([PriorRoleName]);
         um.Setup(m => m.RemoveFromRolesAsync(user, It.IsAny<IEnumerable<string>>())).ReturnsAsync(IdentityResult.Success);
         um.Setup(m => m.AddToRolesAsync(user, It.IsAny<IEnumerable<string>>())).ReturnsAsync(IdentityResult.Success);
-
         var model = new RolesModel(um.Object) { Roles = [RoleName] };
+
+        // Act
         var result = await model.OnPostAsync(ExistingUserId);
 
+        // Assert
         um.Verify(m => m.RemoveFromRolesAsync(user, It.IsAny<IEnumerable<string>>()), Times.Once);
         um.Verify(m => m.AddToRolesAsync(user, It.IsAny<IEnumerable<string>>()), Times.Once);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
@@ -65,23 +77,31 @@ public class RolescshtmlTests
     [Fact]
     public async Task OnPostAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var um = MockHelpers.MockUserManager();
         um.Setup(m => m.FindByIdAsync(MissingUserId)).ReturnsAsync((IdentityUser<Guid>?)null);
-
         var model = new RolesModel(um.Object) { Roles = [] };
-        Assert.IsType<NotFoundResult>(await model.OnPostAsync(MissingUserId));
+
+        // Act
+        var result = await model.OnPostAsync(MissingUserId);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]
     public async Task OnPostAddRowAsync_AddsBlankRow_WhenFound()
     {
+        // Arrange
         var user = new IdentityUser<Guid> { UserName = TestValues.NewUserName() };
         var um = MockHelpers.MockUserManager();
         um.Setup(m => m.FindByIdAsync(ExistingUserId)).ReturnsAsync(user);
-
         var model = new RolesModel(um.Object) { Roles = [] };
+
+        // Act
         var result = await model.OnPostAddRowAsync(ExistingUserId);
 
+        // Assert
         Assert.IsType<PageResult>(result);
         Assert.Single(model.Roles);
     }
@@ -89,23 +109,31 @@ public class RolescshtmlTests
     [Fact]
     public async Task OnPostAddRowAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var um = MockHelpers.MockUserManager();
         um.Setup(m => m.FindByIdAsync(MissingUserId)).ReturnsAsync((IdentityUser<Guid>?)null);
-
         var model = new RolesModel(um.Object) { Roles = [] };
-        Assert.IsType<NotFoundResult>(await model.OnPostAddRowAsync(MissingUserId));
+
+        // Act
+        var result = await model.OnPostAddRowAsync(MissingUserId);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]
     public async Task OnPostRemoveRowAsync_RemovesRow_WhenValidIndex()
     {
+        // Arrange
         var user = new IdentityUser<Guid> { UserName = TestValues.NewUserName() };
         var um = MockHelpers.MockUserManager();
         um.Setup(m => m.FindByIdAsync(ExistingUserId)).ReturnsAsync(user);
-
         var model = new RolesModel(um.Object) { Roles = [RoleName] };
+
+        // Act
         var result = await model.OnPostRemoveRowAsync(ExistingUserId, 0);
 
+        // Assert
         Assert.IsType<PageResult>(result);
         Assert.Empty(model.Roles);
     }
@@ -113,10 +141,15 @@ public class RolescshtmlTests
     [Fact]
     public async Task OnPostRemoveRowAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var um = MockHelpers.MockUserManager();
         um.Setup(m => m.FindByIdAsync(MissingUserId)).ReturnsAsync((IdentityUser<Guid>?)null);
-
         var model = new RolesModel(um.Object) { Roles = [] };
-        Assert.IsType<NotFoundResult>(await model.OnPostRemoveRowAsync(MissingUserId, 0));
+
+        // Act
+        var result = await model.OnPostRemoveRowAsync(MissingUserId, 0);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
     }
 }

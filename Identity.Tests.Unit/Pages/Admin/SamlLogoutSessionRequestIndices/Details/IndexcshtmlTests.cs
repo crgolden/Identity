@@ -20,14 +20,17 @@ public class IndexcshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
+        // Arrange
         var index = new SamlLogoutSessionRequestIndex { Id = ExistingEntityId, RequestId = SamlRequestId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([index]);
         var ctx = new Mock<IPersistedGrantDbContext>();
         ctx.Setup(c => c.SamlLogoutSessionRequestIndices).Returns(mockSet.Object);
-
         var model = new IndexModel(ctx.Object);
+
+        // Act
         var result = await model.OnGetAsync(ExistingEntityId);
 
+        // Assert
         Assert.IsType<PageResult>(result);
         Assert.Equal(SamlRequestId, model.SamlLogoutSessionRequestIndex.RequestId);
     }
@@ -35,11 +38,16 @@ public class IndexcshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<SamlLogoutSessionRequestIndex>());
         var ctx = new Mock<IPersistedGrantDbContext>();
         ctx.Setup(c => c.SamlLogoutSessionRequestIndices).Returns(mockSet.Object);
-
         var model = new IndexModel(ctx.Object);
-        Assert.IsType<NotFoundResult>(await model.OnGetAsync(MissingEntityId));
+
+        // Act
+        var result = await model.OnGetAsync(MissingEntityId);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
     }
 }

@@ -22,12 +22,17 @@ public class ProperiescshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
+        // Arrange
         var scope = new ApiScope { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), Properties = [new ApiScopeProperty { Key = PropertyKey, Value = PropertyValue }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([scope]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
         var model = new PropertiesModel(ctx.Object);
+
+        // Act
         var result = await model.OnGetAsync(ExistingEntityId);
+
+        // Assert
         Assert.IsType<PageResult>(result);
         Assert.Single(model.Scope.Properties);
     }
@@ -35,9 +40,16 @@ public class ProperiescshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<ApiScope>());
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
-        Assert.IsType<NotFoundResult>(await new PropertiesModel(ctx.Object).OnGetAsync(MissingEntityId));
+        var model = new PropertiesModel(ctx.Object);
+
+        // Act
+        var result = await model.OnGetAsync(MissingEntityId);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
     }
 }

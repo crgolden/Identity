@@ -19,13 +19,16 @@ public class DeletecshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
+        // Arrange
         var user = new IdentityUser<Guid> { UserName = ExistingUserName };
         var um = MockHelpers.MockUserManager();
         um.Setup(m => m.FindByIdAsync(ExistingUserId)).ReturnsAsync(user);
-
         var model = new DeleteModel(um.Object);
+
+        // Act
         var result = await model.OnGetAsync(ExistingUserId);
 
+        // Assert
         Assert.IsType<PageResult>(result);
         Assert.Equal(ExistingUserName, model.AppUser.UserName);
     }
@@ -33,22 +36,32 @@ public class DeletecshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var um = MockHelpers.MockUserManager();
         um.Setup(m => m.FindByIdAsync(MissingUserId)).ReturnsAsync((IdentityUser<Guid>?)null);
+        var model = new DeleteModel(um.Object);
 
-        Assert.IsType<NotFoundResult>(await new DeleteModel(um.Object).OnGetAsync(MissingUserId));
+        // Act
+        var result = await model.OnGetAsync(MissingUserId);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]
     public async Task OnPostAsync_DeletesAndRedirects_WhenFound()
     {
+        // Arrange
         var user = new IdentityUser<Guid> { UserName = ExistingUserName };
         var um = MockHelpers.MockUserManager();
         um.Setup(m => m.FindByIdAsync(ExistingUserId)).ReturnsAsync(user);
         um.Setup(m => m.DeleteAsync(user)).ReturnsAsync(IdentityResult.Success);
+        var model = new DeleteModel(um.Object);
 
-        var result = await new DeleteModel(um.Object).OnPostAsync(ExistingUserId);
+        // Act
+        var result = await model.OnPostAsync(ExistingUserId);
 
+        // Assert
         um.Verify(m => m.DeleteAsync(user), Times.Once);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal(PageRoutes.SiblingIndex, redirect.PageName);
@@ -57,9 +70,15 @@ public class DeletecshtmlTests
     [Fact]
     public async Task OnPostAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var um = MockHelpers.MockUserManager();
         um.Setup(m => m.FindByIdAsync(MissingUserId)).ReturnsAsync((IdentityUser<Guid>?)null);
+        var model = new DeleteModel(um.Object);
 
-        Assert.IsType<NotFoundResult>(await new DeleteModel(um.Object).OnPostAsync(MissingUserId));
+        // Act
+        var result = await model.OnPostAsync(MissingUserId);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
     }
 }

@@ -20,14 +20,17 @@ public class ScopescshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
+        // Arrange
         var resource = new ApiResource { Id = ExistingEntityId, Name = TestValues.NewApiResourceName(), Scopes = [new ApiResourceScope { Id = ExistingEntityId, Scope = ScopeName }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
-
         var model = new ScopesModel(ctx.Object);
+
+        // Act
         var result = await model.OnGetAsync(ExistingEntityId);
 
+        // Assert
         Assert.IsType<PageResult>(result);
         Assert.Single(model.Scopes);
     }
@@ -35,10 +38,16 @@ public class ScopescshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<ApiResource>());
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
+        var model = new ScopesModel(ctx.Object);
 
-        Assert.IsType<NotFoundResult>(await new ScopesModel(ctx.Object).OnGetAsync(MissingEntityId));
+        // Act
+        var result = await model.OnGetAsync(MissingEntityId);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
     }
 }

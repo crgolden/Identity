@@ -22,13 +22,16 @@ public class IndexcshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
+        // Arrange
         var role = new IdentityRole<Guid>(RoleName);
         var rm = MockHelpers.MockRoleManager();
         rm.Setup(m => m.FindByIdAsync(role.Id.ToString())).ReturnsAsync(role);
-
         var model = new IndexModel(rm.Object);
+
+        // Act
         var result = await model.OnGetAsync(role.Id.ToString());
 
+        // Assert
         Assert.IsType<PageResult>(result);
         Assert.Equal(RoleName, model.AppRole.Name);
     }
@@ -36,23 +39,32 @@ public class IndexcshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var rm = MockHelpers.MockRoleManager();
         rm.Setup(m => m.FindByIdAsync(It.IsAny<string>())).ReturnsAsync((IdentityRole<Guid>?)null);
+        var model = new IndexModel(rm.Object);
 
-        Assert.IsType<NotFoundResult>(await new IndexModel(rm.Object).OnGetAsync(MissingUserId));
+        // Act
+        var result = await model.OnGetAsync(MissingUserId);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]
     public async Task OnPostAsync_UpdatesAndRedirects_WhenFound()
     {
+        // Arrange
         var role = new IdentityRole<Guid>(PriorRoleName);
         var rm = MockHelpers.MockRoleManager();
         rm.Setup(m => m.FindByIdAsync(role.Id.ToString())).ReturnsAsync(role);
         rm.Setup(m => m.UpdateAsync(role)).ReturnsAsync(IdentityResult.Success);
-
         var model = new IndexModel(rm.Object) { AppRole = new IdentityRole<Guid> { Name = UpdatedRoleName } };
+
+        // Act
         var result = await model.OnPostAsync(role.Id.ToString());
 
+        // Assert
         Assert.Equal(UpdatedRoleName, role.Name);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal(IndexModel.DetailsPageName, redirect.PageName);
@@ -61,10 +73,15 @@ public class IndexcshtmlTests
     [Fact]
     public async Task OnPostAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var rm = MockHelpers.MockRoleManager();
         rm.Setup(m => m.FindByIdAsync(It.IsAny<string>())).ReturnsAsync((IdentityRole<Guid>?)null);
-
         var model = new IndexModel(rm.Object) { AppRole = new IdentityRole<Guid> { Name = TestValues.NewApiResourceName() } };
-        Assert.IsType<NotFoundResult>(await model.OnPostAsync(MissingUserId));
+
+        // Act
+        var result = await model.OnPostAsync(MissingUserId);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
     }
 }

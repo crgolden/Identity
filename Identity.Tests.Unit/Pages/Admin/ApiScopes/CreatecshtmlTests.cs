@@ -15,18 +15,30 @@ public class CreatecshtmlTests
     [Fact]
     public void OnGet_ReturnsPage()
     {
+        // Arrange
         var ctx = new Mock<IConfigurationDbContext>();
-        Assert.IsType<PageResult>(new CreateModel(ctx.Object).OnGet());
+        var model = new CreateModel(ctx.Object);
+
+        // Act
+        var result = model.OnGet();
+
+        // Assert
+        Assert.IsType<PageResult>(result);
     }
 
     [Fact]
     public async Task OnPostAsync_Redirects_WhenValid()
     {
+        // Arrange
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiScopes.Add(It.IsAny<ApiScope>()));
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new CreateModel(ctx.Object) { Scope = new ApiScope { Name = TestValues.NewApiResourceName() } };
+
+        // Act
         var result = await model.OnPostAsync();
+
+        // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal(PageRoutes.SiblingDetailsIndex, redirect.PageName);
     }
@@ -34,9 +46,15 @@ public class CreatecshtmlTests
     [Fact]
     public async Task OnPostAsync_ReturnsPage_WhenInvalid()
     {
+        // Arrange
         var ctx = new Mock<IConfigurationDbContext>();
         var model = new CreateModel(ctx.Object);
         model.ModelState.AddModelError(nameof(ApiScope.Name), TestValues.NewValidationMessage());
-        Assert.IsType<PageResult>(await model.OnPostAsync());
+
+        // Act
+        var result = await model.OnPostAsync();
+
+        // Assert
+        Assert.IsType<PageResult>(result);
     }
 }

@@ -20,8 +20,13 @@ public class ReCAPTCHAServiceTests
     [Fact]
     public async Task VerifyAsync_NullToken_FailsWithZeroScore()
     {
+        // Arrange
         var (service, _) = CreateService(responseScore: TestValues.NewScoreAtOrAboveDefaultThreshold());
+
+        // Act
         var verdict = await service.VerifyAsync(null, TestContext.Current.CancellationToken);
+
+        // Assert
         Assert.False(verdict.Passed);
         Assert.Equal(decimal.Zero, verdict.Score);
     }
@@ -29,8 +34,13 @@ public class ReCAPTCHAServiceTests
     [Fact]
     public async Task VerifyAsync_EmptyToken_FailsWithZeroScore()
     {
+        // Arrange
         var (service, _) = CreateService(responseScore: TestValues.NewScoreAtOrAboveDefaultThreshold());
+
+        // Act
         var verdict = await service.VerifyAsync(string.Empty, TestContext.Current.CancellationToken);
+
+        // Assert
         Assert.False(verdict.Passed);
         Assert.Equal(decimal.Zero, verdict.Score);
     }
@@ -38,9 +48,14 @@ public class ReCAPTCHAServiceTests
     [Fact]
     public async Task VerifyAsync_NullSecretKey_FailsWithZeroScore()
     {
+        // Arrange
         var submittedRecaptchaToken = TestValues.NewRecaptchaToken();
         var (service, _) = CreateService(responseScore: TestValues.NewScoreAtOrAboveDefaultThreshold(), secretKeyConfigured: false);
+
+        // Act
         var verdict = await service.VerifyAsync(submittedRecaptchaToken, TestContext.Current.CancellationToken);
+
+        // Assert
         Assert.False(verdict.Passed);
         Assert.Equal(decimal.Zero, verdict.Score);
     }
@@ -48,10 +63,15 @@ public class ReCAPTCHAServiceTests
     [Fact]
     public async Task VerifyAsync_ScoreAtOrAboveThreshold_Passes()
     {
+        // Arrange
         var scoreAtOrAboveThreshold = TestValues.NewScoreAtOrAboveDefaultThreshold();
         var submittedRecaptchaToken = TestValues.NewRecaptchaToken();
         var (service, _) = CreateService(responseScore: scoreAtOrAboveThreshold);
+
+        // Act
         var verdict = await service.VerifyAsync(submittedRecaptchaToken, TestContext.Current.CancellationToken);
+
+        // Assert
         Assert.True(verdict.Passed);
         Assert.Equal(scoreAtOrAboveThreshold, verdict.Score);
     }
@@ -59,10 +79,15 @@ public class ReCAPTCHAServiceTests
     [Fact]
     public async Task VerifyAsync_ScoreBelowThreshold_FailsClosed()
     {
+        // Arrange
         var scoreBelowThreshold = TestValues.NewScoreBelowDefaultThreshold();
         var submittedRecaptchaToken = TestValues.NewRecaptchaToken();
         var (service, _) = CreateService(responseScore: scoreBelowThreshold);
+
+        // Act
         var verdict = await service.VerifyAsync(submittedRecaptchaToken, TestContext.Current.CancellationToken);
+
+        // Assert
         Assert.False(verdict.Passed);
         Assert.Equal(scoreBelowThreshold, verdict.Score);
     }
@@ -70,9 +95,14 @@ public class ReCAPTCHAServiceTests
     [Fact]
     public async Task VerifyAsync_ApiReturnsFalseSuccess_Fails()
     {
+        // Arrange
         var submittedRecaptchaToken = TestValues.NewRecaptchaToken();
         var (service, _) = CreateService(responseScore: TestValues.NewScoreAtOrAboveDefaultThreshold(), success: false);
+
+        // Act
         var verdict = await service.VerifyAsync(submittedRecaptchaToken, TestContext.Current.CancellationToken);
+
+        // Assert
         Assert.False(verdict.Passed);
         Assert.Equal(decimal.Zero, verdict.Score);
     }
@@ -80,9 +110,14 @@ public class ReCAPTCHAServiceTests
     [Fact]
     public async Task VerifyAsync_HttpFailure_Fails()
     {
+        // Arrange
         var submittedRecaptchaToken = TestValues.NewRecaptchaToken();
         var (service, _) = CreateService(responseScore: TestValues.NewScoreAtOrAboveDefaultThreshold(), httpStatusCode: HttpStatusCode.ServiceUnavailable);
+
+        // Act
         var verdict = await service.VerifyAsync(submittedRecaptchaToken, TestContext.Current.CancellationToken);
+
+        // Assert
         Assert.False(verdict.Passed);
         Assert.Equal(decimal.Zero, verdict.Score);
     }
@@ -90,9 +125,14 @@ public class ReCAPTCHAServiceTests
     [Fact]
     public async Task VerifyAsync_CallsSiteverifyExactlyOnce()
     {
+        // Arrange
         var submittedRecaptchaToken = TestValues.NewRecaptchaToken();
         var (service, handlerMock) = CreateService(responseScore: TestValues.NewScoreAtOrAboveDefaultThreshold());
+
+        // Act
         await service.VerifyAsync(submittedRecaptchaToken, TestContext.Current.CancellationToken);
+
+        // Assert
         handlerMock.Protected().Verify(
             SendAsyncMethodName,
             Times.Once(),

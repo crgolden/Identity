@@ -16,20 +16,30 @@ public class IndexcshtmlTests
     [Fact]
     public void IsPageModel()
     {
-        Assert.IsType<PageModel>(new IndexModel(MockHelpers.MockRoleManager().Object), exactMatch: false);
+        // Arrange
+        var rm = MockHelpers.MockRoleManager();
+
+        // Act
+        var model = new IndexModel(rm.Object);
+
+        // Assert
+        Assert.IsType<PageModel>(model, exactMatch: false);
     }
 
     [Fact]
     public async Task OnGetAsync_ReturnsSortedByName()
     {
+        // Arrange
         var rm = MockHelpers.MockRoleManager();
         var data = new[] { new IdentityRole<Guid>(LastRoleName), new IdentityRole<Guid>(FirstRoleName) };
         var mockSet = MockDbSetHelper.BuildMockDbSet(data);
         rm.Setup(m => m.Roles).Returns(mockSet.Object);
-
         var model = new IndexModel(rm.Object);
+
+        // Act
         await model.OnGetAsync();
 
+        // Assert
         Assert.Equal(data.Length, model.Roles.Count);
         Assert.Equal(FirstRoleName, model.Roles[0].Name);
     }

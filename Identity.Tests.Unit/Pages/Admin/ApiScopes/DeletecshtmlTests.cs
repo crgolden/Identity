@@ -20,12 +20,17 @@ public class DeletecshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
+        // Arrange
         var scope = new ApiScope { Id = ExistingEntityId, Name = ScopeName };
         var mockSet = MockDbSetHelper.BuildMockDbSet([scope]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
         var model = new DeleteModel(ctx.Object);
+
+        // Act
         var result = await model.OnGetAsync(ExistingEntityId);
+
+        // Assert
         Assert.IsType<PageResult>(result);
         Assert.Equal(ScopeName, model.Scope.Name);
     }
@@ -33,21 +38,34 @@ public class DeletecshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<ApiScope>());
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
-        Assert.IsType<NotFoundResult>(await new DeleteModel(ctx.Object).OnGetAsync(MissingEntityId));
+        var model = new DeleteModel(ctx.Object);
+
+        // Act
+        var result = await model.OnGetAsync(MissingEntityId);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]
     public async Task OnPostAsync_Redirects_WhenFound()
     {
+        // Arrange
         var scope = new ApiScope { Id = ExistingEntityId, Name = ScopeName };
         var mockSet = MockDbSetHelper.BuildMockDbSet([scope]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
-        var result = await new DeleteModel(ctx.Object).OnPostAsync(ExistingEntityId);
+        var model = new DeleteModel(ctx.Object);
+
+        // Act
+        var result = await model.OnPostAsync(ExistingEntityId);
+
+        // Assert
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal(PageRoutes.SiblingIndex, redirect.PageName);
     }
@@ -55,9 +73,16 @@ public class DeletecshtmlTests
     [Fact]
     public async Task OnPostAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<ApiScope>());
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
-        Assert.IsType<NotFoundResult>(await new DeleteModel(ctx.Object).OnPostAsync(MissingEntityId));
+        var model = new DeleteModel(ctx.Object);
+
+        // Act
+        var result = await model.OnPostAsync(MissingEntityId);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
     }
 }

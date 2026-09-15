@@ -21,12 +21,17 @@ public class IndexcshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
+        // Arrange
         var resource = new IdentityResource { Id = ExistingEntityId, Name = IdentityServerConstants.StandardScopes.OpenId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         var model = new IndexModel(ctx.Object);
+
+        // Act
         var result = await model.OnGetAsync(ExistingEntityId);
+
+        // Assert
         Assert.IsType<PageResult>(result);
         Assert.Equal(IdentityServerConstants.StandardScopes.OpenId, model.Resource.Name);
     }
@@ -34,23 +39,34 @@ public class IndexcshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<IdentityResource>());
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         var model = new IndexModel(ctx.Object);
-        Assert.IsType<NotFoundResult>(await model.OnGetAsync(MissingEntityId));
+
+        // Act
+        var result = await model.OnGetAsync(MissingEntityId);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]
     public async Task OnPostAsync_UpdatesAndRedirects_WhenValid()
     {
+        // Arrange
         var resource = new IdentityResource { Id = ExistingEntityId, Name = IdentityServerConstants.StandardScopes.OpenId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new IndexModel(ctx.Object) { Resource = new IdentityResource { Name = UpdatedResourceName, DisplayName = TestValues.NewClientName() } };
+
+        // Act
         var result = await model.OnPostAsync(ExistingEntityId);
+
+        // Assert
         Assert.Equal(UpdatedResourceName, resource.Name);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal(IndexModel.DetailsPageName, redirect.PageName);
@@ -59,10 +75,16 @@ public class IndexcshtmlTests
     [Fact]
     public async Task OnPostAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<IdentityResource>());
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         var model = new IndexModel(ctx.Object) { Resource = new IdentityResource { Name = TestValues.NewApiResourceName() } };
-        Assert.IsType<NotFoundResult>(await model.OnPostAsync(MissingEntityId));
+
+        // Act
+        var result = await model.OnPostAsync(MissingEntityId);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
     }
 }

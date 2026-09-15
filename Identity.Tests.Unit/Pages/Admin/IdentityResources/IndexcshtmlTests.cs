@@ -18,19 +18,30 @@ public class IndexcshtmlTests
     [Fact]
     public void IsPageModel()
     {
+        // Arrange
         var ctx = new Mock<IConfigurationDbContext>();
-        Assert.IsType<PageModel>(new IndexModel(ctx.Object), exactMatch: false);
+
+        // Act
+        var model = new IndexModel(ctx.Object);
+
+        // Assert
+        Assert.IsType<PageModel>(model, exactMatch: false);
     }
 
     [Fact]
     public async Task OnGetAsync_ReturnsSortedByName()
     {
+        // Arrange
         var data = new[] { new IdentityResource { Name = LastResourceName }, new IdentityResource { Name = FirstResourceName } };
         var mockSet = MockDbSetHelper.BuildMockDbSet(data);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         var model = new IndexModel(ctx.Object);
+
+        // Act
         await model.OnGetAsync();
+
+        // Assert
         Assert.Equal(FirstResourceName, model.IdentityResources[0].Name);
         Assert.Equal(LastResourceName, model.IdentityResources[1].Name);
     }

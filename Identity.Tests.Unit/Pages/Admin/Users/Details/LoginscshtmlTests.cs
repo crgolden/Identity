@@ -23,14 +23,17 @@ public class LoginscshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
+        // Arrange
         var user = new IdentityUser<Guid> { UserName = TestValues.NewUserName() };
         var um = MockHelpers.MockUserManager();
         um.Setup(m => m.FindByIdAsync(ExistingUserId)).ReturnsAsync(user);
         um.Setup(m => m.GetLoginsAsync(user)).ReturnsAsync([new UserLoginInfo(LoginProvider, LoginProviderKey, LoginDisplayName)]);
-
         var model = new LoginsModel(um.Object);
+
+        // Act
         var result = await model.OnGetAsync(ExistingUserId);
 
+        // Assert
         Assert.IsType<PageResult>(result);
         var onlyLogin = Assert.Single(model.Logins);
         Assert.Equal(LoginProvider, onlyLogin.LoginProvider);
@@ -39,9 +42,15 @@ public class LoginscshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var um = MockHelpers.MockUserManager();
         um.Setup(m => m.FindByIdAsync(MissingUserId)).ReturnsAsync((IdentityUser<Guid>?)null);
+        var model = new LoginsModel(um.Object);
 
-        Assert.IsType<NotFoundResult>(await new LoginsModel(um.Object).OnGetAsync(MissingUserId));
+        // Act
+        var result = await model.OnGetAsync(MissingUserId);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
     }
 }

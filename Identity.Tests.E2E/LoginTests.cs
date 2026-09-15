@@ -46,6 +46,28 @@ public sealed class LoginTests(PlaywrightFixture fixture)
     }
 
     [Fact]
+    public async Task Login_EmptySubmit_RendersClientValidationWithoutAScriptError()
+    {
+        // Arrange
+        var (context, page) = await fixture.NewPageAsync();
+        await using (context)
+        {
+            var scriptErrors = new List<string>();
+            page.PageError += (_, error) => scriptErrors.Add(error);
+            await page.GotoAsync("/Account/Login");
+
+            // Act
+            await page.ClickAsync("#login-submit");
+
+            // Assert
+            await Assertions.Expect(page.Locator("#login-email-validation")).ToHaveClassAsync(new Regex("field-validation-error"));
+            await Assertions.Expect(page.Locator("#login-email-validation")).Not.ToBeEmptyAsync();
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/Login"));
+            Assert.Empty(scriptErrors);
+        }
+    }
+
+    [Fact]
     public async Task Login_FiveFailedAttempts_LocksAccount()
     {
         var (email, _) = await fixture.CreateConfirmedUserAsync();

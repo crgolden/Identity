@@ -14,13 +14,20 @@ public class IndexcshtmlTests
     [Fact]
     public void IsPageModel()
     {
+        // Arrange
         var ctx = new Mock<IConfigurationDbContext>();
-        Assert.IsType<PageModel>(new IndexModel(ctx.Object), exactMatch: false);
+
+        // Act
+        var model = new IndexModel(ctx.Object);
+
+        // Assert
+        Assert.IsType<PageModel>(model, exactMatch: false);
     }
 
     [Fact]
     public async Task OnGetAsync_ReturnsClientsOrderedByClientId()
     {
+        // Arrange
         var firstAlphabetically = TestValues.NewFirstAlphabeticalName();
         var lastAlphabetically = TestValues.NewLastAlphabeticalName();
         var clients = new[]
@@ -31,10 +38,12 @@ public class IndexcshtmlTests
         var mockSet = MockDbSetHelper.BuildMockDbSet(clients);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
-
         var model = new IndexModel(ctx.Object);
+
+        // Act
         await model.OnGetAsync();
 
+        // Assert
         Assert.Equal(clients.Length, model.Clients.Count);
         Assert.Equal(firstAlphabetically, model.Clients[0].ClientId);
         Assert.Equal(lastAlphabetically, model.Clients[1].ClientId);
@@ -43,13 +52,16 @@ public class IndexcshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsEmpty_WhenNoClients()
     {
+        // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<Client>());
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
-
         var model = new IndexModel(ctx.Object);
+
+        // Act
         await model.OnGetAsync();
 
+        // Assert
         Assert.Empty(model.Clients);
     }
 }

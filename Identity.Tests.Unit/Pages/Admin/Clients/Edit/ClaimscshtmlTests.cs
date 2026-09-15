@@ -24,14 +24,17 @@ public class ClaimscshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
+        // Arrange
         var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), Claims = [new ClientClaim { Id = ExistingEntityId, Type = ClaimType, Value = ClaimValue, ClientId = ExistingEntityId }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
-
         var model = new ClaimsModel(ctx.Object);
+
+        // Act
         var result = await model.OnGetAsync(ExistingEntityId);
 
+        // Assert
         Assert.IsType<PageResult>(result);
         Assert.Single(model.Claims);
     }
@@ -39,31 +42,37 @@ public class ClaimscshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<Client>());
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
-
         var model = new ClaimsModel(ctx.Object);
+
+        // Act
         var result = await model.OnGetAsync(MissingEntityId);
 
+        // Assert
         Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]
     public async Task OnPostAsync_AddsNewClaim_WhenValid()
     {
+        // Arrange
         var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), Claims = [] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
-
         var model = new ClaimsModel(ctx.Object)
         {
             Claims = [new ClientClaim { Id = 0, Type = ClaimType, Value = ClaimValue }],
         };
+
+        // Act
         var result = await model.OnPostAsync(ExistingEntityId);
 
+        // Assert
         var onlyClaim = Assert.Single(client.Claims);
         Assert.Equal(ClaimType, onlyClaim.Type);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
@@ -73,62 +82,74 @@ public class ClaimscshtmlTests
     [Fact]
     public async Task OnPostAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<Client>());
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
-
         var model = new ClaimsModel(ctx.Object) { Claims = [] };
+
+        // Act
         var result = await model.OnPostAsync(MissingEntityId);
 
+        // Assert
         Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]
     public async Task OnPostAsync_RemovesClaim_WhenNotPosted()
     {
+        // Arrange
         var existing = new ClientClaim { Id = ExistingEntityId, Type = ClaimType, Value = ClaimValue, ClientId = ExistingEntityId };
         var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), Claims = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
-
         var model = new ClaimsModel(ctx.Object) { Claims = [] };
+
+        // Act
         await model.OnPostAsync(ExistingEntityId);
 
+        // Assert
         Assert.Empty(client.Claims);
     }
 
     [Fact]
     public async Task OnPostAsync_UpdatesExistingClaim_WhenPostedWithId()
     {
+        // Arrange
         var existing = new ClientClaim { Id = ExistingEntityId, Type = ClaimType, Value = OtherClaimValue, ClientId = ExistingEntityId };
         var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier(), Claims = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
-
         var model = new ClaimsModel(ctx.Object)
         {
             Claims = [new ClientClaim { Id = ExistingEntityId, Type = ClaimType, Value = ClaimValue }],
         };
+
+        // Act
         await model.OnPostAsync(ExistingEntityId);
 
+        // Assert
         Assert.Equal(ClaimValue, existing.Value);
     }
 
     [Fact]
     public async Task OnPostAddRowAsync_AddsBlankRow_WhenFound()
     {
+        // Arrange
         var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
-
         var model = new ClaimsModel(ctx.Object) { Claims = [] };
+
+        // Act
         var result = await model.OnPostAddRowAsync(ExistingEntityId);
 
+        // Assert
         Assert.IsType<PageResult>(result);
         Assert.Single(model.Claims);
     }
@@ -136,27 +157,33 @@ public class ClaimscshtmlTests
     [Fact]
     public async Task OnPostAddRowAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<Client>());
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
-
         var model = new ClaimsModel(ctx.Object) { Claims = [] };
+
+        // Act
         var result = await model.OnPostAddRowAsync(MissingEntityId);
 
+        // Assert
         Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]
     public async Task OnPostRemoveRowAsync_RemovesRow_WhenValidIndex()
     {
+        // Arrange
         var client = new Client { Id = ExistingEntityId, ClientId = TestValues.NewClientIdentifier() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
-
         var model = new ClaimsModel(ctx.Object) { Claims = [new ClientClaim { Id = ExistingEntityId, Type = ClaimType, Value = ClaimValue }] };
+
+        // Act
         var result = await model.OnPostRemoveRowAsync(ExistingEntityId, 0);
 
+        // Assert
         Assert.IsType<PageResult>(result);
         Assert.Empty(model.Claims);
     }
@@ -164,13 +191,16 @@ public class ClaimscshtmlTests
     [Fact]
     public async Task OnPostRemoveRowAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<Client>());
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
-
         var model = new ClaimsModel(ctx.Object) { Claims = [] };
+
+        // Act
         var result = await model.OnPostRemoveRowAsync(MissingEntityId, 0);
 
+        // Assert
         Assert.IsType<NotFoundResult>(result);
     }
 }

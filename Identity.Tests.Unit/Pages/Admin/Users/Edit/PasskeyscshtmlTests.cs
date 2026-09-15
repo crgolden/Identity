@@ -22,14 +22,17 @@ public class PasskeyscshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
+        // Arrange
         var user = new IdentityUser<Guid> { UserName = TestValues.NewUserName() };
         var um = MockHelpers.MockUserManager();
         um.Setup(m => m.FindByIdAsync(ExistingUserId)).ReturnsAsync(user);
         um.Setup(m => m.GetPasskeysAsync(user)).ReturnsAsync([BuildPasskey()]);
-
         var model = new PasskeysModel(um.Object);
+
+        // Act
         var result = await model.OnGetAsync(ExistingUserId);
 
+        // Assert
         Assert.IsType<PageResult>(result);
         Assert.Single(model.Passkeys);
     }
@@ -37,22 +40,32 @@ public class PasskeyscshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var um = MockHelpers.MockUserManager();
         um.Setup(m => m.FindByIdAsync(MissingUserId)).ReturnsAsync((IdentityUser<Guid>?)null);
+        var model = new PasskeysModel(um.Object);
 
-        Assert.IsType<NotFoundResult>(await new PasskeysModel(um.Object).OnGetAsync(MissingUserId));
+        // Act
+        var result = await model.OnGetAsync(MissingUserId);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]
     public async Task OnPostRemoveAsync_RemovesAndRedirects_WhenFound()
     {
+        // Arrange
         var user = new IdentityUser<Guid> { UserName = TestValues.NewUserName() };
         var um = MockHelpers.MockUserManager();
         um.Setup(m => m.FindByIdAsync(ExistingUserId)).ReturnsAsync(user);
         um.Setup(m => m.RemovePasskeyAsync(user, It.IsAny<byte[]>())).ReturnsAsync(IdentityResult.Success);
+        var model = new PasskeysModel(um.Object);
 
-        var result = await new PasskeysModel(um.Object).OnPostRemoveAsync(ExistingUserId, ValidCredentialId);
+        // Act
+        var result = await model.OnPostRemoveAsync(ExistingUserId, ValidCredentialId);
 
+        // Assert
         um.Verify(m => m.RemovePasskeyAsync(user, It.IsAny<byte[]>()), Times.Once);
         Assert.IsType<RedirectToPageResult>(result);
     }
@@ -60,10 +73,16 @@ public class PasskeyscshtmlTests
     [Fact]
     public async Task OnPostRemoveAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var um = MockHelpers.MockUserManager();
         um.Setup(m => m.FindByIdAsync(MissingUserId)).ReturnsAsync((IdentityUser<Guid>?)null);
+        var model = new PasskeysModel(um.Object);
 
-        Assert.IsType<NotFoundResult>(await new PasskeysModel(um.Object).OnPostRemoveAsync(MissingUserId, ValidCredentialId));
+        // Act
+        var result = await model.OnPostRemoveAsync(MissingUserId, ValidCredentialId);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
     }
 
     private static UserPasskeyInfo BuildPasskey() =>

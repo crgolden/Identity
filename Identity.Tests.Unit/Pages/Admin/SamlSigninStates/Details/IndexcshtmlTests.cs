@@ -20,14 +20,17 @@ public class IndexcshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
+        // Arrange
         var state = new SamlSigninState { Id = ExistingEntityId, ServiceProviderEntityId = ServiceProviderEntityId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([state]);
         var ctx = new Mock<IPersistedGrantDbContext>();
         ctx.Setup(c => c.SamlSigninStates).Returns(mockSet.Object);
-
         var model = new IndexModel(ctx.Object);
+
+        // Act
         var result = await model.OnGetAsync(ExistingEntityId);
 
+        // Assert
         Assert.IsType<PageResult>(result);
         Assert.Equal(ServiceProviderEntityId, model.SamlSigninState.ServiceProviderEntityId);
     }
@@ -35,11 +38,16 @@ public class IndexcshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<SamlSigninState>());
         var ctx = new Mock<IPersistedGrantDbContext>();
         ctx.Setup(c => c.SamlSigninStates).Returns(mockSet.Object);
-
         var model = new IndexModel(ctx.Object);
-        Assert.IsType<NotFoundResult>(await model.OnGetAsync(MissingEntityId));
+
+        // Act
+        var result = await model.OnGetAsync(MissingEntityId);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
     }
 }

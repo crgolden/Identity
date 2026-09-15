@@ -48,67 +48,112 @@ public sealed class InputSanitizationTests
     [Fact]
     public void GravatarHash_IsAlwaysLowercase()
     {
-        Gen.String[MinGeneratedInputLength, MaxGeneratedInputLength]
-            .Sample(email =>
-            {
-                var hash = ComputeGravatarHash(email);
-                Assert.Equal(hash, hash.ToLowerInvariant());
-            });
+        // Arrange
+        var emails = Gen.String[MinGeneratedInputLength, MaxGeneratedInputLength];
+
+        emails.Sample(email =>
+        {
+            // Act
+            var hash = ComputeGravatarHash(email);
+
+            // Assert
+            Assert.Equal(hash, hash.ToLowerInvariant());
+        });
     }
 
     [Fact]
     public void GravatarHash_IsAlways64HexChars()
     {
-        Gen.String[MinGeneratedInputLength, MaxGeneratedInputLength]
-            .Sample(email =>
-            {
-                var hash = ComputeGravatarHash(email);
-                Assert.Equal(Sha256HexLength, hash.Length);
-                Assert.True(hash.All(c => char.IsAsciiHexDigitLower(c) || char.IsAsciiDigit(c)));
-            });
+        // Arrange
+        var emails = Gen.String[MinGeneratedInputLength, MaxGeneratedInputLength];
+
+        emails.Sample(email =>
+        {
+            // Act
+            var hash = ComputeGravatarHash(email);
+
+            // Assert
+            Assert.Equal(Sha256HexLength, hash.Length);
+            Assert.True(hash.All(c => char.IsAsciiHexDigitLower(c) || char.IsAsciiDigit(c)));
+        });
     }
 
     [Fact]
     public void GravatarHash_IsDeterministic()
     {
-        Gen.String[MinGeneratedInputLength, MaxGeneratedInputLength]
-            .Sample(email =>
-            {
-                var hash1 = ComputeGravatarHash(email);
-                var hash2 = ComputeGravatarHash(email);
-                Assert.Equal(hash1, hash2);
-            });
+        // Arrange
+        var emails = Gen.String[MinGeneratedInputLength, MaxGeneratedInputLength];
+
+        emails.Sample(email =>
+        {
+            // Arrange
+            var firstHash = ComputeGravatarHash(email);
+
+            // Act
+            var secondHash = ComputeGravatarHash(email);
+
+            // Assert
+            Assert.Equal(firstHash, secondHash);
+        });
     }
 
     [Fact]
     public void GravatarHash_EmailNormalization_CaseInsensitive()
     {
-        Gen.String[MinGeneratedInputLength, MaxNormalizedInputLength]
+        // Arrange
+        var inputs = Gen.String[MinGeneratedInputLength, MaxNormalizedInputLength]
             .Select(s => s.Replace('\0', 'a').Trim())
-            .Where(s => s.Length > 0)
-            .Sample(input =>
-            {
-                var lower = input.ToLowerInvariant();
-                var upper = input.ToUpperInvariant();
-                Assert.Equal(ComputeGravatarHash(lower), ComputeGravatarHash(upper));
-            });
+            .Where(s => s.Length > 0);
+
+        inputs.Sample(input =>
+        {
+            // Arrange
+            var lowercaseHash = ComputeGravatarHash(input.ToLowerInvariant());
+
+            // Act
+            var uppercaseHash = ComputeGravatarHash(input.ToUpperInvariant());
+
+            // Assert
+            Assert.Equal(lowercaseHash, uppercaseHash);
+        });
     }
 
     [Fact]
     public void GravatarHash_EmailWhitespaceTrimmed()
     {
+        // Arrange
         var trimmed = TestValues.NewEmailAddress();
         var paddedWithWhitespace = TestValues.NewWhitespaceValue() + trimmed + TestValues.NewWhitespaceValue();
-        Assert.Equal(ComputeGravatarHash(paddedWithWhitespace), ComputeGravatarHash(trimmed));
+        var trimmedHash = ComputeGravatarHash(trimmed);
+
+        // Act
+        var paddedHash = ComputeGravatarHash(paddedWithWhitespace);
+
+        // Assert
+        Assert.Equal(trimmedHash, paddedHash);
     }
 
     [Theory]
     [MemberData(nameof(ExternalUrls))]
-    public void ExternalUrl_IsNotLocalUrl(string url) => Assert.False(IsLocalUrl(url));
+    public void ExternalUrl_IsNotLocalUrl(string url)
+    {
+        // Act
+        var isLocal = IsLocalUrl(url);
+
+        // Assert
+        Assert.False(isLocal);
+    }
 
     [Theory]
     [MemberData(nameof(LocalUrls))]
-    public void LocalUrl_IsLocalUrl(string url) => Assert.True(IsLocalUrl(url));
+    public void LocalUrl_IsLocalUrl(string url)
+    {
+        // Act
+        var isLocal = IsLocalUrl(url);
+
+        // Assert
+        Assert.True(isLocal);
+    }
 
     private static string ComputeGravatarHash(string identifier)
     {

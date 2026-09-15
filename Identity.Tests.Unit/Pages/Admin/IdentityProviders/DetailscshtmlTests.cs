@@ -20,14 +20,17 @@ public class DetailscshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
+        // Arrange
         var provider = new IdentityProvider { Id = ExistingEntityId, Scheme = SchemeName };
         var mockSet = MockDbSetHelper.BuildMockDbSet([provider]);
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityProviders).Returns(mockSet.Object);
-
         var model = new DetailsModel(ctx.Object);
+
+        // Act
         var result = await model.OnGetAsync(ExistingEntityId);
 
+        // Assert
         Assert.IsType<PageResult>(result);
         Assert.Equal(SchemeName, model.IdentityProvider.Scheme);
     }
@@ -35,10 +38,16 @@ public class DetailscshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<IdentityProvider>());
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityProviders).Returns(mockSet.Object);
+        var model = new DetailsModel(ctx.Object);
 
-        Assert.IsType<NotFoundResult>(await new DetailsModel(ctx.Object).OnGetAsync(MissingEntityId));
+        // Act
+        var result = await model.OnGetAsync(MissingEntityId);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
     }
 }

@@ -33,8 +33,6 @@ public class ApplicationDbContextTests
     [MemberData(nameof(ValidOptions))]
     public void Constructor_ValidOptions_CreatesInstance(DbContextOptions<ApplicationDbContext> options)
     {
-        // Arrange
-
         // Act
         var context = new ApplicationDbContext(options);
 

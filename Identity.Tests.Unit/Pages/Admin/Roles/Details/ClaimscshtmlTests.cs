@@ -23,14 +23,17 @@ public class ClaimscshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsPage_WhenFound()
     {
+        // Arrange
         var role = new IdentityRole<Guid>(RoleName);
         var rm = MockHelpers.MockRoleManager();
         rm.Setup(m => m.FindByIdAsync(role.Id.ToString())).ReturnsAsync(role);
         rm.Setup(m => m.GetClaimsAsync(role)).ReturnsAsync([new Claim(ClaimType, ClaimValue)]);
-
         var model = new ClaimsModel(rm.Object);
+
+        // Act
         var result = await model.OnGetAsync(role.Id.ToString());
 
+        // Assert
         Assert.IsType<PageResult>(result);
         Assert.Single(model.Claims);
     }
@@ -38,9 +41,15 @@ public class ClaimscshtmlTests
     [Fact]
     public async Task OnGetAsync_ReturnsNotFound_WhenMissing()
     {
+        // Arrange
         var rm = MockHelpers.MockRoleManager();
         rm.Setup(m => m.FindByIdAsync(It.IsAny<string>())).ReturnsAsync((IdentityRole<Guid>?)null);
+        var model = new ClaimsModel(rm.Object);
 
-        Assert.IsType<NotFoundResult>(await new ClaimsModel(rm.Object).OnGetAsync(MissingUserId));
+        // Act
+        var result = await model.OnGetAsync(MissingUserId);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
     }
 }
