@@ -75,6 +75,47 @@ public class RolescshtmlTests
     }
 
     [Fact]
+    public async Task OnPostAsync_RowWasAddedButNeverFilledIn_DropsItAndKeepsTheRest()
+    {
+        // Arrange
+        var user = new IdentityUser<Guid> { UserName = TestValues.NewUserName() };
+        var um = MockHelpers.MockUserManager();
+        um.Setup(m => m.FindByIdAsync(ExistingUserId)).ReturnsAsync(user);
+        um.Setup(m => m.GetRolesAsync(user)).ReturnsAsync([]);
+        um.Setup(m => m.RemoveFromRolesAsync(user, It.IsAny<IEnumerable<string>>())).ReturnsAsync(IdentityResult.Success);
+        var saved = new List<string>();
+        um.Setup(m => m.AddToRolesAsync(user, It.IsAny<IEnumerable<string>>()))
+            .Callback<IdentityUser<Guid>, IEnumerable<string>>((_, roles) => saved.AddRange(roles))
+            .ReturnsAsync(IdentityResult.Success);
+        var model = new RolesModel(um.Object) { Roles = [RoleName, null] };
+
+        // Act
+        await model.OnPostAsync(ExistingUserId);
+
+        // Assert
+        Assert.Equal([RoleName], saved);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_EveryRowIsBlank_SavesNothing()
+    {
+        // Arrange
+        var user = new IdentityUser<Guid> { UserName = TestValues.NewUserName() };
+        var um = MockHelpers.MockUserManager();
+        um.Setup(m => m.FindByIdAsync(ExistingUserId)).ReturnsAsync(user);
+        um.Setup(m => m.GetRolesAsync(user)).ReturnsAsync([PriorRoleName]);
+        um.Setup(m => m.RemoveFromRolesAsync(user, It.IsAny<IEnumerable<string>>())).ReturnsAsync(IdentityResult.Success);
+        var model = new RolesModel(um.Object) { Roles = [null] };
+
+        // Act
+        var result = await model.OnPostAsync(ExistingUserId);
+
+        // Assert
+        um.Verify(m => m.AddToRolesAsync(user, It.IsAny<IEnumerable<string>>()), Times.Never);
+        Assert.IsType<RedirectToPageResult>(result);
+    }
+
+    [Fact]
     public async Task OnPostAsync_ReturnsNotFound_WhenMissing()
     {
         // Arrange
@@ -103,7 +144,7 @@ public class RolescshtmlTests
 
         // Assert
         Assert.IsType<PageResult>(result);
-        Assert.Single(model.Roles);
+        Assert.Null(Assert.Single(model.Roles));
     }
 
     [Fact]

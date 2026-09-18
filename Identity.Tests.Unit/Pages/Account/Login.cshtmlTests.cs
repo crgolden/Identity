@@ -334,6 +334,7 @@ public class LoginModelTests
     [Fact]
     public async Task OnPostAsync_RecaptchaScoreBelowThreshold_ReturnsPageWithModelError()
     {
+        // Arrange
         var signInManagerMock = CreateSignInManagerMock();
         var recaptchaServiceMock = CreateRecaptchaServiceMock(passed: false);
 
@@ -347,8 +348,10 @@ public class LoginModelTests
             Input = new LoginModel.InputModel { Email = TestValues.NewEmailAddress(), Password = TestValues.NewPassword() }
         };
 
+        // Act
         var result = await model.OnPostAsync();
 
+        // Assert
         Assert.IsType<PageResult>(result);
         Assert.False(model.ModelState.IsValid);
         Assert.True(model.ModelState.ContainsKey(string.Empty));
@@ -358,6 +361,7 @@ public class LoginModelTests
     [Fact]
     public async Task OnPostAsync_PasskeyPath_SkipsRecaptcha()
     {
+        // Arrange
         var signInManagerMock = CreateSignInManagerMock();
         signInManagerMock
             .Setup(s => s.PasskeySignInAsync(It.IsAny<string>()))
@@ -379,8 +383,10 @@ public class LoginModelTests
             }
         };
 
+        // Act
         var result = await model.OnPostAsync();
 
+        // Assert
         Assert.IsType<LocalRedirectResult>(result);
         recaptchaServiceMock.Verify(s => s.VerifyAsync(It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -388,6 +394,7 @@ public class LoginModelTests
     [Fact]
     public async Task OnPostAsync_FailingVerdict_NeverAttemptsSignIn()
     {
+        // Arrange
         var signInManagerMock = CreateSignInManagerMock();
         var recaptchaServiceMock = CreateRecaptchaServiceMock(passed: false);
 
@@ -401,8 +408,10 @@ public class LoginModelTests
             Input = new LoginModel.InputModel { Email = TestValues.NewEmailAddress(), Password = TestValues.NewPassword() }
         };
 
+        // Act
         var result = await model.OnPostAsync();
 
+        // Assert
         Assert.IsType<PageResult>(result);
         Assert.False(model.ModelState.IsValid);
         recaptchaServiceMock.Verify(s => s.VerifyAsync(It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Once);

@@ -28,50 +28,76 @@ public sealed class PasswordHashingTests
     [Fact]
     public void HashPassword_ThenVerify_AlwaysSucceeds()
     {
-        Gen.String[MinGeneratedPasswordLength, MaxGeneratedPasswordLength]
-            .Sample(password =>
-            {
-                var user = new IdentityUser<Guid>();
-                var hash = _hasher.HashPassword(user, password);
-                var result = _hasher.VerifyHashedPassword(user, hash, password);
-                Assert.Equal(PasswordVerificationResult.Success, result);
-            });
+        // Arrange
+        var passwords = Gen.String[MinGeneratedPasswordLength, MaxGeneratedPasswordLength];
+
+        passwords.Sample(password =>
+        {
+            // Arrange
+            var user = new IdentityUser<Guid>();
+            var hash = _hasher.HashPassword(user, password);
+
+            // Act
+            var result = _hasher.VerifyHashedPassword(user, hash, password);
+
+            // Assert
+            Assert.Equal(PasswordVerificationResult.Success, result);
+        });
     }
 
     [Fact]
     public void HashPassword_SameInput_ProducesDifferentHashesEachTime()
     {
-        Gen.String[MinGeneratedPasswordLength, MaxGeneratedPasswordLength]
-            .Sample(password =>
-            {
-                var user = new IdentityUser<Guid>();
-                var hash1 = _hasher.HashPassword(user, password);
-                var hash2 = _hasher.HashPassword(user, password);
-                Assert.NotEqual(hash1, hash2);
-            });
+        // Arrange
+        var passwords = Gen.String[MinGeneratedPasswordLength, MaxGeneratedPasswordLength];
+
+        passwords.Sample(password =>
+        {
+            // Arrange
+            var user = new IdentityUser<Guid>();
+            var firstHash = _hasher.HashPassword(user, password);
+
+            // Act
+            var secondHash = _hasher.HashPassword(user, password);
+
+            // Assert
+            Assert.NotEqual(firstHash, secondHash);
+        });
     }
 
     [Fact]
     public void HashPassword_WrongPassword_NeverVerifies()
     {
-        Gen.String[MinGeneratedPasswordLength, MaxGeneratedPasswordLength]
-            .Select(p => (Password: p, Wrong: p + WrongPasswordSuffix))
-            .Sample(pair =>
-            {
-                var user = new IdentityUser<Guid>();
-                var hash = _hasher.HashPassword(user, pair.Password);
-                var result = _hasher.VerifyHashedPassword(user, hash, pair.Wrong);
-                Assert.NotEqual(PasswordVerificationResult.Success, result);
-            });
+        // Arrange
+        var pairs = Gen.String[MinGeneratedPasswordLength, MaxGeneratedPasswordLength]
+            .Select(p => (Password: p, Wrong: p + WrongPasswordSuffix));
+
+        pairs.Sample(pair =>
+        {
+            // Arrange
+            var user = new IdentityUser<Guid>();
+            var hash = _hasher.HashPassword(user, pair.Password);
+
+            // Act
+            var result = _hasher.VerifyHashedPassword(user, hash, pair.Wrong);
+
+            // Assert
+            Assert.NotEqual(PasswordVerificationResult.Success, result);
+        });
     }
 
     [Theory]
     [MemberData(nameof(NonAsciiPasswords))]
     public void HashPassword_UnicodePassword_RoundTrips(string password)
     {
+        // Arrange
         var user = new IdentityUser<Guid>();
         var hash = _hasher.HashPassword(user, password);
+
+        // Act
         var result = _hasher.VerifyHashedPassword(user, hash, password);
+
+        // Assert
         Assert.Equal(PasswordVerificationResult.Success, result);
     }
 }

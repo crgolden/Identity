@@ -15,7 +15,7 @@ public class RolesModel : PageModel
     public IdentityUser<Guid> AppUser { get; private set; } = new();
 
     [BindProperty]
-    public List<string> Roles { get; set; } = [];
+    public List<string?> Roles { get; set; } = [];
 
     public async Task<IActionResult> OnGetAsync(string id)
     {
@@ -26,7 +26,7 @@ public class RolesModel : PageModel
         }
 
         AppUser = user;
-        Roles = (await _userManager.GetRolesAsync(user)).ToList();
+        Roles = [.. await _userManager.GetRolesAsync(user)];
         return Page();
     }
 
@@ -40,9 +40,10 @@ public class RolesModel : PageModel
 
         var existing = await _userManager.GetRolesAsync(user);
         await _userManager.RemoveFromRolesAsync(user, existing);
-        if (Roles.Count > 0)
+        var chosenRoles = Roles.OfType<string>().Where(role => !IsNullOrWhiteSpace(role)).ToList();
+        if (chosenRoles.Count > 0)
         {
-            await _userManager.AddToRolesAsync(user, Roles);
+            await _userManager.AddToRolesAsync(user, chosenRoles);
         }
 
         return RedirectToPage(DetailsPageName, new { id });
@@ -57,7 +58,7 @@ public class RolesModel : PageModel
         }
 
         AppUser = user;
-        Roles.Add(string.Empty);
+        Roles.Add(null);
         return Page();
     }
 

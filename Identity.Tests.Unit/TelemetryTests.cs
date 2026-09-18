@@ -277,11 +277,28 @@ public sealed class TelemetryTests
     [Fact]
     public void ConsentAndGrantCounterNames_AreTheNamesTheDashboardQueries()
     {
-        Assert.Equal("identity.consent.granted", Telemetry.Metrics.ConsentGrantedCounterName);
-        Assert.Equal("identity.consent.denied", Telemetry.Metrics.ConsentDeniedCounterName);
-        Assert.Equal("identity.grants.revoked", Telemetry.Metrics.GrantsRevokedCounterName);
-        Assert.Equal("identity.exceptions", Telemetry.Metrics.ExceptionCounterName);
-        Assert.Equal("exception.type", Telemetry.Metrics.ExceptionTypeTagName);
+        // Arrange
+        string[] expected =
+        [
+            "identity.consent.granted",
+            "identity.consent.denied",
+            "identity.grants.revoked",
+            "identity.exceptions",
+            "exception.type",
+        ];
+
+        // Act
+        string[] actual =
+        [
+            Telemetry.Metrics.ConsentGrantedCounterName,
+            Telemetry.Metrics.ConsentDeniedCounterName,
+            Telemetry.Metrics.GrantsRevokedCounterName,
+            Telemetry.Metrics.ExceptionCounterName,
+            Telemetry.Metrics.ExceptionTypeTagName,
+        ];
+
+        // Assert
+        Assert.Equal(expected, actual);
     }
 
     [Fact]

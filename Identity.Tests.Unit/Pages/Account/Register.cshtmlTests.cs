@@ -187,6 +187,7 @@ public class RegisterModelTests
     [Fact]
     public async Task OnPostAsync_RecaptchaScoreBelowThreshold_ReturnsPageWithModelError()
     {
+        // Arrange
         var userManagerMock = MockHelpers.MockUserManager();
         userManagerMock.SetupGet(u => u.SupportsUserEmail).Returns(true);
         var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
@@ -209,8 +210,10 @@ public class RegisterModelTests
         model.Url = urlHelperMock.Object;
         model.Input = new RegisterModel.InputModel { Email = TestValues.NewEmailAddress(), Password = TestValues.NewPassword() };
 
+        // Act
         var result = await model.OnPostAsync(TestValues.NewLocalPath());
 
+        // Assert
         Assert.IsType<PageResult>(result);
         Assert.False(model.ModelState.IsValid);
         Assert.True(model.ModelState.ContainsKey(string.Empty));
