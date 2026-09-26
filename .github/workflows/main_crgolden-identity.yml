@@ -24,6 +24,7 @@ jobs:
     runs-on: windows-latest
     permissions:
       contents: write
+      packages: read
 
     steps:
       - uses: actions/checkout@v6
@@ -40,6 +41,7 @@ jobs:
       - name: Regenerate lock files and push
         if: github.actor == 'dependabot[bot]'
         env:
+          NuGetPackageSourceCredentials_GitHub: Username=${{ github.actor }};Password=${{ secrets.GITHUB_TOKEN }}
           HEAD_REF: ${{ github.head_ref }}
         shell: powershell
         run: |
@@ -420,6 +422,7 @@ jobs:
         shell: pwsh
         env:
           STRYKER_DASHBOARD_API_KEY: ${{ secrets.STRYKER_DASHBOARD_API_KEY }}
+          NuGetPackageSourceCredentials_GitHub: Username=${{ github.actor }};Password=${{ secrets.PACKAGES_READ_TOKEN }}
         run: |
           dotnet stryker --config-file ../stryker-config.json | Tee-Object -Variable strykerOutput
           $strykerExit = $LASTEXITCODE
