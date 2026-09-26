@@ -3,19 +3,15 @@ namespace Identity.Pages.Admin.ApiScopes.Edit;
 using Duende.IdentityServer.EntityFramework.Entities;
 using Duende.IdentityServer.EntityFramework.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
-public class PropertiesModel : PageModel
+public class Properties : EditableResourcesBase<int, ApiScopeProperty>
 {
     internal const string DetailsPageName = "/Admin/ApiScopes/Details/Properties";
 
     private readonly IConfigurationDbContext _context;
 
-    public PropertiesModel(IConfigurationDbContext context) => _context = context;
-
-    [BindProperty]
-    public List<ApiScopeProperty> Properties { get; set; } = [];
+    public Properties(IConfigurationDbContext context) => _context = context;
 
     public async Task<IActionResult> OnGetAsync(int id)
     {
@@ -27,7 +23,7 @@ public class PropertiesModel : PageModel
             return NotFound();
         }
 
-        Properties = scope.Properties;
+        Resources = scope.Properties;
         return Page();
     }
 
@@ -41,9 +37,9 @@ public class PropertiesModel : PageModel
             return NotFound();
         }
 
-        scope.Properties.RemoveAll(p => !Properties.Any(posted => posted.Id == p.Id));
+        scope.Properties.RemoveAll(p => !Resources.Any(posted => posted.Id == p.Id));
 
-        foreach (var posted in Properties.Where(p => p.Id > 0))
+        foreach (var posted in Resources.Where(p => p.Id > 0))
         {
             var existing = scope.Properties.FirstOrDefault(p => p.Id == posted.Id);
             if (existing is not null)
@@ -53,7 +49,7 @@ public class PropertiesModel : PageModel
             }
         }
 
-        scope.Properties.AddRange(Properties
+        scope.Properties.AddRange(Resources
             .Where(p => p.Id == 0)
             .Select(p => new ApiScopeProperty { Key = p.Key, Value = p.Value, ScopeId = id }));
 
@@ -61,31 +57,16 @@ public class PropertiesModel : PageModel
         return RedirectToPage(DetailsPageName, new { id });
     }
 
-    public async Task<IActionResult> OnPostAddRowAsync(int id)
+    protected override async Task<bool> LoadContextAsync(int id)
     {
         var exists = await _context.ApiScopes.AnyAsync(s => s.Id == id);
         if (!exists)
         {
-            return NotFound();
+            return false;
         }
 
-        Properties.Add(new ApiScopeProperty());
-        return Page();
+        return true;
     }
 
-    public async Task<IActionResult> OnPostRemoveRowAsync(int id, int index)
-    {
-        var exists = await _context.ApiScopes.AnyAsync(s => s.Id == id);
-        if (!exists)
-        {
-            return NotFound();
-        }
-
-        if (index >= 0 && index < Properties.Count)
-        {
-            Properties.RemoveAt(index);
-        }
-
-        return Page();
-    }
+    protected override ApiScopeProperty NewResource() => new();
 }

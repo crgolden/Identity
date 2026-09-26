@@ -1,6 +1,7 @@
 @page
-@model IndexModel
+@model Index
 @inject SignInManager<IdentityUser<Guid>> SignInManager
+@inject UserManager<IdentityUser<Guid>> UserManager
 @{
     var signedIn = SignInManager.IsSignedIn(User);
     ViewData["Title"] = PageTitles.Home;
@@ -14,12 +15,12 @@
 {
     <h1>Your account. Every app you connected.</h1>
 
-    <p id="signed-in-lead" class="lead">Signed in as @User.Identity?.Name. Change how you sign in, review which applications have access, or sign your other devices out.</p>
+    <p id="signed-in-lead" class="lead">Signed in as <span id="signed-in-user-@UserManager.GetUserId(User)">@User.Identity?.Name</span>. Change how you sign in, review which applications have access, or sign your other devices out.</p>
 
     <div class="d-flex flex-wrap gap-2 mb-4">
         <a id="manage-account" asp-page="/Account/Manage/Index" class="btn btn-primary">Manage your account</a>
         <a id="review-grants" asp-page="/Account/Manage/Grants" class="btn btn-outline-secondary">Application access</a>
-        @if (User.IsInRole("Admin"))
+        @if (User.IsInRole(AuthorizationNames.AdminRole))
         {
             <a id="home-admin" asp-page="/Admin/Index" class="btn btn-outline-secondary">Admin</a>
         }

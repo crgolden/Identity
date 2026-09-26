@@ -4,13 +4,13 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-public class IndexModel : PageModel
+public class Index : PageModel
 {
     internal const string DetailsPageName = "/Admin/Users/Details/Index";
 
     private readonly UserManager<IdentityUser<Guid>> _userManager;
 
-    public IndexModel(UserManager<IdentityUser<Guid>> userManager) => _userManager = userManager;
+    public Index(UserManager<IdentityUser<Guid>> userManager) => _userManager = userManager;
 
     [BindProperty]
     public IdentityUser<Guid> AppUser { get; set; } = new();

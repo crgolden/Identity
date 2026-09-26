@@ -1,16 +1,18 @@
 namespace Identity.Tests.E2E;
 
 using System.Text.RegularExpressions;
-using Infrastructure;
+using Identity.Extensions;
+using Identity.Tests.E2E.Infrastructure;
+using Identity.Tests.E2E.Synthetic;
 using Microsoft.Playwright;
-using Synthetic;
 
 [Trait("Category", "E2E")]
 [Collection(E2ECollection.Name)]
 public sealed class PasskeyCeremonyTests(PlaywrightFixture fixture)
 {
     private const string StatusMessageSelector = "#status-message";
-    private const string CreationOptionsPath = "/Account/PasskeyCreationOptions";
+    private const string CreationOptionsPath =
+        PasskeyEndpoints.AccountGroupPrefix + PasskeyEndpoints.CreationOptionsRoute;
 
     [Fact]
     public async Task RegisterPasskey_ThenSignInWithIt_Succeeds()
@@ -27,31 +29,8 @@ public sealed class PasskeyCeremonyTests(PlaywrightFixture fixture)
 
             await page.GotoAsync("/Account/Manage/Passkeys");
 
-            var ceremonyPrerequisites = await page.EvaluateAsync<string>(
-                @"() => {
-                    const element = document.querySelector('passkey-submit');
-                    const button = document.querySelector('button[name=""__passkeySubmit""]');
-                    return JSON.stringify({
-                        isSecureContext: window.isSecureContext,
-                        hasCredentials: navigator.credentials !== undefined,
-                        hasPublicKeyCredential: typeof PublicKeyCredential !== 'undefined',
-                        hasParseCreationOptions: typeof PublicKeyCredential !== 'undefined'
-                            && typeof PublicKeyCredential.parseCreationOptionsFromJSON === 'function',
-                        hasParseRequestOptions: typeof PublicKeyCredential !== 'undefined'
-                            && typeof PublicKeyCredential.parseRequestOptionsFromJSON === 'function',
-                        customElementDefined: customElements.get('passkey-submit') !== undefined,
-                        elementUpgraded: element instanceof (customElements.get('passkey-submit') ?? HTMLElement)
-                            && element?.internals !== undefined,
-                        elementSeesForm: element?.internals?.form !== null
-                            && element?.internals?.form !== undefined,
-                        operation: element?.getAttribute('operation'),
-                        clickTargetIsSubmitter: button?.id === 'add-passkey',
-                    });
-                }");
-            Assert.False(
-                ceremonyPrerequisites.Contains("false", StringComparison.Ordinal)
-                    || ceremonyPrerequisites.Contains("null", StringComparison.Ordinal),
-                $"The page cannot start a WebAuthn ceremony, so passkey-submit.js posts the form without a credential: {ceremonyPrerequisites}");
+            var unmetCeremonyPrerequisites = await page.EvaluateAsync<string[]>(BrowserScripts.CeremonyPrerequisites);
+            Assert.Empty(unmetCeremonyPrerequisites);
 
             var creationOptionsRequests = new List<string>();
             page.Request += (_, request) =>
@@ -62,56 +41,41 @@ public sealed class PasskeyCeremonyTests(PlaywrightFixture fixture)
                 }
             };
 
-            var submission = await page.RunAndWaitForResponseAsync(
+            await page.RunAndWaitForResponseAsync(
                 () => page.ClickAsync(PasskeySelectors.Register),
-                response => string.Equals(response.Request.Method, "POST", StringComparison.Ordinal)
+                response => string.Equals(response.Request.Method, HttpMethod.Post.Method, StringComparison.Ordinal)
                             && response.Url.Contains("/Account/Manage/Passkeys", StringComparison.OrdinalIgnoreCase));
-            var submittedFields = SubmittedFieldNames(submission.Request.PostData);
             await page.WaitForLoadStateAsync();
+            await page.Locator(StatusMessageSelector).WaitForAsync();
 
-            var status = page.Locator(StatusMessageSelector);
-            await status.WaitForAsync();
-            var reported = await status.InnerTextAsync();
-            Assert.False(
-                reported.Contains("Could not add", StringComparison.OrdinalIgnoreCase),
-                $"Identity refused the attestation, so the credential never serialized correctly: {reported}");
+            Assert.Single(creationOptionsRequests);
 
             var credentials = await page.Context.Credentials.GetAsync();
-            var mintFailure = $"The Add passkey button should mint exactly one credential; the authenticator holds {credentials.Count}. "
-                              + $"Identity said: '{reported.Trim()}'. The form posted these fields: {submittedFields}. "
-                              + $"Creation-options requests: {creationOptionsRequests.Count}. "
-                              + $"Ceremony prerequisites: {ceremonyPrerequisites}";
-            Assert.True(credentials.Count == 1, mintFailure);
+            Assert.Single(credentials);
 
             await SyntheticAccount.SignOutAsync(page);
             await SignInWithPasskeyAsync(page, email);
 
             await Assertions.Expect(page).Not.ToHaveURLAsync(
-                new Regex("/Account/Login"));
+                new Regex(PageRoutes.Login));
         }
     }
 
-    private static string SubmittedFieldNames(string? postData) =>
-        string.IsNullOrWhiteSpace(postData)
-            ? "(empty body)"
-            : string.Join(", ", postData.Split('&').Select(field => field.Split('=')[0]));
-
     private static async Task SignInWithPasskeyAsync(IPage page, string email)
     {
-        await page.Context.AddInitScriptAsync(
-            "PublicKeyCredential.isConditionalMediationAvailable = () => Promise.resolve(false);");
-        await page.GotoAsync("/Account/Login?ReturnUrl=%2F");
+        await page.Context.AddInitScriptAsync(BrowserScripts.DisableConditionalMediation);
+        await page.GotoAsync($"{PageRoutes.Login}{SyntheticAccountConstants.ReturnToRootQuery}");
         await page.FillAsync("input[name='Input.Email']", email);
         await page.ClickAsync(PasskeySelectors.SignIn);
     }
 
     private static async Task SignInWithPasswordAsync(IPage page, string email, string password)
     {
-        await page.GotoAsync("/Account/Login");
+        await page.GotoAsync(PageRoutes.Login);
         await page.FillAsync("input[name='Input.Email']", email);
         await page.FillAsync("input[name='Input.Password']", password);
         await page.ClickAsync("#login-submit");
         await Assertions.Expect(page).Not.ToHaveURLAsync(
-            new Regex("/Account/Login"));
+            new Regex(PageRoutes.Login));
     }
 }

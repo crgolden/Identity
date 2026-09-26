@@ -1,12 +1,12 @@
 ﻿@page
-@model RenamePasskeyModel
+@model RenamePasskey
 @{
     ViewData["Title"] = "Rename passkey";
 }
 
 <partial name="_StatusMessage" for="StatusMessage" />
 
-@if (Model.Input?.Name is { } name)
+@if (Model.Input.Name is { } name)
 {
     <h4>Enter a new name for your "@name" passkey</h4>
 }

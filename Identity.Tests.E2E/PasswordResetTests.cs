@@ -1,7 +1,7 @@
 namespace Identity.Tests.E2E;
 
 using System.Text.RegularExpressions;
-using Infrastructure;
+using Identity.Tests.E2E.Infrastructure;
 using Microsoft.Playwright;
 
 [Trait("Category", "E2E")]
@@ -12,18 +12,18 @@ public sealed class PasswordResetTests(PlaywrightFixture fixture)
     public async Task ForgotPassword_Reset_LoginWithNewPassword_Succeeds()
     {
         var (email, _) = await fixture.CreateConfirmedUserAsync();
-        const string newPassword = "NewTest@789012!";
+        var newPassword = Generated.NewPassword();
 
         var (context, page) = await fixture.NewPageAsync();
         await using (context)
         {
-            await page.GotoAsync("/Account/ForgotPassword");
+            await page.GotoAsync(PageRoutes.ForgotPassword);
             await page.FillAsync("input[name='Input.Email']", email);
             await page.ClickAsync("#forgot-password-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/ForgotPasswordConfirmation"));
 
             var resetEmail = fixture.Email.TakeEmail(email);
-            var resetLink = EmailCaptureSender.ExtractLink(resetEmail.HtmlBody, "http");
+            var resetLink = fixture.ExtractEmailLink(resetEmail);
 
             await page.GotoAsync(resetLink);
             await page.WaitForURLAsync("**/Account/ResetPassword**");
@@ -32,12 +32,12 @@ public sealed class PasswordResetTests(PlaywrightFixture fixture)
             await page.ClickAsync("#reset-password-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/ResetPasswordConfirmation"));
 
-            await page.GotoAsync("/Account/Login");
+            await page.GotoAsync(PageRoutes.Login);
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", newPassword);
             await page.ClickAsync("#login-submit");
-            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"));
-            Assert.DoesNotContain("/Account/Login", page.Url, StringComparison.Ordinal);
+            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex(PageRoutes.Login));
+            Assert.DoesNotContain(PageRoutes.Login, page.Url, StringComparison.Ordinal);
         }
     }
 
@@ -45,18 +45,18 @@ public sealed class PasswordResetTests(PlaywrightFixture fixture)
     public async Task ForgotPassword_Reset_OldPasswordNoLongerWorks()
     {
         var (email, oldPassword) = await fixture.CreateConfirmedUserAsync();
-        const string newPassword = "NewTest@789012!";
+        var newPassword = Generated.NewPassword();
 
         var (context, page) = await fixture.NewPageAsync();
         await using (context)
         {
-            await page.GotoAsync("/Account/ForgotPassword");
+            await page.GotoAsync(PageRoutes.ForgotPassword);
             await page.FillAsync("input[name='Input.Email']", email);
             await page.ClickAsync("#forgot-password-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/ForgotPasswordConfirmation"));
 
             var resetEmail = fixture.Email.TakeEmail(email);
-            var resetLink = EmailCaptureSender.ExtractLink(resetEmail.HtmlBody, "http");
+            var resetLink = fixture.ExtractEmailLink(resetEmail);
 
             await page.GotoAsync(resetLink);
             await page.WaitForURLAsync("**/Account/ResetPassword**");
@@ -65,11 +65,11 @@ public sealed class PasswordResetTests(PlaywrightFixture fixture)
             await page.ClickAsync("#reset-password-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/ResetPasswordConfirmation"));
 
-            await page.GotoAsync("/Account/Login");
+            await page.GotoAsync(PageRoutes.Login);
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", oldPassword);
             await page.ClickAsync("#login-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/Login"));
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex(PageRoutes.Login));
             var errorText = await page.TextContentAsync("#validation-errors");
             Assert.NotNull(errorText);
         }

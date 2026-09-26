@@ -3,7 +3,8 @@ namespace Identity.Tests.Unit.Pages.Account.Manage;
 using Duende.IdentityServer.Models;
 using Duende.IdentityServer.Validation;
 using Identity.Pages.Account.Manage;
-using Infrastructure;
+using Identity.Tests.Unit.Infrastructure;
+using Microsoft.Extensions.Options;
 
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
@@ -15,15 +16,14 @@ public class ConsentPageModelBaseTests
     public void CreateScopeViewModel_ApiScope_NoParsedParameter_MapsFieldsCorrectly()
     {
         // Arrange
-        var scopeName = TestValues.NewApiScopeName();
-        var scopeDisplayName = TestValues.NewDisplayName();
-        var scopeDescription = TestValues.NewDescription();
+        var scopeName = Generated.NewApiScopeName();
+        var scopeDisplayName = Generated.NewDisplayName();
+        var scopeDescription = Generated.NewDescription();
         var parsed = new ParsedScopeValue(scopeName);
         var apiScope = new ApiScope(scopeName, scopeDisplayName)
         {
             Description = scopeDescription,
             Emphasize = true,
-            Required = false,
         };
 
         // Act
@@ -43,14 +43,14 @@ public class ConsentPageModelBaseTests
     public void CreateScopeViewModel_ApiScope_WithParsedParameter_AppendsToDisplayName()
     {
         // Arrange
-        var scopeName = TestValues.NewApiScopeName();
-        var scopeParameter = TestValues.NewPropertyValue();
+        var scopeName = Generated.NewApiScopeName();
+        var scopeParameter = Generated.NewPropertyValue();
         var parsed = new ParsedScopeValue(scopeName + ScopeParameterSeparator + scopeParameter)
         {
             ParsedName = scopeName,
             ParsedParameter = scopeParameter,
         };
-        var apiScope = new ApiScope(scopeName, TestValues.NewDisplayName());
+        var apiScope = new ApiScope(scopeName, Generated.NewDisplayName());
 
         // Act
         var vm = TestableBase.CallCreateScopeViewModel(parsed, apiScope, true);
@@ -63,11 +63,17 @@ public class ConsentPageModelBaseTests
     [Fact]
     public void CreateOfflineAccessScope_ReturnsCorrectViewModel()
     {
+        // Arrange
+        var consentOptions = new ConsentOptions(true, Generated.NewDisplayName(), Generated.NewDescription());
+        var model = new TestableBase(Options.Create(consentOptions));
+
         // Act
-        var vm = TestableBase.CallCreateOfflineAccessScope(true);
+        var vm = model.CallCreateOfflineAccessScope(true);
 
         // Assert
         Assert.Equal(Duende.IdentityServer.IdentityServerConstants.StandardScopes.OfflineAccess, vm.Value);
+        Assert.Equal(consentOptions.OfflineAccessDisplayName, vm.DisplayName);
+        Assert.Equal(consentOptions.OfflineAccessDescription, vm.Description);
         Assert.True(vm.Emphasize);
         Assert.True(vm.Checked);
     }
@@ -76,8 +82,8 @@ public class ConsentPageModelBaseTests
     public void ResourceViewModel_PropertiesRoundTrip()
     {
         // Arrange
-        var resourceName = TestValues.NewApiResourceName();
-        var resourceDisplayName = TestValues.NewDisplayName();
+        var resourceName = Generated.NewApiResourceName();
+        var resourceDisplayName = Generated.NewDisplayName();
 
         // Act
         var resource = new ConsentPageModelBase.ResourceViewModel
@@ -91,7 +97,7 @@ public class ConsentPageModelBaseTests
         Assert.Equal(resourceDisplayName, resource.DisplayName);
     }
 
-    private sealed class TestableBase : ConsentPageModelBase
+    private sealed class TestableBase(IOptions<ConsentOptions> consentOptions) : ConsentPageModelBase(consentOptions)
     {
         public static ScopeViewModel CallCreateScopeViewModel(
             ParsedScopeValue parsedScopeValue,
@@ -99,7 +105,7 @@ public class ConsentPageModelBaseTests
             bool check) =>
             CreateScopeViewModel(parsedScopeValue, apiScope, check);
 
-        public static ScopeViewModel CallCreateOfflineAccessScope(bool check) =>
+        public ScopeViewModel CallCreateOfflineAccessScope(bool check) =>
             CreateOfflineAccessScope(check);
     }
 }

@@ -4,7 +4,7 @@ using System.Net;
 using System.Net.Mime;
 using System.Security.Claims;
 using Identity.Extensions;
-using Infrastructure;
+using Identity.Tests.Unit.Infrastructure;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -17,7 +17,7 @@ using Moq;
 [Trait("Category", "Unit")]
 public class EndpointRouteBuilderExtensionsTests
 {
-    private static readonly string SignedInUserName = TestValues.NewUserName();
+    private static readonly string SignedInUserName = Generated.NewUserName();
 
     [Fact]
     public async Task PasskeyCreationOptions_UserNotFound_Returns404()
@@ -29,7 +29,7 @@ public class EndpointRouteBuilderExtensionsTests
             .ReturnsAsync((IdentityUser<Guid>?)null);
         userManagerMock
             .Setup(u => u.GetUserId(It.IsAny<ClaimsPrincipal>()))
-            .Returns(TestValues.NewUserId().ToString());
+            .Returns(Generated.NewUserId().ToString());
         var (app, client) = await BuildTestAppAsync(userManagerMock, signInManagerMock, antiforgeryMock);
         await using (app)
         {
@@ -47,7 +47,7 @@ public class EndpointRouteBuilderExtensionsTests
     {
         // Arrange
         var (userManagerMock, signInManagerMock, antiforgeryMock) = CreateMocks();
-        var userId = TestValues.NewUserId();
+        var userId = Generated.NewUserId();
         var user = new IdentityUser<Guid> { Id = userId, UserName = SignedInUserName };
         userManagerMock
             .Setup(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
@@ -58,7 +58,7 @@ public class EndpointRouteBuilderExtensionsTests
         userManagerMock
             .Setup(u => u.GetUserNameAsync(user))
             .ReturnsAsync(SignedInUserName);
-        var creationOptionsJson = TestValues.NewPasskeyOptionsJson();
+        var creationOptionsJson = Generated.NewPasskeyOptionsJson();
         signInManagerMock
             .Setup(s => s.MakePasskeyCreationOptionsAsync(It.IsAny<PasskeyUserEntity>()))
             .ReturnsAsync(creationOptionsJson);
@@ -82,7 +82,7 @@ public class EndpointRouteBuilderExtensionsTests
     {
         // Arrange
         var (userManagerMock, signInManagerMock, antiforgeryMock) = CreateMocks();
-        var userId = TestValues.NewUserId();
+        var userId = Generated.NewUserId();
         var user = new IdentityUser<Guid> { Id = userId, UserName = SignedInUserName };
         PasskeyUserEntity? capturedEntity = null;
 
@@ -92,7 +92,7 @@ public class EndpointRouteBuilderExtensionsTests
         signInManagerMock
             .Setup(s => s.MakePasskeyCreationOptionsAsync(It.IsAny<PasskeyUserEntity>()))
             .Callback<PasskeyUserEntity>(e => capturedEntity = e)
-            .ReturnsAsync(TestValues.NewPasskeyOptionsJson());
+            .ReturnsAsync(Generated.NewPasskeyOptionsJson());
         var (app, client) = await BuildTestAppAsync(userManagerMock, signInManagerMock, antiforgeryMock);
         await using (app)
         {
@@ -113,7 +113,7 @@ public class EndpointRouteBuilderExtensionsTests
     {
         // Arrange
         var (userManagerMock, signInManagerMock, antiforgeryMock) = CreateMocks();
-        var userId = TestValues.NewUserId();
+        var userId = Generated.NewUserId();
         var user = new IdentityUser<Guid> { Id = userId, UserName = null };
         PasskeyUserEntity? capturedEntity = null;
 
@@ -123,7 +123,7 @@ public class EndpointRouteBuilderExtensionsTests
         signInManagerMock
             .Setup(s => s.MakePasskeyCreationOptionsAsync(It.IsAny<PasskeyUserEntity>()))
             .Callback<PasskeyUserEntity>(e => capturedEntity = e)
-            .ReturnsAsync(TestValues.NewPasskeyOptionsJson());
+            .ReturnsAsync(Generated.NewPasskeyOptionsJson());
 
         var (app, client) = await BuildTestAppAsync(userManagerMock, signInManagerMock, antiforgeryMock);
         await using (app)
@@ -146,7 +146,7 @@ public class EndpointRouteBuilderExtensionsTests
         var (userManagerMock, signInManagerMock, antiforgeryMock) = CreateMocks();
         signInManagerMock
             .Setup(s => s.MakePasskeyRequestOptionsAsync(null))
-            .ReturnsAsync(TestValues.NewPasskeyOptionsJson());
+            .ReturnsAsync(Generated.NewPasskeyOptionsJson());
         var (app, client) = await BuildTestAppAsync(userManagerMock, signInManagerMock, antiforgeryMock);
         await using (app)
         {
@@ -168,12 +168,12 @@ public class EndpointRouteBuilderExtensionsTests
         var (userManagerMock, signInManagerMock, antiforgeryMock) = CreateMocks();
         signInManagerMock
             .Setup(s => s.MakePasskeyRequestOptionsAsync(null))
-            .ReturnsAsync(TestValues.NewPasskeyOptionsJson());
+            .ReturnsAsync(Generated.NewPasskeyOptionsJson());
         var (app, client) = await BuildTestAppAsync(userManagerMock, signInManagerMock, antiforgeryMock);
         await using (app)
         {
             // Act
-            var response = await client.PostAsync(UserNameQuery(TestValues.NewWhitespaceValue()), null, TestContext.Current.CancellationToken);
+            var response = await client.PostAsync(UserNameQuery(Generated.NewWhitespaceValue()), null, TestContext.Current.CancellationToken);
 
             // Assert
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -194,7 +194,7 @@ public class EndpointRouteBuilderExtensionsTests
             .ReturnsAsync(user);
         signInManagerMock
             .Setup(s => s.MakePasskeyRequestOptionsAsync(user))
-            .ReturnsAsync(TestValues.NewPasskeyOptionsJson());
+            .ReturnsAsync(Generated.NewPasskeyOptionsJson());
         var (app, client) = await BuildTestAppAsync(userManagerMock, signInManagerMock, antiforgeryMock);
         await using (app)
         {
@@ -213,7 +213,7 @@ public class EndpointRouteBuilderExtensionsTests
     {
         // Arrange
         var (userManagerMock, signInManagerMock, antiforgeryMock) = CreateMocks();
-        var requestOptionsJson = TestValues.NewPasskeyOptionsJson();
+        var requestOptionsJson = Generated.NewPasskeyOptionsJson();
         signInManagerMock
             .Setup(s => s.MakePasskeyRequestOptionsAsync(null))
             .ReturnsAsync(requestOptionsJson);
@@ -235,9 +235,9 @@ public class EndpointRouteBuilderExtensionsTests
     private static string UserNameQuery(string userName) =>
         PasskeyEndpoints.RequestOptionsPath + '?' + PasskeyEndpoints.UserNameQueryKey + '=' + userName;
 
-    private static (Mock<UserManager<IdentityUser<Guid>>> userManagerMock,
-                    Mock<SignInManager<IdentityUser<Guid>>> signInManagerMock,
-                    Mock<IAntiforgery> antiforgeryMock) CreateMocks()
+    private static (Mock<UserManager<IdentityUser<Guid>>> UserManagerMock,
+                    Mock<SignInManager<IdentityUser<Guid>>> SignInManagerMock,
+                    Mock<IAntiforgery> AntiforgeryMock) CreateMocks()
     {
         var userManagerMock = MockHelpers.MockUserManager();
         var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
@@ -250,7 +250,7 @@ public class EndpointRouteBuilderExtensionsTests
         return (userManagerMock, signInManagerMock, antiforgeryMock);
     }
 
-    private static async Task<(WebApplication app, HttpClient client)> BuildTestAppAsync(
+    private static async Task<(WebApplication App, HttpClient Client)> BuildTestAppAsync(
         Mock<UserManager<IdentityUser<Guid>>> userManagerMock,
         Mock<SignInManager<IdentityUser<Guid>>> signInManagerMock,
         Mock<IAntiforgery> antiforgeryMock)
@@ -258,9 +258,9 @@ public class EndpointRouteBuilderExtensionsTests
         var builder = WebApplication.CreateSlimBuilder();
         builder.WebHost.UseTestServer();
         builder.Services.AddRouting();
-        builder.Services.AddSingleton<UserManager<IdentityUser<Guid>>>(userManagerMock.Object);
-        builder.Services.AddSingleton<SignInManager<IdentityUser<Guid>>>(signInManagerMock.Object);
-        builder.Services.AddSingleton<IAntiforgery>(antiforgeryMock.Object);
+        builder.Services.AddSingleton(userManagerMock.Object);
+        builder.Services.AddSingleton(signInManagerMock.Object);
+        builder.Services.AddSingleton(antiforgeryMock.Object);
 
         var app = builder.Build();
         app.UseRouting();

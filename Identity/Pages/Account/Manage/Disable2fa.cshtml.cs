@@ -4,9 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-#pragma warning disable S101
-public class Disable2faModel : PageModel
-#pragma warning restore S101
+public class Disable2fa : PageModel
 {
     internal const string TwoFactorNotEnabledMessage = "Cannot disable 2FA for user as it's not currently enabled.";
 
@@ -17,7 +15,7 @@ public class Disable2faModel : PageModel
 
     private readonly UserManager<IdentityUser<Guid>> _userManager;
 
-    public Disable2faModel(UserManager<IdentityUser<Guid>> userManager)
+    public Disable2fa(UserManager<IdentityUser<Guid>> userManager)
     {
         _userManager = userManager;
     }

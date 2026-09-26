@@ -1,5 +1,5 @@
 @page
-@model GrantTypesModel
+@model GrantTypes
 
 @{
     ViewData["Title"] = "Client Grant Types";
@@ -19,9 +19,9 @@
             <tr><th>Grant Type</th></tr>
         </thead>
         <tbody>
-            @foreach (var g in Model.Client.AllowedGrantTypes ?? [])
+            @foreach (var g in Model.Resources)
             {
-                <tr><td>@g.GrantType</td></tr>
+                <tr id="grant-type-row-@g.Id"><td>@g.GrantType</td></tr>
             }
         </tbody>
     </table>

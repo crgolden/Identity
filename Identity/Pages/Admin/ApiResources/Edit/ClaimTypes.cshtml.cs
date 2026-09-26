@@ -3,23 +3,19 @@ namespace Identity.Pages.Admin.ApiResources.Edit;
 using Duende.IdentityServer.EntityFramework.Entities;
 using Duende.IdentityServer.EntityFramework.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
-public class ClaimTypesModel : PageModel
+public class ClaimTypes : EditableResourcesBase<int, ApiResourceClaim>
 {
     internal const string DetailsPageName = "/Admin/ApiResources/Details/ClaimTypes";
 
     private readonly IConfigurationDbContext _context;
 
-    public ClaimTypesModel(IConfigurationDbContext context) => _context = context;
+    public ClaimTypes(IConfigurationDbContext context) => _context = context;
 
     public int ResourceId { get; private set; }
 
     public string? ResourceName { get; private set; }
-
-    [BindProperty]
-    public List<ApiResourceClaim> ClaimTypes { get; set; } = [];
 
     public async Task<IActionResult> OnGetAsync(int id)
     {
@@ -31,7 +27,7 @@ public class ClaimTypesModel : PageModel
 
         ResourceId = resource.Id;
         ResourceName = resource.Name;
-        ClaimTypes = resource.UserClaims;
+        Resources = resource.UserClaims;
         return Page();
     }
 
@@ -43,9 +39,9 @@ public class ClaimTypesModel : PageModel
             return NotFound();
         }
 
-        resource.UserClaims.RemoveAll(c => !ClaimTypes.Any(p => p.Id == c.Id));
+        resource.UserClaims.RemoveAll(c => !Resources.Any(p => p.Id == c.Id));
 
-        foreach (var posted in ClaimTypes.Where(p => p.Id > 0))
+        foreach (var posted in Resources.Where(p => p.Id > 0))
         {
             var existing = resource.UserClaims.FirstOrDefault(c => c.Id == posted.Id);
             if (existing is not null)
@@ -55,41 +51,24 @@ public class ClaimTypesModel : PageModel
         }
 
         resource.UserClaims.AddRange(
-            ClaimTypes.Where(p => p.Id == 0).Select(p => new ApiResourceClaim { Type = p.Type, ApiResourceId = id }));
+            Resources.Where(p => p.Id == 0).Select(p => new ApiResourceClaim { Type = p.Type, ApiResourceId = id }));
 
         await _context.SaveChangesAsync();
         return RedirectToPage(DetailsPageName, new { id });
     }
 
-    public async Task<IActionResult> OnPostAddRowAsync(int id)
+    protected override async Task<bool> LoadContextAsync(int id)
     {
         var resource = await _context.ApiResources.FirstOrDefaultAsync(r => r.Id == id);
         if (resource is null)
         {
-            return NotFound();
+            return false;
         }
 
         ResourceId = resource.Id;
         ResourceName = resource.Name;
-        ClaimTypes.Add(new ApiResourceClaim());
-        return Page();
+        return true;
     }
 
-    public async Task<IActionResult> OnPostRemoveRowAsync(int id, int index)
-    {
-        var resource = await _context.ApiResources.FirstOrDefaultAsync(r => r.Id == id);
-        if (resource is null)
-        {
-            return NotFound();
-        }
-
-        ResourceId = resource.Id;
-        ResourceName = resource.Name;
-        if (index >= 0 && index < ClaimTypes.Count)
-        {
-            ClaimTypes.RemoveAt(index);
-        }
-
-        return Page();
-    }
+    protected override ApiResourceClaim NewResource() => new();
 }

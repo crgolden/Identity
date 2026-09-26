@@ -16,6 +16,9 @@ TestResults/
 .scannerwork/
 .sonarqube/
 
+# Stryker.NET reports (dotnet stryker writes StrykerOutput/ beside the mutated project)
+StrykerOutput/
+
 # Local ASP.NET Core Data Protection key ring (non-production only — see Program.cs)
 .dataprotection-keys/
 

@@ -5,11 +5,11 @@ using Duende.IdentityServer.EntityFramework.Interfaces;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
-public class IndexModel : PageModel
+public class Index : PageModel
 {
     private readonly IConfigurationDbContext _context;
 
-    public IndexModel(IConfigurationDbContext context) => _context = context;
+    public Index(IConfigurationDbContext context) => _context = context;
 
     public IList<Client> Clients { get; private set; } = [];
 

@@ -3,14 +3,13 @@ namespace Identity.Pages.Admin.IdentityResources.Details;
 using Duende.IdentityServer.EntityFramework.Entities;
 using Duende.IdentityServer.EntityFramework.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
-public class PropertiesModel : PageModel
+public class Properties : ResourcesBase<IdentityResourceProperty>
 {
     private readonly IConfigurationDbContext _context;
 
-    public PropertiesModel(IConfigurationDbContext context) => _context = context;
+    public Properties(IConfigurationDbContext context) => _context = context;
 
     public IdentityResource Resource { get; set; } = new();
 
@@ -25,6 +24,7 @@ public class PropertiesModel : PageModel
         }
 
         Resource = resource;
+        Resources = resource.Properties;
         return Page();
     }
 }

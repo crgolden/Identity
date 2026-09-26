@@ -1,10 +1,17 @@
 namespace Identity.Extensions;
 
 using System.Net.Mime;
+using System.Security.Claims;
+using Duende.IdentityModel;
 using Microsoft.Net.Http.Headers;
+using Serilog.Context;
 
 public static class ApplicationBuilderExtensions
 {
+    internal const string UserIdLogProperty = "UserId";
+
+    internal const string UserEmailLogProperty = "UserEmail";
+
     internal const string ReferrerPolicyHeaderName = "Referrer-Policy";
 
     internal const string ReferrerPolicyNoReferrer = "no-referrer";
@@ -48,6 +55,25 @@ public static class ApplicationBuilderExtensions
         {
             context.Response.OnStarting(static state => ApplyHeaders((HttpContext)state), context);
             return next(context);
+        });
+    }
+
+    public static IApplicationBuilder UseUserLogContext(this IApplicationBuilder? applicationBuilder)
+    {
+        ThrowIfNull(applicationBuilder);
+
+        return applicationBuilder.Use((context, next) =>
+        {
+            if (context.User.Identity?.IsAuthenticated != true)
+            {
+                return next(context);
+            }
+
+            using (LogContext.PushProperty(UserIdLogProperty, context.User.FindFirstValue(JwtClaimTypes.Subject)))
+            using (LogContext.PushProperty(UserEmailLogProperty, context.User.FindFirstValue(JwtClaimTypes.Email)))
+            {
+                return next(context);
+            }
         });
     }
 

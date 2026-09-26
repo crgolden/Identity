@@ -4,11 +4,11 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-public class IndexModel : PageModel
+public class Index : PageModel
 {
     private readonly RoleManager<IdentityRole<Guid>> _roleManager;
 
-    public IndexModel(RoleManager<IdentityRole<Guid>> roleManager) => _roleManager = roleManager;
+    public Index(RoleManager<IdentityRole<Guid>> roleManager) => _roleManager = roleManager;
 
     public IdentityRole<Guid> AppRole { get; private set; } = new();
 

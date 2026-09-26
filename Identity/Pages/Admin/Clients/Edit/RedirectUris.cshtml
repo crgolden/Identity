@@ -1,5 +1,5 @@
 @page
-@model RedirectUrisModel
+@model RedirectUris
 
 @{
     ViewData["Title"] = "Edit Client Redirect URIs";
@@ -17,11 +17,11 @@
                 </tr>
             </thead>
             <tbody>
-                @for (var i = 0; i < Model.RedirectUris.Count; i++)
+                @foreach (var i in Enumerable.Range(0, Model.Resources.Count))
                 {
                     <tr>
-                        <input type="hidden" name="RedirectUris[@i].Id" value="@Model.RedirectUris[i].Id" />
-                        <td><input id="redirecturi-@i" name="RedirectUris[@i].RedirectUri" value="@Model.RedirectUris[i].RedirectUri" class="form-control form-control-sm" aria-label="Redirect URI" /></td>
+                        <input type="hidden" name="Resources[@i].Id" value="@Model.Resources[i].Id" />
+                        <td><input id="redirecturi-@i" name="Resources[@i].RedirectUri" value="@Model.Resources[i].RedirectUri" class="form-control form-control-sm" aria-label="Redirect URI" /></td>
                         <td><button id="redirecturi-remove-@i" type="submit" asp-page-handler="RemoveRow" asp-route-id="@Model.Client.Id" asp-route-index="@i" class="btn btn-sm btn-danger">Remove</button></td>
                     </tr>
                 }

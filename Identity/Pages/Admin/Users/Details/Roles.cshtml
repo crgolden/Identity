@@ -1,5 +1,5 @@
 @page "{id}"
-@model Identity.Pages.Admin.Users.Details.RolesModel
+@model Identity.Pages.Admin.Users.Details.Roles
 @{
     ViewData["Title"] = "User Roles";
 }
@@ -25,9 +25,9 @@
 </ul>
 
 <ul id="page-list" class="list-group mb-3">
-    @for (var i = 0; i < Model.Roles.Count; i++)
+    @foreach (var i in Enumerable.Range(0, Model.Resources.Count))
     {
-        <li id="user-role-@i" class="list-group-item">@Model.Roles[i]</li>
+        <li id="user-role-@i" class="list-group-item">@Model.Resources[i]</li>
     }
 </ul>
 

@@ -23,7 +23,7 @@ dotnet build Identity.Tests.Unit --configuration Debug
 .\Identity.Tests.Unit\bin\Debug\net10.0\Identity.Tests.Unit.exe -trait "Category=Unit" -showLiveOutput
 ```
 
-A `PageModel` test whose handler calls `Url.Page(...)` or `Url.RouteUrl(...)` must set up the mocked `IUrlHelper`'s `ActionContext` (`urlHelperMock.SetupGet(u => u.ActionContext).Returns(new ActionContext(new DefaultHttpContext(), routeData, new ActionDescriptor()))`) even though the test never reads it: `UrlHelperExtensions.Page`/`RouteUrl` read it on every call and throw on null. `Pages/Account/ExternalLogin.cshtmlTests.cs` is the pattern.
+A `PageModel` test whose handler calls `Url.Page(...)` or `Url.RouteUrl(...)` must set up the mocked `IUrlHelper`'s `ActionContext` (`urlHelperMock.SetupGet(u => u.ActionContext).Returns(new ActionContext(new DefaultHttpContext(), routeData, new ActionDescriptor()))`) even though the test never reads it: `UrlHelperExtensions.Page`/`RouteUrl` read it on every call and throw on null. `Pages/Account/ExternalLoginTests.cs` is the pattern.
 
 ### E2E Tests (local, `Identity.Tests.E2E`)
 
@@ -397,6 +397,8 @@ flowchart TD
 
 ### Login Tests
 
+**The two lockout tests read `IdentityOptions.Lockout.MaxFailedAccessAttempts` out of the running app; do not put the number back.** `LoginTests.Login_MaxFailedAttempts_LocksAccount` and `Security/ConcurrentLockoutTests` each used to restate ASP.NET Identity's default of 5 as a bare literal (`for (var i = 0; i < 5; i++)` with an `if (i < 4)` inside it, and `Enumerable.Range(0, 10)`), so raising or lowering the policy would have left both tests asserting the old threshold while still passing. They now resolve `IOptions<IdentityOptions>` from `fixture.Factory.Services`, which is the same options instance the app signs in against. `ConcurrentLockoutTests` overshoots it by `AttemptsPerThreshold` rather than by a second hardcoded count. This is [CODE-STYLE.md](../AGENTS/CODE-STYLE.md) rule 11's "a policy threshold the SUT owns moves to a production constant the SUT reads", not a cosmetic rename.
+
 | Path | File | Test Method |
 |---|---|---|
 | GET /Account/Login — error message | `Login.cshtmlTests.cs` | `OnGetAsync_WithErrorMessage_AddsModelError` |
@@ -500,7 +502,7 @@ flowchart TD
 | POST — invalid model | `ForgotPassword.cshtmlTests.cs` | `OnPostAsync_ModelStateInvalid_ReturnsPage` |
 | POST — user null or unconfirmed | `ForgotPassword.cshtmlTests.cs` | `OnPostAsync_UserNullOrUnconfirmed_RedirectsToConfirmation_DoesNotSendEmail` |
 | GET /ResetPassword — no code | `ResetPassword.cshtmlTests.cs` | `OnGet_CodeIsNull_ReturnsBadRequestWithMessage` |
-| GET /ResetPassword — malformed code | `ResetPassword.cshtmlTests.cs` | `OnGet_MalformedCode_ThrowsFormatException` |
+| GET /ResetPassword: malformed code, a character outside base64url at the start or the end. A trailing `%` is not malformed: since .NET 9 `WebEncoders.Base64UrlDecode` goes through `Base64Url`, which reads `%` as padding | `ResetPassword.cshtmlTests.cs` | `OnGet_MalformedCode_ThrowsFormatException` |
 | GET /ResetPassword — valid code | `ResetPassword.cshtmlTests.cs` | `OnGet_ValidBase64UrlEncodedCode_SetsInputCodeAndReturnsPage` |
 | POST /ResetPassword — invalid model | `ResetPassword.cshtmlTests.cs` | `OnPostAsync_ModelStateInvalid_ReturnsPage` |
 | POST /ResetPassword — reset fails | `ResetPassword.cshtmlTests.cs` | `OnPostAsync_ResetPasswordFails_AddsModelErrorsAndReturnsPage` |
@@ -828,8 +830,8 @@ E2E (`Category=E2E`, `ExternalLoginTests.cs`) exercises the real button-click �
 end to end against a real Kestrel host and SQL Server, without a live Google account —
 `FakeGoogleSchemeProvider` decorates `IAuthenticationSchemeProvider` to resolve the Google scheme to
 `FakeExternalAuthenticationHandler`, which signs into the external cookie scheme with a claim set the test
-controls (via the `E2E-Google-Claims` cookie), then production code (`ExternalLoginModel`,
-`ExternalLoginsModel`, `SignInManager`) runs unmodified from there. See
+controls (via the `E2E-Google-Claims` cookie), then production code (`ExternalLogin`,
+`ExternalLogins`, `SignInManager`) runs unmodified from there. See
 `Identity.Tests.E2E/Infrastructure/FakeGoogleSchemeProvider.cs` and
 `FakeExternalAuthenticationHandler.cs`.
 
@@ -891,7 +893,7 @@ flowchart TD
 | Gravatar — SHA-256 hash casing | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_AlwaysHashesEmailToSha256Lowercase` |
 | Gravatar — cancellation | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_PassesCancellationToken` |
 
-`IndexModel.OnPostAsync` only calls `SetPhoneNumberAsync` when the existing and submitted phone numbers are both non-null/non-whitespace *and* different from each other; `OnPostAsync_PhoneUpdateScenarios` (`Manage/Index.cshtmlTests.cs`, via `PhoneUpdateCases`) covers all six combinations of that condition against `existingPhone`/`inputPhone`/`setSucceeds`/`expectSetCall`/`expectRefreshCall`/`expectedStatusMessage`.
+`Index.OnPostAsync` only calls `SetPhoneNumberAsync` when the existing and submitted phone numbers are both non-null/non-whitespace *and* different from each other; `OnPostAsync_PhoneUpdateScenarios` (`Manage/IndexTests.cs`, via `PhoneUpdateCases`) covers all six combinations of that condition against `existingPhone`/`inputPhone`/`setSucceeds`/`expectSetCall`/`expectRefreshCall`/`expectedStatusMessage`.
 
 ---
 
@@ -951,6 +953,8 @@ flowchart TD
 ```
 
 ### Email Change Tests
+
+**"No confirmation was sent" is asserted against the capture, not the page.** `ChangeEmail_SameEmail_DoesNotSendConfirmation` used to read the whole body and assert it did not contain the words "confirmation link has been sent", which coupled the test to production copy and would have passed silently if the banner were reworded while an email *was* still enqueued. `EmailCaptureSender.HasEmailFor(address)` answers the actual question — whether anything reached the `email` queue — and `TakeEmail` throws on an empty queue, so it cannot express the negative case.
 
 | Path | File | Test Method |
 |---|---|---|
@@ -1476,6 +1480,14 @@ These pages implement the IdentityServer interactive UI — consent, grants, dev
 | Pre-existing CSP is not overwritten, deferring to Duende | `Extensions/ApplicationBuilderExtensionsTests.cs` | `UseSecurityHeaders_ExistingCspNotOverwritten` |
 | Null application builder throws | `Extensions/ApplicationBuilderExtensionsTests.cs` | `UseSecurityHeaders_NullApplicationBuilder_Throws` |
 
+`UseUserLogContext()` stamps the signed-in user's subject and email onto every log event written further down the pipeline. Tests log through a Serilog logger enriched from the log context and read the captured event.
+
+| Scenario | File | Test Method |
+|---|---|---|
+| An authenticated user's subject and email reach events logged downstream | `Extensions/ApplicationBuilderExtensionsTests.cs` | `UseUserLogContext_AuthenticatedUser_AddsTheSubjectAndEmailToEveryEventLoggedDownstream` |
+| An anonymous request adds neither property | `Extensions/ApplicationBuilderExtensionsTests.cs` | `UseUserLogContext_AnonymousRequest_AddsNoUserPropertiesToEventsLoggedDownstream` |
+| Null application builder throws | `Extensions/ApplicationBuilderExtensionsTests.cs` | `UseUserLogContext_NullApplicationBuilder_Throws` |
+
 ### Telemetry Tests
 
 Custom `Identity` meter counters (`Telemetry.cs`) are verified with `MeterListener`.
@@ -1594,7 +1606,7 @@ quadrantChart
 | `POST /Account/PasskeyCreationOptions` | — | ✅ | ❌ | Minimal API |
 | `POST /Account/PasskeyRequestOptions` | — | ✅ | ❌ | Minimal API |
 | `/Health` | ❌ | — | ❌ | Infrastructure endpoint |
-| `/` | ❌ | — | ✅ | E2E only (`HomeTests.cs`). The anonymous/signed-in branch lives in the view, so `IndexModel` has no seam a unit test can reach — the ❌ is a property of the design, not a gap someone forgot |
+| `/` | ❌ | — | ✅ | E2E only (`HomeTests.cs`). The anonymous/signed-in branch lives in the view, so `Index` has no seam a unit test can reach — the ❌ is a property of the design, not a gap someone forgot |
 | `/Privacy` | 🔵 | — | ❌ | Constructor only |
 | `/Error` | ✅ | — | ❌ | |
 | `/Account/Manage/Consent` | ✅ | ✅ | ✅ | Allow, Deny, no-scopes E2E flows |
@@ -1634,12 +1646,14 @@ Load tests use `Parallel.ForEachAsync` + `HttpClient` (self-signed cert ignored)
 
 > **Test parallelism note:** `Identity.Tests.E2E/xunit.runner.json` sets `parallelizeTestCollections: false`. This is required because `PlaywrightFixture` initializes `WebApplicationFactory<Program>`, whose startup makes concurrent external calls. When many E2E tests run in parallel, thread pool saturation causes those async calls to time out and the factory throws "The entry point exited without ever building an IHost." Serializing collections eliminates the contention at the cost of a longer combined run. If you see this error, do not change the parallelism setting — diagnose the Azure credential or network path instead. `Identity.Tests.Unit` has no such constraint and runs with `parallelizeTestCollections: true` since Playwright/`WebApplicationFactory` left with the E2E split.
 
-| Test | Endpoint | RPS | Pass Criterion |
+| Test | Endpoint | Requests × parallelism | Pass Criterion |
 |---|---|---|---|
-| `DiscoveryEndpoint_Under50Rps_HasNegligibleFailures` | `/.well-known/openid-configuration` | ~50 | < 1% failure |
-| `LoginPage_Under30Rps_HasNegligibleFailures` | `/Account/Login` | ~30 | < 2% failure |
-| `JwksEndpoint_Under100Rps_HasNegligibleFailures` | `/.well-known/openid-configuration/jwks` | ~100 | < 1% failure |
-| `HealthEndpoint_Under20Rps_AllSucceed` | `/Health` | ~20 | 0 failures |
+| `DiscoveryEndpoint_UnderConcurrentLoad_HasNegligibleFailures` | `/.well-known/openid-configuration` | `DiscoveryRequests` × `DiscoveryParallelism` | fail rate < `MaxFailRate` |
+| `LoginPage_UnderConcurrentLoad_HasNegligibleFailures` | `/Account/Login` | `LoginRequests` × `LoginParallelism` | fail rate < `MaxLoginFailRate` |
+| `JwksEndpoint_UnderConcurrentLoad_HasNegligibleFailures` | `/.well-known/openid-configuration/jwks` | `JwksRequests` × `JwksParallelism` | fail rate < `MaxFailRate` |
+| `HealthEndpoint_UnderConcurrentLoad_AllSucceed` | `/health` | `HealthRequests` × `HealthParallelism` | 0 failures |
+
+Every figure is a required key of the `LoadSettings` configuration section, read through the hosted app's `IConfiguration`: `Identity/appsettings.Development.json` locally, `LoadSettings__*` environment variables from repository variables in CI. `RequestScale` multiplies every profile's request count, capped at `MaxRequests`. The `workflow_dispatch` inputs override `RequestScale` and the two fail-rate ceilings for one run; left empty, the repository variable applies.
 
 ### Property-Based Tests (`Identity.Tests.Unit/PropertyBased/`)
 
@@ -1674,7 +1688,7 @@ Stryker.NET is configured in `stryker-config.json` with `mutation-level: Advance
 
 **Nothing is excluded for being slow.** This is a shared authentication server that is deployed rarely, so a long mutation run costs far less than a defect reaching production. `Pages/Admin/` in particular — 112 files, 1,410 mutants — is the configuration surface of the authorization server: redirect URI and post-logout redirect URI allow-lists, CORS origins, grant types, scopes, and client secrets. A mutant surviving there is the shape of an open redirect or a token-leak path, which makes it the highest-value code in the repo to mutate, not the most skippable. It also scores well (107 of its 112 files have a matching unit-test file), so including it *raises* the overall score rather than threatening the gate.
 
-**Pin the Stryker version — the score moves with it.** The CI job runs `dotnet tool update --global dotnet-stryker --version 4.16.0`. `update` rather than `install` because the job restores `~/.dotnet/tools` from an `actions/cache` step, and `dotnet tool install` fails outright when the tool is already present; `update` is idempotent against a warm cache. Measured 2026-08-20 on identical code and config, only the tool differing: 4.14.0 scored **55.56 %** (Killed 65 / Survived 27) and 4.16.0 scored **63.25 %** (Killed 74 / Survived 18). An unpinned `dotnet tool install` therefore lets the gate's number move on someone else's release schedule, with no commit to blame. Bump the pin deliberately and re-derive the thresholds in the same change.
+**Pin the Stryker version: the score moves with it.** `dotnet-stryker` is pinned in the repo's `dotnet-tools.json`, so the CI `mutation` job (`dotnet tool restore`) and the local gate run the same release. Two releases score identical code and config differently, so an unpinned install lets the gate's number move on someone else's release schedule, with no commit to blame. Bump the pin deliberately and re-derive the thresholds in the same change.
 
 **What the scope costs, measured 2026-08-20 under 4.16.0.** Narrowing is possible but has been rejected deliberately; the numbers are recorded so the trade is not re-litigated from guesswork:
 
@@ -1690,15 +1704,23 @@ Those times are from a developer machine. The GitHub `windows-latest` runner is 
 
 Do **not** narrow this by reintroducing a blanket `!Pages/**`: under dotnet-stryker 4.14.0 page-model mutants could not compile (`Failed to load analyzer 'Microsoft.CodeAnalysis.Razor.Compiler': ReferencesNewerCompiler`) and silently hung — 1,869 mutants queued, **1 h 36 m** elapsed, and only 244 ever reaching a verdict, with 1,604 of the 1,625 unfinished in `Pages/`. It looked like a scope problem and was a tool problem. 4.16.0 runs the same scope with zero errors and zero timeouts. That is why the pin matters.
 
-Only `Category=Unit` tests run under Stryker (`test-case-filter`), so a mutant in code reachable solely through E2E will survive. That is a real signal about unit coverage, not a configuration flaw.
+**Leave `additional-timeout` unset.** Its unit is milliseconds and Stryker's default is 3000; each mutant's budget is `(initialTestRunTime + coveringTestsTime) * timeout-ratio + additional-timeout`. The MTP runner force-kills and restarts its test server after every timeout, and a cold server's first run needs that headroom, so a value written as if it were seconds (30) turns one slow start into a cascade in which unrelated mutants on both runners time out together and a failing mutant is scored `Timeout`, which counts as detected.
+
+**`coverage-analysis` is `perTest`, never `all`.** Under `all` the MTP runner records every test as covering every covered mutant, so each mutant carries the whole unit suite in `coveredBy`, the JSON report outgrows the dashboard's 100 MB request limit, and the upload answers HTTP 413. `perTest` records only the tests that reach each mutant; the MTP runner supports it from dotnet-stryker 5.0.0.
+
+**An upload failure fails the run.** The dashboard client logs `Failed to upload report to the dashboard` and still exits 0, so the CI step and the gate both match that line and fail on it; without the match, a report that never arrives looks like a green run.
+
+Only the unit tests run under Stryker, because `test-projects` names `Identity.Tests.Unit` alone, so a mutant in code reachable solely through E2E will survive. That is a real signal about unit coverage, not a configuration flaw.
+
+**Never add a `test-case-filter`.** Every test in that project is `Category=Unit`, so a filter selects nothing more, and under dotnet-stryker 5.0.0's MTP runner a filter is what strands a static-initializer mutant: its every-test run is aggregated against a filtered count that can never match the discovered total, the mutant stays `Pending`, and the dashboard refuses a report holding one (400, "Submitting pending reports to the completed reports endpoint is not allowed").
 
 **Thresholds:** high=75, low=65, break=60 (CI fails if mutation score < 60). Re-derived 2026-08-20 against the current scope and pin, which measured **70.56 %** — Killed 1,462, Survived 409, Timeout 0, Errors 0, across 1,871 tested mutants. That leaves about 10 points of headroom, roughly 190 mutants, so the gate is a real floor rather than a formality; lower `break` toward 50 if it proves too tight in practice. The previous 85.71 % was measured over the old three-file allowlist and just **20 mutants**; the two numbers are not comparable, and the difference is a wider denominator, not a regression in the code.
 
 **This replaced a hand-maintained allowlist that had silently gone stale four times.** The old `mutate` array was seeded with five files in `efe74d0` (2026-03-19) and every subsequent edit was a deletion or a rename chasing a file that had moved: `PasskeyEndpointRouteBuilderExtensions.cs` renamed (`1ab0aae`), `SecretClientExtensions.cs` deleted (`798a47a`), the `Identity.Api/` prefix stripped (`8c9dd8e`), `EmailSender.cs` dropped once it no longer existed (`dd4e4e4`), and finally `GravatarService.cs` left pointing at the project root after the Avatar slice moved it. Nothing was ever added. A stale entry never failed the job — Stryker just mutated a smaller set and still reported a score, so the run stayed green while covering less, and the score's denominator moved whenever a file left the list. Do not reintroduce a filename allowlist; add an exclusion with a stated reason instead.
 
 ```bash
-# Install once
-dotnet tool install -g dotnet-stryker
+# Install the pinned version from the tool manifest
+dotnet tool restore
 
 # Run (about 70 minutes on a developer machine at the current scope)
 dotnet stryker --config-file stryker-config.json
@@ -1722,7 +1744,7 @@ Secrets (on Clients and API Resources) are write-only once stored — the Edit f
 
 ### ID convention
 
-The fleet-wide rule (why positional/class selectors are banned, how loop indices are used, and the one model-bound-input exception) now lives in the workspace-level [AGENTS/TESTING.md](../AGENTS/TESTING.md#e2e-selector-strategy--select-by-id-never-by-position) so every Playwright repo sees it, not just this one. What follows is Identity's own admin-page id table, which that rule points back to:
+The fleet-wide rule (why positional/class selectors are banned, how loop indices are used, and the one model-bound-input exception) now lives in the workspace-level [AGENTS/TESTING.md](../AGENTS/TESTING.md#e2e-selector-strategy-select-by-id-never-by-position) so every Playwright repo sees it, not just this one. What follows is Identity's own admin-page id table, which that rule points back to:
 
 | Element | `id` |
 |---|---|
@@ -1748,7 +1770,7 @@ The fleet-wide rule (why positional/class selectors are banned, how loop indices
 
 Reaching one specific row uses the **entity key**, resolved from the database first: `PlaywrightFixture.GetUserIdAsync`, `GetRoleIdAsync` and `GetPersistedGrantKeyAsync` exist for exactly that, and replace the `Locator("tr", new PageLocatorOptions { HasText = … }).Locator("[id^='details-']").First` shape. One case cannot use a `#id` selector: `PersistedGrant.Key` is Duende's Base64 SHA-256 handle and can contain `+`, `/` and `=`, which are not legal in a CSS `#` id selector — `ReadOnlyGrantSectionsTests` therefore selects `[id='details-{key}']`, the attribute form of the same id.
 
-Collection row ids are index-based (`{index}` = the row's position in the bound list, 0-based) and come from a single server-rendered `@for` loop — clicking "Add"/"Remove" posts to an `OnPostAddRowAsync`/`OnPostRemoveRowAsync` page handler that mutates the bound list and returns `Page()`, so the same loop renders both pre-existing and freshly-added rows with no separate client-side templating step. There is no JavaScript involved in this pattern (`Identity/wwwroot/js/admin-collection.js`, which previously did this via a `<template>` clone, was removed — a CI run traced 57 failing Add/Remove/Update tests to that file intermittently being served with an empty body under load, which a server-only round trip can't fail in the same way). Every Add/Remove button carries an explicit `asp-route-id` rather than relying on the browser reusing the current URL, since after a round trip that URL still carries the previous `?handler=` query value.
+Collection row ids are index-based (`{index}` = the row's position in the bound list, 0-based) and come from a single server-rendered `@foreach` loop over `Enumerable.Range(0, count)`. Clicking "Add"/"Remove" posts to an `OnPostAddRowAsync`/`OnPostRemoveRowAsync` page handler that mutates the bound list and returns `Page()`, so the same loop renders both pre-existing and freshly added rows with no separate client-side templating step. The pattern uses no JavaScript, and none may be added: a client-side `<template>` clone depends on a script being served intact under load, which a server-only round trip does not. Every Add/Remove button carries an explicit `asp-route-id` rather than relying on the browser reusing the current URL, since after a round trip that URL still carries the previous `?handler=` query value.
 
 ### Unit test coverage
 
@@ -1786,7 +1808,7 @@ Current test infrastructure:
 - `PlaywrightFixture.CreateAdminUserAsync()` — creates a confirmed user and assigns the `Admin` role
 - `PlaywrightFixture.GetUserIdAsync(email)`, `GetRoleIdAsync(roleName)`, `GetPersistedGrantKeyAsync(clientId)` — entity-key lookups, so a test that means *this* row clicks `#details-{key}` instead of matching row text
 - `PlaywrightFixture.SeedClientAsync(clientId)`, `SeedApiResourceAsync(name)`, `SeedApiScopeAsync(name)`, `SeedIdentityResourceAsync(name)` — find-or-create seed helpers via `IConfigurationDbContext`. `IdentityProvider`/`SamlServiceProvider` have no seed method since their scenarios are Create-driven (the UI Create flow itself produces the row).
-- No per-test cleanup: none of the `Admin/*.cs` test classes have an `IAsyncLifetime`/`DisposeAsync`. Seeded config entities and test users are removed only by `PlaywrightFixture.CleanupDatabaseAsync()` at the end of the whole suite, and only when running in CI (`CI && _started`) — local runs accumulate test data across runs. Every test that mutates shared, by-name-looked-up state (the `Admin` role, the `Admin` user) creates its own uniquely `Guid`-suffixed row instead.
+- No per-test cleanup: none of the `Admin/*.cs` test classes have an `IAsyncLifetime`/`DisposeAsync`. Seeded config entities and test users are removed only by `PlaywrightFixture.CleanupDatabaseAsync()` at the end of the whole suite, locally and in CI alike, and only after it confirms the connected catalog ends in the test suffix. Every test that mutates shared, by-name-looked-up state (the `Admin` role, the `Admin` user) creates its own uniquely `Guid`-suffixed row instead.
 
 ---
 

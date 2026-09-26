@@ -6,7 +6,23 @@ internal static class PageRoutes
 
     internal const string Home = "/Index";
 
+    internal const string Login = "/Account/Login";
+
+    internal const string Register = "/Account/Register";
+
+    internal const string ForgotPassword = "/Account/ForgotPassword";
+
+    internal const string ResendEmailConfirmation = "/Account/ResendEmailConfirmation";
+
+    internal const string Logout = "/Account/Logout";
+
+    internal const string Lockout = "/Account/Lockout";
+
+    internal const string Consent = "/Account/Manage/Consent";
+
     internal const string Error = "/Error";
+
+    internal const string Health = "/health";
 
     internal const string SiblingIndex = "./Index";
 

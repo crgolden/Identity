@@ -7,11 +7,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 [AllowAnonymous]
-public class CibaModel : PageModel
+public class Ciba : PageModel
 {
     private readonly IBackchannelAuthenticationInteractionService _backchannelInteraction;
 
-    public CibaModel(IBackchannelAuthenticationInteractionService backchannelInteraction)
+    public Ciba(IBackchannelAuthenticationInteractionService backchannelInteraction)
     {
         ThrowIfNull(backchannelInteraction);
         _backchannelInteraction = backchannelInteraction;

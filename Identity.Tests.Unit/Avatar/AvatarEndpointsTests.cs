@@ -2,7 +2,7 @@ namespace Identity.Tests.Unit.Avatar;
 
 using System.Security.Claims;
 using Identity.Avatar;
-using Infrastructure;
+using Identity.Tests.Unit.Infrastructure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
@@ -18,7 +18,7 @@ public class AvatarEndpointsTests
     {
         // Arrange
         var googlePhotoUrl = $"https://lh3.googleusercontent.com/{Guid.NewGuid()}";
-        var user = UserWithEmail(TestValues.NewEmailAddress());
+        var user = UserWithEmail(Generated.NewEmailAddress());
         var avatarService = new Mock<IAvatarService>(MockBehavior.Strict);
         avatarService.Setup(x => x.IsOwnComputedUrl(googlePhotoUrl)).Returns(false);
         var userManager = UserManagerFor(user, [new Claim(AvatarProfileService.PictureClaimType, googlePhotoUrl)]);
@@ -45,7 +45,7 @@ public class AvatarEndpointsTests
         // Arrange
         var scriptUrl = $"javascript:alert('{Guid.NewGuid()}')";
         var computed = new Uri($"https://gravatar.com/avatar/{Guid.NewGuid():N}?s=2048&d=identicon");
-        var emailAddress = TestValues.NewEmailAddress();
+        var emailAddress = Generated.NewEmailAddress();
         var user = UserWithEmail(emailAddress);
         var avatarService = new Mock<IAvatarService>(MockBehavior.Strict);
         avatarService.Setup(x => x.IsOwnComputedUrl(scriptUrl)).Returns(false);
@@ -72,7 +72,7 @@ public class AvatarEndpointsTests
     {
         // Arrange
         var computed = new Uri($"https://gravatar.com/avatar/{Guid.NewGuid():N}?s=2048&d=identicon");
-        var emailAddress = TestValues.NewEmailAddress();
+        var emailAddress = Generated.NewEmailAddress();
         var user = UserWithEmail(emailAddress);
         var avatarService = new Mock<IAvatarService>(MockBehavior.Strict);
         avatarService
@@ -99,7 +99,7 @@ public class AvatarEndpointsTests
         // Arrange
         var legacyGravatarUrl = $"https://gravatar.com/avatar/{Guid.NewGuid():N}?s=2048&d=identicon";
         var computed = new Uri($"https://gravatar.com/avatar/{Guid.NewGuid():N}?s=2048&d=identicon");
-        var emailAddress = TestValues.NewEmailAddress();
+        var emailAddress = Generated.NewEmailAddress();
         var user = UserWithEmail(emailAddress);
         var avatarService = new Mock<IAvatarService>(MockBehavior.Strict);
         avatarService.Setup(x => x.IsOwnComputedUrl(legacyGravatarUrl)).Returns(true);
@@ -126,7 +126,7 @@ public class AvatarEndpointsTests
     public async Task GetAvatarAsync_ReturnsNotFoundWhenTheAvatarServiceResolvesNoUrl()
     {
         // Arrange
-        var emailAddress = TestValues.NewEmailAddress();
+        var emailAddress = Generated.NewEmailAddress();
         var user = UserWithEmail(emailAddress);
         var avatarService = new Mock<IAvatarService>(MockBehavior.Strict);
         avatarService
@@ -152,7 +152,7 @@ public class AvatarEndpointsTests
     public async Task GetAvatarAsync_ReturnsNotFoundForAUserWithNoEmailOrUserName()
     {
         // Arrange
-        var user = new IdentityUser<Guid> { Id = TestValues.NewUserId() };
+        var user = new IdentityUser<Guid> { Id = Generated.NewUserId() };
         var avatarService = new Mock<IAvatarService>(MockBehavior.Strict);
         var userManager = UserManagerFor(user, []);
         var httpContext = new DefaultHttpContext();
@@ -198,7 +198,7 @@ public class AvatarEndpointsTests
     {
         // Arrange
         var googlePhotoUrl = $"https://lh3.googleusercontent.com/{Guid.NewGuid()}";
-        var user = UserWithEmail(TestValues.NewEmailAddress());
+        var user = UserWithEmail(Generated.NewEmailAddress());
         var httpContext = new DefaultHttpContext();
         var avatarService = new Mock<IAvatarService>(MockBehavior.Strict);
         avatarService.Setup(x => x.IsOwnComputedUrl(googlePhotoUrl)).Returns(false);
@@ -222,7 +222,7 @@ public class AvatarEndpointsTests
     {
         // Arrange
         var computed = new Uri($"https://gravatar.com/avatar/{Guid.NewGuid():N}?s=2048&d=identicon");
-        var emailAddress = TestValues.NewEmailAddress();
+        var emailAddress = Generated.NewEmailAddress();
         var user = UserWithEmail(emailAddress);
         var httpContext = new DefaultHttpContext();
         var avatarService = new Mock<IAvatarService>(MockBehavior.Strict);
@@ -246,7 +246,7 @@ public class AvatarEndpointsTests
 
     private static IdentityUser<Guid> UserWithEmail(string emailAddress)
     {
-        var userId = TestValues.NewUserId();
+        var userId = Generated.NewUserId();
         return new IdentityUser<Guid> { Id = userId, Email = emailAddress, UserName = emailAddress };
     }
 

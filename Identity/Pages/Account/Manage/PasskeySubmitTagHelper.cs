@@ -25,7 +25,9 @@ public class PasskeySubmitTagHelper : TagHelper
 
     internal const string AutofillOff = "off";
 
-    internal const string ButtonOpeningTag = "<button type=\"submit\" name=\"__passkeySubmit\" ";
+    internal const string SubmitButtonName = "__passkeySubmit";
+
+    internal const string ButtonOpeningTag = $"<button type=\"submit\" name=\"{SubmitButtonName}\" ";
 
     internal const string ButtonClosingTag = "</button>";
 

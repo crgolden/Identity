@@ -6,22 +6,23 @@ using Microsoft.Extensions.DependencyInjection;
 
 public sealed class TestClientHelper(PlaywrightFixture fixture)
 {
-    public async Task<string> SeedConsentClientAsync(string redirectUri = "https://localhost:9999/callback")
+    public async Task<string> SeedConsentClientAsync()
     {
         var clientId = $"test-{Guid.NewGuid():N}";
 
         await using var scope = fixture.Factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-        var openidResource = await db.IdentityResources.FirstOrDefaultAsync(r => r.Name == "openid");
+        var openidResource = await db.IdentityResources.FirstOrDefaultAsync(
+            r => r.Name == OidcStandardConstants.OpenIdScope);
         if (openidResource == null)
         {
             db.IdentityResources.Add(new IdentityResource
             {
-                Name = "openid",
-                DisplayName = "Your user identifier",
+                Name = OidcStandardConstants.OpenIdScope,
+                DisplayName = Generated.NewDisplayName(),
                 Required = false,
-                UserClaims = [new() { Type = "sub" }],
+                UserClaims = [new() { Type = OidcStandardConstants.SubjectClaim }],
             });
         }
         else if (openidResource.Required)
@@ -29,16 +30,16 @@ public sealed class TestClientHelper(PlaywrightFixture fixture)
             openidResource.Required = false;
         }
 
-        if (!await db.IdentityResources.AnyAsync(r => r.Name == "profile"))
+        if (!await db.IdentityResources.AnyAsync(r => r.Name == OidcStandardConstants.ProfileScope))
         {
             db.IdentityResources.Add(new IdentityResource
             {
-                Name = "profile",
-                DisplayName = "User profile",
+                Name = OidcStandardConstants.ProfileScope,
+                DisplayName = Generated.NewDisplayName(),
                 UserClaims =
                 [
-                    new() { Type = "name" },
-                    new() { Type = "email" },
+                    new() { Type = OidcStandardConstants.NameClaim },
+                    new() { Type = OidcStandardConstants.EmailClaim },
                 ],
             });
         }
@@ -46,15 +47,14 @@ public sealed class TestClientHelper(PlaywrightFixture fixture)
         db.Clients.Add(new Client
         {
             ClientId = clientId,
-            ClientName = "E2E Test Client",
-            ProtocolType = "oidc",
+            ClientName = Generated.NewDisplayName(),
+            ProtocolType = OidcStandardConstants.OidcProtocol,
             RequireConsent = true,
-            AllowRememberConsent = true,
             RequireClientSecret = false,
             RequirePkce = false,
-            AllowedGrantTypes = [new() { GrantType = "authorization_code" }],
-            RedirectUris = [new() { RedirectUri = redirectUri }],
-            AllowedScopes = [new() { Scope = "openid" }],
+            AllowedGrantTypes = [new() { GrantType = OidcStandardConstants.AuthorizationCodeGrant }],
+            RedirectUris = [new() { RedirectUri = OidcStandardConstants.LoopbackRedirectUri }],
+            AllowedScopes = [new() { Scope = OidcStandardConstants.OpenIdScope }],
         });
 
         await db.SaveChangesAsync();

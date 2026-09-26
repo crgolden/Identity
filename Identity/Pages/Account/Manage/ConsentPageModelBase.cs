@@ -3,10 +3,21 @@ namespace Identity.Pages.Account.Manage;
 using Duende.IdentityServer.Models;
 using Duende.IdentityServer.Validation;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Options;
 
 public abstract class ConsentPageModelBase : PageModel
 {
+    internal const string MustChooseOneErrorMessage = "You must pick at least one permission.";
+
+    internal const string InvalidSelectionErrorMessage = "Invalid selection.";
+
+    protected ConsentPageModelBase(IOptions<ConsentOptions> consentOptions) => ConsentOptions = consentOptions.Value;
+
     public ViewModel View { get; set; } = new ViewModel();
+
+    protected static Func<string, bool> EveryScope { get; } = static _ => true;
+
+    protected ConsentOptions ConsentOptions { get; }
 
     protected static ScopeViewModel CreateScopeViewModel(IdentityResource identity, bool check) =>
         new()
@@ -43,7 +54,7 @@ public abstract class ConsentPageModelBase : PageModel
         };
     }
 
-    protected static ScopeViewModel CreateOfflineAccessScope(bool check) =>
+    protected ScopeViewModel CreateOfflineAccessScope(bool check) =>
         new()
         {
             Value = Duende.IdentityServer.IdentityServerConstants.StandardScopes.OfflineAccess,
@@ -72,9 +83,9 @@ public abstract class ConsentPageModelBase : PageModel
     {
         public string? Name { get; set; }
 
-        required public string Value { get; set; }
+        public required string Value { get; set; }
 
-        required public string DisplayName { get; set; }
+        public required string DisplayName { get; set; }
 
         public string? Description { get; set; }
 
@@ -89,8 +100,8 @@ public abstract class ConsentPageModelBase : PageModel
 
     public class ResourceViewModel
     {
-        required public string Name { get; set; }
+        public required string Name { get; set; }
 
-        required public string DisplayName { get; set; }
+        public required string DisplayName { get; set; }
     }
 }

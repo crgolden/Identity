@@ -205,7 +205,7 @@ Alignment utilities are orthogonal to the class set and may be added where neede
 
 ### Collection edit tables (Admin)
 
-Editable rows use `<input class="form-control form-control-sm">` rendered by a server-side `@for` loop — no client-side JavaScript. Add/Remove buttons post to `OnPostAddRowAsync`/`OnPostRemoveRowAsync` handlers that mutate the bound list and return `Page()`. Both carry an explicit `asp-route-id`.
+Editable rows use `<input class="form-control form-control-sm">` rendered by a server-side `@foreach` loop over `Enumerable.Range(0, count)`, with no client-side JavaScript. Add/Remove buttons post to `OnPostAddRowAsync`/`OnPostRemoveRowAsync` handlers that mutate the bound list and return `Page()`. Both carry an explicit `asp-route-id`.
 
 Every row field and its Remove button carries an index-based `id` (`{field}-{index}`), because **E2E tests select by `id`**. Keep every `id` when restyling — a class change is free, an `id` change breaks tests. Detail lists rendered for assertion also carry ids (for example `user-role-{index}`); a class-based selector is not an acceptable substitute.
 

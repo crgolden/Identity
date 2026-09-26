@@ -1,5 +1,5 @@
 @page "{id}"
-@model Identity.Pages.Admin.Users.Details.IndexModel
+@model Identity.Pages.Admin.Users.Details.Index
 @{
     ViewData["Title"] = "User Details";
 }
@@ -17,10 +17,10 @@
         <a id="nav-roles" class="nav-link" asp-page="./Roles" asp-route-id="@Model.AppUser.Id">Roles</a>
     </li>
     <li class="nav-item">
-        <a id="nav-logins" class="nav-link" asp-page="./Logins" asp-route-id="@Model.AppUser.Id">Logins</a>
+        <a id="nav-logins" class="nav-link" asp-page="@Logins.PageName" asp-route-id="@Model.AppUser.Id">Logins</a>
     </li>
     <li class="nav-item">
-        <a id="nav-passkeys" class="nav-link" asp-page="./Passkeys" asp-route-id="@Model.AppUser.Id">Passkeys</a>
+        <a id="nav-passkeys" class="nav-link" asp-page="@Passkeys.PageName" asp-route-id="@Model.AppUser.Id">Passkeys</a>
     </li>
 </ul>
 

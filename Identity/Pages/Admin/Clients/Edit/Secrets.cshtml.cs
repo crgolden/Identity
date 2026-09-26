@@ -1,112 +1,39 @@
 namespace Identity.Pages.Admin.Clients.Edit;
 
+using System.Linq.Expressions;
 using Duende.IdentityServer.EntityFramework.Entities;
 using Duende.IdentityServer.EntityFramework.Interfaces;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
 
-public class SecretsModel : PageModel
+public class Secrets : EditableClientResourcesBase<ClientSecret>
 {
     internal const string DetailsPageName = "/Admin/Clients/Details/Secrets";
 
-    private readonly IConfigurationDbContext _context;
-
-    public SecretsModel(IConfigurationDbContext context) => _context = context;
-
-    public Client Client { get; private set; } = new();
-
-    [BindProperty]
-    public List<ClientSecret> Secrets { get; set; } = [];
-
-    public async Task<IActionResult> OnGetAsync(int id)
+    public Secrets(IConfigurationDbContext context)
+        : base(context)
     {
-        var client = await _context.Clients
-            .Include(c => c.ClientSecrets)
-            .FirstOrDefaultAsync(c => c.Id == id);
-        if (client is null)
-        {
-            return NotFound();
-        }
-
-        Client = client;
-        Secrets = client.ClientSecrets;
-        return Page();
     }
 
-    public async Task<IActionResult> OnPostAsync(int id)
+    protected override Expression<Func<Client, List<ClientSecret>>> Collection => c => c.ClientSecrets;
+
+    protected override string DetailsPage => DetailsPageName;
+
+    protected override int IdOf(ClientSecret resource) => resource.Id;
+
+    protected override void CopyEditableFields(ClientSecret posted, ClientSecret existing)
     {
-        if (!ModelState.IsValid)
-        {
-            return Page();
-        }
-
-        var client = await _context.Clients
-            .Include(c => c.ClientSecrets)
-            .FirstOrDefaultAsync(c => c.Id == id);
-        if (client is null)
-        {
-            return NotFound();
-        }
-
-        var postedIds = Secrets.Where(s => s.Id > 0).Select(s => s.Id).ToHashSet();
-        client.ClientSecrets.RemoveAll(s => !postedIds.Contains(s.Id));
-
-        foreach (var posted in Secrets.Where(s => s.Id > 0))
-        {
-            var existing = client.ClientSecrets.FirstOrDefault(s => s.Id == posted.Id);
-            if (existing is not null)
-            {
-                existing.Description = posted.Description;
-                existing.Type = posted.Type;
-                existing.Expiration = posted.Expiration;
-            }
-        }
-
-        foreach (var posted in Secrets.Where(s => s.Id == 0))
-        {
-            client.ClientSecrets.Add(new ClientSecret
-            {
-                Description = posted.Description,
-                Value = posted.Value,
-                Type = posted.Type,
-                Expiration = posted.Expiration,
-                ClientId = id,
-            });
-        }
-
-        client.Updated = DateTimeOffset.UtcNow.UtcDateTime;
-        await _context.SaveChangesAsync();
-        return RedirectToPage(DetailsPageName, new { id });
+        existing.Description = posted.Description;
+        existing.Type = posted.Type;
+        existing.Expiration = posted.Expiration;
     }
 
-    public async Task<IActionResult> OnPostAddRowAsync(int id)
+    protected override ClientSecret CreateForClient(ClientSecret posted, int clientId) => new()
     {
-        var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == id);
-        if (client is null)
-        {
-            return NotFound();
-        }
+        Description = posted.Description,
+        Value = posted.Value,
+        Type = posted.Type,
+        Expiration = posted.Expiration,
+        ClientId = clientId,
+    };
 
-        Client = client;
-        Secrets.Add(new ClientSecret { Type = "SharedSecret" });
-        return Page();
-    }
-
-    public async Task<IActionResult> OnPostRemoveRowAsync(int id, int index)
-    {
-        var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == id);
-        if (client is null)
-        {
-            return NotFound();
-        }
-
-        Client = client;
-        if (index >= 0 && index < Secrets.Count)
-        {
-            Secrets.RemoveAt(index);
-        }
-
-        return Page();
-    }
+    protected override ClientSecret NewResource() => new ClientSecret { Type = "SharedSecret" };
 }

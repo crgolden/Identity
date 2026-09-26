@@ -1,103 +1,26 @@
 namespace Identity.Pages.Admin.Clients.Edit;
 
+using System.Linq.Expressions;
 using Duende.IdentityServer.EntityFramework.Entities;
 using Duende.IdentityServer.EntityFramework.Interfaces;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
 
-public class RedirectUrisModel : PageModel
+public class RedirectUris : EditableClientResourcesBase<ClientRedirectUri>
 {
     internal const string DetailsPageName = "/Admin/Clients/Details/RedirectUris";
 
-    private readonly IConfigurationDbContext _context;
-
-    public RedirectUrisModel(IConfigurationDbContext context) => _context = context;
-
-    public Client Client { get; private set; } = new();
-
-    [BindProperty]
-    public List<ClientRedirectUri> RedirectUris { get; set; } = [];
-
-    public async Task<IActionResult> OnGetAsync(int id)
+    public RedirectUris(IConfigurationDbContext context)
+        : base(context)
     {
-        var client = await _context.Clients
-            .Include(c => c.RedirectUris)
-            .FirstOrDefaultAsync(c => c.Id == id);
-        if (client is null)
-        {
-            return NotFound();
-        }
-
-        Client = client;
-        RedirectUris = client.RedirectUris;
-        return Page();
     }
 
-    public async Task<IActionResult> OnPostAsync(int id)
-    {
-        if (!ModelState.IsValid)
-        {
-            return Page();
-        }
+    protected override Expression<Func<Client, List<ClientRedirectUri>>> Collection => c => c.RedirectUris;
 
-        var client = await _context.Clients
-            .Include(c => c.RedirectUris)
-            .FirstOrDefaultAsync(c => c.Id == id);
-        if (client is null)
-        {
-            return NotFound();
-        }
+    protected override string DetailsPage => DetailsPageName;
 
-        var postedIds = RedirectUris.Where(u => u.Id > 0).Select(u => u.Id).ToHashSet();
-        client.RedirectUris.RemoveAll(u => !postedIds.Contains(u.Id));
+    protected override int IdOf(ClientRedirectUri resource) => resource.Id;
 
-        foreach (var posted in RedirectUris.Where(u => u.Id > 0))
-        {
-            var existing = client.RedirectUris.FirstOrDefault(u => u.Id == posted.Id);
-            if (existing is not null)
-            {
-                existing.RedirectUri = posted.RedirectUri;
-            }
-        }
+    protected override void CopyEditableFields(ClientRedirectUri posted, ClientRedirectUri existing) => existing.RedirectUri = posted.RedirectUri;
 
-        foreach (var posted in RedirectUris.Where(u => u.Id == 0))
-        {
-            client.RedirectUris.Add(new ClientRedirectUri { RedirectUri = posted.RedirectUri, ClientId = id });
-        }
-
-        client.Updated = DateTimeOffset.UtcNow.UtcDateTime;
-        await _context.SaveChangesAsync();
-        return RedirectToPage(DetailsPageName, new { id });
-    }
-
-    public async Task<IActionResult> OnPostAddRowAsync(int id)
-    {
-        var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == id);
-        if (client is null)
-        {
-            return NotFound();
-        }
-
-        Client = client;
-        RedirectUris.Add(new ClientRedirectUri());
-        return Page();
-    }
-
-    public async Task<IActionResult> OnPostRemoveRowAsync(int id, int index)
-    {
-        var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == id);
-        if (client is null)
-        {
-            return NotFound();
-        }
-
-        Client = client;
-        if (index >= 0 && index < RedirectUris.Count)
-        {
-            RedirectUris.RemoveAt(index);
-        }
-
-        return Page();
-    }
+    protected override ClientRedirectUri CreateForClient(ClientRedirectUri posted, int clientId) =>
+        new() { RedirectUri = posted.RedirectUri, ClientId = clientId };
 }

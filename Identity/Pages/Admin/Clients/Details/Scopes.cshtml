@@ -1,5 +1,5 @@
 @page
-@model ScopesModel
+@model Scopes
 
 @{
     ViewData["Title"] = "Client Scopes";
@@ -19,9 +19,9 @@
             <tr><th>Scope</th></tr>
         </thead>
         <tbody>
-            @foreach (var s in Model.Client.AllowedScopes ?? [])
+            @foreach (var s in Model.Resources)
             {
-                <tr><td>@s.Scope</td></tr>
+                <tr id="scope-row-@s.Id"><td>@s.Scope</td></tr>
             }
         </tbody>
     </table>

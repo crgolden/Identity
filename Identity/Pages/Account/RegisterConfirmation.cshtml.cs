@@ -6,11 +6,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 [AllowAnonymous]
-public class RegisterConfirmationModel : PageModel
+public class RegisterConfirmation : PageModel
 {
     private readonly UserManager<IdentityUser<Guid>> _userManager;
 
-    public RegisterConfirmationModel(UserManager<IdentityUser<Guid>> userManager)
+    public RegisterConfirmation(UserManager<IdentityUser<Guid>> userManager)
     {
         ThrowIfNull(userManager);
         _userManager = userManager;

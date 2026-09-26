@@ -1,62 +1,20 @@
 namespace Identity.Tests.E2E.Synthetic;
 
 using System.Globalization;
-using Microsoft.Playwright;
+using Identity.Pages.Account.Manage;
+using Identity.Pages.Admin;
+using Identity.Tests.E2E.Infrastructure;
 
 [Trait("Category", "Walker")]
 public sealed class IdentityWalkerTests : IClassFixture<IdentityWalkerFixture>
 {
-    private const int DefaultStepBudget = 40;
-    private const int MaxStepBudget = 500;
-    private const int NonAdminSlot = 3;
-    private const int AdminSlot = 1;
-    private const string AdminCardSelector = "[id^='admin-card-']";
-
-    private static readonly string[] ManageSectionIds =
-    [
-        "profile",
-        "email",
-        "change-password",
-        "two-factor",
-        "passkeys",
-        "personal-data",
-        "permissions",
-    ];
+    private const int PersonaCount = 2;
+    private const string AdminCardSelector = $"[id^='{AdminSection.CardIdPrefix}']";
+    private const string ManageSectionLinkSelector = $"[id^='{ManageSection.LinkIdPrefix}']";
 
     private readonly IdentityWalkerFixture _fixture;
 
     public IdentityWalkerTests(IdentityWalkerFixture fixture) => _fixture = fixture;
-
-    private static IReadOnlyList<WalkerAction> MemberActions =>
-    [
-        NavigateAction("home", 3, "#nav-home"),
-        NavigateAction("privacy", 1, "#nav-privacy"),
-        NavigateAction("manage", 3, "#manage-nav"),
-        new WalkerAction(
-            "manage-section",
-            4,
-            page => AnyVisibleAsync(page, ManageSectionIds),
-            async (page, rng) =>
-            {
-                var visible = await VisibleIdsAsync(page, ManageSectionIds);
-                await page.ClickAsync($"#{rng.Pick(visible)}");
-            }),
-    ];
-
-    private static IReadOnlyList<WalkerAction> AdminActions =>
-    [
-        .. MemberActions,
-        NavigateAction("admin", 3, "#admin-nav"),
-        new WalkerAction(
-            "admin-section",
-            4,
-            async page => await page.Locator(AdminCardSelector).CountAsync() > 0,
-            async (page, rng) =>
-            {
-                var cards = page.Locator(AdminCardSelector);
-                await cards.Nth(rng.Int(await cards.CountAsync())).ClickAsync();
-            }),
-    ];
 
     [Fact]
     public async Task Walks_the_deployed_menus_as_a_member_then_as_an_admin()
@@ -65,41 +23,60 @@ public sealed class IdentityWalkerTests : IClassFixture<IdentityWalkerFixture>
             IdentityWalkerFixture.IsConfigured,
             "Synthetic walks target the deployed app only; set WalkerBaseUrl to run.");
 
+        var settings = _fixture.Settings;
         var seed = ResolveSeed();
-        var steps = ResolveStepBudget();
-        var memberSteps = steps / 2;
+        var steps = ResolveStepBudget(settings);
+        var memberSteps = steps / PersonaCount;
         var adminSteps = steps - memberSteps;
 
-        var (context, page) = await _fixture.NewPageAsync("Walker");
+        var (context, page) = await _fixture.NewPageAsync(PlaywrightSuite.Walker);
         await using (context)
         {
-            await SyntheticAccount.Resolve(NonAdminSlot).SignInAsync(page);
-            var memberExecuted = await Walker.WalkAsync(page, MemberActions, seed, memberSteps);
+            await SyntheticAccount.Resolve(settings.MemberSlot).SignInAsync(page);
+            var memberExecuted = await Walker.WalkAsync(page, MemberActions(settings), seed, memberSteps);
             Assert.Equal(memberSteps, memberExecuted);
 
             await SyntheticAccount.SignOutAsync(page);
 
-            await SyntheticAccount.Resolve(AdminSlot).SignInAsync(page);
-            var adminExecuted = await Walker.WalkAsync(page, AdminActions, seed + 1, adminSteps);
+            await SyntheticAccount.Resolve(settings.AdminSlot).SignInAsync(page);
+            var adminExecuted = await Walker.WalkAsync(page, AdminActions(settings), seed + 1, adminSteps);
             Assert.Equal(adminSteps, adminExecuted);
         }
     }
 
-    private static WalkerAction NavigateAction(string name, int weight, string selector) =>
+    private static IReadOnlyList<WalkerAction> MemberActions(WalkerSettings settings) =>
+    [
+        NavigateAction(settings.CommonActionWeight, "#nav-home"),
+        NavigateAction(settings.RareActionWeight, "#nav-privacy"),
+        NavigateAction(settings.CommonActionWeight, "#manage-nav"),
+        SectionAction(nameof(ManageSection), settings.SectionActionWeight, ManageSectionLinkSelector),
+    ];
+
+    private static IReadOnlyList<WalkerAction> AdminActions(WalkerSettings settings) =>
+    [
+        .. MemberActions(settings),
+        NavigateAction(settings.CommonActionWeight, "#admin-nav"),
+        SectionAction(nameof(AdminSection), settings.SectionActionWeight, AdminCardSelector),
+    ];
+
+    private static WalkerAction SectionAction(string name, int weight, string selector) =>
         new(
             name,
             weight,
+            async page => await page.Locator(selector).CountAsync() > 0,
+            async (page, rng) =>
+            {
+                var links = page.Locator(selector);
+                await links.First.WaitForAsync();
+                await links.Nth(rng.Int(await links.CountAsync())).ClickAsync();
+            });
+
+    private static WalkerAction NavigateAction(int weight, string selector) =>
+        new(
+            selector,
+            weight,
             page => page.Locator(selector).IsVisibleAsync(),
             (page, _) => page.ClickAsync(selector));
-
-    private static async Task<bool> AnyVisibleAsync(IPage page, IReadOnlyList<string> ids) =>
-        (await VisibleIdsAsync(page, ids)).Count > 0;
-
-    private static async Task<IReadOnlyList<string>> VisibleIdsAsync(IPage page, IReadOnlyList<string> ids)
-    {
-        var visibility = await Task.WhenAll(ids.Select(id => page.Locator($"#{id}").IsVisibleAsync()));
-        return [.. ids.Where((_, index) => visibility[index])];
-    }
 
     private static uint ResolveSeed()
     {
@@ -113,22 +90,6 @@ public sealed class IdentityWalkerTests : IClassFixture<IdentityWalkerFixture>
         return seed;
     }
 
-    private static int ResolveStepBudget()
-    {
-        var raw = Environment.GetEnvironmentVariable("SYNTHETIC_STEPS");
-        if (string.IsNullOrWhiteSpace(raw))
-        {
-            return DefaultStepBudget;
-        }
-
-        if (!int.TryParse(raw, NumberStyles.None, CultureInfo.InvariantCulture, out var steps)
-            || steps < 2
-            || steps > MaxStepBudget)
-        {
-            throw new InvalidOperationException(
-                $"SYNTHETIC_STEPS must be an integer between 2 and {MaxStepBudget}; got {raw}.");
-        }
-
-        return steps;
-    }
+    private static int ResolveStepBudget(WalkerSettings settings) =>
+        EnvironmentSetting.Count("SYNTHETIC_STEPS", settings.DefaultStepBudget, PersonaCount, settings.MaxStepBudget);
 }

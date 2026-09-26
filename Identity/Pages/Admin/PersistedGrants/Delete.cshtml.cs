@@ -6,11 +6,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
-public class DeleteModel : PageModel
+public class Delete : PageModel
 {
     private readonly IPersistedGrantDbContext _context;
 
-    public DeleteModel(IPersistedGrantDbContext context) => _context = context;
+    public Delete(IPersistedGrantDbContext context) => _context = context;
 
     public PersistedGrant PersistedGrant { get; private set; } = new();
 

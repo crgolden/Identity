@@ -1,5 +1,5 @@
 @page
-@model Identity.Pages.Account.Manage.DiagnosticsModel
+@model Identity.Pages.Account.Manage.Diagnostics
 @{
     ViewData["Title"] = "Diagnostics";
 }
@@ -15,7 +15,7 @@
 else
 {
     <div class="table-responsive">
-        <table class="table table-bordered table-hover table-sm">
+        <table id="diagnostics-claims" class="table table-bordered table-hover table-sm">
             <thead>
                 <tr>
                     <th>Type</th>
@@ -23,11 +23,14 @@ else
                 </tr>
             </thead>
             <tbody>
-                @foreach (var claim in Model.View.Claims)
+                @{
+                    var claims = Model.View.Claims.ToList();
+                }
+                @foreach (var i in Enumerable.Range(0, claims.Count))
                 {
-                    <tr>
-                        <td><code>@claim.Type</code></td>
-                        <td class="text-break">@claim.Value</td>
+                    <tr id="diagnostics-claim-@i">
+                        <td><code>@claims[i].Type</code></td>
+                        <td class="text-break">@claims[i].Value</td>
                     </tr>
                 }
             </tbody>

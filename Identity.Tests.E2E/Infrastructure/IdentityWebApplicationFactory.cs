@@ -1,9 +1,10 @@
 namespace Identity.Tests.E2E.Infrastructure;
 
+using System.Globalization;
 using System.Net;
-using Avatar;
 using Azure.Messaging.ServiceBus;
-using CAPTCHA;
+using Identity.Avatar;
+using Identity.CAPTCHA;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Server;
@@ -11,6 +12,7 @@ using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,10 +22,14 @@ using Microsoft.Extensions.Logging;
 
 public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Program>
 {
+    private static readonly string NeverDialledServiceBusConnectionString = BuildNeverDialledServiceBusConnectionString();
+
     private IHost? _kestrelHost;
     private string? _serverAddress;
 
     public EmailCaptureSender EmailCapture { get; } = new();
+
+    public string? RefusedCatalog { get; private set; }
 
     public string ServerAddress => _serverAddress ?? throw new InvalidOperationException("Server address is not available. Call Factory.CreateClient() first.");
 
@@ -48,11 +54,20 @@ public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Progra
         builder.ConfigureAppConfiguration(configBuilder =>
             configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ServiceBusConnectionString"] = "Endpoint=sb://test.servicebus.windows.net/;SharedAccessKeyName=test;SharedAccessKey=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+                [ServiceBusNames.ConnectionStringSettingKey] = NeverDialledServiceBusConnectionString
             }));
 
         builder.ConfigureServices((context, services) =>
         {
+            var catalog = context.Configuration[$"{nameof(SqlConnectionStringBuilder)}:{nameof(SqlConnectionStringBuilder.InitialCatalog)}"];
+            var testCatalogSuffix = E2ESettings.Read(context.Configuration).TestCatalogSuffix;
+            if (catalog is null || !catalog.EndsWith(testCatalogSuffix, StringComparison.Ordinal))
+            {
+                RefusedCatalog = catalog;
+                throw new InvalidOperationException(
+                    $"The E2E tier writes to the catalog it is given, so it refuses '{catalog}': the catalog must end in '{testCatalogSuffix}'.");
+            }
+
             services.Configure<HostOptions>(opts =>
                 opts.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore);
 
@@ -70,7 +85,7 @@ public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Progra
             services.AddSingleton<IAvatarService>(new NullAvatarService());
 
             services.RemoveAll<ICAPTCHAService>();
-            services.AddSingleton<ICAPTCHAService>(new AlwaysPassCAPTCHAService());
+            services.AddSingleton<ICAPTCHAService, AlwaysPassCAPTCHAService>();
 
             services.Configure<PasswordHasherOptions>(opts => opts.IterationCount = 1);
 
@@ -87,39 +102,18 @@ public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Progra
 
         base.Dispose(disposing);
     }
-}
 
-internal sealed class NullAvatarService : IAvatarService
-{
-    public Task<Uri?> GetAvatarUrlAsync(string profileIdentifier, CancellationToken cancellationToken = default)
-        => Task.FromResult<Uri?>(null);
-
-    public bool IsOwnComputedUrl(string candidate) => false;
-}
-
-#pragma warning disable S101
-internal sealed class AlwaysPassCAPTCHAService : ICAPTCHAService
-{
-    public string? SiteKey => null;
-
-    public Task<CAPTCHAVerdict> VerifyAsync(string? token, CancellationToken cancellationToken = default)
-        => Task.FromResult(new CAPTCHAVerdict(Passed: true, Score: 1.0m));
-}
-
-internal sealed class TestServiceBusClientFactory : IAzureClientFactory<ServiceBusClient>
-{
-    private readonly TestServiceBusClient _client;
-
-    public TestServiceBusClientFactory(ServiceBusSender sender) => _client = new TestServiceBusClient(sender);
-
-    public ServiceBusClient CreateClient(string name) => _client;
-}
-
-internal sealed class TestServiceBusClient : ServiceBusClient
-{
-    private readonly ServiceBusSender _sender;
-
-    public TestServiceBusClient(ServiceBusSender sender) => _sender = sender;
-
-    public override ServiceBusSender CreateSender(string queueOrTopicName) => _sender;
+    private static string BuildNeverDialledServiceBusConnectionString()
+    {
+        var namespaceName = Guid.NewGuid().ToString("N");
+        var sharedAccessKeyName = Guid.NewGuid().ToString("N");
+        var sharedAccessKeyBytes = Guid.NewGuid().ToByteArray();
+        var sharedAccessKey = Convert.ToBase64String(sharedAccessKeyBytes);
+        return string.Format(
+            CultureInfo.InvariantCulture,
+            ServiceBusConstants.ConnectionStringFormat,
+            namespaceName,
+            sharedAccessKeyName,
+            sharedAccessKey);
+    }
 }

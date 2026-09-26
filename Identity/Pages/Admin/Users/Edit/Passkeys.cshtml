@@ -1,5 +1,5 @@
 @page "{id}"
-@model Identity.Pages.Admin.Users.Edit.PasskeysModel
+@model Identity.Pages.Admin.Users.Edit.Passkeys
 @using static System.Buffers.Text.Base64Url
 @{
     ViewData["Title"] = "Edit User Passkeys";
@@ -17,7 +17,7 @@
             </tr>
         </thead>
         <tbody>
-            @foreach (var pk in Model.Passkeys)
+            @foreach (var pk in Model.Resources)
             {
                 <tr>
                     <td>@pk.Name</td>

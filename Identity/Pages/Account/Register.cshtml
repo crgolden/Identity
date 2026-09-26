@@ -1,5 +1,5 @@
 @page
-@model RegisterModel
+@model Register
 @{
     ViewData["Title"] = "Register";
 }
@@ -39,6 +39,6 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    <script src="https://www.google.com/recaptcha/api.js?render=@Model.RecaptchaSiteKey" async></script>
+    <script src="@(Model.RecaptchaScriptEndpoint)?render=@Model.RecaptchaSiteKey" async></script>
     <script src="~/js/recaptcha.js" asp-append-version="true"></script>
 }

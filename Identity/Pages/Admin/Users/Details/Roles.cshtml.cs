@@ -2,17 +2,14 @@ namespace Identity.Pages.Admin.Users.Details;
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 
-public class RolesModel : PageModel
+public class Roles : ResourcesBase<string>
 {
     private readonly UserManager<IdentityUser<Guid>> _userManager;
 
-    public RolesModel(UserManager<IdentityUser<Guid>> userManager) => _userManager = userManager;
+    public Roles(UserManager<IdentityUser<Guid>> userManager) => _userManager = userManager;
 
     public IdentityUser<Guid> AppUser { get; private set; } = new();
-
-    public IList<string> Roles { get; private set; } = [];
 
     public async Task<IActionResult> OnGetAsync(string id)
     {
@@ -23,7 +20,7 @@ public class RolesModel : PageModel
         }
 
         AppUser = user;
-        Roles = await _userManager.GetRolesAsync(user);
+        Resources = await _userManager.GetRolesAsync(user);
         return Page();
     }
 }

@@ -3,15 +3,15 @@ namespace Identity.Tests.Unit;
 using System.Net;
 using System.Net.Mime;
 using System.Text.Json.Nodes;
-using CAPTCHA;
-using Infrastructure;
+using Identity.CAPTCHA;
+using Identity.Tests.Unit.Infrastructure;
 using Microsoft.Extensions.Options;
 using Moq;
 using Moq.Protected;
 
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
-public class ReCAPTCHAServiceTests
+public class ReCaptchaServiceTests
 {
     private const string SendAsyncMethodName = nameof(HttpClient.SendAsync);
     private const string SiteverifySuccessFieldName = ReCAPTCHAService.SiteverifySuccessFieldName;
@@ -21,7 +21,7 @@ public class ReCAPTCHAServiceTests
     public async Task VerifyAsync_NullToken_FailsWithZeroScore()
     {
         // Arrange
-        var (service, _) = CreateService(responseScore: TestValues.NewScoreAtOrAboveDefaultThreshold());
+        var (service, _) = CreateService(responseScore: Generated.NewScoreAtOrAbove(ReCAPTCHAOptions.DefaultScoreThreshold));
 
         // Act
         var verdict = await service.VerifyAsync(null, TestContext.Current.CancellationToken);
@@ -35,7 +35,7 @@ public class ReCAPTCHAServiceTests
     public async Task VerifyAsync_EmptyToken_FailsWithZeroScore()
     {
         // Arrange
-        var (service, _) = CreateService(responseScore: TestValues.NewScoreAtOrAboveDefaultThreshold());
+        var (service, _) = CreateService(responseScore: Generated.NewScoreAtOrAbove(ReCAPTCHAOptions.DefaultScoreThreshold));
 
         // Act
         var verdict = await service.VerifyAsync(string.Empty, TestContext.Current.CancellationToken);
@@ -49,8 +49,8 @@ public class ReCAPTCHAServiceTests
     public async Task VerifyAsync_NullSecretKey_FailsWithZeroScore()
     {
         // Arrange
-        var submittedRecaptchaToken = TestValues.NewRecaptchaToken();
-        var (service, _) = CreateService(responseScore: TestValues.NewScoreAtOrAboveDefaultThreshold(), secretKeyConfigured: false);
+        var submittedRecaptchaToken = Generated.NewRecaptchaToken();
+        var (service, _) = CreateService(responseScore: Generated.NewScoreAtOrAbove(ReCAPTCHAOptions.DefaultScoreThreshold), secretKeyConfigured: false);
 
         // Act
         var verdict = await service.VerifyAsync(submittedRecaptchaToken, TestContext.Current.CancellationToken);
@@ -64,8 +64,8 @@ public class ReCAPTCHAServiceTests
     public async Task VerifyAsync_ScoreAtOrAboveThreshold_Passes()
     {
         // Arrange
-        var scoreAtOrAboveThreshold = TestValues.NewScoreAtOrAboveDefaultThreshold();
-        var submittedRecaptchaToken = TestValues.NewRecaptchaToken();
+        var scoreAtOrAboveThreshold = Generated.NewScoreAtOrAbove(ReCAPTCHAOptions.DefaultScoreThreshold);
+        var submittedRecaptchaToken = Generated.NewRecaptchaToken();
         var (service, _) = CreateService(responseScore: scoreAtOrAboveThreshold);
 
         // Act
@@ -80,8 +80,8 @@ public class ReCAPTCHAServiceTests
     public async Task VerifyAsync_ScoreBelowThreshold_FailsClosed()
     {
         // Arrange
-        var scoreBelowThreshold = TestValues.NewScoreBelowDefaultThreshold();
-        var submittedRecaptchaToken = TestValues.NewRecaptchaToken();
+        var scoreBelowThreshold = Generated.NewScoreBelow(ReCAPTCHAOptions.DefaultScoreThreshold);
+        var submittedRecaptchaToken = Generated.NewRecaptchaToken();
         var (service, _) = CreateService(responseScore: scoreBelowThreshold);
 
         // Act
@@ -96,8 +96,8 @@ public class ReCAPTCHAServiceTests
     public async Task VerifyAsync_ApiReturnsFalseSuccess_Fails()
     {
         // Arrange
-        var submittedRecaptchaToken = TestValues.NewRecaptchaToken();
-        var (service, _) = CreateService(responseScore: TestValues.NewScoreAtOrAboveDefaultThreshold(), success: false);
+        var submittedRecaptchaToken = Generated.NewRecaptchaToken();
+        var (service, _) = CreateService(responseScore: Generated.NewScoreAtOrAbove(ReCAPTCHAOptions.DefaultScoreThreshold), success: false);
 
         // Act
         var verdict = await service.VerifyAsync(submittedRecaptchaToken, TestContext.Current.CancellationToken);
@@ -111,8 +111,8 @@ public class ReCAPTCHAServiceTests
     public async Task VerifyAsync_HttpFailure_Fails()
     {
         // Arrange
-        var submittedRecaptchaToken = TestValues.NewRecaptchaToken();
-        var (service, _) = CreateService(responseScore: TestValues.NewScoreAtOrAboveDefaultThreshold(), httpStatusCode: HttpStatusCode.ServiceUnavailable);
+        var submittedRecaptchaToken = Generated.NewRecaptchaToken();
+        var (service, _) = CreateService(responseScore: Generated.NewScoreAtOrAbove(ReCAPTCHAOptions.DefaultScoreThreshold), httpStatusCode: HttpStatusCode.ServiceUnavailable);
 
         // Act
         var verdict = await service.VerifyAsync(submittedRecaptchaToken, TestContext.Current.CancellationToken);
@@ -126,8 +126,8 @@ public class ReCAPTCHAServiceTests
     public async Task VerifyAsync_CallsSiteverifyExactlyOnce()
     {
         // Arrange
-        var submittedRecaptchaToken = TestValues.NewRecaptchaToken();
-        var (service, handlerMock) = CreateService(responseScore: TestValues.NewScoreAtOrAboveDefaultThreshold());
+        var submittedRecaptchaToken = Generated.NewRecaptchaToken();
+        var (service, handlerMock) = CreateService(responseScore: Generated.NewScoreAtOrAbove(ReCAPTCHAOptions.DefaultScoreThreshold));
 
         // Act
         await service.VerifyAsync(submittedRecaptchaToken, TestContext.Current.CancellationToken);
@@ -146,7 +146,7 @@ public class ReCAPTCHAServiceTests
         HttpStatusCode httpStatusCode = HttpStatusCode.OK,
         bool secretKeyConfigured = true)
     {
-        var secretKey = secretKeyConfigured ? TestValues.NewRecaptchaSecretKey() : null;
+        var secretKey = secretKeyConfigured ? Generated.NewRecaptchaSecretKey() : null;
         var json = new JsonObject
         {
             [SiteverifySuccessFieldName] = success,
@@ -167,7 +167,7 @@ public class ReCAPTCHAServiceTests
 
         var httpClient = new HttpClient(handlerMock.Object)
         {
-            BaseAddress = new UriBuilder(Uri.UriSchemeHttps, TestValues.NewExternalHost()).Uri
+            BaseAddress = new UriBuilder(Uri.UriSchemeHttps, Generated.NewExternalHost()).Uri
         };
         var optionsMock = new Mock<IOptions<ReCAPTCHAOptions>>(MockBehavior.Strict);
         optionsMock.Setup(o => o.Value).Returns(new ReCAPTCHAOptions

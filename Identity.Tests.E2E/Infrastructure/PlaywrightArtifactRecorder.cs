@@ -1,57 +1,17 @@
-using System.Collections.Concurrent;
-using System.Reflection;
-using System.Text.Json;
-using Microsoft.Playwright;
-using Xunit.v3;
-
-[assembly: Identity.Tests.E2E.Infrastructure.PlaywrightArtifactFinalizer]
-
 namespace Identity.Tests.E2E.Infrastructure;
 
-[AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
-public sealed class PlaywrightArtifactFinalizerAttribute : BeforeAfterTestAttribute
+using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
+using Microsoft.Playwright;
+using Xunit;
+
+public sealed class PlaywrightArtifactRecorder
 {
-    public override void Before(MethodInfo methodUnderTest, IXunitTest test) =>
-        PlaywrightArtifactRecorder.Clear(test.UniqueID);
+    private static readonly ConcurrentDictionary<string, ConcurrentBag<PendingArtifact>> PendingArtifacts =
+        new ConcurrentDictionary<string, ConcurrentBag<PendingArtifact>>();
 
-    public override void After(MethodInfo methodUnderTest, IXunitTest test)
-    {
-        var state = TestContext.Current.TestState;
-        PlaywrightArtifactRecorder.Finalize(test.UniqueID, state);
-    }
-}
-
-internal sealed class PlaywrightArtifactSession : IAsyncDisposable
-{
-    private readonly PlaywrightArtifactRecorder _recorder;
-    private readonly IBrowserContext _context;
-    private readonly IPage _page;
-    private bool _disposed;
-
-    public PlaywrightArtifactSession(PlaywrightArtifactRecorder recorder, IBrowserContext context, IPage page)
-    {
-        _recorder = recorder;
-        _context = context;
-        _page = page;
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        if (_disposed)
-        {
-            return;
-        }
-
-        _disposed = true;
-        await _recorder.CompleteAsync(_context, _page);
-    }
-}
-
-internal sealed class PlaywrightArtifactRecorder
-{
-    private const string TempFolderName = ".tmp";
-    private static readonly ConcurrentDictionary<string, ConcurrentBag<PendingArtifact>> PendingArtifacts = new();
-
+    private readonly PlaywrightSettings _settings;
     private readonly string _appName;
     private readonly string _suiteName;
     private readonly string _testId;
@@ -60,21 +20,23 @@ internal sealed class PlaywrightArtifactRecorder
     private readonly string _tempDirectory;
     private readonly string _finalDirectory;
     private readonly bool _belongsToTest;
-    private readonly List<string> _events = [];
+    private readonly List<string> _events = new List<string>();
     private readonly DateTimeOffset _startedAt = DateTimeOffset.UtcNow;
 
-    private PlaywrightArtifactRecorder(string appName, string suiteName)
+    private PlaywrightArtifactRecorder(PlaywrightSettings settings, string appName, string suiteName)
     {
         var test = TestContext.Current.Test;
+        _settings = settings;
         _appName = appName;
         _suiteName = suiteName;
         _belongsToTest = test is not null;
         _testId = test?.UniqueID ?? $"unknown-{Guid.NewGuid():N}";
-        _testName = test?.TestDisplayName ?? "Unknown test";
-        _artifactName = Sanitize(_testName);
+        _testName = test?.TestDisplayName ?? _testId;
+        _artifactName = Sanitize(_testName, settings.MaxArtifactNameLength);
 
-        var root = Path.Combine(AppContext.BaseDirectory, "TestResults", "PlaywrightArtifacts");
-        _tempDirectory = Path.Combine(root, TempFolderName, _testId, Guid.NewGuid().ToString("N"));
+        var root = Path.Combine(AppContext.BaseDirectory, settings.TestResultsFolderName, settings.ArtifactsFolderName);
+        var runFolderName = Guid.NewGuid().ToString("N");
+        _tempDirectory = Path.Combine(root, settings.TempFolderName, _testId, runFolderName);
         _finalDirectory = Path.Combine(root, _suiteName, _artifactName);
         Directory.CreateDirectory(_tempDirectory);
     }
@@ -83,21 +45,30 @@ internal sealed class PlaywrightArtifactRecorder
         IBrowser browser,
         string appName,
         string suiteName,
-        BrowserNewContextOptions options)
+        BrowserNewContextOptions options,
+        PlaywrightSettings settings)
     {
-        var recorder = new PlaywrightArtifactRecorder(appName, suiteName);
-        options.RecordVideoDir = recorder._tempDirectory;
-        options.RecordVideoSize = new() { Width = 1280, Height = 720 };
+        ArgumentNullException.ThrowIfNull(browser);
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(settings);
 
-        var context = await browser.NewContextAsync(options);
-        await context.Tracing.StartAsync(new()
+        var recorder = new PlaywrightArtifactRecorder(settings, appName, suiteName);
+        options.RecordVideoDir = recorder._tempDirectory;
+        options.RecordVideoSize = new RecordVideoSize
+        {
+            Width = settings.RecordedVideoWidth,
+            Height = settings.RecordedVideoHeight,
+        };
+
+        var context = await browser.NewContextAsync(options).ConfigureAwait(false);
+        await context.Tracing.StartAsync(new TracingStartOptions
         {
             Screenshots = true,
             Snapshots = true,
             Sources = true
-        });
+        }).ConfigureAwait(false);
 
-        var page = await context.NewPageAsync();
+        var page = await context.NewPageAsync().ConfigureAwait(false);
         recorder.Attach(page);
         return (new PlaywrightArtifactSession(recorder, context, page), page);
     }
@@ -140,54 +111,73 @@ internal sealed class PlaywrightArtifactRecorder
 
             Directory.Move(artifact.TempDirectory, targetDirectory);
             DeleteDirectoryIfEmpty(tempParent);
-            WriteFailureMetadata(targetDirectory, state);
+            WriteFailureMetadata(Path.Combine(targetDirectory, artifact.FailureFileName), state);
         }
     }
 
     public void Attach(IPage page)
     {
-        page.Console += (_, msg) => AddEvent($"CONSOLE {msg.Type} {msg.Text}");
-        page.PageError += (_, error) => AddEvent($"PAGEERROR {error}");
-        page.Request += (_, request) => AddEvent($"REQ {request.Method} {request.Url}");
-        page.Response += (_, response) => AddEvent($"RESP {response.Status} {response.Url}");
-        page.RequestFailed += (_, request) => AddEvent($"FAIL {request.Method} {request.Url} err={request.Failure}");
+        ArgumentNullException.ThrowIfNull(page);
+        page.Console += (_, msg) => AddEvent($"{nameof(IPage.Console)} {msg.Type} {msg.Text}");
+        page.PageError += (_, error) => AddEvent($"{nameof(IPage.PageError)} {error}");
+        page.Request += (_, request) => AddEvent($"{nameof(IPage.Request)} {request.Method} {request.Url}");
+        page.Response += (_, response) => AddEvent($"{nameof(IPage.Response)} {response.Status} {response.Url}");
+        page.RequestFailed += (_, request) =>
+            AddEvent($"{nameof(IPage.RequestFailed)} {request.Method} {request.Url} {request.Failure}");
     }
 
+    [SuppressMessage(
+        "Design",
+        "CA1031:Do not catch general exception types",
+        Justification = "Artifact capture is diagnostics. Any failure to screenshot, trace or dispose is recorded in the browser log and must never fail or mask the test that was actually running.")]
     public async Task CompleteAsync(IBrowserContext context, IPage page)
     {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(page);
+
         try
         {
-            await page.ScreenshotAsync(new()
+            await page.ScreenshotAsync(new PageScreenshotOptions
             {
-                Path = Path.Combine(_tempDirectory, "screenshot.png"),
+                Path = Path.Combine(_tempDirectory, _settings.ScreenshotFileName),
                 FullPage = true
-            });
+            }).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
-            AddEvent($"SCREENSHOT_ERROR {ex.GetType().Name}: {ex.Message}");
+            AddEvent($"{nameof(IPage.ScreenshotAsync)} {ex.GetType().Name}: {ex.Message}");
         }
 
         try
         {
-            await context.Tracing.StopAsync(new() { Path = Path.Combine(_tempDirectory, "trace.zip") });
+            await context.Tracing.StopAsync(new TracingStopOptions
+            {
+                Path = Path.Combine(_tempDirectory, _settings.TraceFileName)
+            }).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
-            AddEvent($"TRACE_ERROR {ex.GetType().Name}: {ex.Message}");
+            AddEvent($"{nameof(ITracing.StopAsync)} {ex.GetType().Name}: {ex.Message}");
         }
 
         try
         {
-            await context.DisposeAsync();
+            await context.DisposeAsync().ConfigureAwait(false);
         }
         catch (Exception ex)
         {
-            AddEvent($"CONTEXT_DISPOSE_ERROR {ex.GetType().Name}: {ex.Message}");
+            AddEvent($"{nameof(IBrowserContext.DisposeAsync)} {ex.GetType().Name}: {ex.Message}");
         }
 
-        await File.WriteAllLinesAsync(Path.Combine(_tempDirectory, "browser-log.txt"), _events);
-        await WriteMetadataAsync(Path.Combine(_tempDirectory, "metadata.json"));
+        string[] recordedEvents;
+        lock (_events)
+        {
+            recordedEvents = _events.ToArray();
+        }
+
+        await File.WriteAllLinesAsync(Path.Combine(_tempDirectory, _settings.BrowserLogFileName), recordedEvents)
+            .ConfigureAwait(false);
+        await WriteMetadataAsync(Path.Combine(_tempDirectory, _settings.MetadataFileName)).ConfigureAwait(false);
         if (!_belongsToTest)
         {
             var parent = Path.GetDirectoryName(_tempDirectory);
@@ -196,12 +186,13 @@ internal sealed class PlaywrightArtifactRecorder
             return;
         }
 
-        PendingArtifacts.GetOrAdd(_testId, _ => []).Add(new PendingArtifact(_tempDirectory, _finalDirectory, Guid.NewGuid()));
+        var pendingArtifactId = Guid.NewGuid();
+        PendingArtifacts.GetOrAdd(_testId, _ => new ConcurrentBag<PendingArtifact>()).Add(
+            new PendingArtifact(_tempDirectory, _finalDirectory, pendingArtifactId, _settings.FailureFileName));
     }
 
-    private static void WriteFailureMetadata(string directory, TestResultState? state)
+    private static void WriteFailureMetadata(string path, TestResultState? state)
     {
-        var path = Path.Combine(directory, "failure.json");
         var payload = new
         {
             outcome = state?.Result.ToString(),
@@ -214,14 +205,14 @@ internal sealed class PlaywrightArtifactRecorder
         File.WriteAllText(path, JsonSerializer.Serialize(payload, JsonOptions()));
     }
 
-    private static JsonSerializerOptions JsonOptions() => new() { WriteIndented = true };
+    private static JsonSerializerOptions JsonOptions() => new JsonSerializerOptions { WriteIndented = true };
 
-    private static string Sanitize(string value)
+    private static string Sanitize(string value, int maxLength)
     {
         var invalid = Path.GetInvalidFileNameChars();
         var chars = value.Select(ch => invalid.Contains(ch) || char.IsWhiteSpace(ch) ? '_' : ch).ToArray();
         var sanitized = new string(chars);
-        return sanitized.Length <= 120 ? sanitized : sanitized[..120];
+        return sanitized.Length <= maxLength ? sanitized : sanitized[..maxLength];
     }
 
     private static void DeleteDirectory(string directory)
@@ -265,15 +256,17 @@ internal sealed class PlaywrightArtifactRecorder
             githubSha = Environment.GetEnvironmentVariable("GITHUB_SHA"),
             githubRef = Environment.GetEnvironmentVariable("GITHUB_REF")
         };
-        await File.WriteAllTextAsync(path, JsonSerializer.Serialize(payload, JsonOptions()));
+        await File.WriteAllTextAsync(path, JsonSerializer.Serialize(payload, JsonOptions())).ConfigureAwait(false);
     }
 
-    private sealed class PendingArtifact(string tempDirectory, string finalDirectory, Guid contextId)
+    private sealed class PendingArtifact(string tempDirectory, string finalDirectory, Guid contextId, string failureFileName)
     {
         public string TempDirectory { get; } = tempDirectory;
 
         public string FinalDirectory { get; } = finalDirectory;
 
         public Guid ContextId { get; } = contextId;
+
+        public string FailureFileName { get; } = failureFileName;
     }
 }

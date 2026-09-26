@@ -7,14 +7,14 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 [AllowAnonymous]
-public class LogoutModel : PageModel
+public class Logout : PageModel
 {
     internal const string LogoutIdRouteValueName = "logoutId";
 
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
     private readonly IIdentityServerInteractionService _interactionService;
 
-    public LogoutModel(
+    public Logout(
         SignInManager<IdentityUser<Guid>> signInManager,
         IIdentityServerInteractionService interactionService)
     {

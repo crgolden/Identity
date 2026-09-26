@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-public class IndexModel : PageModel
+public class Index : PageModel
 {
     internal const string PhoneNumberUpdateFailedMessage =
         "Unexpected error when trying to set phone number.";
@@ -16,7 +16,7 @@ public class IndexModel : PageModel
     private readonly UserManager<IdentityUser<Guid>> _userManager;
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
 
-    public IndexModel(
+    public Index(
         UserManager<IdentityUser<Guid>> userManager,
         SignInManager<IdentityUser<Guid>> signInManager)
     {
@@ -60,7 +60,7 @@ public class IndexModel : PageModel
 
         var phoneNumber = await _userManager.GetPhoneNumberAsync(user);
         if (!IsNullOrWhiteSpace(phoneNumber)
-            && !IsNullOrWhiteSpace(Input?.PhoneNumber)
+            && !IsNullOrWhiteSpace(Input.PhoneNumber)
             && !string.Equals(Input.PhoneNumber, phoneNumber, StringComparison.Ordinal))
         {
             var setPhoneResult = await _userManager.SetPhoneNumberAsync(user, Input.PhoneNumber);

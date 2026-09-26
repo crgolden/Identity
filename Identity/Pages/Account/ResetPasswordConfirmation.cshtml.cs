@@ -4,6 +4,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 [AllowAnonymous]
-public class ResetPasswordConfirmationModel : PageModel
+public class ResetPasswordConfirmation : PageModel
 {
 }

@@ -1,5 +1,5 @@
 @page
-@model GrantTypesModel
+@model GrantTypes
 
 @{
     ViewData["Title"] = "Edit Client Grant Types";
@@ -17,11 +17,11 @@
                 </tr>
             </thead>
             <tbody>
-                @for (var i = 0; i < Model.GrantTypes.Count; i++)
+                @foreach (var i in Enumerable.Range(0, Model.Resources.Count))
                 {
                     <tr>
-                        <input type="hidden" name="GrantTypes[@i].Id" value="@Model.GrantTypes[i].Id" />
-                        <td><input id="granttype-@i" name="GrantTypes[@i].GrantType" value="@Model.GrantTypes[i].GrantType" class="form-control form-control-sm" aria-label="Grant type" /></td>
+                        <input type="hidden" name="Resources[@i].Id" value="@Model.Resources[i].Id" />
+                        <td><input id="granttype-@i" name="Resources[@i].GrantType" value="@Model.Resources[i].GrantType" class="form-control form-control-sm" aria-label="Grant type" /></td>
                         <td><button id="granttype-remove-@i" type="submit" asp-page-handler="RemoveRow" asp-route-id="@Model.Client.Id" asp-route-index="@i" class="btn btn-sm btn-danger">Remove</button></td>
                     </tr>
                 }

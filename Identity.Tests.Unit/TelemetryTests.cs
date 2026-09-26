@@ -1,24 +1,45 @@
 namespace Identity.Tests.Unit;
 
-using System.Diagnostics.Metrics;
 using Identity;
-using Infrastructure;
+using Identity.Tests.Unit.Infrastructure;
 
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
-public sealed class TelemetryTests
+public sealed class TelemetryTests : IDisposable
 {
+    private readonly TelemetryHarness _harness = new();
+
+    [Fact]
+    public void Counters_CarryTheConfiguredDescriptions()
+    {
+        // Arrange
+        Dictionary<string, string?> expected = new(StringComparer.Ordinal)
+        {
+            [Telemetry.Metrics.ConsentGrantedCounterName] = _harness.Descriptions.ConsentGrantedDescription,
+            [Telemetry.Metrics.ConsentDeniedCounterName] = _harness.Descriptions.ConsentDeniedDescription,
+            [Telemetry.Metrics.GrantsRevokedCounterName] = _harness.Descriptions.GrantsRevokedDescription,
+            [Telemetry.Metrics.ExceptionCounterName] = _harness.Descriptions.ExceptionDescription,
+            [Telemetry.Metrics.PasskeySignInCounterName] = _harness.Descriptions.PasskeySignInDescription,
+        };
+
+        // Act
+        var actual = _harness.PublishedDescriptions();
+
+        // Assert
+        Assert.Equal(expected, actual);
+    }
+
     [Fact]
     public void ConsentGranted_EmitsCounterWithValueOne()
     {
         // Arrange
         long captured = 0;
-        using var listener = MakeListener(
+        using var listener = _harness.ListenTo(
             Telemetry.Metrics.ConsentGrantedCounterName,
             (value, _) => captured = value);
 
         // Act
-        Telemetry.Metrics.ConsentGranted(TestValues.NewClientIdentifier(), [TestValues.NewScopeName()], remember: true);
+        _harness.Telemetry.ConsentGranted(Generated.NewClientIdentifier(), [Generated.NewScopeName()], remember: true);
 
         // Assert
         Assert.Equal(1, captured);
@@ -28,14 +49,14 @@ public sealed class TelemetryTests
     public void ConsentGranted_TagsContainClientId()
     {
         // Arrange
-        var grantedClientId = TestValues.NewClientIdentifier();
+        var grantedClientId = Generated.NewClientIdentifier();
         KeyValuePair<string, object?>[] capturedTags = [];
-        using var listener = MakeListener(
+        using var listener = _harness.ListenTo(
             Telemetry.Metrics.ConsentGrantedCounterName,
             (_, tags) => capturedTags = tags);
 
         // Act
-        Telemetry.Metrics.ConsentGranted(grantedClientId, [TestValues.NewScopeName()], remember: true);
+        _harness.Telemetry.ConsentGranted(grantedClientId, [Generated.NewScopeName()], remember: true);
 
         // Assert
         Assert.Contains(capturedTags, t => string.Equals(t.Key, Telemetry.Metrics.ClientIdTagName, StringComparison.Ordinal) && grantedClientId.Equals(t.Value));
@@ -46,12 +67,12 @@ public sealed class TelemetryTests
     {
         // Arrange
         KeyValuePair<string, object?>[] capturedTags = [];
-        using var listener = MakeListener(
+        using var listener = _harness.ListenTo(
             Telemetry.Metrics.ConsentGrantedCounterName,
             (_, tags) => capturedTags = tags);
 
         // Act
-        Telemetry.Metrics.ConsentGranted(TestValues.NewClientIdentifier(), [TestValues.NewScopeName()], remember: true);
+        _harness.Telemetry.ConsentGranted(Generated.NewClientIdentifier(), [Generated.NewScopeName()], remember: true);
 
         // Assert
         Assert.Contains(capturedTags, t => string.Equals(t.Key, Telemetry.Metrics.RememberTagName, StringComparison.Ordinal) && true.Equals(t.Value));
@@ -61,14 +82,14 @@ public sealed class TelemetryTests
     public void ConsentGranted_TagsContainScopeCount()
     {
         // Arrange
-        string[] grantedScopes = [TestValues.NewScopeName(), TestValues.NewScopeName()];
+        string[] grantedScopes = [Generated.NewScopeName(), Generated.NewScopeName()];
         KeyValuePair<string, object?>[] capturedTags = [];
-        using var listener = MakeListener(
+        using var listener = _harness.ListenTo(
             Telemetry.Metrics.ConsentGrantedCounterName,
             (_, tags) => capturedTags = tags);
 
         // Act
-        Telemetry.Metrics.ConsentGranted(TestValues.NewClientIdentifier(), grantedScopes, remember: false);
+        _harness.Telemetry.ConsentGranted(Generated.NewClientIdentifier(), grantedScopes, remember: false);
 
         // Assert
         Assert.Contains(capturedTags, t => string.Equals(t.Key, Telemetry.Metrics.ScopeCountTagName, StringComparison.Ordinal) && grantedScopes.Length.Equals(t.Value));
@@ -79,12 +100,12 @@ public sealed class TelemetryTests
     {
         // Arrange
         KeyValuePair<string, object?>[] capturedTags = [];
-        using var listener = MakeListener(
+        using var listener = _harness.ListenTo(
             Telemetry.Metrics.ConsentGrantedCounterName,
             (_, tags) => capturedTags = tags);
 
         // Act
-        Telemetry.Metrics.ConsentGranted(TestValues.NewClientIdentifier(), [], remember: false);
+        _harness.Telemetry.ConsentGranted(Generated.NewClientIdentifier(), [], remember: false);
 
         // Assert
         Assert.Contains(capturedTags, t => string.Equals(t.Key, Telemetry.Metrics.ScopeCountTagName, StringComparison.Ordinal) && 0.Equals(t.Value));
@@ -96,15 +117,15 @@ public sealed class TelemetryTests
         // Arrange
         long grantedFired = 0;
         long deniedFired = 0;
-        using var grantedListener = MakeListener(
+        using var grantedListener = _harness.ListenTo(
             Telemetry.Metrics.ConsentGrantedCounterName,
             (value, _) => grantedFired += value);
-        using var deniedListener = MakeListener(
+        using var deniedListener = _harness.ListenTo(
             Telemetry.Metrics.ConsentDeniedCounterName,
             (value, _) => deniedFired += value);
 
         // Act
-        Telemetry.Metrics.ConsentGranted(TestValues.NewClientIdentifier(), [TestValues.NewScopeName()], remember: false);
+        _harness.Telemetry.ConsentGranted(Generated.NewClientIdentifier(), [Generated.NewScopeName()], remember: false);
 
         // Assert
         Assert.Equal(1, grantedFired);
@@ -116,12 +137,12 @@ public sealed class TelemetryTests
     {
         // Arrange
         long captured = 0;
-        using var listener = MakeListener(
+        using var listener = _harness.ListenTo(
             Telemetry.Metrics.ConsentDeniedCounterName,
             (value, _) => captured = value);
 
         // Act
-        Telemetry.Metrics.ConsentDenied(TestValues.NewClientIdentifier(), [TestValues.NewScopeName()]);
+        _harness.Telemetry.ConsentDenied(Generated.NewClientIdentifier(), [Generated.NewScopeName()]);
 
         // Assert
         Assert.Equal(1, captured);
@@ -131,14 +152,14 @@ public sealed class TelemetryTests
     public void ConsentDenied_TagsContainClientId()
     {
         // Arrange
-        var deniedClientId = TestValues.NewClientIdentifier();
+        var deniedClientId = Generated.NewClientIdentifier();
         KeyValuePair<string, object?>[] capturedTags = [];
-        using var listener = MakeListener(
+        using var listener = _harness.ListenTo(
             Telemetry.Metrics.ConsentDeniedCounterName,
             (_, tags) => capturedTags = tags);
 
         // Act
-        Telemetry.Metrics.ConsentDenied(deniedClientId, [TestValues.NewScopeName()]);
+        _harness.Telemetry.ConsentDenied(deniedClientId, [Generated.NewScopeName()]);
 
         // Assert
         Assert.Contains(capturedTags, t => string.Equals(t.Key, Telemetry.Metrics.ClientIdTagName, StringComparison.Ordinal) && deniedClientId.Equals(t.Value));
@@ -148,14 +169,14 @@ public sealed class TelemetryTests
     public void ConsentDenied_TagsContainScopeCount()
     {
         // Arrange
-        string[] deniedScopes = [TestValues.NewScopeName(), TestValues.NewScopeName(), TestValues.NewScopeName()];
+        string[] deniedScopes = [Generated.NewScopeName(), Generated.NewScopeName(), Generated.NewScopeName()];
         KeyValuePair<string, object?>[] capturedTags = [];
-        using var listener = MakeListener(
+        using var listener = _harness.ListenTo(
             Telemetry.Metrics.ConsentDeniedCounterName,
             (_, tags) => capturedTags = tags);
 
         // Act
-        Telemetry.Metrics.ConsentDenied(TestValues.NewClientIdentifier(), deniedScopes);
+        _harness.Telemetry.ConsentDenied(Generated.NewClientIdentifier(), deniedScopes);
 
         // Assert
         Assert.Contains(capturedTags, t => string.Equals(t.Key, Telemetry.Metrics.ScopeCountTagName, StringComparison.Ordinal) && deniedScopes.Length.Equals(t.Value));
@@ -166,12 +187,12 @@ public sealed class TelemetryTests
     {
         // Arrange
         KeyValuePair<string, object?>[] capturedTags = [];
-        using var listener = MakeListener(
+        using var listener = _harness.ListenTo(
             Telemetry.Metrics.ConsentDeniedCounterName,
             (_, tags) => capturedTags = tags);
 
         // Act
-        Telemetry.Metrics.ConsentDenied(TestValues.NewClientIdentifier(), []);
+        _harness.Telemetry.ConsentDenied(Generated.NewClientIdentifier(), []);
 
         // Assert
         Assert.Contains(capturedTags, t => string.Equals(t.Key, Telemetry.Metrics.ScopeCountTagName, StringComparison.Ordinal) && 0.Equals(t.Value));
@@ -182,12 +203,12 @@ public sealed class TelemetryTests
     {
         // Arrange
         long captured = 0;
-        using var listener = MakeListener(
+        using var listener = _harness.ListenTo(
             Telemetry.Metrics.GrantsRevokedCounterName,
             (value, _) => captured = value);
 
         // Act
-        Telemetry.Metrics.GrantsRevoked(TestValues.NewClientIdentifier());
+        _harness.Telemetry.GrantsRevoked(Generated.NewClientIdentifier());
 
         // Assert
         Assert.Equal(1, captured);
@@ -197,14 +218,14 @@ public sealed class TelemetryTests
     public void GrantsRevoked_TagsContainClientId()
     {
         // Arrange
-        var revokedClientId = TestValues.NewClientIdentifier();
+        var revokedClientId = Generated.NewClientIdentifier();
         KeyValuePair<string, object?>[] capturedTags = [];
-        using var listener = MakeListener(
+        using var listener = _harness.ListenTo(
             Telemetry.Metrics.GrantsRevokedCounterName,
             (_, tags) => capturedTags = tags);
 
         // Act
-        Telemetry.Metrics.GrantsRevoked(revokedClientId);
+        _harness.Telemetry.GrantsRevoked(revokedClientId);
 
         // Assert
         Assert.Contains(capturedTags, t => string.Equals(t.Key, Telemetry.Metrics.ClientIdTagName, StringComparison.Ordinal) && revokedClientId.Equals(t.Value));
@@ -216,7 +237,7 @@ public sealed class TelemetryTests
         // Arrange
         long captured = 0;
         KeyValuePair<string, object?>[] capturedTags = [];
-        using var listener = MakeListener(
+        using var listener = _harness.ListenTo(
             Telemetry.Metrics.GrantsRevokedCounterName,
             (value, tags) =>
             {
@@ -225,7 +246,7 @@ public sealed class TelemetryTests
             });
 
         // Act
-        Telemetry.Metrics.GrantsRevoked(null);
+        _harness.Telemetry.GrantsRevoked(null);
 
         // Assert
         Assert.Equal(1, captured);
@@ -306,12 +327,12 @@ public sealed class TelemetryTests
     {
         // Arrange
         long captured = 0;
-        using var listener = MakeListener(
+        using var listener = _harness.ListenTo(
             Telemetry.Metrics.PasskeySignInCounterName,
             (value, _) => captured = value);
 
         // Act
-        Telemetry.Metrics.PasskeySignIn(succeeded: true, TestValues.NewBrowserUserAgent());
+        _harness.Telemetry.PasskeySignIn(succeeded: true, Generated.NewBrowserUserAgent());
 
         // Assert
         Assert.Equal(1, captured);
@@ -324,12 +345,12 @@ public sealed class TelemetryTests
     {
         // Arrange
         KeyValuePair<string, object?>[] capturedTags = [];
-        using var listener = MakeListener(
+        using var listener = _harness.ListenTo(
             Telemetry.Metrics.PasskeySignInCounterName,
             (_, tags) => capturedTags = tags);
 
         // Act
-        Telemetry.Metrics.PasskeySignIn(succeeded, TestValues.NewBrowserUserAgent());
+        _harness.Telemetry.PasskeySignIn(succeeded, Generated.NewBrowserUserAgent());
 
         // Assert
         Assert.Contains(capturedTags, t => string.Equals(t.Key, Telemetry.Metrics.SucceededTagName, StringComparison.Ordinal) && expectedLabel.Equals(t.Value));
@@ -340,12 +361,12 @@ public sealed class TelemetryTests
     {
         // Arrange
         KeyValuePair<string, object?>[] capturedTags = [];
-        using var listener = MakeListener(
+        using var listener = _harness.ListenTo(
             Telemetry.Metrics.PasskeySignInCounterName,
             (_, tags) => capturedTags = tags);
 
         // Act
-        Telemetry.Metrics.PasskeySignIn(succeeded: true, TestValues.NewSyntheticWalkerUserAgent());
+        _harness.Telemetry.PasskeySignIn(succeeded: true, Generated.NewUserAgentTaggedWith(Telemetry.Metrics.SyntheticUserAgentToken));
 
         // Assert
         Assert.Contains(capturedTags, t => string.Equals(t.Key, Telemetry.Metrics.SyntheticTagName, StringComparison.Ordinal) && Telemetry.Metrics.TrueLabel.Equals(t.Value));
@@ -356,12 +377,12 @@ public sealed class TelemetryTests
     {
         // Arrange
         KeyValuePair<string, object?>[] capturedTags = [];
-        using var listener = MakeListener(
+        using var listener = _harness.ListenTo(
             Telemetry.Metrics.PasskeySignInCounterName,
             (_, tags) => capturedTags = tags);
 
         // Act
-        Telemetry.Metrics.PasskeySignIn(succeeded: true, TestValues.NewBrowserUserAgent());
+        _harness.Telemetry.PasskeySignIn(succeeded: true, Generated.NewBrowserUserAgent());
 
         // Assert
         Assert.Contains(
@@ -374,37 +395,16 @@ public sealed class TelemetryTests
     {
         // Arrange
         KeyValuePair<string, object?>[] capturedTags = [];
-        using var listener = MakeListener(
+        using var listener = _harness.ListenTo(
             Telemetry.Metrics.PasskeySignInCounterName,
             (_, tags) => capturedTags = tags);
 
         // Act
-        Telemetry.Metrics.PasskeySignIn(succeeded: false, userAgent: null);
+        _harness.Telemetry.PasskeySignIn(succeeded: false, userAgent: null);
 
         // Assert
         Assert.Contains(capturedTags, t => string.Equals(t.Key, Telemetry.Metrics.SyntheticTagName, StringComparison.Ordinal) && Telemetry.Metrics.FalseLabel.Equals(t.Value));
     }
 
-    private static MeterListener MakeListener(
-        string instrumentName,
-        Action<long, KeyValuePair<string, object?>[]> onMeasurement)
-    {
-        var listener = new MeterListener();
-        listener.InstrumentPublished = (instrument, l) =>
-        {
-            if (instrument.Meter.Name == nameof(Identity))
-            {
-                l.EnableMeasurementEvents(instrument);
-            }
-        };
-        listener.SetMeasurementEventCallback<long>((instrument, value, tags, _) =>
-        {
-            if (instrument.Name == instrumentName)
-            {
-                onMeasurement(value, tags.ToArray());
-            }
-        });
-        listener.Start();
-        return listener;
-    }
+    public void Dispose() => _harness.Dispose();
 }

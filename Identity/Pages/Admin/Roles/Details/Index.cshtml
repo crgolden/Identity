@@ -1,5 +1,5 @@
 @page "{id}"
-@model Identity.Pages.Admin.Roles.Details.IndexModel
+@model Identity.Pages.Admin.Roles.Details.Index
 
 @{
     ViewData["Title"] = "Role Details";
@@ -16,7 +16,7 @@
 
 <div class="d-flex gap-2">
     <a id="nav-claims" asp-page="./Claims" asp-route-id="@Model.AppRole.Id" class="btn btn-outline-secondary">Claims</a>
-    <a id="nav-users" asp-page="./Users" asp-route-id="@Model.AppRole.Id" class="btn btn-outline-secondary">Users</a>
+    <a id="nav-users" asp-page="@Users.PageName" asp-route-id="@Model.AppRole.Id" class="btn btn-outline-secondary">Users</a>
     <a id="btn-edit" asp-page="/Admin/Roles/Edit/Index" asp-route-id="@Model.AppRole.Id" class="btn btn-primary">Edit</a>
     <a id="btn-delete" asp-page="/Admin/Roles/Delete" asp-route-id="@Model.AppRole.Id" class="btn btn-danger">Delete</a>
     <a id="btn-back" asp-page="/Admin/Roles/Index" class="btn btn-outline-secondary">Back</a>

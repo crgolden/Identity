@@ -1,11 +1,11 @@
 namespace Identity.Pages.Admin.Roles.Edit;
 
+using Identity.Pages.Admin.Roles;
 using Microsoft.AspNetCore.Identity;
-using Roles;
 
-public class UsersModel : RoleUsersModelBase
+public class Users : RoleUsersModelBase
 {
-    public UsersModel(RoleManager<IdentityRole<Guid>> roleManager, UserManager<IdentityUser<Guid>> userManager)
+    public Users(RoleManager<IdentityRole<Guid>> roleManager, UserManager<IdentityUser<Guid>> userManager)
         : base(roleManager, userManager)
     {
     }

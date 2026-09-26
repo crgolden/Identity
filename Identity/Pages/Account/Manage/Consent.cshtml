@@ -1,7 +1,9 @@
 @page
-@model Identity.Pages.Account.Manage.ConsentModel
+@model Identity.Pages.Account.Manage.Consent
 @{
     ViewData["Title"] = "Authorize Application";
+    var mustChooseOne = ViewData.ModelState[Empty] is { } modelErrors
+        && modelErrors.Errors.Any(e => string.Equals(e.ErrorMessage, ConsentPageModelBase.MustChooseOneErrorMessage, StringComparison.Ordinal));
 }
 
 <h1>@ViewData["Title"]</h1>
@@ -31,7 +33,9 @@
         <form id="consent-form" method="post">
             <input type="hidden" asp-for="Input.ReturnUrl" />
 
-            <div id="validation-errors" asp-validation-summary="ModelOnly" class="text-danger mb-3" role="alert"></div>
+            <div id="@(mustChooseOne ? "must-choose-one-error" : null)">
+                <div id="validation-errors" asp-validation-summary="ModelOnly" class="text-danger mb-3" role="alert"></div>
+            </div>
 
             @if (Model.View.IdentityScopes.Any())
             {

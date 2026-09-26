@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-public class TwoFactorAuthenticationModel : PageModel
+public class TwoFactorAuthentication : PageModel
 {
     internal const string BrowserForgottenMessage =
         "The current browser has been forgotten. When you login again from this browser you will be prompted for your 2fa code.";
@@ -12,7 +12,7 @@ public class TwoFactorAuthenticationModel : PageModel
     private readonly UserManager<IdentityUser<Guid>> _userManager;
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
 
-    public TwoFactorAuthenticationModel(UserManager<IdentityUser<Guid>> userManager, SignInManager<IdentityUser<Guid>> signInManager)
+    public TwoFactorAuthentication(UserManager<IdentityUser<Guid>> userManager, SignInManager<IdentityUser<Guid>> signInManager)
     {
         ThrowIfNull(userManager);
         ThrowIfNull(signInManager);

@@ -1,7 +1,11 @@
 namespace Identity.Tests.E2E;
 
 using System.Text.RegularExpressions;
-using Infrastructure;
+using Identity.Tests.E2E.Infrastructure;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Microsoft.Playwright;
 
 [Trait("Category", "E2E")]
@@ -16,13 +20,13 @@ public sealed class LoginTests(PlaywrightFixture fixture)
         var (context, page) = await fixture.NewPageAsync();
         await using (context)
         {
-            await page.GotoAsync("/Account/Login");
+            await page.GotoAsync(PageRoutes.Login);
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("#login-submit");
 
-            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"));
-            Assert.DoesNotContain("/Account/Login", page.Url, StringComparison.Ordinal);
+            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex(PageRoutes.Login));
+            Assert.DoesNotContain(PageRoutes.Login, page.Url, StringComparison.Ordinal);
         }
     }
 
@@ -34,12 +38,12 @@ public sealed class LoginTests(PlaywrightFixture fixture)
         var (context, page) = await fixture.NewPageAsync();
         await using (context)
         {
-            await page.GotoAsync("/Account/Login");
+            await page.GotoAsync(PageRoutes.Login);
             await page.FillAsync("input[name='Input.Email']", email);
-            await page.FillAsync("input[name='Input.Password']", "WrongPassword!99");
+            await page.FillAsync("input[name='Input.Password']", Generated.NewPassword());
             await page.ClickAsync("#login-submit");
 
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/Login"));
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex(PageRoutes.Login));
             var errorText = await page.TextContentAsync("#validation-errors");
             Assert.NotNull(errorText);
         }
@@ -48,46 +52,49 @@ public sealed class LoginTests(PlaywrightFixture fixture)
     [Fact]
     public async Task Login_EmptySubmit_RendersClientValidationWithoutAScriptError()
     {
-        // Arrange
         var (context, page) = await fixture.NewPageAsync();
         await using (context)
         {
             var scriptErrors = new List<string>();
             page.PageError += (_, error) => scriptErrors.Add(error);
-            await page.GotoAsync("/Account/Login");
+            await page.GotoAsync(PageRoutes.Login);
+            await page.WaitForFunctionAsync(BrowserScripts.LoginFormValidatorAttached);
 
-            // Act
+            var postSent = false;
+            page.Request += (_, request) => postSent |= string.Equals(request.Method, HttpMethod.Post.Method, StringComparison.Ordinal);
             await page.ClickAsync("#login-submit");
 
-            // Assert
-            await Assertions.Expect(page.Locator("#login-email-validation")).ToHaveClassAsync(new Regex("field-validation-error"));
+            await Assertions.Expect(page.Locator("#login-email-validation")).ToHaveClassAsync(new Regex(HtmlHelper.ValidationMessageCssClassName));
             await Assertions.Expect(page.Locator("#login-email-validation")).Not.ToBeEmptyAsync();
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/Login"));
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex(PageRoutes.Login));
+            Assert.False(postSent);
             Assert.Empty(scriptErrors);
         }
     }
 
     [Fact]
-    public async Task Login_FiveFailedAttempts_LocksAccount()
+    public async Task Login_MaxFailedAttempts_LocksAccount()
     {
         var (email, _) = await fixture.CreateConfirmedUserAsync();
+        var maxFailedAttempts = fixture.Factory.Services
+            .GetRequiredService<IOptions<IdentityOptions>>().Value.Lockout.MaxFailedAccessAttempts;
 
         var (context, page) = await fixture.NewPageAsync();
         await using (context)
         {
-            await page.GotoAsync("/Account/Login");
+            await page.GotoAsync(PageRoutes.Login);
 
-            for (var i = 0; i < 5; i++)
+            for (var attempt = 1; attempt <= maxFailedAttempts; attempt++)
             {
                 await page.FillAsync("input[name='Input.Email']", email);
-                await page.FillAsync("input[name='Input.Password']", "BadPassword!99");
+                await page.FillAsync("input[name='Input.Password']", Generated.NewPassword());
 
                 var postResponse = page.WaitForResponseAsync(
-                    res => string.Equals(res.Request.Method, "POST", StringComparison.Ordinal) && res.Url.Contains("/Account/Login", StringComparison.Ordinal));
+                    res => string.Equals(res.Request.Method, HttpMethod.Post.Method, StringComparison.Ordinal) && res.Url.Contains(PageRoutes.Login, StringComparison.Ordinal));
                 await page.ClickAsync("#login-submit");
                 await postResponse;
 
-                if (i < 4)
+                if (attempt < maxFailedAttempts)
                 {
                     await page.Locator("input[name='Input.Email']").WaitForAsync();
                 }
@@ -97,7 +104,7 @@ public sealed class LoginTests(PlaywrightFixture fixture)
                 }
             }
 
-            Assert.Contains("/Account/Lockout", page.Url, StringComparison.Ordinal);
+            Assert.Contains(PageRoutes.Lockout, page.Url, StringComparison.Ordinal);
         }
     }
 }

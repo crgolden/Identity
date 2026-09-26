@@ -2,12 +2,9 @@ namespace Identity.CAPTCHA;
 
 using System.Net.Http;
 using System.Net.Http.Json;
-using System.Text.Json.Serialization;
 using Microsoft.Extensions.Options;
 
-#pragma warning disable S101
 public sealed class ReCAPTCHAService : ICAPTCHAService
-#pragma warning restore S101
 {
     internal const string SiteverifySuccessFieldName = "success";
 
@@ -23,6 +20,8 @@ public sealed class ReCAPTCHAService : ICAPTCHAService
     }
 
     public string? SiteKey => _options.SiteKey;
+
+    public Uri? ScriptEndpoint => _options.ScriptEndpoint;
 
     public async Task<CAPTCHAVerdict> VerifyAsync(string? token, CancellationToken cancellationToken = default)
     {
@@ -59,7 +58,3 @@ public sealed class ReCAPTCHAService : ICAPTCHAService
         return result.Score;
     }
 }
-
-internal sealed record RecaptchaResponse(
-    [property: JsonPropertyName(ReCAPTCHAService.SiteverifySuccessFieldName)] bool Success,
-    [property: JsonPropertyName(ReCAPTCHAService.SiteverifyScoreFieldName)] decimal Score);

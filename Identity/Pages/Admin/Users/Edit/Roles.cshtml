@@ -1,5 +1,5 @@
 @page "{id}"
-@model Identity.Pages.Admin.Users.Edit.RolesModel
+@model Identity.Pages.Admin.Users.Edit.Roles
 @{
     ViewData["Title"] = "Edit User Roles";
 }
@@ -17,11 +17,11 @@
                 </tr>
             </thead>
             <tbody>
-                @for (var i = 0; i < Model.Roles.Count; i++)
+                @foreach (var i in Enumerable.Range(0, Model.Resources.Count))
                 {
                     <tr>
-                        <td><input id="role-@i" name="Roles[@i]" value="@Model.Roles[i]" class="form-control form-control-sm" aria-label="Role name" /></td>
-                        <td><button id="role-remove-@i" type="submit" asp-page-handler="RemoveRow" asp-route-id="@Model.AppUser.Id" asp-route-index="@i" class="btn btn-sm btn-outline-danger">Remove</button></td>
+                        <td><input id="@(Roles.RowIdPrefix)@i" name="Resources[@i]" value="@Model.Resources[i]" class="form-control form-control-sm" aria-label="Role name" /></td>
+                        <td><button id="@(Roles.RemoveRowIdPrefix)@i" type="submit" asp-page-handler="RemoveRow" asp-route-id="@Model.AppUser.Id" asp-route-index="@i" class="btn btn-sm btn-outline-danger">Remove</button></td>
                     </tr>
                 }
             </tbody>

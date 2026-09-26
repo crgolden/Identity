@@ -1,18 +1,16 @@
 namespace Identity.Pages.Admin.Users.Edit;
 
+using Identity.Pages.Admin.Users;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Users;
 using static System.Buffers.Text.Base64Url;
 
-public class PasskeysModel : UserSubPageModelBase
+public class Passkeys : UserResourcesBase<UserPasskeyInfo>
 {
-    public PasskeysModel(UserManager<IdentityUser<Guid>> userManager)
+    public Passkeys(UserManager<IdentityUser<Guid>> userManager)
         : base(userManager)
     {
     }
-
-    public IList<UserPasskeyInfo> Passkeys { get; private set; } = [];
 
     public async Task<IActionResult> OnGetAsync(string id)
     {
@@ -21,7 +19,7 @@ public class PasskeysModel : UserSubPageModelBase
             return NotFound();
         }
 
-        Passkeys = await UserManager.GetPasskeysAsync(AppUser);
+        Resources = await UserManager.GetPasskeysAsync(AppUser);
         return Page();
     }
 

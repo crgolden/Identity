@@ -4,8 +4,8 @@ using System.Net.Mime;
 using System.Security.Cryptography;
 using System.Text;
 using CsCheck;
-using Infrastructure;
-using static SanitizationFixtureConstants;
+using Identity.Tests.Unit.Infrastructure;
+using static Identity.Tests.Unit.PropertyBased.SanitizationFixtureConstants;
 
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
@@ -18,19 +18,19 @@ public sealed class InputSanitizationTests
 
     public static TheoryData<string> ExternalUrls()
     {
-        var host = TestValues.NewExternalHost();
+        var host = Generated.NewExternalHost();
         var absoluteUrl = Uri.UriSchemeHttps + Uri.SchemeDelimiter + host;
         return new TheoryData<string>
         {
             absoluteUrl,
-            Uri.UriSchemeHttp + Uri.SchemeDelimiter + host + TestValues.NewLocalPath() +
-                QueryStringStart + TestValues.NewPathSegment() + QueryStringAssignment + TestValues.NewEntityId(),
+            Uri.UriSchemeHttp + Uri.SchemeDelimiter + host + Generated.NewLocalPath() +
+                QueryStringStart + Generated.NewPathSegment() + QueryStringAssignment + Generated.NewEntityId(),
             ProtocolRelativePrefix + host,
-            ProtocolRelativePrefix + host + TestValues.NewLocalPath(),
-            JavaScriptScheme + SchemeSeparator + TestValues.NewPathSegment(),
-            DataScheme + SchemeSeparator + MediaTypeNames.Text.Html + DataUrlSeparator + TestValues.NewPathSegment(),
-            absoluteUrl + TestValues.NewLocalPath() + QueryStringStart + TestValues.NewPathSegment() +
-                QueryStringAssignment + Uri.UriSchemeHttps + Uri.SchemeDelimiter + TestValues.NewExternalHost(),
+            ProtocolRelativePrefix + host + Generated.NewLocalPath(),
+            JavaScriptScheme + SchemeSeparator + Generated.NewPathSegment(),
+            DataScheme + SchemeSeparator + MediaTypeNames.Text.Html + DataUrlSeparator + Generated.NewPathSegment(),
+            absoluteUrl + Generated.NewLocalPath() + QueryStringStart + Generated.NewPathSegment() +
+                QueryStringAssignment + Uri.UriSchemeHttps + Uri.SchemeDelimiter + Generated.NewExternalHost(),
             TabCharacter + absoluteUrl,
             SpaceCharacter + absoluteUrl,
         };
@@ -39,10 +39,10 @@ public sealed class InputSanitizationTests
     public static TheoryData<string> LocalUrls() => new()
     {
         new string(PathSeparator, MinGeneratedInputLength),
-        TestValues.NewLocalPath(),
-        TestValues.NewLocalPath() + TestValues.NewLocalPath(),
-        TestValues.NewLocalPath() + TestValues.NewLocalPath() + TestValues.NewLocalPath(),
-        PageRoutes.ContentRoot + TestValues.NewPathSegment(),
+        Generated.NewLocalPath(),
+        Generated.NewLocalPath() + Generated.NewLocalPath(),
+        Generated.NewLocalPath() + Generated.NewLocalPath() + Generated.NewLocalPath(),
+        PageRoutes.ContentRoot + Generated.NewPathSegment(),
     };
 
     [Fact]
@@ -122,8 +122,8 @@ public sealed class InputSanitizationTests
     public void GravatarHash_EmailWhitespaceTrimmed()
     {
         // Arrange
-        var trimmed = TestValues.NewEmailAddress();
-        var paddedWithWhitespace = TestValues.NewWhitespaceValue() + trimmed + TestValues.NewWhitespaceValue();
+        var trimmed = Generated.NewEmailAddress();
+        var paddedWithWhitespace = Generated.NewWhitespaceValue() + trimmed + Generated.NewWhitespaceValue();
         var trimmedHash = ComputeGravatarHash(trimmed);
 
         // Act

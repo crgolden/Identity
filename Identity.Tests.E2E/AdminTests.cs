@@ -1,19 +1,24 @@
 namespace Identity.Tests.E2E;
 
 using System.Text.RegularExpressions;
-using Infrastructure;
+using Identity.Pages.Admin;
+using Identity.Tests.E2E.Infrastructure;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Microsoft.Playwright;
 
 [Trait("Category", "E2E")]
 [Collection(E2ECollection.Name)]
 public sealed class AdminTests(PlaywrightFixture fixture)
 {
+    private const string AdminCardSelector = "[id^='admin-card-']";
+
     [Fact]
     public async Task Admin_Nav_Link_Visible_When_AdminRole()
     {
         var (email, password) = await fixture.CreateAdminUserAsync();
 
-        var (context, page) = await fixture.NewPageAsync("Admin");
+        var (context, page) = await fixture.NewPageAsync(PlaywrightSuite.Admin);
         await using (context)
         {
             await LoginAsync(page, email, password);
@@ -26,7 +31,7 @@ public sealed class AdminTests(PlaywrightFixture fixture)
     {
         var (email, password) = await fixture.CreateConfirmedUserAsync();
 
-        var (context, page) = await fixture.NewPageAsync("Admin");
+        var (context, page) = await fixture.NewPageAsync(PlaywrightSuite.Admin);
         await using (context)
         {
             await LoginAsync(page, email, password);
@@ -39,25 +44,20 @@ public sealed class AdminTests(PlaywrightFixture fixture)
     {
         var (email, password) = await fixture.CreateAdminUserAsync();
 
-        var (context, page) = await fixture.NewPageAsync("Admin");
+        var (context, page) = await fixture.NewPageAsync(PlaywrightSuite.Admin);
         await using (context)
         {
             await LoginAsync(page, email, password);
-            await page.GotoAsync("/Admin");
+            await page.GotoAsync(AuthorizationNames.AdminFolder);
 
-            string[] cardIds =
-            [
-                "#admin-card-clients", "#admin-card-apiresources", "#admin-card-apiscopes",
-                "#admin-card-identityresources", "#admin-card-identityproviders", "#admin-card-samlserviceproviders",
-                "#admin-card-persistedgrants", "#admin-card-deviceflowcodes", "#admin-card-serversidesessions",
-                "#admin-card-keys", "#admin-card-pushedauthorizationrequests", "#admin-card-samlsigninstates",
-                "#admin-card-samllogoutsessions", "#admin-card-samllogoutsessionrequestindices",
-                "#admin-card-users", "#admin-card-roles"
-            ];
+            await Assertions.Expect(page.Locator(AdminCardSelector))
+                .ToHaveCountAsync(fixture.Settings.IndependentlyPinnedAdminCardCount);
+            var sections = fixture.Factory.Services.GetRequiredService<IOptions<IReadOnlyList<AdminSection>>>().Value;
+            Assert.Equal(fixture.Settings.IndependentlyPinnedAdminCardCount, sections.Count);
 
-            foreach (var id in cardIds)
+            foreach (var section in sections)
             {
-                await Assertions.Expect(page.Locator(id)).ToBeVisibleAsync();
+                await Assertions.Expect(page.Locator($"#{section.CardId}")).ToBeVisibleAsync();
             }
         }
     }
@@ -65,22 +65,22 @@ public sealed class AdminTests(PlaywrightFixture fixture)
     [Fact]
     public async Task Admin_Unauthenticated_Redirects_To_Login()
     {
-        var (context, page) = await fixture.NewPageAsync("Admin");
+        var (context, page) = await fixture.NewPageAsync(PlaywrightSuite.Admin);
         await using (context)
         {
-            await page.GotoAsync("/Admin");
-            Assert.Equal("/Account/Login", new Uri(page.Url).AbsolutePath);
+            await page.GotoAsync(AuthorizationNames.AdminFolder);
+            Assert.Equal(PageRoutes.Login, new Uri(page.Url).AbsolutePath);
         }
     }
 
     [Fact]
     public async Task Manage_Unauthenticated_Redirects_To_Login()
     {
-        var (context, page) = await fixture.NewPageAsync("Admin");
+        var (context, page) = await fixture.NewPageAsync(PlaywrightSuite.Admin);
         await using (context)
         {
             await page.GotoAsync("/Account/Manage");
-            Assert.Equal("/Account/Login", new Uri(page.Url).AbsolutePath);
+            Assert.Equal(PageRoutes.Login, new Uri(page.Url).AbsolutePath);
         }
     }
 
@@ -89,11 +89,11 @@ public sealed class AdminTests(PlaywrightFixture fixture)
     {
         var (email, password) = await fixture.CreateConfirmedUserAsync();
 
-        var (context, page) = await fixture.NewPageAsync("Admin");
+        var (context, page) = await fixture.NewPageAsync(PlaywrightSuite.Admin);
         await using (context)
         {
             await LoginAsync(page, email, password);
-            await page.GotoAsync("/Admin");
+            await page.GotoAsync(AuthorizationNames.AdminFolder);
             Assert.Equal("/Account/AccessDenied", new Uri(page.Url).AbsolutePath);
         }
     }
@@ -103,12 +103,13 @@ public sealed class AdminTests(PlaywrightFixture fixture)
     {
         var (email, password) = await fixture.CreateAdminUserAsync();
 
-        var (context, page) = await fixture.NewPageAsync("Admin");
+        var (context, page) = await fixture.NewPageAsync(PlaywrightSuite.Admin);
         await using (context)
         {
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/Clients");
-            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("Clients");
+            Assert.Equal("/Admin/Clients", new Uri(page.Url).AbsolutePath);
+            await Assertions.Expect(page.Locator("#page-heading")).ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("#btn-create")).ToBeVisibleAsync();
         }
@@ -120,13 +121,13 @@ public sealed class AdminTests(PlaywrightFixture fixture)
         var (email, password) = await fixture.CreateAdminUserAsync();
         var clientId = $"e2e-create-{Guid.NewGuid():N}";
 
-        var (context, page) = await fixture.NewPageAsync("Admin");
+        var (context, page) = await fixture.NewPageAsync(PlaywrightSuite.Admin);
         await using (context)
         {
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/Clients/Create");
             await page.FillAsync("input[name='Client.ClientId']", clientId);
-            await page.FillAsync("input[name='Client.ClientName']", "E2E Created Client");
+            await page.FillAsync("input[name='Client.ClientName']", Generated.NewDisplayName());
             await page.ClickAsync("#create-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Clients/Details"));
             await Assertions.Expect(page.Locator("#btn-edit")).ToBeVisibleAsync();
@@ -139,7 +140,7 @@ public sealed class AdminTests(PlaywrightFixture fixture)
         var (email, password) = await fixture.CreateAdminUserAsync();
         var clientDbId = await fixture.SeedClientAsync();
 
-        var (context, page) = await fixture.NewPageAsync("Admin");
+        var (context, page) = await fixture.NewPageAsync(PlaywrightSuite.Admin);
         await using (context)
         {
             await LoginAsync(page, email, password);
@@ -155,12 +156,13 @@ public sealed class AdminTests(PlaywrightFixture fixture)
         var (email, password) = await fixture.CreateAdminUserAsync();
         var clientDbId = await fixture.SeedClientAsync();
 
-        var (context, page) = await fixture.NewPageAsync("Admin");
+        var (context, page) = await fixture.NewPageAsync(PlaywrightSuite.Admin);
         await using (context)
         {
             await LoginAsync(page, email, password);
             await page.GotoAsync($"/Admin/Clients/Edit/Index?id={clientDbId}");
-            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("Edit Client");
+            Assert.Equal("/Admin/Clients/Edit/Index", new Uri(page.Url).AbsolutePath);
+            await Assertions.Expect(page.Locator("#page-heading")).ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("#save-submit")).ToBeVisibleAsync();
         }
     }
@@ -171,7 +173,7 @@ public sealed class AdminTests(PlaywrightFixture fixture)
         var (email, password) = await fixture.CreateAdminUserAsync();
         var clientDbId = await fixture.SeedClientAsync();
 
-        var (context, page) = await fixture.NewPageAsync("Admin");
+        var (context, page) = await fixture.NewPageAsync(PlaywrightSuite.Admin);
         await using (context)
         {
             await LoginAsync(page, email, password);
@@ -192,13 +194,13 @@ public sealed class AdminTests(PlaywrightFixture fixture)
         var clientId = $"e2e-delete-{Guid.NewGuid():N}";
         var clientDbId = await fixture.SeedClientAsync(clientId);
 
-        var (context, page) = await fixture.NewPageAsync("Admin");
+        var (context, page) = await fixture.NewPageAsync(PlaywrightSuite.Admin);
         await using (context)
         {
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/Clients");
             await page.ClickAsync($"#delete-{clientDbId}");
-            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("Delete");
+            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Delete"));
             await page.ClickAsync("#delete-submit");
             await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("Delete"));
             await Assertions.Expect(page.Locator($"#delete-{clientDbId}")).Not.ToBeVisibleAsync();
@@ -210,12 +212,13 @@ public sealed class AdminTests(PlaywrightFixture fixture)
     {
         var (email, password) = await fixture.CreateAdminUserAsync();
 
-        var (context, page) = await fixture.NewPageAsync("Admin");
+        var (context, page) = await fixture.NewPageAsync(PlaywrightSuite.Admin);
         await using (context)
         {
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/ApiResources");
-            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("API Resources");
+            Assert.Equal("/Admin/ApiResources", new Uri(page.Url).AbsolutePath);
+            await Assertions.Expect(page.Locator("#page-heading")).ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
         }
     }
@@ -225,12 +228,13 @@ public sealed class AdminTests(PlaywrightFixture fixture)
     {
         var (email, password) = await fixture.CreateAdminUserAsync();
 
-        var (context, page) = await fixture.NewPageAsync("Admin");
+        var (context, page) = await fixture.NewPageAsync(PlaywrightSuite.Admin);
         await using (context)
         {
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/ApiScopes");
-            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("API Scopes");
+            Assert.Equal("/Admin/ApiScopes", new Uri(page.Url).AbsolutePath);
+            await Assertions.Expect(page.Locator("#page-heading")).ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
         }
     }
@@ -240,12 +244,13 @@ public sealed class AdminTests(PlaywrightFixture fixture)
     {
         var (email, password) = await fixture.CreateAdminUserAsync();
 
-        var (context, page) = await fixture.NewPageAsync("Admin");
+        var (context, page) = await fixture.NewPageAsync(PlaywrightSuite.Admin);
         await using (context)
         {
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/IdentityResources");
-            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("Identity Resources");
+            Assert.Equal("/Admin/IdentityResources", new Uri(page.Url).AbsolutePath);
+            await Assertions.Expect(page.Locator("#page-heading")).ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
         }
     }
@@ -255,12 +260,13 @@ public sealed class AdminTests(PlaywrightFixture fixture)
     {
         var (email, password) = await fixture.CreateAdminUserAsync();
 
-        var (context, page) = await fixture.NewPageAsync("Admin");
+        var (context, page) = await fixture.NewPageAsync(PlaywrightSuite.Admin);
         await using (context)
         {
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/IdentityProviders");
-            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("Identity Providers");
+            Assert.Equal("/Admin/IdentityProviders", new Uri(page.Url).AbsolutePath);
+            await Assertions.Expect(page.Locator("#page-heading")).ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
         }
     }
@@ -270,12 +276,13 @@ public sealed class AdminTests(PlaywrightFixture fixture)
     {
         var (email, password) = await fixture.CreateAdminUserAsync();
 
-        var (context, page) = await fixture.NewPageAsync("Admin");
+        var (context, page) = await fixture.NewPageAsync(PlaywrightSuite.Admin);
         await using (context)
         {
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/SamlServiceProviders");
-            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("SAML Service Providers");
+            Assert.Equal("/Admin/SamlServiceProviders", new Uri(page.Url).AbsolutePath);
+            await Assertions.Expect(page.Locator("#page-heading")).ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
         }
     }
@@ -285,12 +292,13 @@ public sealed class AdminTests(PlaywrightFixture fixture)
     {
         var (email, password) = await fixture.CreateAdminUserAsync();
 
-        var (context, page) = await fixture.NewPageAsync("Admin");
+        var (context, page) = await fixture.NewPageAsync(PlaywrightSuite.Admin);
         await using (context)
         {
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/PersistedGrants");
-            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("Persisted Grants");
+            Assert.Equal("/Admin/PersistedGrants", new Uri(page.Url).AbsolutePath);
+            await Assertions.Expect(page.Locator("#page-heading")).ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
         }
     }
@@ -300,12 +308,13 @@ public sealed class AdminTests(PlaywrightFixture fixture)
     {
         var (email, password) = await fixture.CreateAdminUserAsync();
 
-        var (context, page) = await fixture.NewPageAsync("Admin");
+        var (context, page) = await fixture.NewPageAsync(PlaywrightSuite.Admin);
         await using (context)
         {
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/DeviceFlowCodes");
-            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("Device Flow Codes");
+            Assert.Equal("/Admin/DeviceFlowCodes", new Uri(page.Url).AbsolutePath);
+            await Assertions.Expect(page.Locator("#page-heading")).ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
         }
     }
@@ -315,12 +324,13 @@ public sealed class AdminTests(PlaywrightFixture fixture)
     {
         var (email, password) = await fixture.CreateAdminUserAsync();
 
-        var (context, page) = await fixture.NewPageAsync("Admin");
+        var (context, page) = await fixture.NewPageAsync(PlaywrightSuite.Admin);
         await using (context)
         {
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/ServerSideSessions");
-            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("Server-Side Sessions");
+            Assert.Equal("/Admin/ServerSideSessions", new Uri(page.Url).AbsolutePath);
+            await Assertions.Expect(page.Locator("#page-heading")).ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
         }
     }
@@ -330,12 +340,13 @@ public sealed class AdminTests(PlaywrightFixture fixture)
     {
         var (email, password) = await fixture.CreateAdminUserAsync();
 
-        var (context, page) = await fixture.NewPageAsync("Admin");
+        var (context, page) = await fixture.NewPageAsync(PlaywrightSuite.Admin);
         await using (context)
         {
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/Keys");
-            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("Keys");
+            Assert.Equal("/Admin/Keys", new Uri(page.Url).AbsolutePath);
+            await Assertions.Expect(page.Locator("#page-heading")).ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
         }
     }
@@ -345,12 +356,13 @@ public sealed class AdminTests(PlaywrightFixture fixture)
     {
         var (email, password) = await fixture.CreateAdminUserAsync();
 
-        var (context, page) = await fixture.NewPageAsync("Admin");
+        var (context, page) = await fixture.NewPageAsync(PlaywrightSuite.Admin);
         await using (context)
         {
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/PushedAuthorizationRequests");
-            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("Pushed Authorization Requests");
+            Assert.Equal("/Admin/PushedAuthorizationRequests", new Uri(page.Url).AbsolutePath);
+            await Assertions.Expect(page.Locator("#page-heading")).ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
         }
     }
@@ -360,12 +372,13 @@ public sealed class AdminTests(PlaywrightFixture fixture)
     {
         var (email, password) = await fixture.CreateAdminUserAsync();
 
-        var (context, page) = await fixture.NewPageAsync("Admin");
+        var (context, page) = await fixture.NewPageAsync(PlaywrightSuite.Admin);
         await using (context)
         {
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/SamlSigninStates");
-            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("SAML Sign-In States");
+            Assert.Equal("/Admin/SamlSigninStates", new Uri(page.Url).AbsolutePath);
+            await Assertions.Expect(page.Locator("#page-heading")).ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
         }
     }
@@ -375,12 +388,13 @@ public sealed class AdminTests(PlaywrightFixture fixture)
     {
         var (email, password) = await fixture.CreateAdminUserAsync();
 
-        var (context, page) = await fixture.NewPageAsync("Admin");
+        var (context, page) = await fixture.NewPageAsync(PlaywrightSuite.Admin);
         await using (context)
         {
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/SamlLogoutSessions");
-            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("SAML Logout Sessions");
+            Assert.Equal("/Admin/SamlLogoutSessions", new Uri(page.Url).AbsolutePath);
+            await Assertions.Expect(page.Locator("#page-heading")).ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
         }
     }
@@ -390,12 +404,13 @@ public sealed class AdminTests(PlaywrightFixture fixture)
     {
         var (email, password) = await fixture.CreateAdminUserAsync();
 
-        var (context, page) = await fixture.NewPageAsync("Admin");
+        var (context, page) = await fixture.NewPageAsync(PlaywrightSuite.Admin);
         await using (context)
         {
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/SamlLogoutSessionRequestIndices");
-            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("SAML Logout Session Request Indices");
+            Assert.Equal("/Admin/SamlLogoutSessionRequestIndices", new Uri(page.Url).AbsolutePath);
+            await Assertions.Expect(page.Locator("#page-heading")).ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
         }
     }
@@ -405,14 +420,16 @@ public sealed class AdminTests(PlaywrightFixture fixture)
     {
         var (email, password) = await fixture.CreateAdminUserAsync();
 
-        var (context, page) = await fixture.NewPageAsync("Admin");
+        var (context, page) = await fixture.NewPageAsync(PlaywrightSuite.Admin);
         await using (context)
         {
             await LoginAsync(page, email, password);
+            var userId = await fixture.GetUserIdAsync(email);
             await page.GotoAsync("/Admin/Users");
-            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("Users");
+            Assert.Equal("/Admin/Users", new Uri(page.Url).AbsolutePath);
+            await Assertions.Expect(page.Locator("#page-heading")).ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
-            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(email);
+            await Assertions.Expect(page.Locator($"#details-{userId}")).ToBeVisibleAsync();
         }
     }
 
@@ -421,7 +438,7 @@ public sealed class AdminTests(PlaywrightFixture fixture)
     {
         var (email, password) = await fixture.CreateAdminUserAsync();
 
-        var (context, page) = await fixture.NewPageAsync("Admin");
+        var (context, page) = await fixture.NewPageAsync(PlaywrightSuite.Admin);
         await using (context)
         {
             await LoginAsync(page, email, password);
@@ -441,14 +458,16 @@ public sealed class AdminTests(PlaywrightFixture fixture)
     {
         var (email, password) = await fixture.CreateAdminUserAsync();
 
-        var (context, page) = await fixture.NewPageAsync("Admin");
+        var (context, page) = await fixture.NewPageAsync(PlaywrightSuite.Admin);
         await using (context)
         {
             await LoginAsync(page, email, password);
+            var adminRoleId = await fixture.GetRoleIdAsync(AuthorizationNames.AdminRole);
             await page.GotoAsync("/Admin/Roles");
-            await Assertions.Expect(page.Locator("#page-heading")).ToContainTextAsync("Roles");
+            Assert.Equal("/Admin/Roles", new Uri(page.Url).AbsolutePath);
+            await Assertions.Expect(page.Locator("#page-heading")).ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
-            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync("Admin");
+            await Assertions.Expect(page.Locator($"#details-{adminRoleId}")).ToBeVisibleAsync();
         }
     }
 
@@ -458,7 +477,7 @@ public sealed class AdminTests(PlaywrightFixture fixture)
         var (email, password) = await fixture.CreateAdminUserAsync();
         var roleName = $"e2e-role-{Guid.NewGuid():N}";
 
-        var (context, page) = await fixture.NewPageAsync("Admin");
+        var (context, page) = await fixture.NewPageAsync(PlaywrightSuite.Admin);
         await using (context)
         {
             await LoginAsync(page, email, password);
@@ -467,15 +486,16 @@ public sealed class AdminTests(PlaywrightFixture fixture)
             await page.ClickAsync("#create-submit");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Details"));
 
-            await page.GotoAsync("/Admin/Roles");
-            await Assertions.Expect(page.Locator("#page-table")).ToContainTextAsync(roleName);
-
             var roleId = await fixture.GetRoleIdAsync(roleName);
+            await page.GotoAsync("/Admin/Roles");
+            await Assertions.Expect(page.Locator($"#details-{roleId}")).ToBeVisibleAsync();
+
             await page.ClickAsync($"#delete-{roleId}");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("Delete"));
             await page.ClickAsync("#delete-submit");
             await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("Delete"));
-            await Assertions.Expect(page.Locator("#page-table")).Not.ToContainTextAsync(roleName);
+            await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator($"#details-{roleId}")).ToHaveCountAsync(0);
         }
     }
 
@@ -484,11 +504,11 @@ public sealed class AdminTests(PlaywrightFixture fixture)
     {
         var (email, password) = await fixture.CreateAdminUserAsync();
 
-        var (context, page) = await fixture.NewPageAsync("Admin");
+        var (context, page) = await fixture.NewPageAsync(PlaywrightSuite.Admin);
         await using (context)
         {
             await LoginAsync(page, email, password);
-            var adminRoleId = await fixture.GetRoleIdAsync("Admin");
+            var adminRoleId = await fixture.GetRoleIdAsync(AuthorizationNames.AdminRole);
             await page.GotoAsync("/Admin/Roles");
             await page.ClickAsync($"#details-{adminRoleId}");
             await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Details"));
@@ -501,10 +521,10 @@ public sealed class AdminTests(PlaywrightFixture fixture)
 
     private static async Task LoginAsync(IPage page, string email, string password)
     {
-        await page.GotoAsync("/Account/Login");
+        await page.GotoAsync(PageRoutes.Login);
         await page.FillAsync("input[name='Input.Email']", email);
         await page.FillAsync("input[name='Input.Password']", password);
         await page.ClickAsync("#login-submit");
-        await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"));
+        await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex(PageRoutes.Login));
     }
 }

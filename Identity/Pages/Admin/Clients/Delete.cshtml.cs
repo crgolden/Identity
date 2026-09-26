@@ -6,11 +6,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
-public class DeleteModel : PageModel
+public class Delete : PageModel
 {
     private readonly IConfigurationDbContext _context;
 
-    public DeleteModel(IConfigurationDbContext context) => _context = context;
+    public Delete(IConfigurationDbContext context) => _context = context;
 
     public Client Client { get; private set; } = new();
 

@@ -3,7 +3,7 @@ namespace Identity.Pages.Account.Manage;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-public class ShowRecoveryCodesModel : PageModel
+public class ShowRecoveryCodes : PageModel
 {
     [TempData]
     public string[] RecoveryCodes { get; set; } = Array.Empty<string>();

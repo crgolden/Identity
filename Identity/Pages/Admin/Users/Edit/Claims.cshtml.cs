@@ -3,20 +3,16 @@ namespace Identity.Pages.Admin.Users.Edit;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 
-public class ClaimsModel : PageModel
+public class Claims : EditableResourcesBase<string, Claims.ClaimInputModel>
 {
     internal const string DetailsPageName = "/Admin/Users/Details/Claims";
 
     private readonly UserManager<IdentityUser<Guid>> _userManager;
 
-    public ClaimsModel(UserManager<IdentityUser<Guid>> userManager) => _userManager = userManager;
+    public Claims(UserManager<IdentityUser<Guid>> userManager) => _userManager = userManager;
 
     public IdentityUser<Guid> AppUser { get; private set; } = new();
-
-    [BindProperty]
-    public List<ClaimInputModel> Claims { get; set; } = [];
 
     public async Task<IActionResult> OnGetAsync(string id)
     {
@@ -28,7 +24,7 @@ public class ClaimsModel : PageModel
 
         AppUser = user;
         var existing = await _userManager.GetClaimsAsync(user);
-        Claims = existing.Select(c => new ClaimInputModel { Type = c.Type, Value = c.Value }).ToList();
+        Resources = existing.Select(c => new ClaimInputModel { Type = c.Type, Value = c.Value }).ToList();
         return Page();
     }
 
@@ -43,7 +39,7 @@ public class ClaimsModel : PageModel
         var existing = await _userManager.GetClaimsAsync(user);
         await _userManager.RemoveClaimsAsync(user, existing);
         var claims = new List<Claim>();
-        foreach (var input in Claims)
+        foreach (var input in Resources)
         {
             if (IsNullOrWhiteSpace(input.Type) || IsNullOrWhiteSpace(input.Value))
             {
@@ -61,35 +57,19 @@ public class ClaimsModel : PageModel
         return RedirectToPage(DetailsPageName, new { id });
     }
 
-    public async Task<IActionResult> OnPostAddRowAsync(string id)
+    protected override async Task<bool> LoadContextAsync(string id)
     {
         var user = await _userManager.FindByIdAsync(id);
         if (user is null)
         {
-            return NotFound();
+            return false;
         }
 
         AppUser = user;
-        Claims.Add(new ClaimInputModel());
-        return Page();
+        return true;
     }
 
-    public async Task<IActionResult> OnPostRemoveRowAsync(string id, int index)
-    {
-        var user = await _userManager.FindByIdAsync(id);
-        if (user is null)
-        {
-            return NotFound();
-        }
-
-        AppUser = user;
-        if (index >= 0 && index < Claims.Count)
-        {
-            Claims.RemoveAt(index);
-        }
-
-        return Page();
-    }
+    protected override ClaimInputModel NewResource() => new();
 
     public class ClaimInputModel
     {

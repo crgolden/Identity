@@ -6,11 +6,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
-public class EditModel : PageModel
+public class Edit : PageModel
 {
     private readonly IConfigurationDbContext _context;
 
-    public EditModel(IConfigurationDbContext context) => _context = context;
+    public Edit(IConfigurationDbContext context) => _context = context;
 
     [BindProperty]
     public SamlServiceProvider SamlServiceProvider { get; set; } = new();

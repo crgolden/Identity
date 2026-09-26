@@ -3,7 +3,7 @@ namespace Identity.Tests.E2E.Oidc;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Infrastructure;
+using Identity.Tests.E2E.Infrastructure;
 using Microsoft.AspNetCore.Mvc.Testing;
 
 [Trait("Category", "E2E")]
@@ -12,14 +12,19 @@ public sealed class OidcDiscoveryTests(PlaywrightFixture fixture)
 {
     private static readonly string[] RequiredDiscoveryFields =
     [
-        "issuer",
-        "authorization_endpoint",
-        "token_endpoint",
-        "jwks_uri",
-        "response_types_supported",
-        "subject_types_supported",
-        "id_token_signing_alg_values_supported"
+        OidcDiscoveryConstants.Issuer,
+        OidcDiscoveryConstants.AuthorizationEndpoint,
+        OidcDiscoveryConstants.TokenEndpoint,
+        OidcDiscoveryConstants.JwksUri,
+        OidcDiscoveryConstants.ResponseTypesSupported,
+        OidcDiscoveryConstants.SubjectTypesSupported,
+        OidcDiscoveryConstants.IdTokenSigningAlgValuesSupported
     ];
+
+    private static readonly HttpClient KestrelClient = new(new HttpClientHandler
+    {
+        ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+    });
 
     [Fact]
     public async Task Discovery_ReturnsOkWithRequiredFields()
@@ -29,7 +34,7 @@ public sealed class OidcDiscoveryTests(PlaywrightFixture fixture)
             AllowAutoRedirect = false
         });
         var response = await client.GetAsync(
-            "/.well-known/openid-configuration",
+            OidcDiscoveryConstants.DiscoveryPath,
             TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -46,22 +51,16 @@ public sealed class OidcDiscoveryTests(PlaywrightFixture fixture)
     [Fact]
     public async Task Discovery_IssuerIsHttps()
     {
-        var handler = new HttpClientHandler
-        {
-            ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-        };
-        using var client = new HttpClient(handler) { BaseAddress = new Uri(fixture.BaseAddress) };
-
-        var response = await client.GetAsync(
-            "/.well-known/openid-configuration",
+        var response = await KestrelClient.GetAsync(
+            new Uri(new Uri(fixture.BaseAddress), OidcDiscoveryConstants.DiscoveryPath),
             TestContext.Current.CancellationToken);
 
         var json = await response.Content.ReadFromJsonAsync<JsonElement>(
             cancellationToken: TestContext.Current.CancellationToken);
 
-        var issuer = json.GetProperty("issuer").GetString();
+        var issuer = json.GetProperty(OidcDiscoveryConstants.Issuer).GetString();
         Assert.NotNull(issuer);
-        Assert.StartsWith("https://", issuer, StringComparison.OrdinalIgnoreCase);
+        Assert.StartsWith(OidcDiscoveryConstants.HttpsScheme, issuer, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -73,12 +72,12 @@ public sealed class OidcDiscoveryTests(PlaywrightFixture fixture)
         });
 
         var discoveryResponse = await client.GetAsync(
-            "/.well-known/openid-configuration",
+            OidcDiscoveryConstants.DiscoveryPath,
             TestContext.Current.CancellationToken);
         var discovery = await discoveryResponse.Content.ReadFromJsonAsync<JsonElement>(
             cancellationToken: TestContext.Current.CancellationToken);
 
-        var jwksUri = discovery.GetProperty("jwks_uri").GetString();
+        var jwksUri = discovery.GetProperty(OidcDiscoveryConstants.JwksUri).GetString();
         Assert.NotNull(jwksUri);
 
         var jwksPath = new Uri(jwksUri).PathAndQuery;
@@ -89,7 +88,7 @@ public sealed class OidcDiscoveryTests(PlaywrightFixture fixture)
         var jwks = await jwksResponse.Content.ReadFromJsonAsync<JsonElement>(
             cancellationToken: TestContext.Current.CancellationToken);
 
-        var keys = jwks.GetProperty("keys").EnumerateArray().ToList();
+        var keys = jwks.GetProperty(OidcDiscoveryConstants.JwksKeys).EnumerateArray().ToList();
         Assert.NotEmpty(keys);
     }
 
@@ -101,7 +100,7 @@ public sealed class OidcDiscoveryTests(PlaywrightFixture fixture)
             AllowAutoRedirect = false
         });
         var response = await client.PostAsync(
-            "/connect/token",
+            OidcDiscoveryConstants.TokenPath,
             new FormUrlEncodedContent(Array.Empty<KeyValuePair<string, string>>()),
             TestContext.Current.CancellationToken);
 
@@ -115,12 +114,12 @@ public sealed class OidcDiscoveryTests(PlaywrightFixture fixture)
         {
             AllowAutoRedirect = false
         });
-        var response = await client.GetAsync("/connect/authorize", TestContext.Current.CancellationToken);
+        var response = await client.GetAsync(OidcDiscoveryConstants.AuthorizePath, TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.RedirectMethod, response.StatusCode);
         var location = response.Headers.Location;
         Assert.NotNull(location);
         Assert.True(location.IsAbsoluteUri);
-        Assert.Equal("/Error", location.AbsolutePath);
+        Assert.Equal(PageRoutes.Error, location.AbsolutePath);
     }
 }

@@ -1,5 +1,5 @@
 @page "{id}"
-@model Identity.Pages.Admin.Users.Details.LoginsModel
+@model Identity.Pages.Admin.Users.Details.Logins
 @{
     ViewData["Title"] = "User Logins";
 }
@@ -34,7 +34,7 @@
             </tr>
         </thead>
         <tbody>
-            @foreach (var login in Model.Logins)
+            @foreach (var login in Model.Resources)
             {
                 <tr>
                     <td>@login.LoginProvider</td>

@@ -1,17 +1,17 @@
 namespace Identity.Pages.Admin.Users.Details;
 
+using Identity.Pages.Admin.Users;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Users;
 
-public class LoginsModel : UserSubPageModelBase
+public class Logins : UserResourcesBase<UserLoginInfo>
 {
-    public LoginsModel(UserManager<IdentityUser<Guid>> userManager)
+    internal const string PageName = "/Admin/Users/Details/Logins";
+
+    public Logins(UserManager<IdentityUser<Guid>> userManager)
         : base(userManager)
     {
     }
-
-    public IList<UserLoginInfo> Logins { get; private set; } = [];
 
     public async Task<IActionResult> OnGetAsync(string id)
     {
@@ -20,7 +20,7 @@ public class LoginsModel : UserSubPageModelBase
             return NotFound();
         }
 
-        Logins = await UserManager.GetLoginsAsync(AppUser);
+        Resources = await UserManager.GetLoginsAsync(AppUser);
         return Page();
     }
 }

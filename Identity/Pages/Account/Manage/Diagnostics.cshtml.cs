@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 [Authorize]
-public class DiagnosticsModel : PageModel
+public class Diagnostics : PageModel
 {
     public DiagnosticsViewModel View { get; set; } = new DiagnosticsViewModel();
 
@@ -50,7 +50,7 @@ public class DiagnosticsModel : PageModel
 
     public class AuthenticationTokenViewModel
     {
-        required public string Name { get; set; }
+        public required string Name { get; set; }
 
         public string? Value { get; set; }
     }

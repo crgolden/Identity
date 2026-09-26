@@ -1,6 +1,6 @@
 namespace Identity.Tests.E2E.Security;
 
-using Infrastructure;
+using Identity.Tests.E2E.Infrastructure;
 using Microsoft.Playwright;
 
 [Trait("Category", "E2E")]
@@ -19,7 +19,7 @@ public sealed class OpenRedirectTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("button[type='submit']");
-            await page.WaitForLoadStateAsync(Microsoft.Playwright.LoadState.NetworkIdle);
+            await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
             Assert.DoesNotContain("evil.com", new Uri(page.Url).Host, StringComparison.OrdinalIgnoreCase);
         }
@@ -37,7 +37,7 @@ public sealed class OpenRedirectTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("button[type='submit']");
-            await page.WaitForLoadStateAsync(Microsoft.Playwright.LoadState.NetworkIdle);
+            await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
             Assert.DoesNotContain("evil.com", new Uri(page.Url).Host, StringComparison.OrdinalIgnoreCase);
         }
@@ -57,7 +57,7 @@ public sealed class OpenRedirectTests(PlaywrightFixture fixture)
             await page.ClickAsync("button[type='submit']");
             await Assertions.Expect(page.Locator("#profile-form")).ToBeVisibleAsync();
 
-            Assert.DoesNotContain("/Account/Login", page.Url, StringComparison.Ordinal);
+            Assert.DoesNotContain(PageRoutes.Login, page.Url, StringComparison.Ordinal);
         }
     }
 }

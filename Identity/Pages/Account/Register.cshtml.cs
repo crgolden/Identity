@@ -1,9 +1,8 @@
 namespace Identity.Pages.Account;
 
 using System.ComponentModel.DataAnnotations;
-using System.Text.Encodings.Web;
 using Azure.Messaging.ServiceBus;
-using CAPTCHA;
+using Identity.CAPTCHA;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -12,26 +11,31 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Azure;
 
 [AllowAnonymous]
-public class RegisterModel : PageModel
+public class Register : PageModel
 {
     internal const string RegisterConfirmationPageName = "RegisterConfirmation";
 
-    private const string From = "noreply@crgolden.com";
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
     private readonly UserManager<IdentityUser<Guid>> _userManager;
     private readonly ServiceBusClient _serviceBusClient;
     private readonly ICAPTCHAService _captchaService;
+    private readonly AccountEmailSettings _accountEmailSettings;
+    private readonly Telemetry _telemetry;
 
-    public RegisterModel(
+    public Register(
         UserManager<IdentityUser<Guid>> userManager,
         SignInManager<IdentityUser<Guid>> signInManager,
         IAzureClientFactory<ServiceBusClient> serviceBusClientFactory,
-        ICAPTCHAService captchaService)
+        ICAPTCHAService captchaService,
+        AccountEmailSettings accountEmailSettings,
+        Telemetry telemetry)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _serviceBusClient = serviceBusClientFactory.CreateClient(ServiceBusNames.ClientName);
         _captchaService = captchaService;
+        _accountEmailSettings = accountEmailSettings;
+        _telemetry = telemetry;
     }
 
     [BindProperty]
@@ -41,6 +45,8 @@ public class RegisterModel : PageModel
 
     public string? RecaptchaSiteKey { get; private set; }
 
+    public Uri? RecaptchaScriptEndpoint { get; private set; }
+
     public IList<AuthenticationScheme> ExternalLogins { get; set; } = new List<AuthenticationScheme>();
 
     public async Task OnGetAsync(string? returnUrl = null)
@@ -48,6 +54,7 @@ public class RegisterModel : PageModel
         ReturnUrl = returnUrl;
         ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
         RecaptchaSiteKey = _captchaService.SiteKey;
+        RecaptchaScriptEndpoint = _captchaService.ScriptEndpoint;
     }
 
     public async Task<IActionResult> OnPostAsync(string? returnUrl = null)
@@ -69,7 +76,7 @@ public class RegisterModel : PageModel
         var user = new IdentityUser<Guid>();
         await _userManager.SetUserNameAsync(user, Input.Email);
         await _userManager.SetEmailAsync(user, Input.Email);
-        using var activity = Telemetry.StartActivity("identity.register");
+        using var activity = _telemetry.StartActivity("identity.register");
         var result = await _userManager.CreateAsync(user, Input.Password);
         if (result.Succeeded)
         {
@@ -84,13 +91,13 @@ public class RegisterModel : PageModel
                 values: new { userId, code, returnUrl },
                 protocol: Request.Scheme);
 
-            var emailConfirmationSent = !IsNullOrWhiteSpace(callbackUrl);
-            if (emailConfirmationSent)
+            var emailConfirmationSent = false;
+            if (!IsNullOrWhiteSpace(callbackUrl))
             {
-                var htmlMessage = $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl!)}'>clicking here</a>.";
-                var sbMessage = new ServiceBusMessage(htmlMessage)
+                emailConfirmationSent = true;
+                var sbMessage = new ServiceBusMessage(_accountEmailSettings.ConfirmAccountHtml(callbackUrl))
                 {
-                    ReplyTo = From,
+                    ReplyTo = _accountEmailSettings.Sender,
                     Subject = UserMessages.ConfirmEmailSubject,
                     To = Input.Email
                 };
@@ -106,7 +113,7 @@ public class RegisterModel : PageModel
             }
 
             await _signInManager.SignInAsync(user, isPersistent: false);
-            return LocalRedirect(returnUrl);
+            return Url.IsLocalUrl(returnUrl) ? LocalRedirect(returnUrl) : LocalRedirect(PageRoutes.ContentRoot);
         }
 
         activity?.SetTag("succeeded", false);

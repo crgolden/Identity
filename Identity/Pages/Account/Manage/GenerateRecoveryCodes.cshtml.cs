@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-public class GenerateRecoveryCodesModel : PageModel
+public class GenerateRecoveryCodes : PageModel
 {
     internal const int RecoveryCodeCount = 10;
 
@@ -19,7 +19,7 @@ public class GenerateRecoveryCodesModel : PageModel
 
     private readonly UserManager<IdentityUser<Guid>> _userManager;
 
-    public GenerateRecoveryCodesModel(UserManager<IdentityUser<Guid>> userManager)
+    public GenerateRecoveryCodes(UserManager<IdentityUser<Guid>> userManager)
     {
         ThrowIfNull(userManager);
         _userManager = userManager;

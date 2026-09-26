@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Net.Mime;
 using Identity.Extensions;
-using Infrastructure;
+using Identity.Tests.Unit.Infrastructure;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,9 +12,11 @@ using Moq;
 
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
-public class HttpContextExtensionsTests
+public sealed class HttpContextExtensionsTests : IDisposable
 {
     private const char AcceptHeaderSeparator = ',';
+
+    private readonly TelemetryHarness _harness = new();
 
     [Fact]
     public async Task HandleException_HtmlRequest_RedirectsToErrorPage()
@@ -63,15 +65,13 @@ public class HttpContextExtensionsTests
             MediaTypeNames.Application.Json,
             out _);
 
-        using var source = new ActivitySource(TestValues.NewActivitySourceName());
-        using var listener = new ActivityListener
-        {
-            ShouldListenTo = _ => true,
-            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
-        };
+        using var source = new ActivitySource(Generated.NewActivitySourceName());
+        using var listener = new ActivityListener();
+        listener.ShouldListenTo = _ => true;
+        listener.Sample = (ref _) => ActivitySamplingResult.AllDataAndRecorded;
         ActivitySource.AddActivityListener(listener);
 
-        using var activity = source.StartActivity(TestValues.NewActivityName());
+        using var activity = source.StartActivity(Generated.NewActivityName());
 
         // Act
         await context.HandleException();
@@ -94,7 +94,7 @@ public class HttpContextExtensionsTests
             MediaTypeNames.Application.Json,
             out _);
 
-        using var exceptionCounter = ExceptionCounterCapture.Start();
+        using var exceptionCounter = ExceptionCounterCapture.Start(_harness.MeterFactory);
 
         // Act
         await context.HandleException();
@@ -104,7 +104,9 @@ public class HttpContextExtensionsTests
         Assert.Equal(nameof(InvalidOperationException), exceptionCounter.ExceptionType);
     }
 
-    private static DefaultHttpContext BuildContext(
+    public void Dispose() => _harness.Dispose();
+
+    private DefaultHttpContext BuildContext(
         Exception? exception,
         string acceptHeader,
         out Mock<IProblemDetailsService> problemDetailsOut)
@@ -116,6 +118,7 @@ public class HttpContextExtensionsTests
 
         var services = new ServiceCollection();
         services.AddSingleton(mockProblemDetails.Object);
+        services.AddSingleton(_harness.Telemetry);
 
         var context = new DefaultHttpContext();
         context.RequestServices = services.BuildServiceProvider();
@@ -135,11 +138,11 @@ public class HttpContextExtensionsTests
     {
         private readonly MeterListener _listener = new();
 
-        private ExceptionCounterCapture()
+        private ExceptionCounterCapture(IMeterFactory meterFactory)
         {
             _listener.InstrumentPublished = (instrument, listener) =>
             {
-                if (string.Equals(instrument.Meter.Name, nameof(Identity), StringComparison.Ordinal) &&
+                if (ReferenceEquals(instrument.Meter.Scope, meterFactory) &&
                     string.Equals(instrument.Name, Telemetry.Metrics.ExceptionCounterName, StringComparison.Ordinal))
                 {
                     listener.EnableMeasurementEvents(instrument);
@@ -162,9 +165,9 @@ public class HttpContextExtensionsTests
 
         public string? ExceptionType { get; private set; }
 
-        public static ExceptionCounterCapture Start()
+        public static ExceptionCounterCapture Start(IMeterFactory meterFactory)
         {
-            var capture = new ExceptionCounterCapture();
+            var capture = new ExceptionCounterCapture(meterFactory);
             capture._listener.Start();
             return capture;
         }

@@ -1,0 +1,89 @@
+namespace Identity.Tests.Unit.Pages.Admin.Users.Edit;
+
+using Identity.Pages.Admin.Users.Edit;
+using Identity.Tests.Unit.Infrastructure;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using Moq;
+
+[Collection(UnitCollection.Name)]
+[Trait("Category", "Unit")]
+public class IndexTests
+{
+    private static readonly string ExistingUserName = Generated.NewUserName();
+
+    private static readonly string ExistingUserId = Generated.NewUserId().ToString();
+    private static readonly string MissingUserId = Generated.NewUserId().ToString();
+
+    [Fact]
+    public async Task OnGetAsync_ReturnsPage_WhenFound()
+    {
+        // Arrange
+        var user = new IdentityUser<Guid> { UserName = ExistingUserName };
+        var um = MockHelpers.MockUserManager();
+        um.Setup(m => m.FindByIdAsync(ExistingUserId)).ReturnsAsync(user);
+        var model = new Index(um.Object);
+
+        // Act
+        var result = await model.OnGetAsync(ExistingUserId);
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        Assert.Equal(ExistingUserName, model.AppUser.UserName);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_ReturnsNotFound_WhenMissing()
+    {
+        // Arrange
+        var um = MockHelpers.MockUserManager();
+        um.Setup(m => m.FindByIdAsync(MissingUserId)).ReturnsAsync((IdentityUser<Guid>?)null);
+        var model = new Index(um.Object);
+
+        // Act
+        var result = await model.OnGetAsync(MissingUserId);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_UpdatesAndRedirects_WhenFound()
+    {
+        // Arrange
+        var existingUserName = Generated.NewUserName();
+        var updatedUserName = Generated.NewUserName();
+        var user = new IdentityUser<Guid> { UserName = existingUserName, Email = Generated.NewEmailAddress() };
+        var um = MockHelpers.MockUserManager();
+        um.Setup(m => m.FindByIdAsync(ExistingUserId)).ReturnsAsync(user);
+        um.Setup(m => m.UpdateAsync(user)).ReturnsAsync(IdentityResult.Success);
+        var model = new Index(um.Object)
+        {
+            AppUser = new IdentityUser<Guid> { UserName = updatedUserName, Email = Generated.NewEmailAddress() }
+        };
+
+        // Act
+        var result = await model.OnPostAsync(ExistingUserId);
+
+        // Assert
+        Assert.Equal(updatedUserName, user.UserName);
+        var redirect = Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal(Index.DetailsPageName, redirect.PageName);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_ReturnsNotFound_WhenMissing()
+    {
+        // Arrange
+        var um = MockHelpers.MockUserManager();
+        um.Setup(m => m.FindByIdAsync(MissingUserId)).ReturnsAsync((IdentityUser<Guid>?)null);
+        var model = new Index(um.Object) { AppUser = new IdentityUser<Guid>() };
+
+        // Act
+        var result = await model.OnPostAsync(MissingUserId);
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
+    }
+}

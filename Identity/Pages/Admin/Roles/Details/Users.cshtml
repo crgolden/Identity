@@ -1,5 +1,5 @@
 @page "{id}"
-@model Identity.Pages.Admin.Roles.Details.UsersModel
+@model Identity.Pages.Admin.Roles.Details.Users
 
 @{
     ViewData["Title"] = "Role Users";
@@ -18,7 +18,7 @@
         <tbody>
             @foreach (var user in Model.Users)
             {
-                <tr>
+                <tr id="user-row-@user.Id">
                     <td>@user.UserName</td>
                     <td>@user.Email</td>
                 </tr>

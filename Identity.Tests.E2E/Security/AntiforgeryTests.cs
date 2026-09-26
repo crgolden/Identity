@@ -1,7 +1,7 @@
 namespace Identity.Tests.E2E.Security;
 
 using System.Net;
-using Infrastructure;
+using Identity.Tests.E2E.Infrastructure;
 using Microsoft.AspNetCore.Mvc.Testing;
 
 [Trait("Category", "E2E")]
@@ -9,10 +9,10 @@ using Microsoft.AspNetCore.Mvc.Testing;
 public sealed class AntiforgeryTests(PlaywrightFixture fixture)
 {
     [Theory]
-    [InlineData("/Account/Login")]
-    [InlineData("/Account/Register")]
-    [InlineData("/Account/ForgotPassword")]
-    [InlineData("/Account/ResendEmailConfirmation")]
+    [InlineData(PageRoutes.Login)]
+    [InlineData(PageRoutes.Register)]
+    [InlineData(PageRoutes.ForgotPassword)]
+    [InlineData(PageRoutes.ResendEmailConfirmation)]
     public async Task Post_WithoutAntiforgeryToken_ReturnsBadRequest(string path)
     {
         var client = fixture.Factory.CreateClient(new WebApplicationFactoryClientOptions
@@ -47,7 +47,7 @@ public sealed class AntiforgeryTests(PlaywrightFixture fixture)
             AllowAutoRedirect = false
         });
         var response = await client.PostAsync(
-            $"/Account/PasskeyRequestOptions?username={Uri.EscapeDataString("nobody@test.invalid")}",
+            $"/Account/PasskeyRequestOptions?username={Uri.EscapeDataString(Generated.NewEmailAddress())}",
             content: null,
             TestContext.Current.CancellationToken);
 

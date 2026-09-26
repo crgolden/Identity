@@ -1,6 +1,6 @@
 ﻿@page
 @using Identity.Pages.Account.Manage
-@model LoginModel
+@model Login
 
 @{
     ViewData["Title"] = "Log in";
@@ -13,7 +13,7 @@
             <form id="account" method="post">
                 <h2>Use a local account to log in.</h2>
                 <hr />
-                <div id="validation-errors" asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+                <div id="validation-errors" asp-validation-summary="ModelOnly" class="text-danger" role="alert" data-error-code="@Model.ErrorCode"></div>
                 <div class="form-floating mb-3">
                     <input asp-for="Input.Email" type="email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
                     <label asp-for="Input.Email" class="form-label">Email</label>
@@ -62,6 +62,6 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script src="~/js/passkey-submit.js" asp-append-version="true"></script>
-    <script src="https://www.google.com/recaptcha/api.js?render=@Model.RecaptchaSiteKey" async></script>
+    <script src="@(Model.RecaptchaScriptEndpoint)?render=@Model.RecaptchaSiteKey" async></script>
     <script src="~/js/recaptcha.js" asp-append-version="true"></script>
 }

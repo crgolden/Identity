@@ -6,18 +6,25 @@ public class GravatarService : IAvatarService
 {
     internal const string ActivityName = "identity.gravatar.build_url";
     internal const string HashTagName = "gravatar.hash";
-#pragma warning disable S1075 // Fixed vendor endpoint, not configuration - see CODE-STYLE.md's "Configuration must not decide control flow" corollary.
-    internal const string ImageBaseUrl = "https://gravatar.com/avatar/";
-#pragma warning restore S1075
     internal const string DefaultImageQuery = "?s=2048&d=identicon";
     internal const string GravatarHost = "gravatar.com";
+    internal const string ImagePath = "/avatar/";
+
+    internal static readonly string ImageBaseUrl = Uri.UriSchemeHttps + Uri.SchemeDelimiter + GravatarHost + ImagePath;
+
+    private readonly Telemetry _telemetry;
+
+    public GravatarService(Telemetry telemetry)
+    {
+        _telemetry = telemetry;
+    }
 
     public Task<Uri?> GetAvatarUrlAsync(string profileIdentifier, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
         var hash = HashIdentifier(profileIdentifier);
-        using var activity = Telemetry.StartActivity(ActivityName);
+        using var activity = _telemetry.StartActivity(ActivityName);
         activity?.SetTag(HashTagName, hash);
 
         var url = new Uri($"{ImageBaseUrl}{hash}{DefaultImageQuery}");

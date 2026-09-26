@@ -1,5 +1,5 @@
 @page
-@model ScopesModel
+@model Scopes
 
 @{
     ViewData["Title"] = "Edit Client Scopes";
@@ -17,11 +17,11 @@
                 </tr>
             </thead>
             <tbody>
-                @for (var i = 0; i < Model.Scopes.Count; i++)
+                @foreach (var i in Enumerable.Range(0, Model.Resources.Count))
                 {
                     <tr>
-                        <input type="hidden" name="Scopes[@i].Id" value="@Model.Scopes[i].Id" />
-                        <td><input id="scope-@i" name="Scopes[@i].Scope" value="@Model.Scopes[i].Scope" class="form-control form-control-sm" aria-label="Scope" /></td>
+                        <input type="hidden" name="Resources[@i].Id" value="@Model.Resources[i].Id" />
+                        <td><input id="scope-@i" name="Resources[@i].Scope" value="@Model.Resources[i].Scope" class="form-control form-control-sm" aria-label="Scope" /></td>
                         <td><button id="scope-remove-@i" type="submit" asp-page-handler="RemoveRow" asp-route-id="@Model.Client.Id" asp-route-index="@i" class="btn btn-sm btn-danger">Remove</button></td>
                     </tr>
                 }

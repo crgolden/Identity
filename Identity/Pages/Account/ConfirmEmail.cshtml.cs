@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 [AllowAnonymous]
-public class ConfirmEmailModel : PageModel
+public class ConfirmEmail : PageModel
 {
     internal const string EmailConfirmedMessage =
         "Thank you for confirming your email.";
@@ -16,7 +16,7 @@ public class ConfirmEmailModel : PageModel
 
     private readonly UserManager<IdentityUser<Guid>> _userManager;
 
-    public ConfirmEmailModel(UserManager<IdentityUser<Guid>> userManager)
+    public ConfirmEmail(UserManager<IdentityUser<Guid>> userManager)
     {
         ThrowIfNull(userManager);
         _userManager = userManager;

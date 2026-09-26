@@ -1,7 +1,7 @@
 namespace Identity.Tests.Unit.Extensions;
 
 using Identity.Extensions;
-using Infrastructure;
+using Identity.Tests.Unit.Infrastructure;
 using Microsoft.Extensions.Configuration;
 
 [Collection(UnitCollection.Name)]
@@ -13,7 +13,7 @@ public sealed class ConfigurationExtensionsTests
     {
         // Arrange
         var googleClientIdKey = Guid.NewGuid().ToString();
-        var googleClientId = TestValues.NewClientIdentifier();
+        var googleClientId = Generated.NewClientIdentifier();
         var configuration = ConfigurationWith(googleClientIdKey, googleClientId);
 
         // Act
@@ -55,6 +55,40 @@ public sealed class ConfigurationExtensionsTests
         // Assert
         Assert.Contains(absentKey, exception.Message, StringComparison.Ordinal);
         Assert.DoesNotContain(configuredKey, exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void GetRequired_ThrowsRatherThanReturningZero_WhenAnIntKeyIsAbsent()
+    {
+        // Arrange
+        var configuredKey = Guid.NewGuid().ToString();
+        var absentKey = Guid.NewGuid().ToString();
+        var configuredValue = Guid.NewGuid().ToString();
+        var configuration = ConfigurationWith(configuredKey, configuredValue);
+
+        // Act
+        var exception = Assert.Throws<InvalidOperationException>(
+            () => configuration.GetRequired<int>(absentKey));
+
+        // Assert
+        Assert.Contains(absentKey, exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void GetRequired_ThrowsRatherThanReturningFalse_WhenABoolKeyIsAbsent()
+    {
+        // Arrange
+        var configuredKey = Guid.NewGuid().ToString();
+        var absentKey = Guid.NewGuid().ToString();
+        var configuredValue = Guid.NewGuid().ToString();
+        var configuration = ConfigurationWith(configuredKey, configuredValue);
+
+        // Act
+        var exception = Assert.Throws<InvalidOperationException>(
+            () => configuration.GetRequired<bool>(absentKey));
+
+        // Assert
+        Assert.Contains(absentKey, exception.Message, StringComparison.Ordinal);
     }
 
     private static IConfiguration ConfigurationWith(string key, string value)

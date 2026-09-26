@@ -6,11 +6,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
-public class IndexModel : PageModel
+public class Index : PageModel
 {
     private readonly IConfigurationDbContext _context;
 
-    public IndexModel(IConfigurationDbContext context) => _context = context;
+    public Index(IConfigurationDbContext context) => _context = context;
 
     public ApiResource Resource { get; private set; } = new();
 

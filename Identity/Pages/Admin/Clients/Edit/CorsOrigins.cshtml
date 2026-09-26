@@ -1,5 +1,5 @@
 @page
-@model CorsOriginsModel
+@model CorsOrigins
 
 @{
     ViewData["Title"] = "Edit Client CORS Origins";
@@ -17,11 +17,11 @@
                 </tr>
             </thead>
             <tbody>
-                @for (var i = 0; i < Model.CorsOrigins.Count; i++)
+                @foreach (var i in Enumerable.Range(0, Model.Resources.Count))
                 {
                     <tr>
-                        <input type="hidden" name="CorsOrigins[@i].Id" value="@Model.CorsOrigins[i].Id" />
-                        <td><input id="corsorigin-@i" name="CorsOrigins[@i].Origin" value="@Model.CorsOrigins[i].Origin" class="form-control form-control-sm" aria-label="CORS origin" /></td>
+                        <input type="hidden" name="Resources[@i].Id" value="@Model.Resources[i].Id" />
+                        <td><input id="corsorigin-@i" name="Resources[@i].Origin" value="@Model.Resources[i].Origin" class="form-control form-control-sm" aria-label="CORS origin" /></td>
                         <td><button id="corsorigin-remove-@i" type="submit" asp-page-handler="RemoveRow" asp-route-id="@Model.Client.Id" asp-route-index="@i" class="btn btn-sm btn-danger">Remove</button></td>
                     </tr>
                 }

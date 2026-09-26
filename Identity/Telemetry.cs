@@ -2,15 +2,69 @@ namespace Identity;
 
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
+using Microsoft.Extensions.Options;
 
-public static class Telemetry
+public sealed class Telemetry : IDisposable
 {
-    public static readonly ActivitySource ActivitySource = new(nameof(Identity), "1.0.0");
+    public const string SourceName = nameof(Identity);
 
-    private static readonly Meter Meter = new(nameof(Identity), "1.0.0");
+    private readonly ActivitySource _activitySource;
+    private readonly Counter<long> _consentGrantedCounter;
+    private readonly Counter<long> _consentDeniedCounter;
+    private readonly Counter<long> _grantsRevokedCounter;
+    private readonly Counter<long> _exceptionCounter;
+    private readonly Counter<long> _passkeySignInCounter;
 
-    public static Activity? StartActivity(string name) =>
-        ActivitySource.StartActivity(name, ActivityKind.Internal, parentContext: default);
+    public Telemetry(IMeterFactory meterFactory, IOptions<TelemetryOptions> telemetryOptions)
+    {
+        var version = typeof(Telemetry).Assembly.GetName().Version?.ToString();
+        var descriptions = telemetryOptions.Value;
+        var meter = meterFactory.Create(SourceName, version);
+        _activitySource = new ActivitySource(SourceName, version);
+        _consentGrantedCounter = meter.CreateCounter<long>(Metrics.ConsentGrantedCounterName, description: descriptions.ConsentGrantedDescription);
+        _consentDeniedCounter = meter.CreateCounter<long>(Metrics.ConsentDeniedCounterName, description: descriptions.ConsentDeniedDescription);
+        _grantsRevokedCounter = meter.CreateCounter<long>(Metrics.GrantsRevokedCounterName, description: descriptions.GrantsRevokedDescription);
+        _exceptionCounter = meter.CreateCounter<long>(Metrics.ExceptionCounterName, description: descriptions.ExceptionDescription);
+        _passkeySignInCounter = meter.CreateCounter<long>(Metrics.PasskeySignInCounterName, description: descriptions.PasskeySignInDescription);
+    }
+
+    public Activity? StartActivity(string name) =>
+        _activitySource.StartActivity(name, ActivityKind.Internal, parentContext: default);
+
+    public void ConsentGranted(string clientId, IEnumerable<string> scopes, bool remember) =>
+        _consentGrantedCounter.Add(1, new TagList
+        {
+            { Metrics.ClientIdTagName, clientId },
+            { Metrics.RememberTagName, remember },
+            { Metrics.ScopeCountTagName, scopes.Count() },
+        });
+
+    public void ConsentDenied(string clientId, IEnumerable<string> scopes) =>
+        _consentDeniedCounter.Add(1, new TagList
+        {
+            { Metrics.ClientIdTagName, clientId },
+            { Metrics.ScopeCountTagName, scopes.Count() },
+        });
+
+    public void GrantsRevoked(string? clientId) =>
+        _grantsRevokedCounter.Add(1, new TagList { { Metrics.ClientIdTagName, clientId } });
+
+    public void ExceptionOccurred(string exceptionType) =>
+        _exceptionCounter.Add(1, new TagList { { Metrics.ExceptionTypeTagName, exceptionType } });
+
+    public void PasskeySignIn(bool succeeded, string? userAgent) =>
+        _passkeySignInCounter.Add(1, new TagList
+        {
+            { Metrics.SucceededTagName, LabelValue(succeeded) },
+            { Metrics.SyntheticTagName, LabelValue(IsSyntheticUserAgent(userAgent)) },
+        });
+
+    public void Dispose() => _activitySource.Dispose();
+
+    private static string LabelValue(bool value) => value ? Metrics.TrueLabel : Metrics.FalseLabel;
+
+    private static bool IsSyntheticUserAgent(string? userAgent) =>
+        userAgent?.Contains(Metrics.SyntheticUserAgentToken, StringComparison.OrdinalIgnoreCase) == true;
 
     public static class Metrics
     {
@@ -47,55 +101,5 @@ public static class Telemetry
         internal const string TrueLabel = "true";
 
         internal const string FalseLabel = "false";
-
-        private static readonly Counter<long> ConsentGrantedCounter =
-            Meter.CreateCounter<long>(ConsentGrantedCounterName, description: "Number of consent grants by users.");
-
-        private static readonly Counter<long> ConsentDeniedCounter =
-            Meter.CreateCounter<long>(ConsentDeniedCounterName, description: "Number of consent denials by users.");
-
-        private static readonly Counter<long> GrantsRevokedCounter =
-            Meter.CreateCounter<long>(GrantsRevokedCounterName, description: "Number of client grants revoked by users.");
-
-        private static readonly Counter<long> ExceptionCounter =
-            Meter.CreateCounter<long>(ExceptionCounterName, description: "Number of unhandled exceptions.");
-
-        private static readonly Counter<long> PasskeySignInCounter =
-            Meter.CreateCounter<long>(
-                PasskeySignInCounterName,
-                description: "Number of passkey sign-in attempts, split by outcome and by whether the caller identifies itself as synthetic.");
-
-        public static void ConsentGranted(string clientId, IEnumerable<string> scopes, bool remember) =>
-            ConsentGrantedCounter.Add(1, new TagList
-            {
-                { ClientIdTagName, clientId },
-                { RememberTagName, remember },
-                { ScopeCountTagName, scopes.Count() },
-            });
-
-        public static void ConsentDenied(string clientId, IEnumerable<string> scopes) =>
-            ConsentDeniedCounter.Add(1, new TagList
-            {
-                { ClientIdTagName, clientId },
-                { ScopeCountTagName, scopes.Count() },
-            });
-
-        public static void GrantsRevoked(string? clientId) =>
-            GrantsRevokedCounter.Add(1, new TagList { { ClientIdTagName, clientId } });
-
-        public static void ExceptionOccurred(string exceptionType) =>
-            ExceptionCounter.Add(1, new TagList { { ExceptionTypeTagName, exceptionType } });
-
-        public static void PasskeySignIn(bool succeeded, string? userAgent) =>
-            PasskeySignInCounter.Add(1, new TagList
-            {
-                { SucceededTagName, LabelValue(succeeded) },
-                { SyntheticTagName, LabelValue(IsSyntheticUserAgent(userAgent)) },
-            });
-
-        private static string LabelValue(bool value) => value ? TrueLabel : FalseLabel;
-
-        private static bool IsSyntheticUserAgent(string? userAgent) =>
-            userAgent?.Contains(SyntheticUserAgentToken, StringComparison.OrdinalIgnoreCase) == true;
     }
 }

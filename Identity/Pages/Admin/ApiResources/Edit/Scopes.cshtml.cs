@@ -3,23 +3,19 @@ namespace Identity.Pages.Admin.ApiResources.Edit;
 using Duende.IdentityServer.EntityFramework.Entities;
 using Duende.IdentityServer.EntityFramework.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
-public class ScopesModel : PageModel
+public class Scopes : EditableResourcesBase<int, ApiResourceScope>
 {
     internal const string DetailsPageName = "/Admin/ApiResources/Details/Scopes";
 
     private readonly IConfigurationDbContext _context;
 
-    public ScopesModel(IConfigurationDbContext context) => _context = context;
+    public Scopes(IConfigurationDbContext context) => _context = context;
 
     public int ResourceId { get; private set; }
 
     public string? ResourceName { get; private set; }
-
-    [BindProperty]
-    public List<ApiResourceScope> Scopes { get; set; } = [];
 
     public async Task<IActionResult> OnGetAsync(int id)
     {
@@ -31,7 +27,7 @@ public class ScopesModel : PageModel
 
         ResourceId = resource.Id;
         ResourceName = resource.Name;
-        Scopes = resource.Scopes;
+        Resources = resource.Scopes;
         return Page();
     }
 
@@ -43,9 +39,9 @@ public class ScopesModel : PageModel
             return NotFound();
         }
 
-        resource.Scopes.RemoveAll(s => !Scopes.Any(p => p.Id == s.Id));
+        resource.Scopes.RemoveAll(s => !Resources.Any(p => p.Id == s.Id));
 
-        foreach (var posted in Scopes.Where(p => p.Id > 0))
+        foreach (var posted in Resources.Where(p => p.Id > 0))
         {
             var existing = resource.Scopes.FirstOrDefault(s => s.Id == posted.Id);
             if (existing is not null)
@@ -55,41 +51,24 @@ public class ScopesModel : PageModel
         }
 
         resource.Scopes.AddRange(
-            Scopes.Where(p => p.Id == 0).Select(p => new ApiResourceScope { Scope = p.Scope, ApiResourceId = id }));
+            Resources.Where(p => p.Id == 0).Select(p => new ApiResourceScope { Scope = p.Scope, ApiResourceId = id }));
 
         await _context.SaveChangesAsync();
         return RedirectToPage(DetailsPageName, new { id });
     }
 
-    public async Task<IActionResult> OnPostAddRowAsync(int id)
+    protected override async Task<bool> LoadContextAsync(int id)
     {
         var resource = await _context.ApiResources.FirstOrDefaultAsync(r => r.Id == id);
         if (resource is null)
         {
-            return NotFound();
+            return false;
         }
 
         ResourceId = resource.Id;
         ResourceName = resource.Name;
-        Scopes.Add(new ApiResourceScope());
-        return Page();
+        return true;
     }
 
-    public async Task<IActionResult> OnPostRemoveRowAsync(int id, int index)
-    {
-        var resource = await _context.ApiResources.FirstOrDefaultAsync(r => r.Id == id);
-        if (resource is null)
-        {
-            return NotFound();
-        }
-
-        ResourceId = resource.Id;
-        ResourceName = resource.Name;
-        if (index >= 0 && index < Scopes.Count)
-        {
-            Scopes.RemoveAt(index);
-        }
-
-        return Page();
-    }
+    protected override ApiResourceScope NewResource() => new();
 }

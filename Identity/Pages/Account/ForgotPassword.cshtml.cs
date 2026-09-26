@@ -1,31 +1,21 @@
 namespace Identity.Pages.Account;
 
-using System.ComponentModel.DataAnnotations;
-using System.Text.Encodings.Web;
 using Azure.Messaging.ServiceBus;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Azure;
 
 [AllowAnonymous]
-public class ForgotPasswordModel : PageModel
+public class ForgotPassword : AccountEmailPageBase
 {
-    private const string From = "noreply@crgolden.com";
-    private readonly UserManager<IdentityUser<Guid>> _userManager;
-    private readonly ServiceBusClient _serviceBusClient;
-
-    public ForgotPasswordModel(UserManager<IdentityUser<Guid>> userManager, IAzureClientFactory<ServiceBusClient> serviceBusClientFactory)
+    public ForgotPassword(
+        UserManager<IdentityUser<Guid>> userManager,
+        IAzureClientFactory<ServiceBusClient> serviceBusClientFactory,
+        AccountEmailSettings accountEmailSettings)
+        : base(userManager, serviceBusClientFactory, accountEmailSettings)
     {
-        ThrowIfNull(userManager);
-        ThrowIfNull(serviceBusClientFactory);
-        _userManager = userManager;
-        _serviceBusClient = serviceBusClientFactory.CreateClient(ServiceBusNames.ClientName);
     }
-
-    [BindProperty]
-    public InputModel Input { get; set; } = new InputModel();
 
     public async Task<IActionResult> OnPostAsync()
     {
@@ -34,13 +24,13 @@ public class ForgotPasswordModel : PageModel
             return Page();
         }
 
-        var user = await _userManager.FindByEmailAsync(Input.Email);
-        if (user is null || !(await _userManager.IsEmailConfirmedAsync(user)))
+        var user = await UserManager.FindByEmailAsync(Input.Email);
+        if (user is null || !(await UserManager.IsEmailConfirmedAsync(user)))
         {
             return RedirectToPage(PageRoutes.SiblingForgotPasswordConfirmation);
         }
 
-        var code = await _userManager.GeneratePasswordResetTokenAsync(user);
+        var code = await UserManager.GeneratePasswordResetTokenAsync(user);
         var input = UTF8.GetBytes(code);
         code = Base64UrlEncode(input);
         var callbackUrl = Url.Page(
@@ -51,24 +41,9 @@ public class ForgotPasswordModel : PageModel
 
         if (!IsNullOrWhiteSpace(callbackUrl))
         {
-            var htmlMessage = $"Please reset your password by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.";
-            var message = new ServiceBusMessage(htmlMessage)
-            {
-                ReplyTo = From,
-                Subject = UserMessages.ResetPasswordSubject,
-                To = Input.Email
-            };
-            var serviceBusSender = _serviceBusClient.CreateSender(ServiceBusNames.EmailQueueName);
-            await serviceBusSender.SendMessageAsync(message, HttpContext.RequestAborted);
+            await SendAccountEmailAsync(AccountEmailSettings.ResetPasswordHtml(callbackUrl), UserMessages.ResetPasswordSubject);
         }
 
         return RedirectToPage(PageRoutes.SiblingForgotPasswordConfirmation);
-    }
-
-    public class InputModel
-    {
-        [Required]
-        [EmailAddress]
-        public string? Email { get; set; }
     }
 }

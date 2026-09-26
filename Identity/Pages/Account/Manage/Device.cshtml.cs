@@ -6,9 +6,10 @@ using Duende.IdentityServer.Models;
 using Duende.IdentityServer.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 [Authorize]
-public class DeviceModel : ConsentPageModelBase
+public class Device : ConsentPageModelBase
 {
     internal const string DeviceSuccessPagePath = "/Account/Manage/DeviceSuccess";
 
@@ -16,13 +17,18 @@ public class DeviceModel : ConsentPageModelBase
 
     private readonly IDeviceFlowInteractionService _interaction;
     private readonly IEventService _events;
+    private readonly Telemetry _telemetry;
 
-    public DeviceModel(
+    public Device(
         IDeviceFlowInteractionService interaction,
-        IEventService events)
+        IEventService events,
+        IOptions<ConsentOptions> consentOptions,
+        Telemetry telemetry)
+        : base(consentOptions)
     {
         _interaction = interaction;
         _events = events;
+        _telemetry = telemetry;
     }
 
     [BindProperty]
@@ -35,7 +41,7 @@ public class DeviceModel : ConsentPageModelBase
             return Page();
         }
 
-        if (!await SetViewModelAsync(userCode))
+        if (!await SetViewModelAsync(userCode, EveryScope))
         {
             ModelState.AddModelError(Empty, InvalidUserCodeMessage);
             return Page();
@@ -58,7 +64,7 @@ public class DeviceModel : ConsentPageModelBase
 
         ConsentResponse? grantedConsent = null;
 
-        if (string.Equals(Input.Button, ConsentModel.DenyButtonValue, StringComparison.Ordinal))
+        if (string.Equals(Input.Button, Consent.DenyButtonValue, StringComparison.Ordinal))
         {
             grantedConsent = new ConsentResponse { Error = InteractionError.AccessDenied };
             await _events.RaiseAsync(
@@ -67,11 +73,11 @@ public class DeviceModel : ConsentPageModelBase
                     request.Client.ClientId,
                     request.ValidatedResources.RawScopeValues),
                 HttpContext.RequestAborted);
-            Telemetry.Metrics.ConsentDenied(
+            _telemetry.ConsentDenied(
                 request.Client.ClientId,
                 request.ValidatedResources.ParsedScopes.Select(s => s.ParsedName));
         }
-        else if (string.Equals(Input.Button, ConsentModel.GrantButtonValue, StringComparison.Ordinal))
+        else if (string.Equals(Input.Button, Consent.GrantButtonValue, StringComparison.Ordinal))
         {
             if (Input.ScopesConsented.Any())
             {
@@ -97,23 +103,23 @@ public class DeviceModel : ConsentPageModelBase
                         grantedConsent.ScopesValuesConsented,
                         grantedConsent.RememberConsent),
                     HttpContext.RequestAborted);
-                Telemetry.Metrics.ConsentGranted(
+                _telemetry.ConsentGranted(
                     request.Client.ClientId,
                     grantedConsent.ScopesValuesConsented,
                     grantedConsent.RememberConsent);
                 var denied = request.ValidatedResources.ParsedScopes
                     .Select(s => s.ParsedName)
                     .Except(grantedConsent.ScopesValuesConsented, StringComparer.Ordinal);
-                Telemetry.Metrics.ConsentDenied(request.Client.ClientId, denied);
+                _telemetry.ConsentDenied(request.Client.ClientId, denied);
             }
             else
             {
-                ModelState.AddModelError(Empty, ConsentOptions.MustChooseOneErrorMessage);
+                ModelState.AddModelError(Empty, MustChooseOneErrorMessage);
             }
         }
         else
         {
-            ModelState.AddModelError(Empty, ConsentOptions.InvalidSelectionErrorMessage);
+            ModelState.AddModelError(Empty, InvalidSelectionErrorMessage);
         }
 
         if (grantedConsent != null)
@@ -122,7 +128,7 @@ public class DeviceModel : ConsentPageModelBase
             return RedirectToPage(DeviceSuccessPagePath);
         }
 
-        if (!await SetViewModelAsync(userCode))
+        if (!await SetViewModelAsync(userCode, Input.ScopesConsented.Contains))
         {
             return RedirectToPage(PageRoutes.Error);
         }
@@ -130,20 +136,7 @@ public class DeviceModel : ConsentPageModelBase
         return Page();
     }
 
-    private async Task<bool> SetViewModelAsync(string userCode)
-    {
-        var request = await _interaction.GetAuthorizationContextAsync(userCode, HttpContext.RequestAborted);
-        if (request != null)
-        {
-            View = CreateConsentViewModel(request);
-            return true;
-        }
-
-        View = new ViewModel();
-        return false;
-    }
-
-    private ViewModel CreateConsentViewModel(DeviceFlowAuthorizationRequest request)
+    private ViewModel CreateConsentViewModel(DeviceFlowAuthorizationRequest request, Func<string, bool> isConsented)
     {
         var vm = new ViewModel
         {
@@ -154,7 +147,7 @@ public class DeviceModel : ConsentPageModelBase
         };
 
         vm.IdentityScopes = request.ValidatedResources.Resources.IdentityResources
-            .Select(x => CreateScopeViewModel(x, Input.ScopesConsented.Contains(x.Name)))
+            .Select(x => CreateScopeViewModel(x, isConsented(x.Name)))
             .ToArray();
 
         var apiScopes = new List<ScopeViewModel>();
@@ -166,19 +159,31 @@ public class DeviceModel : ConsentPageModelBase
                 apiScopes.Add(CreateScopeViewModel(
                     parsedScope,
                     apiScope,
-                    Input == null || Input.ScopesConsented.Contains(parsedScope.RawValue)));
+                    isConsented(parsedScope.RawValue)));
             }
         }
 
         if (ConsentOptions.EnableOfflineAccess && request.ValidatedResources.Resources.OfflineAccess)
         {
             apiScopes.Add(CreateOfflineAccessScope(
-                Input == null || Input.ScopesConsented.Contains(
-                    Duende.IdentityServer.IdentityServerConstants.StandardScopes.OfflineAccess)));
+                isConsented(Duende.IdentityServer.IdentityServerConstants.StandardScopes.OfflineAccess)));
         }
 
         vm.ApiScopes = apiScopes;
         return vm;
+    }
+
+    private async Task<bool> SetViewModelAsync(string userCode, Func<string, bool> isConsented)
+    {
+        var request = await _interaction.GetAuthorizationContextAsync(userCode, HttpContext.RequestAborted);
+        if (request != null)
+        {
+            View = CreateConsentViewModel(request, isConsented);
+            return true;
+        }
+
+        View = new ViewModel();
+        return false;
     }
 
     public class InputModel

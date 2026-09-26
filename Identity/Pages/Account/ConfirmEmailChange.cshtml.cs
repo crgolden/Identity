@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 [AllowAnonymous]
-public class ConfirmEmailChangeModel : PageModel
+public class ConfirmEmailChange : PageModel
 {
     internal const string EmailChangeFailedMessage =
         "Error changing email.";
@@ -20,7 +20,7 @@ public class ConfirmEmailChangeModel : PageModel
     private readonly UserManager<IdentityUser<Guid>> _userManager;
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
 
-    public ConfirmEmailChangeModel(UserManager<IdentityUser<Guid>> userManager, SignInManager<IdentityUser<Guid>> signInManager)
+    public ConfirmEmailChange(UserManager<IdentityUser<Guid>> userManager, SignInManager<IdentityUser<Guid>> signInManager)
     {
         ThrowIfNull(userManager);
         ThrowIfNull(signInManager);

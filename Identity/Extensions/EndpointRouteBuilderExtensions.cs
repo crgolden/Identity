@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using static System.Net.Mime.MediaTypeNames.Application;
-using static String;
+using static System.String;
 
 public static class EndpointRouteBuilderExtensions
 {

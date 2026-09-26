@@ -3,6 +3,8 @@ namespace Identity.Tests.E2E.Infrastructure;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using Identity.Avatar;
+using Identity.Pages.Account;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -15,7 +17,7 @@ public sealed class FakeExternalAuthenticationHandler(
     UrlEncoder encoder)
     : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
 {
-    public const string ClaimsCookieName = "E2E-Google-Claims";
+    public static readonly string ClaimsCookieName = Guid.NewGuid().ToString("N");
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync() =>
         Task.FromResult(AuthenticateResult.NoResult());
@@ -25,14 +27,14 @@ public sealed class FakeExternalAuthenticationHandler(
         if (!Request.Cookies.TryGetValue(ClaimsCookieName, out var json) || string.IsNullOrWhiteSpace(json))
         {
             Response.StatusCode = StatusCodes.Status400BadRequest;
-            await Response.WriteAsync($"Missing '{ClaimsCookieName}' cookie for fake external login.");
             return;
         }
 
         var payload = JsonSerializer.Deserialize<FakeGoogleClaims>(Uri.UnescapeDataString(json))
             ?? throw new InvalidOperationException($"Invalid '{ClaimsCookieName}' cookie payload.");
 
-        var claims = new List<Claim> { new(ClaimTypes.NameIdentifier, payload.Sub ?? Guid.NewGuid().ToString()) };
+        var subject = payload.Sub ?? Generated.NewExternalSubject();
+        var claims = new List<Claim> { new(ClaimTypes.NameIdentifier, subject) };
         if (payload.Email is not null)
         {
             claims.Add(new Claim(ClaimTypes.Email, payload.Email));
@@ -40,17 +42,20 @@ public sealed class FakeExternalAuthenticationHandler(
 
         if (payload.EmailVerified.HasValue)
         {
-            claims.Add(new Claim("email_verified", payload.EmailVerified.Value ? "true" : "false"));
+            var emailVerified = payload.EmailVerified.Value
+                ? OidcStandardConstants.ClaimValueTrue
+                : OidcStandardConstants.ClaimValueFalse;
+            claims.Add(new Claim(ExternalLogin.EmailVerifiedClaimType, emailVerified));
         }
 
         if (payload.Name is not null)
         {
-            claims.Add(new Claim("name", payload.Name));
+            claims.Add(new Claim(OidcStandardConstants.NameClaim, payload.Name));
         }
 
         if (payload.Picture is not null)
         {
-            claims.Add(new Claim("picture", payload.Picture));
+            claims.Add(new Claim(AvatarProfileService.PictureClaimType, payload.Picture));
         }
 
         if (payload.GivenName is not null)
@@ -67,21 +72,4 @@ public sealed class FakeExternalAuthenticationHandler(
         await Context.SignInAsync(IdentityConstants.ExternalScheme, principal, properties);
         Response.Redirect(properties.RedirectUri ?? "/");
     }
-}
-
-public sealed class FakeGoogleClaims
-{
-    public string? Sub { get; set; }
-
-    public string? Email { get; set; }
-
-    public bool? EmailVerified { get; set; }
-
-    public string? Name { get; set; }
-
-    public string? Picture { get; set; }
-
-    public string? GivenName { get; set; }
-
-    public string? Surname { get; set; }
 }

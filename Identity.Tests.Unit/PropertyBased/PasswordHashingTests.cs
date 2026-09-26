@@ -1,10 +1,10 @@
 namespace Identity.Tests.Unit.PropertyBased;
 
 using CsCheck;
-using Infrastructure;
+using Identity.Tests.Unit.Infrastructure;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
-using static PasswordFixtureConstants;
+using static Identity.Tests.Unit.PropertyBased.PasswordFixtureConstants;
 
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
@@ -15,14 +15,14 @@ public sealed class PasswordHashingTests
 
     public static TheoryData<string> NonAsciiPasswords() => new()
     {
-        TestValues.NewTokenFromCodePointRange(LatinSupplementFirstCodePoint, LatinSupplementLastCodePoint),
-        TestValues.NewTokenFromCodePointRange(GreekFirstCodePoint, GreekLastCodePoint),
-        TestValues.NewTokenFromCodePointRange(CyrillicFirstCodePoint, CyrillicLastCodePoint),
-        TestValues.NewTokenFromCodePointRange(ArabicFirstCodePoint, ArabicLastCodePoint),
-        TestValues.NewTokenFromCodePointRange(HiraganaFirstCodePoint, KatakanaLastCodePoint),
-        TestValues.NewTokenFromCodePointRange(CjkFirstCodePoint, CjkLastCodePoint),
-        TestValues.NewTokenFromCodePointRange(HangulFirstCodePoint, HangulLastCodePoint),
-        TestValues.NewTokenFromCodePointRange(EmojiFirstCodePoint, EmojiLastCodePoint),
+        Generated.NewTokenFromCodePointRange(LatinSupplementFirstCodePoint, LatinSupplementLastCodePoint),
+        Generated.NewTokenFromCodePointRange(GreekFirstCodePoint, GreekLastCodePoint),
+        Generated.NewTokenFromCodePointRange(CyrillicFirstCodePoint, CyrillicLastCodePoint),
+        Generated.NewTokenFromCodePointRange(ArabicFirstCodePoint, ArabicLastCodePoint),
+        Generated.NewTokenFromCodePointRange(HiraganaFirstCodePoint, KatakanaLastCodePoint),
+        Generated.NewTokenFromCodePointRange(CjkFirstCodePoint, CjkLastCodePoint),
+        Generated.NewTokenFromCodePointRange(HangulFirstCodePoint, HangulLastCodePoint),
+        Generated.NewTokenFromCodePointRange(EmojiFirstCodePoint, EmojiLastCodePoint),
     };
 
     [Fact]

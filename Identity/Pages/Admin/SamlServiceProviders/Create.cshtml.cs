@@ -5,11 +5,11 @@ using Duende.IdentityServer.EntityFramework.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-public class CreateModel : PageModel
+public class Create : PageModel
 {
     private readonly IConfigurationDbContext _context;
 
-    public CreateModel(IConfigurationDbContext context) => _context = context;
+    public Create(IConfigurationDbContext context) => _context = context;
 
     [BindProperty]
     public SamlServiceProvider SamlServiceProvider { get; set; } = new();

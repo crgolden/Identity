@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-public class SetPasswordModel : PageModel
+public class SetPassword : PageModel
 {
     internal const string ChangePasswordPageName = "./ChangePassword";
 
@@ -15,7 +15,7 @@ public class SetPasswordModel : PageModel
     private readonly UserManager<IdentityUser<Guid>> _userManager;
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
 
-    public SetPasswordModel(
+    public SetPassword(
         UserManager<IdentityUser<Guid>> userManager,
         SignInManager<IdentityUser<Guid>> signInManager)
     {
@@ -50,7 +50,7 @@ public class SetPasswordModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        if (!ModelState.IsValid || IsNullOrWhiteSpace(Input?.NewPassword))
+        if (!ModelState.IsValid || IsNullOrWhiteSpace(Input.NewPassword))
         {
             return Page();
         }

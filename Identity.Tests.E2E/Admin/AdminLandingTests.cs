@@ -1,55 +1,42 @@
 namespace Identity.Tests.E2E.Admin;
 
 using System.Text.RegularExpressions;
-using Infrastructure;
+using Identity.Pages.Admin;
+using Identity.Tests.E2E.Infrastructure;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Microsoft.Playwright;
 
 [Trait("Category", "E2E")]
 [Collection(E2ECollection.Name)]
 public sealed class AdminLandingTests(PlaywrightFixture fixture)
 {
-    public static TheoryData<string, string> Cards => new()
+    [Fact]
+    public async Task Every_Card_Manage_Link_Navigates_To_Its_Index()
     {
-        { "admin-card-clients", "Clients" },
-        { "admin-card-apiresources", "API Resources" },
-        { "admin-card-apiscopes", "API Scopes" },
-        { "admin-card-identityresources", "Identity Resources" },
-        { "admin-card-identityproviders", "Identity Providers" },
-        { "admin-card-samlserviceproviders", "SAML Service Providers" },
-        { "admin-card-persistedgrants", "Persisted Grants" },
-        { "admin-card-deviceflowcodes", "Device Flow Codes" },
-        { "admin-card-serversidesessions", "Server-Side Sessions" },
-        { "admin-card-keys", "Keys" },
-        { "admin-card-pushedauthorizationrequests", "Pushed Authorization Requests" },
-        { "admin-card-samlsigninstates", "SAML Sign-In States" },
-        { "admin-card-samllogoutsessions", "SAML Logout Sessions" },
-        { "admin-card-samllogoutsessionrequestindices", "SAML Logout Session Request Indices" },
-        { "admin-card-users", "Users" },
-        { "admin-card-roles", "Roles" },
-    };
-
-    [Theory]
-    [MemberData(nameof(Cards))]
-    public async Task Card_Manage_Link_Navigates_To_Correct_Index(string cardId, string expectedHeading)
-    {
+        var sections = fixture.Factory.Services.GetRequiredService<IOptions<IReadOnlyList<AdminSection>>>().Value;
         var (email, password) = await fixture.CreateAdminUserAsync();
 
-        var (context, page) = await fixture.NewPageAsync("Admin");
+        var (context, page) = await fixture.NewPageAsync(PlaywrightSuite.Admin);
         await using (context)
         {
             await LoginAsync(page, email, password);
-            await page.GotoAsync("/Admin");
-            await page.ClickAsync($"#{cardId}");
-            await Assertions.Expect(page.Locator("#page-heading")).ToHaveTextAsync(expectedHeading);
+            foreach (var section in sections)
+            {
+                await page.GotoAsync(AuthorizationNames.AdminFolder);
+                await page.ClickAsync($"#{section.CardId}");
+                await Assertions.Expect(page.Locator("#page-heading")).ToBeVisibleAsync();
+                Assert.Equal(section.Path, new Uri(page.Url).AbsolutePath);
+            }
         }
     }
 
     private static async Task LoginAsync(IPage page, string email, string password)
     {
-        await page.GotoAsync("/Account/Login");
+        await page.GotoAsync(PageRoutes.Login);
         await page.FillAsync("input[name='Input.Email']", email);
         await page.FillAsync("input[name='Input.Password']", password);
         await page.ClickAsync("#login-submit");
-        await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"));
+        await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex(PageRoutes.Login));
     }
 }

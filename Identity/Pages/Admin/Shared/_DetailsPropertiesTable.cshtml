@@ -7,7 +7,7 @@
         <tbody>
             @foreach (var row in Model)
             {
-                <tr><td>@row.Key</td><td>@row.Value</td></tr>
+                <tr id="property-row-@row.Id"><td>@row.Key</td><td>@row.Value</td></tr>
             }
         </tbody>
     </table>

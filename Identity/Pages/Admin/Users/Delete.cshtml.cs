@@ -4,11 +4,11 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-public class DeleteModel : PageModel
+public class Delete : PageModel
 {
     private readonly UserManager<IdentityUser<Guid>> _userManager;
 
-    public DeleteModel(UserManager<IdentityUser<Guid>> userManager) => _userManager = userManager;
+    public Delete(UserManager<IdentityUser<Guid>> userManager) => _userManager = userManager;
 
     public IdentityUser<Guid> AppUser { get; private set; } = new();
 

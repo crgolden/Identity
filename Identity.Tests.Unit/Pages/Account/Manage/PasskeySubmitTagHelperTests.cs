@@ -1,7 +1,7 @@
 namespace Identity.Tests.Unit.Pages.Account.Manage;
 
 using Identity.Pages.Account.Manage;
-using Infrastructure;
+using Identity.Tests.Unit.Infrastructure;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Razor.TagHelpers;
@@ -72,33 +72,32 @@ public class PasskeySubmitTagHelperTests
         var antiforgeryMock = new Mock<IAntiforgery>(MockBehavior.Strict);
         antiforgeryMock
             .Setup(a => a.GetTokens(httpContext))
-            .Returns(new AntiforgeryTokenSet(null, TestValues.NewSessionKey(), TestValues.NewPropertyKey(), null));
+            .Returns(new AntiforgeryTokenSet(null, Generated.NewSessionKey(), Generated.NewPropertyKey(), null));
 
         var helper = new PasskeySubmitTagHelper(httpAccessorMock.Object, antiforgeryMock.Object)
         {
             Operation = 0,
-            Name = TestValues.NewApiResourceName(),
-            EmailName = null
+            Name = Generated.NewApiResourceName()
         };
 
-        var passThroughName = TestValues.NewAttributeName();
-        var passThroughValue = TestValues.NewAttributeValue();
+        var passThroughName = Generated.NewAttributeName();
+        var passThroughValue = Generated.NewAttributeValue();
         var attributes = new TagHelperAttributeList
             {
-                new TagHelperAttribute(PasskeySubmitTagHelper.OperationAttributeName, TestValues.NewAttributeValue()),
-                new TagHelperAttribute(PasskeySubmitTagHelper.NameAttributeName, TestValues.NewAttributeValue()),
-                new TagHelperAttribute(PasskeySubmitTagHelper.EmailNameAttributeName, TestValues.NewAttributeValue()),
+                new TagHelperAttribute(PasskeySubmitTagHelper.OperationAttributeName, Generated.NewAttributeValue()),
+                new TagHelperAttribute(PasskeySubmitTagHelper.NameAttributeName, Generated.NewAttributeValue()),
+                new TagHelperAttribute(PasskeySubmitTagHelper.EmailNameAttributeName, Generated.NewAttributeValue()),
                 new TagHelperAttribute(passThroughName, passThroughValue)
             };
 
-        var buttonLabel = TestValues.NewButtonLabel();
+        var buttonLabel = Generated.NewButtonLabel();
         var childContent = new DefaultTagHelperContent();
         childContent.SetContent(buttonLabel);
 
         var output = new TagHelperOutput(
             PasskeySubmitTagHelper.TagName,
             attributes,
-            (useCachedResult, encoder) => Task.FromResult<TagHelperContent>(childContent));
+            (_, _) => Task.FromResult<TagHelperContent>(childContent));
 
         var uniqueId = Guid.NewGuid().ToString();
         var context = new TagHelperContext([], new Dictionary<object, object>(), uniqueId);
@@ -146,28 +145,28 @@ public class PasskeySubmitTagHelperTests
         var antiforgeryMock = new Mock<IAntiforgery>(MockBehavior.Strict);
         antiforgeryMock
             .Setup(a => a.GetTokens(httpContext))
-            .Returns(new AntiforgeryTokenSet(null, TestValues.NewSessionKey(), TestValues.NewPropertyKey(), null));
+            .Returns(new AntiforgeryTokenSet(null, Generated.NewSessionKey(), Generated.NewPropertyKey(), null));
 
         var helper = new PasskeySubmitTagHelper(httpAccessorMock.Object, antiforgeryMock.Object)
         {
             Operation = 0,
-            Name = TestValues.NewApiResourceName(),
+            Name = Generated.NewApiResourceName(),
             Autofill = autofill
         };
 
-        var suppressedAutofillValue = TestValues.NewAttributeValue();
+        var suppressedAutofillValue = Generated.NewAttributeValue();
         var attributes = new TagHelperAttributeList
             {
                 new TagHelperAttribute(PasskeySubmitTagHelper.AutofillAttributeName, suppressedAutofillValue)
             };
 
         var childContent = new DefaultTagHelperContent();
-        childContent.SetContent(TestValues.NewClaimValue());
+        childContent.SetContent(Generated.NewClaimValue());
 
         var output = new TagHelperOutput(
             PasskeySubmitTagHelper.TagName,
             attributes,
-            (useCachedResult, encoder) => Task.FromResult<TagHelperContent>(childContent));
+            (_, _) => Task.FromResult<TagHelperContent>(childContent));
 
         var uniqueId = Guid.NewGuid().ToString();
         var context = new TagHelperContext([], new Dictionary<object, object>(), uniqueId);

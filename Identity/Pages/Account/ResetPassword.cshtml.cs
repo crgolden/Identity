@@ -7,14 +7,14 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 [AllowAnonymous]
-public class ResetPasswordModel : PageModel
+public class ResetPassword : PageModel
 {
     internal const string CodeRequiredMessage =
         "A code must be supplied for password reset.";
 
     private readonly UserManager<IdentityUser<Guid>> _userManager;
 
-    public ResetPasswordModel(UserManager<IdentityUser<Guid>> userManager)
+    public ResetPassword(UserManager<IdentityUser<Guid>> userManager)
     {
         _userManager = userManager;
     }

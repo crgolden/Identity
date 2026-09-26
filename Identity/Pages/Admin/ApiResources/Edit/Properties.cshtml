@@ -1,8 +1,8 @@
 @page "{id:int}"
-@model Identity.Pages.Admin.ApiResources.Edit.PropertiesModel
+@model Identity.Pages.Admin.ApiResources.Edit.Properties
 @{
     ViewData["Title"] = $"Edit API Resource Properties - {Model.ResourceName}";
-    var rows = Model.Properties.Select(p => new PropertyRow(p.Id, p.Key, p.Value)).ToList();
+    var rows = Model.Resources.Select(p => new PropertyRow(p.Id, p.Key, p.Value)).ToList();
     var cancelHref = Url.Page("/Admin/ApiResources/Details/Properties", new { id = Request.RouteValues["id"] });
 }
 

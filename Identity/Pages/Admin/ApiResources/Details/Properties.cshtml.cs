@@ -3,18 +3,15 @@ namespace Identity.Pages.Admin.ApiResources.Details;
 using Duende.IdentityServer.EntityFramework.Entities;
 using Duende.IdentityServer.EntityFramework.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
-public class PropertiesModel : PageModel
+public class Properties : ResourcesBase<ApiResourceProperty>
 {
     private readonly IConfigurationDbContext _context;
 
-    public PropertiesModel(IConfigurationDbContext context) => _context = context;
+    public Properties(IConfigurationDbContext context) => _context = context;
 
     public ApiResource Resource { get; private set; } = new();
-
-    public IList<ApiResourceProperty> Properties { get; private set; } = [];
 
     public async Task<IActionResult> OnGetAsync(int id)
     {
@@ -25,7 +22,7 @@ public class PropertiesModel : PageModel
         }
 
         Resource = resource;
-        Properties = resource.Properties;
+        Resources = resource.Properties;
         return Page();
     }
 }

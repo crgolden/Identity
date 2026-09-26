@@ -1,30 +1,15 @@
 namespace Identity.Pages.Admin.Clients.Details;
 
+using System.Linq.Expressions;
 using Duende.IdentityServer.EntityFramework.Entities;
 using Duende.IdentityServer.EntityFramework.Interfaces;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
 
-public class IdPRestrictionsModel : PageModel
+public class IdPRestrictions : ClientResourcesBase<ClientIdPRestriction>
 {
-    private readonly IConfigurationDbContext _context;
-
-    public IdPRestrictionsModel(IConfigurationDbContext context) => _context = context;
-
-    public Client Client { get; private set; } = new();
-
-    public async Task<IActionResult> OnGetAsync(int id)
+    public IdPRestrictions(IConfigurationDbContext context)
+        : base(context)
     {
-        var client = await _context.Clients
-            .Include(c => c.IdentityProviderRestrictions)
-            .FirstOrDefaultAsync(c => c.Id == id);
-        if (client is null)
-        {
-            return NotFound();
-        }
-
-        Client = client;
-        return Page();
     }
+
+    protected override Expression<Func<Client, List<ClientIdPRestriction>>> Collection => c => c.IdentityProviderRestrictions;
 }

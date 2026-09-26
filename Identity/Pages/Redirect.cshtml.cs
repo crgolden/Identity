@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 [AllowAnonymous]
-public class RedirectModel : PageModel
+public class Redirect : PageModel
 {
     public string? RedirectUri { get; set; }
 

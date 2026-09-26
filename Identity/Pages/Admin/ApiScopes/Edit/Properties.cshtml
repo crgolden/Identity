@@ -1,8 +1,8 @@
 @page "{id:int}"
-@model Identity.Pages.Admin.ApiScopes.Edit.PropertiesModel
+@model Identity.Pages.Admin.ApiScopes.Edit.Properties
 @{
     ViewData["Title"] = "Edit API Scope Properties";
-    var rows = Model.Properties.Select(p => new PropertyRow(p.Id, p.Key, p.Value)).ToList();
+    var rows = Model.Resources.Select(p => new PropertyRow(p.Id, p.Key, p.Value)).ToList();
     var cancelHref = Url.Page("/Admin/ApiScopes/Details/Properties", new { id = Request.RouteValues["id"] });
 }
 

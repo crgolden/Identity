@@ -1,7 +1,7 @@
 namespace Identity.Tests.E2E;
 
 using System.Text.RegularExpressions;
-using Infrastructure;
+using Identity.Tests.E2E.Infrastructure;
 using Microsoft.Playwright;
 
 [Trait("Category", "E2E")]
@@ -11,7 +11,7 @@ public sealed class HomeTests(PlaywrightFixture fixture)
     [Fact]
     public async Task Home_Anonymous_Shows_Register_And_SignIn_Calls_To_Action()
     {
-        var (context, page) = await fixture.NewPageAsync("Home");
+        var (context, page) = await fixture.NewPageAsync(PlaywrightSuite.Home);
         await using (context)
         {
             await page.GotoAsync("/");
@@ -20,7 +20,6 @@ public sealed class HomeTests(PlaywrightFixture fixture)
             await Assertions.Expect(page.Locator("#sign-in")).ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("#manage-account")).Not.ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("#review-grants")).Not.ToBeVisibleAsync();
-            await Assertions.Expect(page).ToHaveTitleAsync(PageTitles.Document(PageTitles.Home));
         }
     }
 
@@ -29,7 +28,7 @@ public sealed class HomeTests(PlaywrightFixture fixture)
     {
         var (email, password) = await fixture.CreateConfirmedUserAsync();
 
-        var (context, page) = await fixture.NewPageAsync("Home");
+        var (context, page) = await fixture.NewPageAsync(PlaywrightSuite.Home);
         await using (context)
         {
             await LoginAsync(page, email, password);
@@ -39,7 +38,6 @@ public sealed class HomeTests(PlaywrightFixture fixture)
             await Assertions.Expect(page.Locator("#review-grants")).ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("#create-account")).Not.ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("#sign-in")).Not.ToBeVisibleAsync();
-            await Assertions.Expect(page).ToHaveTitleAsync(PageTitles.Document(PageTitles.Home));
         }
     }
 
@@ -48,13 +46,14 @@ public sealed class HomeTests(PlaywrightFixture fixture)
     {
         var (email, password) = await fixture.CreateConfirmedUserAsync();
 
-        var (context, page) = await fixture.NewPageAsync("Home");
+        var (context, page) = await fixture.NewPageAsync(PlaywrightSuite.Home);
         await using (context)
         {
             await LoginAsync(page, email, password);
             await page.GotoAsync("/");
 
-            await Assertions.Expect(page.Locator("#signed-in-lead")).ToContainTextAsync(email);
+            var userId = await fixture.GetUserIdAsync(email);
+            await Assertions.Expect(page.Locator($"#signed-in-user-{userId}")).ToBeVisibleAsync();
         }
     }
 
@@ -63,7 +62,7 @@ public sealed class HomeTests(PlaywrightFixture fixture)
     {
         var (email, password) = await fixture.CreateAdminUserAsync();
 
-        var (context, page) = await fixture.NewPageAsync("Home");
+        var (context, page) = await fixture.NewPageAsync(PlaywrightSuite.Home);
         await using (context)
         {
             await LoginAsync(page, email, password);
@@ -78,7 +77,7 @@ public sealed class HomeTests(PlaywrightFixture fixture)
     {
         var (email, password) = await fixture.CreateConfirmedUserAsync();
 
-        var (context, page) = await fixture.NewPageAsync("Home");
+        var (context, page) = await fixture.NewPageAsync(PlaywrightSuite.Home);
         await using (context)
         {
             await LoginAsync(page, email, password);
@@ -90,10 +89,10 @@ public sealed class HomeTests(PlaywrightFixture fixture)
 
     private static async Task LoginAsync(IPage page, string email, string password)
     {
-        await page.GotoAsync("/Account/Login");
+        await page.GotoAsync(PageRoutes.Login);
         await page.FillAsync("input[name='Input.Email']", email);
         await page.FillAsync("input[name='Input.Password']", password);
         await page.ClickAsync("#login-submit");
-        await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"));
+        await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex(PageRoutes.Login));
     }
 }

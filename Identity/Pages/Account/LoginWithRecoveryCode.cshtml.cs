@@ -7,14 +7,14 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 [AllowAnonymous]
-public class LoginWithRecoveryCodeModel : PageModel
+public class LoginWithRecoveryCode : PageModel
 {
     internal const string InvalidRecoveryCodeMessage =
         "Invalid recovery code entered.";
 
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
 
-    public LoginWithRecoveryCodeModel(SignInManager<IdentityUser<Guid>> signInManager)
+    public LoginWithRecoveryCode(SignInManager<IdentityUser<Guid>> signInManager)
     {
         ThrowIfNull(signInManager);
         _signInManager = signInManager;
@@ -40,7 +40,7 @@ public class LoginWithRecoveryCodeModel : PageModel
 
     public async Task<IActionResult> OnPostAsync(string? returnUrl = null)
     {
-        if (!ModelState.IsValid || IsNullOrWhiteSpace(Input?.RecoveryCode))
+        if (!ModelState.IsValid || IsNullOrWhiteSpace(Input.RecoveryCode))
         {
             return Page();
         }

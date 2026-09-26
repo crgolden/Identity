@@ -1,15 +1,23 @@
 namespace Identity.Tests.E2E.Load;
 
-using Infrastructure;
+using Identity.Tests.E2E.Infrastructure;
+using Identity.Tests.E2E.Oidc;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 [Trait("Category", "Load")]
 [Collection(E2ECollection.Name)]
 public sealed class LoadTests : IDisposable
 {
+    private const string LoginPath = PageRoutes.Login;
+    private const string HealthPath = PageRoutes.Health;
+
     private readonly HttpClient _httpClient;
+    private readonly LoadSettings _settings;
 
     public LoadTests(PlaywrightFixture fixture)
     {
+        _settings = LoadSettings.Read(fixture.Factory.Services.GetRequiredService<IConfiguration>());
         _httpClient = new HttpClient(
             new HttpClientHandler
             {
@@ -21,72 +29,62 @@ public sealed class LoadTests : IDisposable
     }
 
     [Fact]
-    public async Task DiscoveryEndpoint_Under50Rps_HasNegligibleFailures()
-    {
-        var (total, failed) = await RunLoadAsync(
-            "/.well-known/openid-configuration",
-            requestCount: 100,
-            parallelism: 10);
-
-        var failPercent = total > 0 ? (double)failed / total * 100.0 : 0.0;
-        Assert.True(failPercent < 1.0, $"Discovery endpoint fail rate {failPercent:F1}% exceeds 1% threshold.");
-    }
+    public async Task DiscoveryEndpoint_UnderConcurrentLoad_HasNegligibleFailures() =>
+        await AssertFailRateWithinCeilingAsync(
+            Profile(OidcDiscoveryConstants.DiscoveryPath, _settings.DiscoveryRequests, _settings.DiscoveryParallelism),
+            _settings.MaxFailRate);
 
     [Fact]
-    public async Task LoginPage_Under30Rps_HasNegligibleFailures()
-    {
-        var (total, failed) = await RunLoadAsync(
-            "/Account/Login",
-            requestCount: 60,
-            parallelism: 10);
-
-        var failPercent = total > 0 ? (double)failed / total * 100.0 : 0.0;
-        Assert.True(failPercent < 2.0, $"Login page GET fail rate {failPercent:F1}% exceeds 2% threshold.");
-    }
+    public async Task LoginPage_UnderConcurrentLoad_HasNegligibleFailures() =>
+        await AssertFailRateWithinCeilingAsync(
+            Profile(LoginPath, _settings.LoginRequests, _settings.LoginParallelism),
+            _settings.MaxLoginFailRate);
 
     [Fact]
-    public async Task JwksEndpoint_Under100Rps_HasNegligibleFailures()
-    {
-        var (total, failed) = await RunLoadAsync(
-            "/.well-known/openid-configuration/jwks",
-            requestCount: 100,
-            parallelism: 20);
-
-        var failPercent = total > 0 ? (double)failed / total * 100.0 : 0.0;
-        Assert.True(failPercent < 1.0, $"JWKS endpoint fail rate {failPercent:F1}% exceeds 1% threshold.");
-    }
+    public async Task JwksEndpoint_UnderConcurrentLoad_HasNegligibleFailures() =>
+        await AssertFailRateWithinCeilingAsync(
+            Profile(OidcDiscoveryConstants.JwksPath, _settings.JwksRequests, _settings.JwksParallelism),
+            _settings.MaxFailRate);
 
     [Fact]
-    public async Task HealthEndpoint_Under20Rps_AllSucceed()
+    public async Task HealthEndpoint_UnderConcurrentLoad_AllSucceed()
     {
-        var (total, failed) = await RunLoadAsync(
-            "/Health",
-            requestCount: 40,
-            parallelism: 5);
+        var profile = Profile(HealthPath, _settings.HealthRequests, _settings.HealthParallelism);
+        var failed = await RunLoadAsync(profile);
 
         Assert.Equal(0, failed);
-        Assert.Equal(40, total);
     }
 
     public void Dispose() => _httpClient.Dispose();
 
-    private async Task<(int Total, int Failed)> RunLoadAsync(
-        string path,
-        int requestCount,
-        int parallelism)
+    private static double FailRate(int requests, int failed) =>
+        requests > 0 ? (double)failed / requests : 0.0;
+
+    private LoadProfile Profile(string path, int requests, int parallelism) =>
+        new(path, Math.Min(requests * _settings.RequestScale, _settings.MaxRequests), parallelism);
+
+    private async Task AssertFailRateWithinCeilingAsync(LoadProfile profile, double ceiling)
     {
-        var total = 0;
+        var failed = await RunLoadAsync(profile);
+        var failRate = FailRate(profile.Requests, failed);
+
+        Assert.True(
+            failRate < ceiling,
+            $"{profile.Path} failed {failed} of {profile.Requests} requests ({failRate:P1}), above the {ceiling:P1} ceiling.");
+    }
+
+    private async Task<int> RunLoadAsync(LoadProfile profile)
+    {
         var failed = 0;
 
         await Parallel.ForEachAsync(
-            Enumerable.Range(0, requestCount),
-            new ParallelOptions { MaxDegreeOfParallelism = parallelism },
+            Enumerable.Range(0, profile.Requests),
+            new ParallelOptions { MaxDegreeOfParallelism = profile.Parallelism },
             async (_, ct) =>
             {
-                Interlocked.Increment(ref total);
                 try
                 {
-                    var response = await _httpClient.GetAsync(path, ct);
+                    using var response = await _httpClient.GetAsync(profile.Path, ct);
                     if (!response.IsSuccessStatusCode)
                     {
                         Interlocked.Increment(ref failed);
@@ -98,6 +96,6 @@ public sealed class LoadTests : IDisposable
                 }
             });
 
-        return (total, failed);
+        return failed;
     }
 }

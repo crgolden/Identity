@@ -1,10 +1,10 @@
 namespace Identity.CAPTCHA;
 
-#pragma warning disable S101
 public interface ICAPTCHAService
-#pragma warning restore S101
 {
     string? SiteKey { get; }
+
+    Uri? ScriptEndpoint { get; }
 
     Task<CAPTCHAVerdict> VerifyAsync(string? token, CancellationToken cancellationToken = default);
 }

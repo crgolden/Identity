@@ -10,7 +10,7 @@ on:
         description: 'Walk seed (uint32) for deterministic replay; random when empty'
         required: false
       steps:
-        description: 'Step budget override (default 40)'
+        description: 'Step budget override; vars.WALKER_DEFAULT_STEP_BUDGET when empty'
         required: false
 
 concurrency:
@@ -49,15 +49,20 @@ jobs:
           key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
 
       - name: Install Playwright browsers
-        if: steps.cache-playwright.outputs.cache-hit != 'true'
         run: pwsh "${{ github.workspace }}\Identity.Tests.E2E\bin\Release\net10.0\playwright.ps1" install --with-deps chromium
 
       - name: Resolve seed
         id: seed
+        env:
+          REQUESTED_SEED: ${{ inputs.seed }}
         run: |
-          $seed = "${{ inputs.seed }}"
+          $seed = $env:REQUESTED_SEED
           if ([string]::IsNullOrWhiteSpace($seed)) {
             $seed = [uint32](Get-Random -Minimum 0 -Maximum ([int]::MaxValue))
+          }
+          elseif ($seed -notmatch '^[0-9]+$') {
+            Write-Output "::error::Seed must be a non-negative integer."
+            exit 1
           }
           "value=$seed" >> $env:GITHUB_OUTPUT
           "### Synthetic walk seed: ``$seed``" >> $env:GITHUB_STEP_SUMMARY
@@ -70,8 +75,29 @@ jobs:
           SYNTHETIC_STEPS: ${{ inputs.steps }}
           PASSKEY_CREDENTIAL1: ${{ secrets.PASSKEY_CREDENTIAL1 }}
           PASSKEY_CREDENTIAL3: ${{ secrets.PASSKEY_CREDENTIAL3 }}
+          PlaywrightSettings__Headless: ${{ vars.PLAYWRIGHT_HEADLESS }}
+          PlaywrightSettings__TestResultsFolderName: ${{ vars.PLAYWRIGHT_TEST_RESULTS_FOLDER_NAME }}
+          PlaywrightSettings__ArtifactsFolderName: ${{ vars.PLAYWRIGHT_ARTIFACTS_FOLDER_NAME }}
+          PlaywrightSettings__TempFolderName: ${{ vars.PLAYWRIGHT_TEMP_FOLDER_NAME }}
+          PlaywrightSettings__ScreenshotFileName: ${{ vars.PLAYWRIGHT_SCREENSHOT_FILE_NAME }}
+          PlaywrightSettings__TraceFileName: ${{ vars.PLAYWRIGHT_TRACE_FILE_NAME }}
+          PlaywrightSettings__BrowserLogFileName: ${{ vars.PLAYWRIGHT_BROWSER_LOG_FILE_NAME }}
+          PlaywrightSettings__MetadataFileName: ${{ vars.PLAYWRIGHT_METADATA_FILE_NAME }}
+          PlaywrightSettings__FailureFileName: ${{ vars.PLAYWRIGHT_FAILURE_FILE_NAME }}
+          PlaywrightSettings__RecordedVideoWidth: ${{ vars.PLAYWRIGHT_RECORDED_VIDEO_WIDTH }}
+          PlaywrightSettings__RecordedVideoHeight: ${{ vars.PLAYWRIGHT_RECORDED_VIDEO_HEIGHT }}
+          PlaywrightSettings__MaxArtifactNameLength: ${{ vars.PLAYWRIGHT_MAX_ARTIFACT_NAME_LENGTH }}
+          WalkerSettings__BrowserUserAgent: ${{ vars.WALKER_BROWSER_USER_AGENT }}
+          WalkerSettings__SyntheticUserAgentVersion: ${{ vars.WALKER_SYNTHETIC_USER_AGENT_VERSION }}
+          WalkerSettings__CommonActionWeight: ${{ vars.WALKER_COMMON_ACTION_WEIGHT }}
+          WalkerSettings__RareActionWeight: ${{ vars.WALKER_RARE_ACTION_WEIGHT }}
+          WalkerSettings__SectionActionWeight: ${{ vars.WALKER_SECTION_ACTION_WEIGHT }}
+          WalkerSettings__MemberSlot: ${{ vars.WALKER_MEMBER_SLOT }}
+          WalkerSettings__AdminSlot: ${{ vars.WALKER_ADMIN_SLOT }}
+          WalkerSettings__DefaultStepBudget: ${{ vars.WALKER_DEFAULT_STEP_BUDGET }}
+          WalkerSettings__MaxStepBudget: ${{ vars.WALKER_MAX_STEP_BUDGET }}
         run: |
-          $resultsDir = "${{ github.workspace }}\Identity.Tests.E2E\bin\Release\net10.0\TestResults"
+          $resultsDir = "${{ github.workspace }}\Identity.Tests.E2E\bin\Release\net10.0\${{ vars.PLAYWRIGHT_TEST_RESULTS_FOLDER_NAME }}"
           New-Item -ItemType Directory -Force -Path $resultsDir | Out-Null
           & "${{ github.workspace }}\Identity.Tests.E2E\bin\Release\net10.0\Identity.Tests.E2E.exe" `
             -trait "Category=Walker" `
@@ -79,8 +105,10 @@ jobs:
 
       - name: Assert the walk actually ran
         if: always()
+        env:
+          SYNTHETIC_SEED: ${{ steps.seed.outputs.value }}
         run: |
-          $trx = "${{ github.workspace }}\Identity.Tests.E2E\bin\Release\net10.0\TestResults\walker.trx"
+          $trx = "${{ github.workspace }}\Identity.Tests.E2E\bin\Release\net10.0\${{ vars.PLAYWRIGHT_TEST_RESULTS_FOLDER_NAME }}\walker.trx"
           if (-not (Test-Path $trx)) {
             Write-Output "::error::No walker.trx was produced — the walk did not run."
             exit 1
@@ -89,7 +117,7 @@ jobs:
           $counters = $results.TestRun.ResultSummary.Counters
           $executed = [int]$counters.executed
           $passed = [int]$counters.passed
-          "Executed $executed, passed $passed (seed ${{ steps.seed.outputs.value }})" >> $env:GITHUB_STEP_SUMMARY
+          "Executed $executed, passed $passed (seed $env:SYNTHETIC_SEED)" >> $env:GITHUB_STEP_SUMMARY
           if ($executed -eq 0) {
             Write-Output "::error::Synthetic run executed 0 tests — a vacuous green."
             exit 1
@@ -100,5 +128,5 @@ jobs:
         if: always()
         with:
           name: identity-walker-artifacts
-          path: Identity.Tests.E2E/bin/Release/net10.0/TestResults/
+          path: Identity.Tests.E2E/bin/Release/net10.0/${{ vars.PLAYWRIGHT_TEST_RESULTS_FOLDER_NAME }}/
           if-no-files-found: warn

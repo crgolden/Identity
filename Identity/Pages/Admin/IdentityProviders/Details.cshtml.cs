@@ -6,11 +6,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
-public class DetailsModel : PageModel
+public class Details : PageModel
 {
     private readonly IConfigurationDbContext _context;
 
-    public DetailsModel(IConfigurationDbContext context) => _context = context;
+    public Details(IConfigurationDbContext context) => _context = context;
 
     public IdentityProvider IdentityProvider { get; private set; } = new();
 

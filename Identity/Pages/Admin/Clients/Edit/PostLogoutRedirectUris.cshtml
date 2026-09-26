@@ -1,5 +1,5 @@
 @page
-@model PostLogoutRedirectUrisModel
+@model PostLogoutRedirectUris
 
 @{
     ViewData["Title"] = "Edit Client Post-Logout Redirect URIs";
@@ -17,11 +17,11 @@
                 </tr>
             </thead>
             <tbody>
-                @for (var i = 0; i < Model.PostLogoutRedirectUris.Count; i++)
+                @foreach (var i in Enumerable.Range(0, Model.Resources.Count))
                 {
                     <tr>
-                        <input type="hidden" name="PostLogoutRedirectUris[@i].Id" value="@Model.PostLogoutRedirectUris[i].Id" />
-                        <td><input id="postlogoutredirecturi-@i" name="PostLogoutRedirectUris[@i].PostLogoutRedirectUri" value="@Model.PostLogoutRedirectUris[i].PostLogoutRedirectUri" class="form-control form-control-sm" aria-label="Post-logout redirect URI" /></td>
+                        <input type="hidden" name="Resources[@i].Id" value="@Model.Resources[i].Id" />
+                        <td><input id="postlogoutredirecturi-@i" name="Resources[@i].PostLogoutRedirectUri" value="@Model.Resources[i].PostLogoutRedirectUri" class="form-control form-control-sm" aria-label="Post-logout redirect URI" /></td>
                         <td><button id="postlogoutredirecturi-remove-@i" type="submit" asp-page-handler="RemoveRow" asp-route-id="@Model.Client.Id" asp-route-index="@i" class="btn btn-sm btn-danger">Remove</button></td>
                     </tr>
                 }

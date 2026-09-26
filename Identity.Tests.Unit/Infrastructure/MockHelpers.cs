@@ -22,8 +22,8 @@ internal static class MockHelpers
             new Mock<IUserStore<IdentityUser<Guid>>>().Object,
             options.Object,
             new Mock<IPasswordHasher<IdentityUser<Guid>>>().Object,
-            new List<IUserValidator<IdentityUser<Guid>>>(),
-            new List<IPasswordValidator<IdentityUser<Guid>>>(),
+            Array.Empty<IUserValidator<IdentityUser<Guid>>>(),
+            Array.Empty<IPasswordValidator<IdentityUser<Guid>>>(),
             new Mock<ILookupNormalizer>().Object,
             new IdentityErrorDescriber(),
             new Mock<IServiceProvider>().Object,
@@ -63,7 +63,7 @@ internal static class MockHelpers
 
     public static IdentityUser<Guid> TestUser()
     {
-        var emailAddress = TestValues.NewEmailAddress();
-        return new IdentityUser<Guid> { Id = TestValues.NewUserId(), UserName = emailAddress, Email = emailAddress };
+        var emailAddress = Generated.NewEmailAddress();
+        return new IdentityUser<Guid> { Id = Generated.NewUserId(), UserName = emailAddress, Email = emailAddress };
     }
 }

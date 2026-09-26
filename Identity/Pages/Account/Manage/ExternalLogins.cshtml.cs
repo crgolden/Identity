@@ -1,12 +1,12 @@
 namespace Identity.Pages.Account.Manage;
 
-using Extensions;
+using Identity.Extensions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-public class ExternalLoginsModel : PageModel
+public class ExternalLogins : PageModel
 {
     internal const string ExternalLoginsPagePath = "/Account/Manage/ExternalLogins";
 
@@ -25,7 +25,7 @@ public class ExternalLoginsModel : PageModel
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
     private readonly IUserStore<IdentityUser<Guid>> _userStore;
 
-    public ExternalLoginsModel(
+    public ExternalLogins(
         UserManager<IdentityUser<Guid>> userManager,
         SignInManager<IdentityUser<Guid>> signInManager,
         IUserStore<IdentityUser<Guid>> userStore)

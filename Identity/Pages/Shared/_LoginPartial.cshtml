@@ -1,5 +1,4 @@
 ﻿@inject SignInManager<IdentityUser<Guid>> SignInManager
-@inject UserManager<IdentityUser<Guid>> UserManager
 
 <ul class="navbar-nav">
 @if (SignInManager.IsSignedIn(User))
@@ -7,7 +6,7 @@
     <li class="nav-item">
         <a id="manage-nav" class="nav-link" asp-page="/Account/Manage/Index" title="Manage">Hello @User.Identity?.Name!</a>
     </li>
-    @if (User.IsInRole("Admin"))
+    @if (User.IsInRole(AuthorizationNames.AdminRole))
     {
         <li class="nav-item">
             <a id="admin-nav" class="nav-link" asp-page="/Admin/Index">Admin</a>

@@ -1,10 +1,9 @@
 namespace Identity.Tests.E2E.Synthetic;
 
+using static Identity.Tests.E2E.Synthetic.WalkerRngConstants;
+
 internal sealed class WalkerRng
 {
-    private const uint Increment = 0x6d2b79f5;
-    private const double UInt32Range = 4294967296d;
-
     private uint _state;
 
     public WalkerRng(uint seed) => _state = seed;
@@ -15,9 +14,9 @@ internal sealed class WalkerRng
         {
             _state += Increment;
             var t = _state;
-            t = (t ^ (t >> 15)) * (t | 1u);
-            t ^= t + ((t ^ (t >> 7)) * (t | 61u));
-            return (t ^ (t >> 14)) / UInt32Range;
+            t = (t ^ (t >> FirstShift)) * (t | FirstMultiplicandOrBits);
+            t ^= t + ((t ^ (t >> SecondShift)) * (t | SecondMultiplicandOrBits));
+            return (t ^ (t >> FinalShift)) / UInt32Range;
         }
     }
 

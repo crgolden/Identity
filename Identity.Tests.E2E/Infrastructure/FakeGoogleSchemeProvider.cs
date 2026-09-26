@@ -9,7 +9,7 @@ public sealed class FakeGoogleSchemeProvider(IOptions<AuthenticationOptions> opt
 {
     private readonly AuthenticationScheme _fakeGoogleScheme = new(
         GoogleOpenIdConnectDefaults.AuthenticationScheme,
-        "Google",
+        nameof(Google),
         typeof(FakeExternalAuthenticationHandler));
 
     public override Task<AuthenticationScheme?> GetSchemeAsync(string name) =>

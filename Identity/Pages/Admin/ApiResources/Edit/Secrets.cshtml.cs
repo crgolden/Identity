@@ -3,23 +3,19 @@ namespace Identity.Pages.Admin.ApiResources.Edit;
 using Duende.IdentityServer.EntityFramework.Entities;
 using Duende.IdentityServer.EntityFramework.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
-public class SecretsModel : PageModel
+public class Secrets : EditableResourcesBase<int, ApiResourceSecret>
 {
     internal const string DetailsPageName = "/Admin/ApiResources/Details/Secrets";
 
     private readonly IConfigurationDbContext _context;
 
-    public SecretsModel(IConfigurationDbContext context) => _context = context;
+    public Secrets(IConfigurationDbContext context) => _context = context;
 
     public int ResourceId { get; private set; }
 
     public string? ResourceName { get; private set; }
-
-    [BindProperty]
-    public List<ApiResourceSecret> Secrets { get; set; } = [];
 
     public async Task<IActionResult> OnGetAsync(int id)
     {
@@ -31,7 +27,7 @@ public class SecretsModel : PageModel
 
         ResourceId = resource.Id;
         ResourceName = resource.Name;
-        Secrets = resource.Secrets;
+        Resources = resource.Secrets;
         return Page();
     }
 
@@ -43,9 +39,9 @@ public class SecretsModel : PageModel
             return NotFound();
         }
 
-        resource.Secrets.RemoveAll(s => !Secrets.Any(p => p.Id == s.Id));
+        resource.Secrets.RemoveAll(s => !Resources.Any(p => p.Id == s.Id));
 
-        foreach (var posted in Secrets.Where(p => p.Id > 0))
+        foreach (var posted in Resources.Where(p => p.Id > 0))
         {
             var existing = resource.Secrets.FirstOrDefault(s => s.Id == posted.Id);
             if (existing is not null)
@@ -57,7 +53,7 @@ public class SecretsModel : PageModel
         }
 
         resource.Secrets.AddRange(
-            Secrets.Where(p => p.Id == 0).Select(p => new ApiResourceSecret
+            Resources.Where(p => p.Id == 0).Select(p => new ApiResourceSecret
             {
                 Description = p.Description,
                 Value = p.Value,
@@ -70,35 +66,18 @@ public class SecretsModel : PageModel
         return RedirectToPage(DetailsPageName, new { id });
     }
 
-    public async Task<IActionResult> OnPostAddRowAsync(int id)
+    protected override async Task<bool> LoadContextAsync(int id)
     {
         var resource = await _context.ApiResources.FirstOrDefaultAsync(r => r.Id == id);
         if (resource is null)
         {
-            return NotFound();
+            return false;
         }
 
         ResourceId = resource.Id;
         ResourceName = resource.Name;
-        Secrets.Add(new ApiResourceSecret { Type = "SharedSecret" });
-        return Page();
+        return true;
     }
 
-    public async Task<IActionResult> OnPostRemoveRowAsync(int id, int index)
-    {
-        var resource = await _context.ApiResources.FirstOrDefaultAsync(r => r.Id == id);
-        if (resource is null)
-        {
-            return NotFound();
-        }
-
-        ResourceId = resource.Id;
-        ResourceName = resource.Name;
-        if (index >= 0 && index < Secrets.Count)
-        {
-            Secrets.RemoveAt(index);
-        }
-
-        return Page();
-    }
+    protected override ApiResourceSecret NewResource() => new ApiResourceSecret { Type = "SharedSecret" };
 }

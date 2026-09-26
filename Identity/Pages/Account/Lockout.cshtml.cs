@@ -4,6 +4,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 [AllowAnonymous]
-public class LockoutModel : PageModel
+public class Lockout : PageModel
 {
 }

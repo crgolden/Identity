@@ -8,13 +8,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 [Authorize]
-public class ServerSideSessionsModel : PageModel
+public class ServerSideSessions : PageModel
 {
     internal const string ServerSideSessionsPagePath = "/Account/Manage/ServerSideSessions";
 
     private readonly ISessionManagementService? _sessionManagement;
 
-    public ServerSideSessionsModel(ISessionManagementService? sessionManagement = null)
+    public ServerSideSessions(ISessionManagementService? sessionManagement = null)
     {
         _sessionManagement = sessionManagement;
     }

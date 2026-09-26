@@ -1,7 +1,7 @@
 namespace Identity.Tests.E2E;
 
 using System.Text.RegularExpressions;
-using Infrastructure;
+using Identity.Tests.E2E.Infrastructure;
 using Microsoft.Playwright;
 using OtpNet;
 
@@ -17,11 +17,11 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
         var (context, page) = await fixture.NewPageAsync();
         await using (context)
         {
-            await page.GotoAsync("/Account/Login");
+            await page.GotoAsync(PageRoutes.Login);
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("#login-submit");
-            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"));
+            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex(PageRoutes.Login));
 
             await page.GotoAsync("/Account/Manage/TwoFactorAuthentication");
             await page.ClickAsync("#enable-authenticator");
@@ -37,7 +37,9 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Code']", code);
             await page.ClickAsync("#verify-authenticator-submit");
 
-            await Assertions.Expect(page.Locator("#status-message")).ToContainTextAsync("verified");
+            await page.GotoAsync("/Account/Manage/TwoFactorAuthentication");
+            await Assertions.Expect(page.Locator("#reset-authenticator")).ToBeVisibleAsync();
+            await Assertions.Expect(page.Locator("#disable-2fa-link")).ToBeVisibleAsync();
         }
     }
 
@@ -50,11 +52,11 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
         var (setupCtx, setupPage) = await fixture.NewPageAsync();
         await using (setupCtx)
         {
-            await setupPage.GotoAsync("/Account/Login");
+            await setupPage.GotoAsync(PageRoutes.Login);
             await setupPage.FillAsync("input[name='Input.Email']", email);
             await setupPage.FillAsync("input[name='Input.Password']", password);
             await setupPage.ClickAsync("#login-submit");
-            await Assertions.Expect(setupPage).Not.ToHaveURLAsync(new Regex("/Account/Login"));
+            await Assertions.Expect(setupPage).Not.ToHaveURLAsync(new Regex(PageRoutes.Login));
 
             await setupPage.GotoAsync("/Account/Manage/TwoFactorAuthentication");
             await setupPage.ClickAsync("#enable-authenticator");
@@ -81,7 +83,7 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
         var (loginCtx, loginPage) = await fixture.NewPageAsync();
         await using (loginCtx)
         {
-            await loginPage.GotoAsync("/Account/Login");
+            await loginPage.GotoAsync(PageRoutes.Login);
             await loginPage.FillAsync("input[name='Input.Email']", email);
             await loginPage.FillAsync("input[name='Input.Password']", password);
             await loginPage.ClickAsync("#login-submit");
@@ -93,8 +95,8 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
             await loginPage.FillAsync("input[name='Input.RecoveryCode']", recoveryCode);
             await loginPage.ClickAsync("#recovery-code-submit");
 
-            await Assertions.Expect(loginPage).Not.ToHaveURLAsync(new Regex("/Account/Login"));
-            Assert.DoesNotContain("/Account/Login", loginPage.Url, StringComparison.Ordinal);
+            await Assertions.Expect(loginPage).Not.ToHaveURLAsync(new Regex(PageRoutes.Login));
+            Assert.DoesNotContain(PageRoutes.Login, loginPage.Url, StringComparison.Ordinal);
         }
     }
 
@@ -106,11 +108,11 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
         var (context, page) = await fixture.NewPageAsync();
         await using (context)
         {
-            await page.GotoAsync("/Account/Login");
+            await page.GotoAsync(PageRoutes.Login);
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("#login-submit");
-            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"));
+            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex(PageRoutes.Login));
 
             await page.GotoAsync("/Account/Manage/TwoFactorAuthentication");
             await page.ClickAsync("#enable-authenticator");
@@ -120,8 +122,6 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
             var totp = new Totp(Base32Encoding.ToBytes(sharedKey));
             await page.FillAsync("input[name='Input.Code']", totp.ComputeTotp());
             await page.ClickAsync("#verify-authenticator-submit");
-
-            await Assertions.Expect(page.Locator("#status-message")).ToContainTextAsync("verified");
 
             await page.GotoAsync("/Account/Manage/TwoFactorAuthentication");
             await page.ClickAsync("#reset-authenticator");

@@ -4,11 +4,11 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-public class PersonalDataModel : PageModel
+public class PersonalData : PageModel
 {
     private readonly UserManager<IdentityUser<Guid>> _userManager;
 
-    public PersonalDataModel(UserManager<IdentityUser<Guid>> userManager)
+    public PersonalData(UserManager<IdentityUser<Guid>> userManager)
     {
         _userManager = userManager;
     }

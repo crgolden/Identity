@@ -1,8 +1,8 @@
 @page
-@model PropertiesModel
+@model Properties
 @{
     ViewData["Title"] = "Edit Client Properties";
-    var rows = Model.Properties.Select(p => new PropertyRow(p.Id, p.Key, p.Value)).ToList();
+    var rows = Model.Resources.Select(p => new PropertyRow(p.Id, p.Key, p.Value)).ToList();
     var cancelHref = Url.Page("/Admin/Clients/Details/Properties", new { id = Model.Client.Id });
 }
 

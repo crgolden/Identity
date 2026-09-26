@@ -7,9 +7,10 @@ using Duende.IdentityServer.Models;
 using Duende.IdentityServer.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 [Authorize]
-public class ConsentModel : ConsentPageModelBase
+public class Consent : ConsentPageModelBase
 {
     internal const string DenyButtonValue = "no";
 
@@ -21,13 +22,18 @@ public class ConsentModel : ConsentPageModelBase
 
     private readonly IIdentityServerInteractionService _interaction;
     private readonly IEventService _events;
+    private readonly Telemetry _telemetry;
 
-    public ConsentModel(
+    public Consent(
         IIdentityServerInteractionService interaction,
-        IEventService events)
+        IEventService events,
+        IOptions<ConsentOptions> consentOptions,
+        Telemetry telemetry)
+        : base(consentOptions)
     {
         _interaction = interaction;
         _events = events;
+        _telemetry = telemetry;
     }
 
     [BindProperty]
@@ -35,7 +41,7 @@ public class ConsentModel : ConsentPageModelBase
 
     public async Task<IActionResult> OnGetAsync(string? returnUrl)
     {
-        if (!await SetViewModelAsync(returnUrl))
+        if (!await SetViewModelAsync(returnUrl, EveryScope))
         {
             return RedirectToPage(PageRoutes.Error);
         }
@@ -63,10 +69,10 @@ public class ConsentModel : ConsentPageModelBase
                     request.Client.ClientId,
                     request.ValidatedResources.RawScopeValues),
                 HttpContext.RequestAborted);
-            Telemetry.Metrics.ConsentDenied(
+            _telemetry.ConsentDenied(
                 request.Client.ClientId,
                 request.ValidatedResources.ParsedScopes.Select(s => s.ParsedName));
-            using var denyActivity = Telemetry.StartActivity(DenyActivityName);
+            using var denyActivity = _telemetry.StartActivity(DenyActivityName);
             denyActivity?.SetTag(Telemetry.Metrics.ClientIdTagName, request.Client.ClientId);
         }
         else if (string.Equals(Input.Button, GrantButtonValue, StringComparison.Ordinal))
@@ -95,27 +101,27 @@ public class ConsentModel : ConsentPageModelBase
                         grantedConsent.ScopesValuesConsented,
                         grantedConsent.RememberConsent),
                     HttpContext.RequestAborted);
-                Telemetry.Metrics.ConsentGranted(
+                _telemetry.ConsentGranted(
                     request.Client.ClientId,
                     grantedConsent.ScopesValuesConsented,
                     grantedConsent.RememberConsent);
                 var denied = request.ValidatedResources.ParsedScopes
                     .Select(s => s.ParsedName)
                     .Except(grantedConsent.ScopesValuesConsented, StringComparer.Ordinal);
-                Telemetry.Metrics.ConsentDenied(request.Client.ClientId, denied);
-                using var grantActivity = Telemetry.StartActivity(GrantActivityName);
+                _telemetry.ConsentDenied(request.Client.ClientId, denied);
+                using var grantActivity = _telemetry.StartActivity(GrantActivityName);
                 grantActivity?.SetTag(Telemetry.Metrics.ClientIdTagName, request.Client.ClientId);
                 grantActivity?.SetTag(Telemetry.Metrics.ScopeCountTagName, grantedConsent.ScopesValuesConsented.Count());
                 grantActivity?.SetTag(Telemetry.Metrics.RememberTagName, grantedConsent.RememberConsent);
             }
             else
             {
-                ModelState.AddModelError(Empty, ConsentOptions.MustChooseOneErrorMessage);
+                ModelState.AddModelError(Empty, MustChooseOneErrorMessage);
             }
         }
         else
         {
-            ModelState.AddModelError(Empty, ConsentOptions.InvalidSelectionErrorMessage);
+            ModelState.AddModelError(Empty, InvalidSelectionErrorMessage);
         }
 
         if (grantedConsent != null)
@@ -125,7 +131,7 @@ public class ConsentModel : ConsentPageModelBase
             return Redirect(Input.ReturnUrl);
         }
 
-        if (!await SetViewModelAsync(Input.ReturnUrl))
+        if (!await SetViewModelAsync(Input.ReturnUrl, Input.ScopesConsented.Contains))
         {
             return RedirectToPage(PageRoutes.Error);
         }
@@ -133,24 +139,7 @@ public class ConsentModel : ConsentPageModelBase
         return Page();
     }
 
-    private async Task<bool> SetViewModelAsync(string? returnUrl)
-    {
-        if (IsNullOrWhiteSpace(returnUrl))
-        {
-            return false;
-        }
-
-        var request = await _interaction.GetAuthorizationContextAsync(returnUrl, HttpContext.RequestAborted);
-        if (request != null)
-        {
-            View = CreateConsentViewModel(request);
-            return true;
-        }
-
-        return false;
-    }
-
-    private ViewModel CreateConsentViewModel(AuthorizationRequest request)
+    private ViewModel CreateConsentViewModel(AuthorizationRequest request, Func<string, bool> isConsented)
     {
         var vm = new ViewModel
         {
@@ -161,14 +150,15 @@ public class ConsentModel : ConsentPageModelBase
         };
 
         vm.IdentityScopes = request.ValidatedResources.Resources.IdentityResources
-            .Select(x => CreateScopeViewModel(x, Input == null || Input.ScopesConsented.Contains(x.Name)))
+            .Select(x => CreateScopeViewModel(x, isConsented(x.Name)))
             .ToArray();
 
         var resourceIndicators =
             request.Parameters.GetValues(OidcConstants.AuthorizeRequest.Resource)
             ?? Enumerable.Empty<string>();
         var apiResources = request.ValidatedResources.Resources.ApiResources
-            .Where(x => resourceIndicators.Contains(x.Name));
+            .Where(x => resourceIndicators.Contains(x.Name))
+            .ToArray();
 
         var apiScopes = new List<ScopeViewModel>();
         foreach (var parsedScope in request.ValidatedResources.ParsedScopes)
@@ -179,7 +169,7 @@ public class ConsentModel : ConsentPageModelBase
                 var scopeVm = CreateScopeViewModel(
                     parsedScope,
                     apiScope,
-                    Input == null || Input.ScopesConsented.Contains(parsedScope.RawValue));
+                    isConsented(parsedScope.RawValue));
                 scopeVm.Resources = apiResources
                     .Where(x => x.Scopes.Contains(parsedScope.ParsedName))
                     .Select(x => new ResourceViewModel
@@ -195,12 +185,28 @@ public class ConsentModel : ConsentPageModelBase
         if (ConsentOptions.EnableOfflineAccess && request.ValidatedResources.Resources.OfflineAccess)
         {
             apiScopes.Add(CreateOfflineAccessScope(
-                Input == null || Input.ScopesConsented.Contains(
-                    Duende.IdentityServer.IdentityServerConstants.StandardScopes.OfflineAccess)));
+                isConsented(Duende.IdentityServer.IdentityServerConstants.StandardScopes.OfflineAccess)));
         }
 
         vm.ApiScopes = apiScopes;
         return vm;
+    }
+
+    private async Task<bool> SetViewModelAsync(string? returnUrl, Func<string, bool> isConsented)
+    {
+        if (IsNullOrWhiteSpace(returnUrl))
+        {
+            return false;
+        }
+
+        var request = await _interaction.GetAuthorizationContextAsync(returnUrl, HttpContext.RequestAborted);
+        if (request != null)
+        {
+            View = CreateConsentViewModel(request, isConsented);
+            return true;
+        }
+
+        return false;
     }
 
     public class InputModel

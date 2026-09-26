@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Routing;
 using static System.Buffers.Text.Base64Url;
 
-public class PasskeysModel : PageModel
+public class Passkeys : PageModel
 {
     internal const string RenameAction = "rename";
 
@@ -36,11 +36,13 @@ public class PasskeysModel : PageModel
 
     private readonly UserManager<IdentityUser<Guid>> _userManager;
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
+    private readonly Telemetry _telemetry;
 
-    public PasskeysModel(UserManager<IdentityUser<Guid>> userManager, SignInManager<IdentityUser<Guid>> signInManager)
+    public Passkeys(UserManager<IdentityUser<Guid>> userManager, SignInManager<IdentityUser<Guid>> signInManager, Telemetry telemetry)
     {
         _userManager = userManager;
         _signInManager = signInManager;
+        _telemetry = telemetry;
     }
 
     public IList<UserPasskeyInfo> CurrentPasskeys { get; set; } = new List<UserPasskeyInfo>();
@@ -71,7 +73,7 @@ public class PasskeysModel : PageModel
             return NotFound(UserMessages.UnableToLoadUser(_userManager.GetUserId(User)));
         }
 
-        if (IsNullOrWhiteSpace(Input?.CredentialId))
+        if (IsNullOrWhiteSpace(Input.CredentialId))
         {
             StatusMessage = PasskeyNotFoundMessage;
             return RedirectToPage();
@@ -84,7 +86,7 @@ public class PasskeysModel : PageModel
         }
         catch (FormatException)
         {
-            StatusMessage = RenamePasskeyModel.InvalidCredentialIdFormatMessage;
+            StatusMessage = RenamePasskey.InvalidCredentialIdFormatMessage;
             return RedirectToPage();
         }
 
@@ -108,19 +110,19 @@ public class PasskeysModel : PageModel
             return NotFound(UserMessages.UnableToLoadUser(_userManager.GetUserId(User)));
         }
 
-        if (!IsNullOrWhiteSpace(Input?.Passkey?.Error))
+        if (!IsNullOrWhiteSpace(Input.Passkey?.Error))
         {
             StatusMessage = Format(CultureInfo.InvariantCulture, BrowserErrorMessageFormat, Input.Passkey.Error);
             return RedirectToPage();
         }
 
-        if (IsNullOrWhiteSpace(Input?.Passkey?.CredentialJson))
+        if (IsNullOrWhiteSpace(Input.Passkey?.CredentialJson))
         {
             StatusMessage = BrowserProvidedNoPasskeyMessage;
             return RedirectToPage();
         }
 
-        using var activity = Telemetry.StartActivity(RegisterActivityName);
+        using var activity = _telemetry.StartActivity(RegisterActivityName);
         var attestationResult = await _signInManager.PerformPasskeyAttestationAsync(Input.Passkey.CredentialJson);
         if (!attestationResult.Succeeded)
         {
@@ -145,11 +147,11 @@ public class PasskeysModel : PageModel
     }
 
     private static RouteValueDictionary RenamePasskeyRoute(string? credentialId) =>
-        new() { [RenamePasskeyModel.IdRouteValueName] = credentialId };
+        new() { [RenamePasskey.IdRouteValueName] = credentialId };
 
     private async Task<IActionResult> DeletePasskey(IdentityUser<Guid> user, byte[] credentialId)
     {
-        using var activity = Telemetry.StartActivity(DeleteActivityName);
+        using var activity = _telemetry.StartActivity(DeleteActivityName);
         var result = await _userManager.RemovePasskeyAsync(user, credentialId);
         if (!result.Succeeded)
         {

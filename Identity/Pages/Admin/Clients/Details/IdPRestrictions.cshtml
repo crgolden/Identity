@@ -1,5 +1,5 @@
 @page
-@model IdPRestrictionsModel
+@model IdPRestrictions
 
 @{
     ViewData["Title"] = "Client IdP Restrictions";
@@ -19,9 +19,9 @@
             <tr><th>Provider</th></tr>
         </thead>
         <tbody>
-            @foreach (var r in Model.Client.IdentityProviderRestrictions ?? [])
+            @foreach (var r in Model.Resources)
             {
-                <tr><td>@r.Provider</td></tr>
+                <tr id="idp-restriction-row-@r.Id"><td>@r.Provider</td></tr>
             }
         </tbody>
     </table>

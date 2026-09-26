@@ -1,8 +1,8 @@
 namespace Identity.Pages.Account;
 
 using System.ComponentModel.DataAnnotations;
-using CAPTCHA;
-using Manage;
+using Identity.CAPTCHA;
+using Identity.Pages.Account.Manage;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 [AllowAnonymous]
-public class LoginModel : PageModel
+public class Login : PageModel
 {
     internal const string LoginWith2faPageName = "./LoginWith2fa";
 
@@ -28,15 +28,18 @@ public class LoginModel : PageModel
 
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
     private readonly ICAPTCHAService _captchaService;
+    private readonly Telemetry _telemetry;
 
-    public LoginModel(
+    public Login(
         SignInManager<IdentityUser<Guid>> signInManager,
-        ICAPTCHAService captchaService)
+        ICAPTCHAService captchaService,
+        Telemetry telemetry)
     {
         ThrowIfNull(signInManager);
         ThrowIfNull(captchaService);
         _signInManager = signInManager;
         _captchaService = captchaService;
+        _telemetry = telemetry;
     }
 
     [BindProperty]
@@ -48,10 +51,15 @@ public class LoginModel : PageModel
 
     public string? RecaptchaSiteKey { get; private set; }
 
+    public Uri? RecaptchaScriptEndpoint { get; private set; }
+
     public bool PasskeyAutofillAllowed { get; private set; } = true;
 
     [TempData]
     public string? ErrorMessage { get; set; }
+
+    [TempData]
+    public string? ErrorCode { get; set; }
 
     public async Task OnGetAsync(string? returnUrl = null)
     {
@@ -65,6 +73,7 @@ public class LoginModel : PageModel
         ReturnUrl = returnUrl;
         ReturnUrl ??= Url.Content(PageRoutes.ContentRoot);
         RecaptchaSiteKey = _captchaService.SiteKey;
+        RecaptchaScriptEndpoint = _captchaService.ScriptEndpoint;
     }
 
     public async Task<IActionResult> OnPostAsync(string? returnUrl = null)
@@ -75,10 +84,10 @@ public class LoginModel : PageModel
         if (!IsNullOrWhiteSpace(Input.Passkey?.CredentialJson))
         {
             ModelState.Clear();
-            using var passkeyActivity = Telemetry.StartActivity(PasskeyActivityName);
+            using var passkeyActivity = _telemetry.StartActivity(PasskeyActivityName);
             result = await _signInManager.PasskeySignInAsync(Input.Passkey.CredentialJson);
             passkeyActivity?.SetTag(Telemetry.Metrics.SucceededTagName, result.Succeeded);
-            Telemetry.Metrics.PasskeySignIn(result.Succeeded, HttpContext.Request.Headers.UserAgent);
+            _telemetry.PasskeySignIn(result.Succeeded, HttpContext.Request.Headers.UserAgent);
             PasskeyAutofillAllowed = result.Succeeded;
         }
         else
@@ -95,7 +104,7 @@ public class LoginModel : PageModel
                 return Page();
             }
 
-            using var passwordActivity = Telemetry.StartActivity(PasswordActivityName);
+            using var passwordActivity = _telemetry.StartActivity(PasswordActivityName);
             result = await _signInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: true);
             passwordActivity?.SetTag(LockedOutTagName, result.IsLockedOut);
             passwordActivity?.SetTag(RequiresTwoFactorTagName, result.RequiresTwoFactor);

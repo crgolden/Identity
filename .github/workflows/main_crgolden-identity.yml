@@ -7,6 +7,16 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
+    inputs:
+      loadRequestScale:
+        description: 'Load test request multiplier; vars.LOAD_REQUEST_SCALE when empty'
+        required: false
+      loadMaxFailRate:
+        description: 'Load test fail-rate ceiling (0-1) for discovery and JWKS; vars.LOAD_MAX_FAIL_RATE when empty'
+        required: false
+      loadMaxLoginFailRate:
+        description: 'Load test fail-rate ceiling (0-1) for the login page; vars.LOAD_MAX_LOGIN_FAIL_RATE when empty'
+        required: false
 
 jobs:
   sync-lock-files:
@@ -131,18 +141,29 @@ jobs:
             /d:sonar.cs.vscoveragexml.reportsPaths="coverage-e2e.xml" `
             /d:sonar.exclusions="**/bin/**,**/obj/**" `
             /d:sonar.coverage.exclusions="**/Program.cs" `
+            /d:sonar.qualitygate.wait=true `
             /d:sonar.scanner.skipJreProvisioning=true
 
       - name: Build with dotnet
         env:
           NuGetPackageSourceCredentials_GitHub: Username=${{ github.actor }};Password=${{ secrets.PACKAGES_READ_TOKEN }}
-        run: dotnet build --no-incremental --configuration Release /p:RestoreLockedMode=true
+        run: dotnet build --no-incremental --configuration Release /p:RestoreLockedMode=true -warnaserror
+
+      - name: ReSharper inspection (jb inspectcode)
+        run: |
+          dotnet jb inspectcode Identity.slnx --no-build -e=WARNING --output=inspectcode.sarif
+          $results = @((Get-Content inspectcode.sarif -Raw | ConvertFrom-Json).runs | ForEach-Object { $_.results })
+          foreach ($result in $results) {
+            $location = $result.locations[0].physicalLocation
+            Write-Output "::error file=$($location.artifactLocation.uri),line=$($location.region.startLine)::$($result.ruleId) $($result.message.text)"
+          }
+          if ($results.Count -gt 0) { exit 1 }
 
       - name: Run unit tests with coverage
         run: |
           dotnet coverlet Identity.Tests.Unit\bin\Release\net10.0 `
             --target "dotnet" `
-            --targetargs "test --project Identity.Tests.Unit --no-build --configuration Release -- --filter-trait Category=Unit --report-xunit-trx --report-xunit-trx-filename unit-tests.trx --results-directory=Identity.Tests.Unit/bin/Release/net10.0/TestResults" `
+            --targetargs "test --project Identity.Tests.Unit --no-build --configuration Release -- --filter-trait Category=Unit --stop-on-fail on --report-xunit-trx --report-xunit-trx-filename unit-tests.trx --results-directory=Identity.Tests.Unit/bin/Release/net10.0/TestResults" `
             --format opencover --output "coverage.opencover.xml" `
             --skipautoprops `
             --exclude-by-attribute GeneratedCodeAttribute `
@@ -186,7 +207,7 @@ jobs:
           key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
 
       - name: Install Playwright browsers
-        if: steps.cache-playwright.outputs.cache-hit != 'true' && github.actor != 'dependabot[bot]'
+        if: github.actor != 'dependabot[bot]'
         run: pwsh "${{ github.workspace }}\Identity.Tests.E2E\bin\Release\net10.0\playwright.ps1" install --with-deps chromium
 
       - name: Run E2E tests with coverage
@@ -204,9 +225,23 @@ jobs:
           SqlConnectionStringBuilder__Password: ${{ secrets.DB_PASSWORD }}
           ServiceBusConnectionString: ${{ secrets.SERVICE_BUS_CONNECTION_STRING }}
           PasskeyOrigin: https://127.0.0.1
+          PlaywrightSettings__Headless: ${{ vars.PLAYWRIGHT_HEADLESS }}
+          PlaywrightSettings__TestResultsFolderName: ${{ vars.PLAYWRIGHT_TEST_RESULTS_FOLDER_NAME }}
+          PlaywrightSettings__ArtifactsFolderName: ${{ vars.PLAYWRIGHT_ARTIFACTS_FOLDER_NAME }}
+          PlaywrightSettings__TempFolderName: ${{ vars.PLAYWRIGHT_TEMP_FOLDER_NAME }}
+          PlaywrightSettings__ScreenshotFileName: ${{ vars.PLAYWRIGHT_SCREENSHOT_FILE_NAME }}
+          PlaywrightSettings__TraceFileName: ${{ vars.PLAYWRIGHT_TRACE_FILE_NAME }}
+          PlaywrightSettings__BrowserLogFileName: ${{ vars.PLAYWRIGHT_BROWSER_LOG_FILE_NAME }}
+          PlaywrightSettings__MetadataFileName: ${{ vars.PLAYWRIGHT_METADATA_FILE_NAME }}
+          PlaywrightSettings__FailureFileName: ${{ vars.PLAYWRIGHT_FAILURE_FILE_NAME }}
+          PlaywrightSettings__RecordedVideoWidth: ${{ vars.PLAYWRIGHT_RECORDED_VIDEO_WIDTH }}
+          PlaywrightSettings__RecordedVideoHeight: ${{ vars.PLAYWRIGHT_RECORDED_VIDEO_HEIGHT }}
+          PlaywrightSettings__MaxArtifactNameLength: ${{ vars.PLAYWRIGHT_MAX_ARTIFACT_NAME_LENGTH }}
+          E2ESettings__TestCatalogSuffix: ${{ vars.E2E_TEST_CATALOG_SUFFIX }}
+          E2ESettings__IndependentlyPinnedAdminCardCount: ${{ vars.E2E_INDEPENDENTLY_PINNED_ADMIN_CARD_COUNT }}
         run: |
           dotnet-coverage collect `
-            "dotnet test --project Identity.Tests.E2E --no-build --configuration Release -- --filter-trait Category=E2E --report-xunit-trx --report-xunit-trx-filename e2e-tests.trx --results-directory Identity.Tests.E2E/bin/Release/net10.0/TestResults" `
+            "dotnet test --project Identity.Tests.E2E --no-build --configuration Release -- --filter-trait Category=E2E --stop-on-fail on --report-xunit-trx --report-xunit-trx-filename e2e-tests.trx --results-directory=Identity.Tests.E2E/bin/Release/net10.0/${{ vars.PLAYWRIGHT_TEST_RESULTS_FOLDER_NAME }}" `
             -f xml -o "coverage-e2e.xml" -s "coverage.settings.xml"
 
       - name: Upload test results
@@ -217,14 +252,14 @@ jobs:
           if-no-files-found: error
           path: |
             Identity.Tests.Unit/bin/Release/net10.0/TestResults/
-            Identity.Tests.E2E/bin/Release/net10.0/TestResults/
+            Identity.Tests.E2E/bin/Release/net10.0/${{ vars.PLAYWRIGHT_TEST_RESULTS_FOLDER_NAME }}/
 
       - name: Upload Playwright failure artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: always() && github.actor != 'dependabot[bot]'
         with:
           name: identity-playwright-artifacts
-          path: Identity.Tests.E2E/bin/Release/net10.0/TestResults/PlaywrightArtifacts/
+          path: Identity.Tests.E2E/bin/Release/net10.0/${{ vars.PLAYWRIGHT_TEST_RESULTS_FOLDER_NAME }}/${{ vars.PLAYWRIGHT_ARTIFACTS_FOLDER_NAME }}/
           if-no-files-found: ignore
 
       - name: Run load tests
@@ -242,6 +277,32 @@ jobs:
           SqlConnectionStringBuilder__Password: ${{ secrets.DB_PASSWORD }}
           ServiceBusConnectionString: ${{ secrets.SERVICE_BUS_CONNECTION_STRING }}
           PasskeyOrigin: https://127.0.0.1
+          PlaywrightSettings__Headless: ${{ vars.PLAYWRIGHT_HEADLESS }}
+          PlaywrightSettings__TestResultsFolderName: ${{ vars.PLAYWRIGHT_TEST_RESULTS_FOLDER_NAME }}
+          PlaywrightSettings__ArtifactsFolderName: ${{ vars.PLAYWRIGHT_ARTIFACTS_FOLDER_NAME }}
+          PlaywrightSettings__TempFolderName: ${{ vars.PLAYWRIGHT_TEMP_FOLDER_NAME }}
+          PlaywrightSettings__ScreenshotFileName: ${{ vars.PLAYWRIGHT_SCREENSHOT_FILE_NAME }}
+          PlaywrightSettings__TraceFileName: ${{ vars.PLAYWRIGHT_TRACE_FILE_NAME }}
+          PlaywrightSettings__BrowserLogFileName: ${{ vars.PLAYWRIGHT_BROWSER_LOG_FILE_NAME }}
+          PlaywrightSettings__MetadataFileName: ${{ vars.PLAYWRIGHT_METADATA_FILE_NAME }}
+          PlaywrightSettings__FailureFileName: ${{ vars.PLAYWRIGHT_FAILURE_FILE_NAME }}
+          PlaywrightSettings__RecordedVideoWidth: ${{ vars.PLAYWRIGHT_RECORDED_VIDEO_WIDTH }}
+          PlaywrightSettings__RecordedVideoHeight: ${{ vars.PLAYWRIGHT_RECORDED_VIDEO_HEIGHT }}
+          PlaywrightSettings__MaxArtifactNameLength: ${{ vars.PLAYWRIGHT_MAX_ARTIFACT_NAME_LENGTH }}
+          E2ESettings__TestCatalogSuffix: ${{ vars.E2E_TEST_CATALOG_SUFFIX }}
+          E2ESettings__IndependentlyPinnedAdminCardCount: ${{ vars.E2E_INDEPENDENTLY_PINNED_ADMIN_CARD_COUNT }}
+          LoadSettings__RequestScale: ${{ inputs.loadRequestScale || vars.LOAD_REQUEST_SCALE }}
+          LoadSettings__MaxRequests: ${{ vars.LOAD_MAX_REQUESTS }}
+          LoadSettings__MaxFailRate: ${{ inputs.loadMaxFailRate || vars.LOAD_MAX_FAIL_RATE }}
+          LoadSettings__MaxLoginFailRate: ${{ inputs.loadMaxLoginFailRate || vars.LOAD_MAX_LOGIN_FAIL_RATE }}
+          LoadSettings__DiscoveryRequests: ${{ vars.LOAD_DISCOVERY_REQUESTS }}
+          LoadSettings__DiscoveryParallelism: ${{ vars.LOAD_DISCOVERY_PARALLELISM }}
+          LoadSettings__LoginRequests: ${{ vars.LOAD_LOGIN_REQUESTS }}
+          LoadSettings__LoginParallelism: ${{ vars.LOAD_LOGIN_PARALLELISM }}
+          LoadSettings__JwksRequests: ${{ vars.LOAD_JWKS_REQUESTS }}
+          LoadSettings__JwksParallelism: ${{ vars.LOAD_JWKS_PARALLELISM }}
+          LoadSettings__HealthRequests: ${{ vars.LOAD_HEALTH_REQUESTS }}
+          LoadSettings__HealthParallelism: ${{ vars.LOAD_HEALTH_PARALLELISM }}
         run: |
           dotnet test --project Identity.Tests.E2E --no-build --configuration Release -- --filter-trait Category=Load
 
@@ -332,7 +393,7 @@ jobs:
   mutation:
     name: Mutation testing
     runs-on: windows-latest
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    if: (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && github.actor != 'dependabot[bot]'
     permissions:
       contents: read
 
@@ -351,21 +412,22 @@ jobs:
         with:
           dotnet-version: '10.x'
 
-      - name: Cache dotnet global tools
-        uses: actions/cache@v5
-        with:
-          path: ~/.dotnet/tools
-          key: ${{ runner.os }}-dotnet-tools-${{ hashFiles('**/*.csproj') }}
-          restore-keys: ${{ runner.os }}-dotnet-tools-
-
-      - name: Install dotnet-stryker
-        run: dotnet tool update --global dotnet-stryker --version 4.16.0
+      - name: Restore local tools
+        run: dotnet tool restore
 
       - name: Run Stryker mutation tests
         working-directory: Identity
+        shell: pwsh
         env:
           STRYKER_DASHBOARD_API_KEY: ${{ secrets.STRYKER_DASHBOARD_API_KEY }}
-        run: dotnet stryker --config-file ../stryker-config.json
+        run: |
+          dotnet stryker --config-file ../stryker-config.json | Tee-Object -Variable strykerOutput
+          $strykerExit = $LASTEXITCODE
+          if ($strykerOutput -match 'Failed to upload report to the dashboard') {
+            Write-Error 'Stryker ran, but its report did not reach the dashboard'
+            exit 1
+          }
+          exit $strykerExit
 
       - name: Upload Stryker report
         uses: actions/upload-artifact@v7

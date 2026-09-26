@@ -1,103 +1,26 @@
 namespace Identity.Pages.Admin.Clients.Edit;
 
+using System.Linq.Expressions;
 using Duende.IdentityServer.EntityFramework.Entities;
 using Duende.IdentityServer.EntityFramework.Interfaces;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
 
-public class CorsOriginsModel : PageModel
+public class CorsOrigins : EditableClientResourcesBase<ClientCorsOrigin>
 {
     internal const string DetailsPageName = "/Admin/Clients/Details/CorsOrigins";
 
-    private readonly IConfigurationDbContext _context;
-
-    public CorsOriginsModel(IConfigurationDbContext context) => _context = context;
-
-    public Client Client { get; private set; } = new();
-
-    [BindProperty]
-    public List<ClientCorsOrigin> CorsOrigins { get; set; } = [];
-
-    public async Task<IActionResult> OnGetAsync(int id)
+    public CorsOrigins(IConfigurationDbContext context)
+        : base(context)
     {
-        var client = await _context.Clients
-            .Include(c => c.AllowedCorsOrigins)
-            .FirstOrDefaultAsync(c => c.Id == id);
-        if (client is null)
-        {
-            return NotFound();
-        }
-
-        Client = client;
-        CorsOrigins = client.AllowedCorsOrigins;
-        return Page();
     }
 
-    public async Task<IActionResult> OnPostAsync(int id)
-    {
-        if (!ModelState.IsValid)
-        {
-            return Page();
-        }
+    protected override Expression<Func<Client, List<ClientCorsOrigin>>> Collection => c => c.AllowedCorsOrigins;
 
-        var client = await _context.Clients
-            .Include(c => c.AllowedCorsOrigins)
-            .FirstOrDefaultAsync(c => c.Id == id);
-        if (client is null)
-        {
-            return NotFound();
-        }
+    protected override string DetailsPage => DetailsPageName;
 
-        var postedIds = CorsOrigins.Where(o => o.Id > 0).Select(o => o.Id).ToHashSet();
-        client.AllowedCorsOrigins.RemoveAll(o => !postedIds.Contains(o.Id));
+    protected override int IdOf(ClientCorsOrigin resource) => resource.Id;
 
-        foreach (var posted in CorsOrigins.Where(o => o.Id > 0))
-        {
-            var existing = client.AllowedCorsOrigins.FirstOrDefault(o => o.Id == posted.Id);
-            if (existing is not null)
-            {
-                existing.Origin = posted.Origin;
-            }
-        }
+    protected override void CopyEditableFields(ClientCorsOrigin posted, ClientCorsOrigin existing) => existing.Origin = posted.Origin;
 
-        foreach (var posted in CorsOrigins.Where(o => o.Id == 0))
-        {
-            client.AllowedCorsOrigins.Add(new ClientCorsOrigin { Origin = posted.Origin, ClientId = id });
-        }
-
-        client.Updated = DateTimeOffset.UtcNow.UtcDateTime;
-        await _context.SaveChangesAsync();
-        return RedirectToPage(DetailsPageName, new { id });
-    }
-
-    public async Task<IActionResult> OnPostAddRowAsync(int id)
-    {
-        var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == id);
-        if (client is null)
-        {
-            return NotFound();
-        }
-
-        Client = client;
-        CorsOrigins.Add(new ClientCorsOrigin());
-        return Page();
-    }
-
-    public async Task<IActionResult> OnPostRemoveRowAsync(int id, int index)
-    {
-        var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == id);
-        if (client is null)
-        {
-            return NotFound();
-        }
-
-        Client = client;
-        if (index >= 0 && index < CorsOrigins.Count)
-        {
-            CorsOrigins.RemoveAt(index);
-        }
-
-        return Page();
-    }
+    protected override ClientCorsOrigin CreateForClient(ClientCorsOrigin posted, int clientId) =>
+        new() { Origin = posted.Origin, ClientId = clientId };
 }

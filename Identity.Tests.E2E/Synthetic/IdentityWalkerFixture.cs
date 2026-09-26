@@ -1,22 +1,22 @@
 namespace Identity.Tests.E2E.Synthetic;
 
 using Identity.Tests.E2E.Infrastructure;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Playwright;
 
 public sealed class IdentityWalkerFixture : IAsyncLifetime
 {
-    private const string SyntheticUserAgent =
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 crgolden-synthetic/1.0";
-
-    private static readonly bool Headless =
-        !string.Equals(Environment.GetEnvironmentVariable("PLAYWRIGHT_HEADED"), "1", StringComparison.OrdinalIgnoreCase);
-
     private IPlaywright? _playwright;
     private IBrowser? _browser;
+    private PlaywrightSettings? _playwrightSettings;
+    private WalkerSettings? _settings;
 
     public static string? WalkerBaseAddress => Environment.GetEnvironmentVariable("WalkerBaseUrl");
 
     public static bool IsConfigured => !string.IsNullOrWhiteSpace(WalkerBaseAddress);
+
+    public WalkerSettings Settings =>
+        _settings ?? throw new InvalidOperationException("Walker settings are not available until InitializeAsync has run.");
 
     public async ValueTask InitializeAsync()
     {
@@ -25,19 +25,20 @@ public sealed class IdentityWalkerFixture : IAsyncLifetime
             return;
         }
 
-        var exitCode = Program.Main(["install", "chromium"]);
-        if (exitCode != 0)
-        {
-            throw new InvalidOperationException($"Playwright install failed with exit code {exitCode}.");
-        }
+        var configuration = new ConfigurationBuilder().AddEnvironmentVariables().Build();
+        _playwrightSettings = PlaywrightSettings.Read(configuration);
+        _settings = WalkerSettings.Read(configuration);
 
         _playwright = await Playwright.CreateAsync();
-        _browser = await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions { Headless = Headless });
+        _browser = await _playwright.Chromium.LaunchAsync(
+            new BrowserTypeLaunchOptions { Headless = _playwrightSettings.Headless });
     }
 
-    public async Task<(IAsyncDisposable Context, IPage Page)> NewPageAsync(string suiteName)
+    public async Task<(IAsyncDisposable Context, IPage Page)> NewPageAsync(PlaywrightSuite suite)
     {
         var browser = _browser
+            ?? throw new InvalidOperationException("Browser is not initialized. Ensure InitializeAsync has been awaited.");
+        var playwrightSettings = _playwrightSettings
             ?? throw new InvalidOperationException("Browser is not initialized. Ensure InitializeAsync has been awaited.");
         var baseAddress = WalkerBaseAddress
             ?? throw new InvalidOperationException("WalkerBaseUrl is not set.");
@@ -46,10 +47,12 @@ public sealed class IdentityWalkerFixture : IAsyncLifetime
         {
             BaseURL = baseAddress.TrimEnd('/'),
             IgnoreHTTPSErrors = true,
-            UserAgent = SyntheticUserAgent,
+            UserAgent =
+                $"{Settings.BrowserUserAgent} {Telemetry.Metrics.SyntheticUserAgentToken}/{Settings.SyntheticUserAgentVersion}",
         };
 
-        return await PlaywrightArtifactRecorder.CreateSessionAsync(browser, "Identity", suiteName, contextOptions);
+        return await PlaywrightArtifactRecorder.CreateSessionAsync(
+            browser, PlaywrightFixture.AppArtifactName, suite.ToString(), contextOptions, playwrightSettings);
     }
 
     public async ValueTask DisposeAsync()

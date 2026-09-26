@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 [Authorize]
-public class GrantsModel : PageModel
+public class Grants : PageModel
 {
     internal const string GrantsPagePath = "/Account/Manage/Grants";
 
@@ -19,12 +19,14 @@ public class GrantsModel : PageModel
     private readonly IClientStore _clients;
     private readonly IResourceStore _resources;
     private readonly IEventService _events;
+    private readonly Telemetry _telemetry;
 
-    public GrantsModel(
+    public Grants(
         IIdentityServerInteractionService interaction,
         IClientStore clients,
         IResourceStore resources,
-        IEventService events)
+        IEventService events,
+        Telemetry telemetry)
     {
         ThrowIfNull(interaction);
         ThrowIfNull(clients);
@@ -34,6 +36,7 @@ public class GrantsModel : PageModel
         _clients = clients;
         _resources = resources;
         _events = events;
+        _telemetry = telemetry;
     }
 
     public ViewModel View { get; set; } = new ViewModel();
@@ -80,8 +83,8 @@ public class GrantsModel : PageModel
     {
         await _interaction.RevokeUserConsentAsync(ClientId, HttpContext.RequestAborted);
         await _events.RaiseAsync(new GrantsRevokedEvent(User.GetSubjectId(), ClientId), HttpContext.RequestAborted);
-        Telemetry.Metrics.GrantsRevoked(ClientId);
-        using var activity = Telemetry.StartActivity(RevokeActivityName);
+        _telemetry.GrantsRevoked(ClientId);
+        using var activity = _telemetry.StartActivity(RevokeActivityName);
         activity?.SetTag(Telemetry.Metrics.ClientIdTagName, ClientId);
         return RedirectToPage(GrantsPagePath);
     }
@@ -93,9 +96,9 @@ public class GrantsModel : PageModel
 
     public class GrantViewModel
     {
-        required public string ClientId { get; set; }
+        public required string ClientId { get; set; }
 
-        required public string ClientName { get; set; }
+        public required string ClientName { get; set; }
 
         public string? ClientLogoUrl { get; set; }
 

@@ -1,30 +1,15 @@
 namespace Identity.Pages.Admin.Clients.Details;
 
+using System.Linq.Expressions;
 using Duende.IdentityServer.EntityFramework.Entities;
 using Duende.IdentityServer.EntityFramework.Interfaces;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
 
-public class ScopesModel : PageModel
+public class Scopes : ClientResourcesBase<ClientScope>
 {
-    private readonly IConfigurationDbContext _context;
-
-    public ScopesModel(IConfigurationDbContext context) => _context = context;
-
-    public Client Client { get; private set; } = new();
-
-    public async Task<IActionResult> OnGetAsync(int id)
+    public Scopes(IConfigurationDbContext context)
+        : base(context)
     {
-        var client = await _context.Clients
-            .Include(c => c.AllowedScopes)
-            .FirstOrDefaultAsync(c => c.Id == id);
-        if (client is null)
-        {
-            return NotFound();
-        }
-
-        Client = client;
-        return Page();
     }
+
+    protected override Expression<Func<Client, List<ClientScope>>> Collection => c => c.AllowedScopes;
 }

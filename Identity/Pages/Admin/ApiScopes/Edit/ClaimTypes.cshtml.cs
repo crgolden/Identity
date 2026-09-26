@@ -3,19 +3,15 @@ namespace Identity.Pages.Admin.ApiScopes.Edit;
 using Duende.IdentityServer.EntityFramework.Entities;
 using Duende.IdentityServer.EntityFramework.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
-public class ClaimTypesModel : PageModel
+public class ClaimTypes : EditableResourcesBase<int, ApiScopeClaim>
 {
     internal const string DetailsPageName = "/Admin/ApiScopes/Details/ClaimTypes";
 
     private readonly IConfigurationDbContext _context;
 
-    public ClaimTypesModel(IConfigurationDbContext context) => _context = context;
-
-    [BindProperty]
-    public List<ApiScopeClaim> ClaimTypes { get; set; } = [];
+    public ClaimTypes(IConfigurationDbContext context) => _context = context;
 
     public async Task<IActionResult> OnGetAsync(int id)
     {
@@ -27,7 +23,7 @@ public class ClaimTypesModel : PageModel
             return NotFound();
         }
 
-        ClaimTypes = scope.UserClaims;
+        Resources = scope.UserClaims;
         return Page();
     }
 
@@ -41,9 +37,9 @@ public class ClaimTypesModel : PageModel
             return NotFound();
         }
 
-        scope.UserClaims.RemoveAll(c => !ClaimTypes.Any(p => p.Id == c.Id));
+        scope.UserClaims.RemoveAll(c => !Resources.Any(p => p.Id == c.Id));
 
-        foreach (var posted in ClaimTypes.Where(p => p.Id > 0))
+        foreach (var posted in Resources.Where(p => p.Id > 0))
         {
             var existing = scope.UserClaims.FirstOrDefault(c => c.Id == posted.Id);
             if (existing is not null)
@@ -52,7 +48,7 @@ public class ClaimTypesModel : PageModel
             }
         }
 
-        scope.UserClaims.AddRange(ClaimTypes
+        scope.UserClaims.AddRange(Resources
             .Where(p => p.Id == 0)
             .Select(p => new ApiScopeClaim { Type = p.Type, ScopeId = id }));
 
@@ -60,31 +56,16 @@ public class ClaimTypesModel : PageModel
         return RedirectToPage(DetailsPageName, new { id });
     }
 
-    public async Task<IActionResult> OnPostAddRowAsync(int id)
+    protected override async Task<bool> LoadContextAsync(int id)
     {
         var exists = await _context.ApiScopes.AnyAsync(s => s.Id == id);
         if (!exists)
         {
-            return NotFound();
+            return false;
         }
 
-        ClaimTypes.Add(new ApiScopeClaim());
-        return Page();
+        return true;
     }
 
-    public async Task<IActionResult> OnPostRemoveRowAsync(int id, int index)
-    {
-        var exists = await _context.ApiScopes.AnyAsync(s => s.Id == id);
-        if (!exists)
-        {
-            return NotFound();
-        }
-
-        if (index >= 0 && index < ClaimTypes.Count)
-        {
-            ClaimTypes.RemoveAt(index);
-        }
-
-        return Page();
-    }
+    protected override ApiScopeClaim NewResource() => new();
 }

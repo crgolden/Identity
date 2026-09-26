@@ -1,7 +1,6 @@
 namespace Identity.Tests.Unit;
 
-using Infrastructure;
-
+using Identity.Tests.Unit.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
 [Collection(UnitCollection.Name)]
@@ -23,16 +22,12 @@ public class ApplicationDbContextTests
         typeof(Duende.IdentityServer.EntityFramework.Entities.PushedAuthorizationRequest),
     };
 
-    public static TheoryData<DbContextOptions<ApplicationDbContext>> ValidOptions() => new()
+    [Fact]
+    public void Constructor_ValidOptions_CreatesInstance()
     {
-        new DbContextOptionsBuilder<ApplicationDbContext>().Options,
-    };
+        // Arrange
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>().Options;
 
-#pragma warning disable xUnit1045
-    [Theory]
-    [MemberData(nameof(ValidOptions))]
-    public void Constructor_ValidOptions_CreatesInstance(DbContextOptions<ApplicationDbContext> options)
-    {
         // Act
         var context = new ApplicationDbContext(options);
 
@@ -40,7 +35,6 @@ public class ApplicationDbContextTests
         Assert.NotNull(context);
         Assert.IsType<ApplicationDbContext>(context);
     }
-#pragma warning restore xUnit1045
 
     [Fact]
     public void Constructor_NullOptions_ThrowsArgumentNullException()

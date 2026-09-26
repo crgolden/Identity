@@ -1,34 +1,24 @@
 namespace Identity.Pages.Account;
 
-using System.ComponentModel.DataAnnotations;
-using System.Text.Encodings.Web;
 using Azure.Messaging.ServiceBus;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Azure;
 
 [AllowAnonymous]
-public class ResendEmailConfirmationModel : PageModel
+public class ResendEmailConfirmation : AccountEmailPageBase
 {
     internal const string VerificationEmailSentMessage =
         "Verification email sent. Please check your email.";
 
-    private const string From = "noreply@crgolden.com";
-    private readonly UserManager<IdentityUser<Guid>> _userManager;
-    private readonly ServiceBusClient _serviceBusClient;
-
-    public ResendEmailConfirmationModel(UserManager<IdentityUser<Guid>> userManager, IAzureClientFactory<ServiceBusClient> serviceBusClientFactory)
+    public ResendEmailConfirmation(
+        UserManager<IdentityUser<Guid>> userManager,
+        IAzureClientFactory<ServiceBusClient> serviceBusClientFactory,
+        AccountEmailSettings accountEmailSettings)
+        : base(userManager, serviceBusClientFactory, accountEmailSettings)
     {
-        ThrowIfNull(userManager);
-        ThrowIfNull(serviceBusClientFactory);
-        _userManager = userManager;
-        _serviceBusClient = serviceBusClientFactory.CreateClient(ServiceBusNames.ClientName);
     }
-
-    [BindProperty]
-    public InputModel Input { get; set; } = new InputModel();
 
     public async Task<IActionResult> OnPostAsync()
     {
@@ -37,15 +27,15 @@ public class ResendEmailConfirmationModel : PageModel
             return Page();
         }
 
-        var user = await _userManager.FindByEmailAsync(Input.Email);
+        var user = await UserManager.FindByEmailAsync(Input.Email);
         if (user is null)
         {
             ModelState.AddModelError(Empty, VerificationEmailSentMessage);
             return Page();
         }
 
-        var userId = await _userManager.GetUserIdAsync(user);
-        var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+        var userId = await UserManager.GetUserIdAsync(user);
+        var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
         var input = UTF8.GetBytes(code);
         code = Base64UrlEncode(input);
         var callbackUrl = Url.Page(
@@ -55,25 +45,10 @@ public class ResendEmailConfirmationModel : PageModel
             protocol: Request.Scheme);
         if (!IsNullOrWhiteSpace(callbackUrl))
         {
-            var htmlMessage = $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.";
-            var message = new ServiceBusMessage(htmlMessage)
-            {
-                ReplyTo = From,
-                Subject = UserMessages.ConfirmEmailSubject,
-                To = Input.Email
-            };
-            var serviceBusSender = _serviceBusClient.CreateSender(ServiceBusNames.EmailQueueName);
-            await serviceBusSender.SendMessageAsync(message, HttpContext.RequestAborted);
+            await SendAccountEmailAsync(AccountEmailSettings.ConfirmAccountHtml(callbackUrl), UserMessages.ConfirmEmailSubject);
         }
 
         ModelState.AddModelError(Empty, VerificationEmailSentMessage);
         return Page();
-    }
-
-    public class InputModel
-    {
-        [Required]
-        [EmailAddress]
-        public string? Email { get; set; }
     }
 }

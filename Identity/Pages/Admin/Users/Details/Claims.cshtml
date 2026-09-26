@@ -1,5 +1,5 @@
 @page "{id}"
-@model Identity.Pages.Admin.Users.Details.ClaimsModel
+@model Identity.Pages.Admin.Users.Details.Claims
 @{
     ViewData["Title"] = "User Claims";
 }
@@ -33,7 +33,7 @@
             </tr>
         </thead>
         <tbody>
-            @foreach (var claim in Model.Claims)
+            @foreach (var claim in Model.Resources)
             {
                 <tr>
                     <td>@claim.Type</td>

@@ -6,11 +6,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
-public class IndexModel : PageModel
+public class Index : PageModel
 {
     private readonly IPersistedGrantDbContext _context;
 
-    public IndexModel(IPersistedGrantDbContext context) => _context = context;
+    public Index(IPersistedGrantDbContext context) => _context = context;
 
     public Key Key { get; private set; } = new();
 

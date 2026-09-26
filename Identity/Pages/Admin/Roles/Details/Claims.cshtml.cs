@@ -3,17 +3,14 @@ namespace Identity.Pages.Admin.Roles.Details;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 
-public class ClaimsModel : PageModel
+public class Claims : ResourcesBase<Claim>
 {
     private readonly RoleManager<IdentityRole<Guid>> _roleManager;
 
-    public ClaimsModel(RoleManager<IdentityRole<Guid>> roleManager) => _roleManager = roleManager;
+    public Claims(RoleManager<IdentityRole<Guid>> roleManager) => _roleManager = roleManager;
 
     public IdentityRole<Guid> AppRole { get; private set; } = new();
-
-    public IList<Claim> Claims { get; private set; } = [];
 
     public async Task<IActionResult> OnGetAsync(string id)
     {
@@ -24,7 +21,7 @@ public class ClaimsModel : PageModel
         }
 
         AppRole = role;
-        Claims = await _roleManager.GetClaimsAsync(role);
+        Resources = await _roleManager.GetClaimsAsync(role);
         return Page();
     }
 }

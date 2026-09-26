@@ -1,17 +1,16 @@
 namespace Identity.Pages.Account.Manage;
 
 using System.ComponentModel.DataAnnotations;
-using System.Text.Encodings.Web;
 using Azure.Messaging.ServiceBus;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Azure;
+using static System.String;
 using static System.Text.Encoding;
 using static Microsoft.AspNetCore.WebUtilities.WebEncoders;
-using static String;
 
-public class EmailModel : PageModel
+public class Email : PageModel
 {
     internal const string EmailChangeLinkSentMessage =
         "Confirmation link to change email sent. Please check your email.";
@@ -22,17 +21,24 @@ public class EmailModel : PageModel
     internal const string VerificationEmailSentMessage =
         "Verification email sent. Please check your email.";
 
-    private const string From = "noreply@crgolden.com";
+    internal const string NoEmailToVerifyMessage =
+        "There is no email address on your account to verify.";
+
     private readonly UserManager<IdentityUser<Guid>> _userManager;
     private readonly ServiceBusClient _serviceBusClient;
+    private readonly AccountEmailSettings _accountEmailSettings;
 
-    public EmailModel(UserManager<IdentityUser<Guid>> userManager, IAzureClientFactory<ServiceBusClient> serviceBusClientFactory)
+    public Email(
+        UserManager<IdentityUser<Guid>> userManager,
+        IAzureClientFactory<ServiceBusClient> serviceBusClientFactory,
+        AccountEmailSettings accountEmailSettings)
     {
         _userManager = userManager;
         _serviceBusClient = serviceBusClientFactory.CreateClient(ServiceBusNames.ClientName);
+        _accountEmailSettings = accountEmailSettings;
     }
 
-    public string? Email { get; set; }
+    public string? CurrentEmail { get; set; }
 
     public bool IsEmailConfirmed { get; set; }
 
@@ -51,7 +57,7 @@ public class EmailModel : PageModel
         }
 
         var email = await _userManager.GetEmailAsync(user);
-        Email = email;
+        CurrentEmail = email;
         Input = new InputModel
         {
             NewEmail = email
@@ -72,7 +78,7 @@ public class EmailModel : PageModel
         var email = await _userManager.GetEmailAsync(user);
         if (!ModelState.IsValid)
         {
-            Email = email;
+            CurrentEmail = email;
             Input = new InputModel
             {
                 NewEmail = email
@@ -93,20 +99,19 @@ public class EmailModel : PageModel
                 pageHandler: null,
                 values: new { userId, email = Input.NewEmail, code },
                 protocol: Request.Scheme);
-            if (!IsNullOrWhiteSpace(callbackUrl))
+            if (IsNullOrWhiteSpace(callbackUrl))
             {
-                var link = HtmlEncoder.Default.Encode(callbackUrl);
-                var htmlMessage = $"Please confirm your account by <a href='{link}'>clicking here</a>.";
-                var sbMessage = new ServiceBusMessage(htmlMessage)
-                {
-                    ReplyTo = From,
-                    Subject = UserMessages.ConfirmEmailSubject,
-                    To = Input.NewEmail
-                };
-                var serviceBusSender = _serviceBusClient.CreateSender(ServiceBusNames.EmailQueueName);
-                await serviceBusSender.SendMessageAsync(sbMessage, HttpContext.RequestAborted);
+                throw new InvalidOperationException(UserMessages.UnableToBuildConfirmationLink(userId));
             }
 
+            var sbMessage = new ServiceBusMessage(_accountEmailSettings.ConfirmAccountHtml(callbackUrl))
+            {
+                ReplyTo = _accountEmailSettings.Sender,
+                Subject = UserMessages.ConfirmEmailSubject,
+                To = Input.NewEmail
+            };
+            var serviceBusSender = _serviceBusClient.CreateSender(ServiceBusNames.EmailQueueName);
+            await serviceBusSender.SendMessageAsync(sbMessage, HttpContext.RequestAborted);
             StatusMessage = EmailChangeLinkSentMessage;
             return RedirectToPage();
         }
@@ -126,7 +131,7 @@ public class EmailModel : PageModel
         var email = await _userManager.GetEmailAsync(user);
         if (!ModelState.IsValid)
         {
-            Email = email;
+            CurrentEmail = email;
             Input = new InputModel
             {
                 NewEmail = email
@@ -134,6 +139,12 @@ public class EmailModel : PageModel
 
             IsEmailConfirmed = await _userManager.IsEmailConfirmedAsync(user);
             return Page();
+        }
+
+        if (IsNullOrWhiteSpace(email))
+        {
+            StatusMessage = NoEmailToVerifyMessage;
+            return RedirectToPage();
         }
 
         var userId = await _userManager.GetUserIdAsync(user);
@@ -145,20 +156,19 @@ public class EmailModel : PageModel
             pageHandler: null,
             values: new { userId, code },
             protocol: Request.Scheme);
-        if (!IsNullOrWhiteSpace(email) && !IsNullOrWhiteSpace(callbackUrl))
+        if (IsNullOrWhiteSpace(callbackUrl))
         {
-            var link = HtmlEncoder.Default.Encode(callbackUrl);
-            var htmlMessage = $"Please confirm your account by <a href='{link}'>clicking here</a>.";
-            var sbMessage = new ServiceBusMessage(htmlMessage)
-            {
-                ReplyTo = From,
-                Subject = UserMessages.ConfirmEmailSubject,
-                To = email
-            };
-            var serviceBusSender = _serviceBusClient.CreateSender(ServiceBusNames.EmailQueueName);
-            await serviceBusSender.SendMessageAsync(sbMessage, HttpContext.RequestAborted);
+            throw new InvalidOperationException(UserMessages.UnableToBuildConfirmationLink(userId));
         }
 
+        var sbMessage = new ServiceBusMessage(_accountEmailSettings.ConfirmAccountHtml(callbackUrl))
+        {
+            ReplyTo = _accountEmailSettings.Sender,
+            Subject = UserMessages.ConfirmEmailSubject,
+            To = email
+        };
+        var serviceBusSender = _serviceBusClient.CreateSender(ServiceBusNames.EmailQueueName);
+        await serviceBusSender.SendMessageAsync(sbMessage, HttpContext.RequestAborted);
         StatusMessage = VerificationEmailSentMessage;
         return RedirectToPage();
     }

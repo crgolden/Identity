@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-public class ResetAuthenticatorModel : PageModel
+public class ResetAuthenticator : PageModel
 {
     internal const string EnableAuthenticatorPageName = "./EnableAuthenticator";
 
@@ -14,7 +14,7 @@ public class ResetAuthenticatorModel : PageModel
     private readonly UserManager<IdentityUser<Guid>> _userManager;
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
 
-    public ResetAuthenticatorModel(
+    public ResetAuthenticator(
         UserManager<IdentityUser<Guid>> userManager,
         SignInManager<IdentityUser<Guid>> signInManager)
     {

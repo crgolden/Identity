@@ -1,7 +1,7 @@
 namespace Identity.Tests.Unit.Pages.Account.Manage;
 
 using Identity.Pages.Account.Manage;
-using Infrastructure;
+using Identity.Tests.Unit.Infrastructure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
@@ -17,37 +17,42 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ManageNavPagesTests
 {
-    private static readonly string WhitespaceActivePage = TestValues.NewWhitespaceValue();
+    private static readonly string WhitespaceActivePage = Generated.NewWhitespaceValue();
 
-    public static TheoryData<object?, string?, string?> DeletePersonalDataCases()
+    public static TheoryData<string?, string?, string?> DeletePersonalDataCases()
     {
         var page = ManageNavPages.DeletePersonalData;
-        var unrelatedPath = PathEndingIn(TestValues.NewDifferentPageName());
+        var unrelatedPath = PathEndingIn(Generated.NewDifferentPageName());
         var matchingPath = PathEndingIn(page);
-        return new TheoryData<object?, string?, string?>
+        return new TheoryData<string?, string?, string?>
         {
             { page, unrelatedPath, ManageNavPages.ActiveNavClass },
             { page.ToLowerInvariant(), unrelatedPath, ManageNavPages.ActiveNavClass },
-            { TestValues.NewDifferentPageName(), matchingPath, null },
+            { Generated.NewDifferentPageName(), matchingPath, null },
             { null, matchingPath, ManageNavPages.ActiveNavClass },
-            { TestValues.NewEntityId(), matchingPath, ManageNavPages.ActiveNavClass },
             { null, null, null },
         };
     }
 
-    public static TheoryData<object?, string?, string, string?> PageNavTestData()
+    public static TheoryData<string> NonStringActivePagePages() => new()
     {
-        var page = TestValues.NewPageName();
-        var differentPage = TestValues.NewDifferentPageName();
-        var punctuatedPage = TestValues.NewPunctuatedPageName();
-        var overlongPage = TestValues.NewOverlongPageName();
-        return new TheoryData<object?, string?, string, string?>
+        ManageNavPages.DeletePersonalData,
+        ManageNavPages.Email,
+        Generated.NewPageName(),
+    };
+
+    public static TheoryData<string?, string?, string, string?> PageNavTestData()
+    {
+        var page = Generated.NewPageName();
+        var differentPage = Generated.NewDifferentPageName();
+        var punctuatedPage = Generated.NewPunctuatedPageName();
+        var overlongPage = Generated.NewOverlongPageName();
+        return new TheoryData<string?, string?, string, string?>
         {
             { page, PathEndingIn(page), page, ManageNavPages.ActiveNavClass },
             { page.ToUpperInvariant(), PathEndingIn(page), page, ManageNavPages.ActiveNavClass },
             { string.Empty, PathEndingIn(differentPage), string.Empty, ManageNavPages.ActiveNavClass },
             { null, PathEndingIn(page), page, ManageNavPages.ActiveNavClass },
-            { TestValues.NewEntityId(), PathEndingIn(page), page, ManageNavPages.ActiveNavClass },
             { differentPage, PathEndingIn(page), page, null },
             { null, null, page, null },
             { null, PathEndingIn(punctuatedPage), punctuatedPage, ManageNavPages.ActiveNavClass },
@@ -57,18 +62,17 @@ public class ManageNavPagesTests
         };
     }
 
-    public static TheoryData<object?, string?, string?> EmailNavClassCases()
+    public static TheoryData<string?, string?, string?> EmailNavClassCases()
     {
         var page = ManageNavPages.Email;
         var matchingPath = PathEndingIn(page);
-        return new TheoryData<object?, string?, string?>
+        return new TheoryData<string?, string?, string?>
         {
             { page, null, ManageNavPages.ActiveNavClass },
             { page.ToLowerInvariant(), null, ManageNavPages.ActiveNavClass },
-            { TestValues.NewDifferentPageName(), null, null },
+            { Generated.NewDifferentPageName(), null, null },
             { null, matchingPath, ManageNavPages.ActiveNavClass },
-            { null, PathEndingIn(TestValues.NewDifferentPageName()), null },
-            { TestValues.NewEntityId(), matchingPath, ManageNavPages.ActiveNavClass },
+            { null, PathEndingIn(Generated.NewDifferentPageName()), null },
             { null, null, null },
             { null, PathEndingIn(page.ToUpperInvariant()), ManageNavPages.ActiveNavClass },
             { WhitespaceActivePage, matchingPath, null },
@@ -83,7 +87,7 @@ public class ManageNavPagesTests
             { page, null, ManageNavPages.ActiveNavClass },
             { page.ToLowerInvariant(), null, ManageNavPages.ActiveNavClass },
             { null, PathEndingIn(page), ManageNavPages.ActiveNavClass },
-            { null, PathEndingIn(TestValues.NewDifferentPageName()), null },
+            { null, PathEndingIn(Generated.NewDifferentPageName()), null },
             { null, null, null },
         };
     }
@@ -101,9 +105,9 @@ public class ManageNavPagesTests
             { string.Empty, PathEndingIn(page), null },
             { WhitespaceActivePage, null, null },
             { page + WhitespaceActivePage, null, null },
-            { TestValues.NewOverlongPageName(), null, null },
-            { page + TestValues.NewDifferentPageName(), null, null },
-            { null, PathEndingIn(TestValues.NewPathSegment() + '.' + page), null },
+            { Generated.NewOverlongPageName(), null, null },
+            { page + Generated.NewDifferentPageName(), null, null },
+            { null, PathEndingIn(Generated.NewPathSegment() + '.' + page), null },
         };
     }
 
@@ -124,7 +128,7 @@ public class ManageNavPagesTests
 
     public static TheoryData<string?, string?> IndexNoMatchCases()
     {
-        var differentPage = TestValues.NewDifferentPageName();
+        var differentPage = Generated.NewDifferentPageName();
         return new TheoryData<string?, string?>
         {
             { differentPage, PathEndingIn(differentPage) },
@@ -142,7 +146,7 @@ public class ManageNavPagesTests
             { page, null, ManageNavPages.ActiveNavClass },
             { page.ToLowerInvariant(), null, ManageNavPages.ActiveNavClass },
             { null, PathEndingIn(page), ManageNavPages.ActiveNavClass },
-            { null, PathEndingIn(TestValues.NewDifferentPageName()), null },
+            { null, PathEndingIn(Generated.NewDifferentPageName()), null },
             { string.Empty, PathEndingIn(page), null },
             { WhitespaceActivePage + page + WhitespaceActivePage, null, null },
         };
@@ -156,7 +160,7 @@ public class ManageNavPagesTests
             { page, null, ManageNavPages.ActiveNavClass },
             { page.ToLowerInvariant(), null, ManageNavPages.ActiveNavClass },
             { null, PathEndingIn(page), ManageNavPages.ActiveNavClass },
-            { TestValues.NewDifferentPageName(), PathEndingIn(page), null },
+            { Generated.NewDifferentPageName(), PathEndingIn(page), null },
             { null, null, null },
         };
     }
@@ -203,11 +207,11 @@ public class ManageNavPagesTests
 
     [Theory]
     [MemberData(nameof(IndexActivePageMatches))]
-    public void IndexNavClass_ActivePageMatches_ReturnsActive(string activePage)
+    public void PageNavClass_Index_ActivePageMatches_ReturnsActive(string activePage)
     {
         // Arrange
         var httpContext = new DefaultHttpContext();
-        var actionDescriptor = new ActionDescriptor { DisplayName = PathEndingIn(TestValues.NewDifferentPageName()) };
+        var actionDescriptor = new ActionDescriptor { DisplayName = PathEndingIn(Generated.NewDifferentPageName()) };
         var actionContext = new ActionContext(httpContext, new RouteData(), actionDescriptor);
 
         var metadataProvider = new EmptyModelMetadataProvider();
@@ -221,7 +225,7 @@ public class ManageNavPagesTests
         var viewContext = new ViewContext(actionContext, mockView.Object, viewData, tempData, TextWriter.Null, new HtmlHelperOptions());
 
         // Act
-        var result = ManageNavPages.IndexNavClass(viewContext);
+        var result = ManageNavPages.PageNavClass(viewContext, ManageNavPages.Index);
 
         // Assert
         Assert.Equal(ManageNavPages.ActiveNavClass, result);
@@ -229,7 +233,7 @@ public class ManageNavPagesTests
 
     [Theory]
     [MemberData(nameof(IndexDisplayNameMatches))]
-    public void IndexNavClass_NullActivePage_UsesDisplayNameFilename_ReturnsActive(string? displayName)
+    public void PageNavClass_Index_NullActivePage_UsesDisplayNameFilename_ReturnsActive(string? displayName)
     {
         // Arrange
         var httpContext = new DefaultHttpContext();
@@ -243,7 +247,7 @@ public class ManageNavPagesTests
         var viewContext = new ViewContext(actionContext, mockView.Object, viewData, tempData, TextWriter.Null, new HtmlHelperOptions());
 
         // Act
-        var result = ManageNavPages.IndexNavClass(viewContext);
+        var result = ManageNavPages.PageNavClass(viewContext, ManageNavPages.Index);
 
         // Assert
         Assert.Equal(ManageNavPages.ActiveNavClass, result);
@@ -251,7 +255,7 @@ public class ManageNavPagesTests
 
     [Theory]
     [MemberData(nameof(IndexNoMatchCases))]
-    public void IndexNavClass_NoMatch_ReturnsNull(string? activePage, string? displayName)
+    public void PageNavClass_Index_NoMatch_ReturnsNull(string? activePage, string? displayName)
     {
         // Arrange
         var httpContext = new DefaultHttpContext();
@@ -269,14 +273,14 @@ public class ManageNavPagesTests
         var viewContext = new ViewContext(actionContext, mockView.Object, viewData, tempData, TextWriter.Null, new HtmlHelperOptions());
 
         // Act
-        var result = ManageNavPages.IndexNavClass(viewContext);
+        var result = ManageNavPages.PageNavClass(viewContext, ManageNavPages.Index);
 
         // Assert
         Assert.Null(result);
     }
 
     [Fact]
-    public void IndexNavClass_NonStringActivePage_FallsBackToDisplayName()
+    public void PageNavClass_Index_NonStringActivePage_FallsBackToDisplayName()
     {
         // Arrange
         var httpContext = new DefaultHttpContext();
@@ -286,7 +290,7 @@ public class ManageNavPagesTests
         var metadataProvider = new EmptyModelMetadataProvider();
         var viewData = new ViewDataDictionary(metadataProvider, new ModelStateDictionary())
         {
-            [ManageNavPages.ActivePageViewDataKey] = TestValues.NewEntityId()
+            [ManageNavPages.ActivePageViewDataKey] = Generated.NewEntityId()
         };
 
         var mockView = new Mock<IView>(MockBehavior.Strict);
@@ -294,16 +298,36 @@ public class ManageNavPagesTests
         var viewContext = new ViewContext(actionContext, mockView.Object, viewData, tempData, TextWriter.Null, new HtmlHelperOptions());
 
         // Act
-        var result = ManageNavPages.IndexNavClass(viewContext);
+        var result = ManageNavPages.PageNavClass(viewContext, ManageNavPages.Index);
 
         // Assert
         Assert.Equal(ManageNavPages.ActiveNavClass, result);
     }
 
-#pragma warning disable xUnit1045
+    [Theory]
+    [MemberData(nameof(NonStringActivePagePages))]
+    public void PageNavClass_NonStringActivePage_FallsBackToTheDisplayName(string page)
+    {
+        // Arrange
+        var viewContext = new ViewContext
+        {
+            ActionDescriptor = new ActionDescriptor { DisplayName = PathEndingIn(page) },
+            ViewData = new ViewDataDictionary(new EmptyModelMetadataProvider(), new ModelStateDictionary())
+            {
+                [ManageNavPages.ActivePageViewDataKey] = Generated.NewEntityId()
+            }
+        };
+
+        // Act
+        var result = ManageNavPages.PageNavClass(viewContext, page);
+
+        // Assert
+        Assert.Equal(ManageNavPages.ActiveNavClass, result);
+    }
+
     [Theory]
     [MemberData(nameof(DeletePersonalDataCases))]
-    public void DeletePersonalDataNavClass_VariousViewContexts_ReturnsExpected(object? activePageValue, string? displayName, string? expected)
+    public void PageNavClass_DeletePersonalData_VariousViewContexts_ReturnsExpected(string? activePageValue, string? displayName, string? expected)
     {
         // Arrange
         var viewContext = new ViewContext
@@ -316,30 +340,28 @@ public class ManageNavPagesTests
         };
 
         // Act
-        var result = ManageNavPages.DeletePersonalDataNavClass(viewContext);
+        var result = ManageNavPages.PageNavClass(viewContext, ManageNavPages.DeletePersonalData);
 
         // Assert
         Assert.Equal(expected, result);
     }
-#pragma warning restore xUnit1045
 
     [Fact]
-    public void DeletePersonalDataNavClass_NullViewContext_ThrowsArgumentNullException()
+    public void PageNavClass_DeletePersonalData_NullViewContext_ThrowsArgumentNullException()
     {
         // Arrange
         ViewContext? viewContext = null;
 
         // Act
-        var exception = Record.Exception(() => ManageNavPages.DeletePersonalDataNavClass(viewContext));
+        var exception = Record.Exception(() => ManageNavPages.PageNavClass(viewContext, ManageNavPages.DeletePersonalData));
 
         // Assert
         Assert.IsType<ArgumentNullException>(exception);
     }
 
-#pragma warning disable xUnit1045
     [Theory]
     [MemberData(nameof(PageNavTestData))]
-    public void PageNavClass_VariousInputs_ReturnsExpected(object? activePage, string? displayName, string page, string? expected)
+    public void PageNavClass_VariousInputs_ReturnsExpected(string? activePage, string? displayName, string page, string? expected)
     {
         // Arrange
         var viewData = new ViewDataDictionary(new EmptyModelMetadataProvider(), new ModelStateDictionary());
@@ -356,7 +378,6 @@ public class ManageNavPagesTests
         // Assert
         Assert.Equal(expected, result);
     }
-#pragma warning restore xUnit1045
 
     [Fact]
     public void DownloadPersonalData_Property_ReturnsExpected()
@@ -392,10 +413,9 @@ public class ManageNavPagesTests
         Assert.True(ReferenceEquals(first, second));
     }
 
-#pragma warning disable xUnit1045
     [Theory]
     [MemberData(nameof(EmailNavClassCases))]
-    public void EmailNavClass_VariousActivePageAndDisplayName_ReturnsExpected(object? activePageValue, string? displayName, string? expected)
+    public void PageNavClass_Email_VariousActivePageAndDisplayName_ReturnsExpected(string? activePageValue, string? displayName, string? expected)
     {
         // Arrange
         var viewData = new ViewDataDictionary(new EmptyModelMetadataProvider(), new ModelStateDictionary())
@@ -415,35 +435,34 @@ public class ManageNavPagesTests
         };
 
         // Act
-        var result = ManageNavPages.EmailNavClass(viewContext);
+        var result = ManageNavPages.PageNavClass(viewContext, ManageNavPages.Email);
 
         // Assert
         Assert.Equal(expected, result);
     }
-#pragma warning restore xUnit1045
 
     [Theory]
     [MemberData(nameof(ExternalLoginsNavCases))]
-    public void ExternalLoginsNavClass_VariousActivePageAndDisplayName_ReturnsExpected(string? activePage, string? displayName, string? expected)
+    public void PageNavClass_ExternalLogins_VariousActivePageAndDisplayName_ReturnsExpected(string? activePage, string? displayName, string? expected)
     {
         // Arrange
         var viewContext = CreateViewContext(activePage, displayName);
 
         // Act
-        var result = ManageNavPages.ExternalLoginsNavClass(viewContext);
+        var result = ManageNavPages.PageNavClass(viewContext, ManageNavPages.ExternalLogins);
 
         // Assert
         Assert.Equal(expected, result);
     }
 
     [Fact]
-    public void ExternalLoginsNavClass_NullViewContext_ThrowsArgumentNullException()
+    public void PageNavClass_ExternalLogins_NullViewContext_ThrowsArgumentNullException()
     {
         // Arrange
         ViewContext? viewContext = null;
 
         // Act
-        var exception = Record.Exception(() => ManageNavPages.ExternalLoginsNavClass(viewContext));
+        var exception = Record.Exception(() => ManageNavPages.PageNavClass(viewContext, ManageNavPages.ExternalLogins));
 
         // Assert
         Assert.IsType<ArgumentNullException>(exception);
@@ -484,7 +503,7 @@ public class ManageNavPagesTests
 
     [Theory]
     [MemberData(nameof(PageCases))]
-    public void ChangePasswordNavClass_VariousActivePageAndDisplayName_ReturnsExpected(string? activePage, string? displayName, string? expected)
+    public void PageNavClass_ChangePassword_VariousActivePageAndDisplayName_ReturnsExpected(string? activePage, string? displayName, string? expected)
     {
         // Arrange
         var actionDescriptor = new ActionDescriptor { DisplayName = displayName };
@@ -506,14 +525,14 @@ public class ManageNavPagesTests
         var viewContext = new ViewContext(actionContext, view, viewData, tempData, writer, htmlHelperOptions);
 
         // Act
-        var result = ManageNavPages.ChangePasswordNavClass(viewContext);
+        var result = ManageNavPages.PageNavClass(viewContext, ManageNavPages.ChangePassword);
 
         // Assert
         Assert.Equal(expected, result);
     }
 
     [Fact]
-    public void ChangePasswordNavClass_WhitespaceActivePage_ReturnsNull()
+    public void PageNavClass_ChangePassword_WhitespaceActivePage_ReturnsNull()
     {
         // Arrange
         var actionDescriptor = new ActionDescriptor { DisplayName = null };
@@ -530,7 +549,7 @@ public class ManageNavPagesTests
         var viewContext = new ViewContext(actionContext, view, viewData, tempData, new StringWriter(), new HtmlHelperOptions());
 
         // Act
-        var result = ManageNavPages.ChangePasswordNavClass(viewContext);
+        var result = ManageNavPages.PageNavClass(viewContext, ManageNavPages.ChangePassword);
 
         // Assert
         Assert.Null(result);
@@ -538,13 +557,13 @@ public class ManageNavPagesTests
 
     [Theory]
     [MemberData(nameof(GetPersonalDataNavCases))]
-    public void PersonalDataNavClass_VariousActivePageAndDisplayName_ReturnsExpected(string? activePage, string? actionDisplayName, string? expected)
+    public void PageNavClass_PersonalData_VariousActivePageAndDisplayName_ReturnsExpected(string? activePage, string? actionDisplayName, string? expected)
     {
         // Arrange
         var viewContext = CreateViewContext(activePage, actionDisplayName);
 
         // Act
-        var result = ManageNavPages.PersonalDataNavClass(viewContext);
+        var result = ManageNavPages.PageNavClass(viewContext, ManageNavPages.PersonalData);
 
         // Assert
         Assert.Equal(expected, result);
@@ -552,10 +571,10 @@ public class ManageNavPagesTests
 
     [Theory]
     [MemberData(nameof(PasskeysActivePageMatches))]
-    public void PasskeysNavClass_ActivePageMatches_ReturnsActive(string activePage)
+    public void PageNavClass_Passkeys_ActivePageMatches_ReturnsActive(string activePage)
     {
         // Arrange
-        var actionDescriptor = new ActionDescriptor { DisplayName = PathEndingIn(TestValues.NewDifferentPageName()) };
+        var actionDescriptor = new ActionDescriptor { DisplayName = PathEndingIn(Generated.NewDifferentPageName()) };
         var actionContext = new ActionContext(new DefaultHttpContext(), new RouteData(), actionDescriptor);
 
         var mockView = new Mock<IView>(MockBehavior.Strict);
@@ -570,14 +589,14 @@ public class ManageNavPagesTests
         var viewContext = new ViewContext(actionContext, view, viewData, tempData, TextWriter.Null, new HtmlHelperOptions());
 
         // Act
-        var result = ManageNavPages.PasskeysNavClass(viewContext);
+        var result = ManageNavPages.PageNavClass(viewContext, ManageNavPages.Passkeys);
 
         // Assert
         Assert.Equal(ManageNavPages.ActiveNavClass, result);
     }
 
     [Fact]
-    public void PasskeysNavClass_NullActivePage_UsesDisplayNameFilename_ReturnsActive()
+    public void PageNavClass_Passkeys_NullActivePage_UsesDisplayNameFilename_ReturnsActive()
     {
         // Arrange
         var displayName = PathEndingIn(ManageNavPages.Passkeys);
@@ -592,17 +611,17 @@ public class ManageNavPagesTests
         var viewContext = new ViewContext(actionContext, view, viewData, tempData, TextWriter.Null, new HtmlHelperOptions());
 
         // Act
-        var result = ManageNavPages.PasskeysNavClass(viewContext);
+        var result = ManageNavPages.PageNavClass(viewContext, ManageNavPages.Passkeys);
 
         // Assert
         Assert.Equal(ManageNavPages.ActiveNavClass, result);
     }
 
     [Fact]
-    public void PasskeysNavClass_NoMatch_ReturnsNull()
+    public void PageNavClass_Passkeys_NoMatch_ReturnsNull()
     {
         // Arrange
-        var differentPage = TestValues.NewDifferentPageName();
+        var differentPage = Generated.NewDifferentPageName();
         var actionDescriptor = new ActionDescriptor { DisplayName = PathEndingIn(differentPage) };
         var actionContext = new ActionContext(new DefaultHttpContext(), new RouteData(), actionDescriptor);
 
@@ -618,20 +637,20 @@ public class ManageNavPagesTests
         var viewContext = new ViewContext(actionContext, view, viewData, tempData, TextWriter.Null, new HtmlHelperOptions());
 
         // Act
-        var result = ManageNavPages.PasskeysNavClass(viewContext);
+        var result = ManageNavPages.PageNavClass(viewContext, ManageNavPages.Passkeys);
 
         // Assert
         Assert.Null(result);
     }
 
     [Fact]
-    public void PasskeysNavClass_NullViewContext_ThrowsArgumentNullException()
+    public void PageNavClass_Passkeys_NullViewContext_ThrowsArgumentNullException()
     {
         // Arrange
         ViewContext? viewContext = null;
 
         // Act
-        var exception = Record.Exception(() => ManageNavPages.PasskeysNavClass(viewContext));
+        var exception = Record.Exception(() => ManageNavPages.PageNavClass(viewContext, ManageNavPages.Passkeys));
 
         // Assert
         Assert.IsType<ArgumentNullException>(exception);
@@ -683,7 +702,7 @@ public class ManageNavPagesTests
 
     [Theory]
     [MemberData(nameof(DownloadPersonalDataNavCases))]
-    public void DownloadPersonalDataNavClass_VariousActivePageAndDisplayName_ReturnsExpected(string? activePage, string? actionDisplayName, string? expected)
+    public void PageNavClass_DownloadPersonalData_VariousActivePageAndDisplayName_ReturnsExpected(string? activePage, string? actionDisplayName, string? expected)
     {
         // Arrange
         var metadataProvider = new EmptyModelMetadataProvider();
@@ -705,7 +724,7 @@ public class ManageNavPagesTests
         };
 
         // Act
-        var result = ManageNavPages.DownloadPersonalDataNavClass(viewContext);
+        var result = ManageNavPages.PageNavClass(viewContext, ManageNavPages.DownloadPersonalData);
 
         // Assert
         Assert.Equal(expected, result);
@@ -713,26 +732,26 @@ public class ManageNavPagesTests
 
     [Theory]
     [MemberData(nameof(TwoFactorAuthenticationActivePageMatches))]
-    public void TwoFactorAuthenticationNavClass_ActivePageMatches_ReturnsActive(string activePage)
+    public void PageNavClass_TwoFactorAuthentication_ActivePageMatches_ReturnsActive(string activePage)
     {
         // Arrange
-        var viewContext = CreateViewContext(activePage, displayName: PathEndingIn(TestValues.NewDifferentPageName()));
+        var viewContext = CreateViewContext(activePage, displayName: PathEndingIn(Generated.NewDifferentPageName()));
 
         // Act
-        var result = ManageNavPages.TwoFactorAuthenticationNavClass(viewContext);
+        var result = ManageNavPages.PageNavClass(viewContext, ManageNavPages.TwoFactorAuthentication);
 
         // Assert
         Assert.Equal(ManageNavPages.ActiveNavClass, result);
     }
 
     [Fact]
-    public void TwoFactorAuthenticationNavClass_DisplayNameMatches_ReturnsActive()
+    public void PageNavClass_TwoFactorAuthentication_DisplayNameMatches_ReturnsActive()
     {
         // Arrange
         var viewContext = CreateViewContext(activePage: null, displayName: PathEndingIn(ManageNavPages.TwoFactorAuthentication));
 
         // Act
-        var result = ManageNavPages.TwoFactorAuthenticationNavClass(viewContext);
+        var result = ManageNavPages.PageNavClass(viewContext, ManageNavPages.TwoFactorAuthentication);
 
         // Assert
         Assert.Equal(ManageNavPages.ActiveNavClass, result);
@@ -740,39 +759,39 @@ public class ManageNavPagesTests
 
     [Theory]
     [MemberData(nameof(BlankActivePages))]
-    public void TwoFactorAuthenticationNavClass_EmptyOrWhitespaceActivePage_ReturnsNull(string activePage)
+    public void PageNavClass_TwoFactorAuthentication_EmptyOrWhitespaceActivePage_ReturnsNull(string activePage)
     {
         // Arrange
-        var viewContext = CreateViewContext(activePage, displayName: PathEndingIn(TestValues.NewDifferentPageName()));
+        var viewContext = CreateViewContext(activePage, displayName: PathEndingIn(Generated.NewDifferentPageName()));
 
         // Act
-        var result = ManageNavPages.TwoFactorAuthenticationNavClass(viewContext);
+        var result = ManageNavPages.PageNavClass(viewContext, ManageNavPages.TwoFactorAuthentication);
 
         // Assert
         Assert.Null(result);
     }
 
     [Fact]
-    public void TwoFactorAuthenticationNavClass_NullDisplayNameAndNoActivePage_ReturnsNull()
+    public void PageNavClass_TwoFactorAuthentication_NullDisplayNameAndNoActivePage_ReturnsNull()
     {
         // Arrange
         var viewContext = CreateViewContext(activePage: null, displayName: null);
 
         // Act
-        var result = ManageNavPages.TwoFactorAuthenticationNavClass(viewContext);
+        var result = ManageNavPages.PageNavClass(viewContext, ManageNavPages.TwoFactorAuthentication);
 
         // Assert
         Assert.Null(result);
     }
 
     [Fact]
-    public void TwoFactorAuthenticationNavClass_NullViewContext_ThrowsArgumentNullException()
+    public void PageNavClass_TwoFactorAuthentication_NullViewContext_ThrowsArgumentNullException()
     {
         // Arrange
         ViewContext? viewContext = null;
 
         // Act
-        var exception = Record.Exception(() => ManageNavPages.TwoFactorAuthenticationNavClass(viewContext));
+        var exception = Record.Exception(() => ManageNavPages.PageNavClass(viewContext, ManageNavPages.TwoFactorAuthentication));
 
         // Assert
         Assert.IsType<ArgumentNullException>(exception);
@@ -807,5 +826,5 @@ public class ManageNavPagesTests
     private static string WindowsPathEndingIn(string page) => JoinPath('\\', page);
 
     private static string JoinPath(char separator, string page) =>
-        string.Join(separator, TestValues.NewPathSegment(), TestValues.NewPathSegment(), FileNameFor(page));
+        string.Join(separator, Generated.NewPathSegment(), Generated.NewPathSegment(), FileNameFor(page));
 }

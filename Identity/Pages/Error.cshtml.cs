@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 #pragma warning disable S4502 // Error pages must accept GET/POST without a valid CSRF token
 [IgnoreAntiforgeryToken]
 #pragma warning restore S4502
-public class ErrorModel : PageModel
+public class Error : PageModel
 {
     internal const string OidcErrorActivityName = "identity.error.oidc";
 
@@ -22,10 +22,12 @@ public class ErrorModel : PageModel
     internal const string OidcErrorDescriptionTagName = "oidc.error_description";
 
     private readonly IIdentityServerInteractionService _interactionService;
+    private readonly Telemetry _telemetry;
 
-    public ErrorModel(IIdentityServerInteractionService interactionService)
+    public Error(IIdentityServerInteractionService interactionService, Telemetry telemetry)
     {
         _interactionService = interactionService;
+        _telemetry = telemetry;
     }
 
     public string? RequestId { get; set; }
@@ -38,7 +40,7 @@ public class ErrorModel : PageModel
         if (!IsNullOrWhiteSpace(errorId))
         {
             var errorMessage = await _interactionService.GetErrorContextAsync(errorId, HttpContext.RequestAborted);
-            using var activity = Telemetry.StartActivity(OidcErrorActivityName);
+            using var activity = _telemetry.StartActivity(OidcErrorActivityName);
             activity?.SetTag(OidcErrorIdTagName, errorId);
             activity?.SetTag(OidcErrorTagName, errorMessage?.Error);
             activity?.SetTag(OidcErrorDescriptionTagName, errorMessage?.ErrorDescription);

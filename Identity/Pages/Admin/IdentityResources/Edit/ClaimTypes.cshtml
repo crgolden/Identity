@@ -1,8 +1,8 @@
 @page "{id:int}"
-@model Identity.Pages.Admin.IdentityResources.Edit.ClaimTypesModel
+@model Identity.Pages.Admin.IdentityResources.Edit.ClaimTypes
 @{
     ViewData["Title"] = "Edit Claim Types";
-    var rows = Model.ClaimTypes.Select(c => new ClaimTypeRow(c.Id, c.Type)).ToList();
+    var rows = Model.Resources.Select(c => new ClaimTypeRow(c.Id, c.Type)).ToList();
     var cancelHref = Url.Page("/Admin/IdentityResources/Details/ClaimTypes", new { id = Request.RouteValues["id"] });
 }
 

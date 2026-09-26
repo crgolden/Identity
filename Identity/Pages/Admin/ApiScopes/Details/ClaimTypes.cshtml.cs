@@ -3,14 +3,13 @@ namespace Identity.Pages.Admin.ApiScopes.Details;
 using Duende.IdentityServer.EntityFramework.Entities;
 using Duende.IdentityServer.EntityFramework.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
-public class ClaimTypesModel : PageModel
+public class ClaimTypes : ResourcesBase<ApiScopeClaim>
 {
     private readonly IConfigurationDbContext _context;
 
-    public ClaimTypesModel(IConfigurationDbContext context) => _context = context;
+    public ClaimTypes(IConfigurationDbContext context) => _context = context;
 
     public ApiScope Scope { get; set; } = new();
 
@@ -25,6 +24,7 @@ public class ClaimTypesModel : PageModel
         }
 
         Scope = scope;
+        Resources = scope.UserClaims;
         return Page();
     }
 }

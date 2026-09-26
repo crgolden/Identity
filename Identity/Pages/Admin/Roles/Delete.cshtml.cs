@@ -4,11 +4,11 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-public class DeleteModel : PageModel
+public class Delete : PageModel
 {
     private readonly RoleManager<IdentityRole<Guid>> _roleManager;
 
-    public DeleteModel(RoleManager<IdentityRole<Guid>> roleManager) => _roleManager = roleManager;
+    public Delete(RoleManager<IdentityRole<Guid>> roleManager) => _roleManager = roleManager;
 
     public IdentityRole<Guid> AppRole { get; private set; } = new();
 

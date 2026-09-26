@@ -1,5 +1,5 @@
 @page "{id}"
-@model Identity.Pages.Admin.Users.Details.PasskeysModel
+@model Identity.Pages.Admin.Users.Details.Passkeys
 @{
     ViewData["Title"] = "User Passkeys";
 }
@@ -33,7 +33,7 @@
             </tr>
         </thead>
         <tbody>
-            @foreach (var pk in Model.Passkeys)
+            @foreach (var pk in Model.Resources)
             {
                 <tr>
                     <td>@pk.Name</td>

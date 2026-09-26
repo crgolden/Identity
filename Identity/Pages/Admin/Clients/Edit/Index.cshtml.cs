@@ -6,13 +6,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
-public class IndexModel : PageModel
+public class Index : PageModel
 {
     internal const string DetailsPageName = "/Admin/Clients/Details/Index";
 
     private readonly IConfigurationDbContext _context;
 
-    public IndexModel(IConfigurationDbContext context) => _context = context;
+    public Index(IConfigurationDbContext context) => _context = context;
 
     [BindProperty]
     public Client Client { get; set; } = new();

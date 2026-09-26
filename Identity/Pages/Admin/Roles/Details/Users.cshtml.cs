@@ -1,11 +1,13 @@
 namespace Identity.Pages.Admin.Roles.Details;
 
+using Identity.Pages.Admin.Roles;
 using Microsoft.AspNetCore.Identity;
-using Roles;
 
-public class UsersModel : RoleUsersModelBase
+public class Users : RoleUsersModelBase
 {
-    public UsersModel(RoleManager<IdentityRole<Guid>> roleManager, UserManager<IdentityUser<Guid>> userManager)
+    internal const string PageName = "/Admin/Roles/Details/Users";
+
+    public Users(RoleManager<IdentityRole<Guid>> roleManager, UserManager<IdentityUser<Guid>> userManager)
         : base(roleManager, userManager)
     {
     }

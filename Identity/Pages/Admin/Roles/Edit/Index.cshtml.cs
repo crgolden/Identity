@@ -4,13 +4,13 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-public class IndexModel : PageModel
+public class Index : PageModel
 {
     internal const string DetailsPageName = "/Admin/Roles/Details/Index";
 
     private readonly RoleManager<IdentityRole<Guid>> _roleManager;
 
-    public IndexModel(RoleManager<IdentityRole<Guid>> roleManager) => _roleManager = roleManager;
+    public Index(RoleManager<IdentityRole<Guid>> roleManager) => _roleManager = roleManager;
 
     [BindProperty]
     public IdentityRole<Guid> AppRole { get; set; } = new();

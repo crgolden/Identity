@@ -1,5 +1,5 @@
 @page
-@model CorsOriginsModel
+@model CorsOrigins
 
 @{
     ViewData["Title"] = "Client CORS Origins";
@@ -19,9 +19,9 @@
             <tr><th>Origin</th></tr>
         </thead>
         <tbody>
-            @foreach (var o in Model.Client.AllowedCorsOrigins ?? [])
+            @foreach (var o in Model.Resources)
             {
-                <tr><td>@o.Origin</td></tr>
+                <tr id="cors-origin-row-@o.Id"><td>@o.Origin</td></tr>
             }
         </tbody>
     </table>

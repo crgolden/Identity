@@ -3,10 +3,9 @@ namespace Identity.Pages.Account.Manage;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
 using static System.Buffers.Text.Base64Url;
 
-public class RenamePasskeyModel : PageModel
+public class RenamePasskey : PageModel
 {
     internal const string IdRouteValueName = "id";
 
@@ -15,15 +14,8 @@ public class RenamePasskeyModel : PageModel
     internal const string PasskeyUpdatedMessage = "The passkey was updated.";
 
     private readonly UserManager<IdentityUser<Guid>> _userManager;
-    private readonly ApplicationDbContext _dbContext;
 
-    public RenamePasskeyModel(
-        UserManager<IdentityUser<Guid>> userManager,
-        ApplicationDbContext dbContext)
-    {
-        _userManager = userManager;
-        _dbContext = dbContext;
-    }
+    public RenamePasskey(UserManager<IdentityUser<Guid>> userManager) => _userManager = userManager;
 
     [BindProperty]
     public InputModel Input { get; set; } = new InputModel();
@@ -75,7 +67,7 @@ public class RenamePasskeyModel : PageModel
         byte[] credentialId;
         try
         {
-            credentialId = DecodeFromChars(Input?.CredentialId);
+            credentialId = DecodeFromChars(Input.CredentialId);
         }
         catch (FormatException)
         {
@@ -89,19 +81,12 @@ public class RenamePasskeyModel : PageModel
             return NotFound(UserMessages.UnableToLoadPasskey(_userManager.GetUserId(User)));
         }
 
-        passkey.Name = Input?.Name;
+        passkey.Name = Input.Name;
         var result = await _userManager.AddOrUpdatePasskeyAsync(user, passkey);
         if (!result.Succeeded)
         {
             var userId = await _userManager.GetUserIdAsync(user);
             throw new InvalidOperationException($"Unexpected error occurred removing passkey for user with ID '{userId}'.");
-        }
-
-        var passkeyEntity = await _dbContext.UserPasskeys.SingleOrDefaultAsync(x => x.CredentialId == credentialId);
-        if (passkeyEntity is not null)
-        {
-            passkeyEntity.Data.Name = Input?.Name;
-            await _dbContext.SaveChangesAsync();
         }
 
         StatusMessage = PasskeyUpdatedMessage;

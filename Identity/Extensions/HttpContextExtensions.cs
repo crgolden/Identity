@@ -20,7 +20,9 @@ public static class HttpContextExtensions
             }));
         }
 
-        Telemetry.Metrics.ExceptionOccurred(exception?.GetType().Name ?? Telemetry.Metrics.UnknownExceptionType);
+        context.RequestServices
+            .GetRequiredService<Telemetry>()
+            .ExceptionOccurred(exception?.GetType().Name ?? Telemetry.Metrics.UnknownExceptionType);
 
         if (context.Request.Headers.Accept.ToString().Contains("text/html", StringComparison.OrdinalIgnoreCase))
         {

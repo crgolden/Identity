@@ -1,0 +1,43 @@
+{
+  "$schema": "https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0-rtm.6.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "results": [],
+      "tool": {
+        "driver": {
+          "name": "InspectCode",
+          "organization": "JetBrains, Inc",
+          "fullName": "JetBrains Inspect Code 2026.2.1",
+          "semanticVersion": "262.0.20260818.210923",
+          "informationUri": "http://www.jetbrains.com/resharper/features/command-line.html",
+          "taxa": []
+        }
+      },
+      "invocations": [
+        {
+          "executionSuccessful": true
+        }
+      ],
+      "versionControlProvenance": [
+        {
+          "repositoryUri": "https://github.com/crgolden/Identity.git",
+          "revisionId": "ddd33e2e1c491d1babc7a0171371dabac1f82a83",
+          "branch": "main",
+          "mappedTo": {
+            "uriBaseId": "solutionDir"
+          }
+        }
+      ],
+      "originalUriBaseIds": {
+        "solutionDir": {
+          "uri": "file:///C:/Users/crgol/source/repos/crgolden/Identity/",
+          "description": {
+            "text": "Solution Directory"
+          }
+        }
+      },
+      "columnKind": "utf16CodeUnits"
+    }
+  ]
+}

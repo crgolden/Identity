@@ -1,30 +1,15 @@
 namespace Identity.Pages.Admin.Clients.Details;
 
+using System.Linq.Expressions;
 using Duende.IdentityServer.EntityFramework.Entities;
 using Duende.IdentityServer.EntityFramework.Interfaces;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
 
-public class CorsOriginsModel : PageModel
+public class CorsOrigins : ClientResourcesBase<ClientCorsOrigin>
 {
-    private readonly IConfigurationDbContext _context;
-
-    public CorsOriginsModel(IConfigurationDbContext context) => _context = context;
-
-    public Client Client { get; private set; } = new();
-
-    public async Task<IActionResult> OnGetAsync(int id)
+    public CorsOrigins(IConfigurationDbContext context)
+        : base(context)
     {
-        var client = await _context.Clients
-            .Include(c => c.AllowedCorsOrigins)
-            .FirstOrDefaultAsync(c => c.Id == id);
-        if (client is null)
-        {
-            return NotFound();
-        }
-
-        Client = client;
-        return Page();
     }
+
+    protected override Expression<Func<Client, List<ClientCorsOrigin>>> Collection => c => c.AllowedCorsOrigins;
 }

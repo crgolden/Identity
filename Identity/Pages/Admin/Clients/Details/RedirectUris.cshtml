@@ -1,5 +1,5 @@
 @page
-@model RedirectUrisModel
+@model RedirectUris
 
 @{
     ViewData["Title"] = "Client Redirect URIs";
@@ -19,9 +19,9 @@
             <tr><th>Redirect URI</th></tr>
         </thead>
         <tbody>
-            @foreach (var u in Model.Client.RedirectUris ?? [])
+            @foreach (var u in Model.Resources)
             {
-                <tr><td>@u.RedirectUri</td></tr>
+                <tr id="redirect-uri-row-@u.Id"><td>@u.RedirectUri</td></tr>
             }
         </tbody>
     </table>

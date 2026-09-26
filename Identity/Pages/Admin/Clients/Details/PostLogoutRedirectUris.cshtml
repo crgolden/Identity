@@ -1,5 +1,5 @@
 @page
-@model PostLogoutRedirectUrisModel
+@model PostLogoutRedirectUris
 
 @{
     ViewData["Title"] = "Client Post-Logout Redirect URIs";
@@ -19,9 +19,9 @@
             <tr><th>Post-Logout Redirect URI</th></tr>
         </thead>
         <tbody>
-            @foreach (var u in Model.Client.PostLogoutRedirectUris ?? [])
+            @foreach (var u in Model.Resources)
             {
-                <tr><td>@u.PostLogoutRedirectUri</td></tr>
+                <tr id="post-logout-redirect-uri-row-@u.Id"><td>@u.PostLogoutRedirectUri</td></tr>
             }
         </tbody>
     </table>

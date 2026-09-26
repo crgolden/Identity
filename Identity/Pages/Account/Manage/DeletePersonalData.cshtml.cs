@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-public class DeletePersonalDataModel : PageModel
+public class DeletePersonalData : PageModel
 {
     internal const string IncorrectPasswordMessage =
         "Incorrect password.";
@@ -16,7 +16,7 @@ public class DeletePersonalDataModel : PageModel
     private readonly UserManager<IdentityUser<Guid>> _userManager;
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
 
-    public DeletePersonalDataModel(
+    public DeletePersonalData(
         UserManager<IdentityUser<Guid>> userManager,
         SignInManager<IdentityUser<Guid>> signInManager)
     {
@@ -50,7 +50,7 @@ public class DeletePersonalDataModel : PageModel
         }
 
         RequirePassword = await _userManager.HasPasswordAsync(user);
-        if (RequirePassword && (IsNullOrWhiteSpace(Input?.Password) || !await _userManager.CheckPasswordAsync(user, Input.Password)))
+        if (RequirePassword && (IsNullOrWhiteSpace(Input.Password) || !await _userManager.CheckPasswordAsync(user, Input.Password)))
         {
             ModelState.AddModelError(Empty, IncorrectPasswordMessage);
             return Page();

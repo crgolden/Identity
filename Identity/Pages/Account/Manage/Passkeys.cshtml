@@ -1,6 +1,6 @@
 @page
 @using System.Buffers.Text
-@model PasskeysModel
+@model Passkeys
 @{
     ViewData["Title"] = "Manage your passkeys";
 }
@@ -8,7 +8,7 @@
 <partial name="_StatusMessage" for="StatusMessage" />
 <h3>@ViewData["Title"]</h3>
 
-@if (Model.CurrentPasskeys?.Count > 0)
+@if (Model.CurrentPasskeys.Count > 0)
 {
     <div class="table-responsive">
         <table class="table table-bordered table-hover table-sm">

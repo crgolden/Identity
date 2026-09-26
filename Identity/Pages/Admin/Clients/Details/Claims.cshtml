@@ -1,5 +1,5 @@
 @page
-@model ClaimsModel
+@model Claims
 
 @{
     ViewData["Title"] = "Client Claims";
@@ -22,9 +22,9 @@
             </tr>
         </thead>
         <tbody>
-            @foreach (var c in Model.Client.Claims ?? [])
+            @foreach (var c in Model.Resources)
             {
-                <tr>
+                <tr id="claim-row-@c.Id">
                     <td>@c.Type</td>
                     <td>@c.Value</td>
                 </tr>

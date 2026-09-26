@@ -2,9 +2,9 @@ namespace Identity.Pages.Account;
 
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
-using System.Text.Encodings.Web;
 using Azure.Messaging.ServiceBus;
-using Extensions;
+using Duende.IdentityModel;
+using Identity.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -12,36 +12,39 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Azure;
 
 [AllowAnonymous]
-public class ExternalLoginModel : PageModel
+public class ExternalLogin : PageModel
 {
     internal const string LoginPageName = "./Login";
     internal const string ExternalLoginPagePath = "/Account/ExternalLogin";
     internal const string CallbackPageHandler = "Callback";
     internal const string RegisterConfirmationPageName = "./RegisterConfirmation";
-    internal const string EmailVerifiedClaimType = "email_verified";
+    internal const string EmailVerifiedClaimType = JwtClaimTypes.EmailVerified;
     internal const string LoadExternalLoginFailedMessage = "Error loading external login information.";
     internal const string LoadExternalLoginDuringConfirmationFailedMessage =
         "Error loading external login information during confirmation.";
 
-    private const string From = "noreply@crgolden.com";
+    internal const string AccountAlreadyExistsErrorCode = "account-already-exists";
 
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
     private readonly UserManager<IdentityUser<Guid>> _userManager;
     private readonly IUserStore<IdentityUser<Guid>> _userStore;
     private readonly IUserEmailStore<IdentityUser<Guid>> _emailStore;
     private readonly ServiceBusClient _serviceBusClient;
+    private readonly AccountEmailSettings _accountEmailSettings;
 
-    public ExternalLoginModel(
+    public ExternalLogin(
         SignInManager<IdentityUser<Guid>> signInManager,
         UserManager<IdentityUser<Guid>> userManager,
         IUserStore<IdentityUser<Guid>> userStore,
-        IAzureClientFactory<ServiceBusClient> serviceBusClientFactory)
+        IAzureClientFactory<ServiceBusClient> serviceBusClientFactory,
+        AccountEmailSettings accountEmailSettings)
     {
         _signInManager = signInManager;
         _userManager = userManager;
         _userStore = userStore;
         _emailStore = (IUserEmailStore<IdentityUser<Guid>>)_userStore;
         _serviceBusClient = serviceBusClientFactory.CreateClient(ServiceBusNames.ClientName);
+        _accountEmailSettings = accountEmailSettings;
     }
 
     [BindProperty]
@@ -53,6 +56,9 @@ public class ExternalLoginModel : PageModel
 
     [TempData]
     public string? ErrorMessage { get; set; }
+
+    [TempData]
+    public string? ErrorCode { get; set; }
 
     public IActionResult OnGet() => RedirectToPage(LoginPageName);
 
@@ -105,6 +111,7 @@ public class ExternalLoginModel : PageModel
         {
             ErrorMessage = $"An account already exists for {externalEmail}. " +
                 $"Log in with that account, then link your {info.ProviderDisplayName} account from the External Logins page.";
+            ErrorCode = AccountAlreadyExistsErrorCode;
             return RedirectToPage(LoginPageName, new { ReturnUrl = returnUrl });
         }
 
@@ -150,6 +157,7 @@ public class ExternalLoginModel : PageModel
             {
                 ErrorMessage = $"An account already exists for {Input.Email}. " +
                     $"Log in with that account, then link your {info.ProviderDisplayName} account from the External Logins page.";
+                ErrorCode = AccountAlreadyExistsErrorCode;
                 return RedirectToPage(LoginPageName, new { ReturnUrl = returnUrl });
             }
 
@@ -205,11 +213,9 @@ public class ExternalLoginModel : PageModel
 
             if (!IsNullOrWhiteSpace(callbackUrl))
             {
-                var link = HtmlEncoder.Default.Encode(callbackUrl);
-                var htmlMessage = $"Please confirm your account by <a href='{link}'>clicking here</a>.";
-                var sbMessage = new ServiceBusMessage(htmlMessage)
+                var sbMessage = new ServiceBusMessage(_accountEmailSettings.ConfirmAccountHtml(callbackUrl))
                 {
-                    ReplyTo = From,
+                    ReplyTo = _accountEmailSettings.Sender,
                     Subject = UserMessages.ConfirmEmailSubject,
                     To = email
                 };

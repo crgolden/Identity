@@ -4,21 +4,23 @@ using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 using Identity.Avatar;
-using Infrastructure;
+using Identity.Tests.Unit.Infrastructure;
 
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
-public class GravatarServiceTests
+public sealed class GravatarServiceTests : IDisposable
 {
+    private readonly TelemetryHarness _harness = new();
+
     public static TheoryData<string, bool> CandidateAvatarUrls() => new()
     {
         { AbsoluteUrlOn(GravatarService.GravatarHost), true },
-        { AbsoluteUrlOn(TestValues.LowercaseToken(1) + '.' + GravatarService.GravatarHost), true },
-        { AbsoluteUrlOn(TestValues.NewHostLabel() + '.' + GravatarService.GravatarHost), true },
+        { AbsoluteUrlOn(Generated.LowercaseToken(1) + '.' + GravatarService.GravatarHost), true },
+        { AbsoluteUrlOn(Generated.NewHostLabel() + '.' + GravatarService.GravatarHost), true },
         { AbsoluteUrlOn(GravatarService.GravatarHost.ToUpperInvariant()), true },
-        { AbsoluteUrlOn(TestValues.NewExternalHost()), false },
-        { AbsoluteUrlOn(TestValues.NewHostLabel() + GravatarService.GravatarHost), false },
-        { TestValues.NewValidationMessage(), false },
+        { AbsoluteUrlOn(Generated.NewExternalHost()), false },
+        { AbsoluteUrlOn(Generated.NewHostLabel() + GravatarService.GravatarHost), false },
+        { Generated.NewValidationMessage(), false },
     };
 
     [Theory]
@@ -26,7 +28,7 @@ public class GravatarServiceTests
     public void IsOwnComputedUrl_RecognizesEveryGravatarHostAndNothingElse(string candidate, bool expected)
     {
         // Arrange
-        var service = new GravatarService();
+        var service = new GravatarService(_harness.Telemetry);
 
         // Act
         var actual = service.IsOwnComputedUrl(candidate);
@@ -39,9 +41,9 @@ public class GravatarServiceTests
     public async Task GetAvatarUrlAsync_NormalizesTheEmailBeforeHashing()
     {
         // Arrange
-        var canonicalAddress = TestValues.NewEmailAddress();
+        var canonicalAddress = Generated.NewEmailAddress();
         var expectedHash = ExpectedHash(canonicalAddress);
-        var service = new GravatarService();
+        var service = new GravatarService(_harness.Telemetry);
 
         // Act
         var fromCanonical = await service.GetAvatarUrlAsync(canonicalAddress, TestContext.Current.CancellationToken);
@@ -49,7 +51,7 @@ public class GravatarServiceTests
             canonicalAddress.ToUpperInvariant(),
             TestContext.Current.CancellationToken);
         var fromPadded = await service.GetAvatarUrlAsync(
-            TestValues.NewWhitespaceValue() + canonicalAddress + TestValues.NewWhitespaceValue(),
+            Generated.NewWhitespaceValue() + canonicalAddress + Generated.NewWhitespaceValue(),
             TestContext.Current.CancellationToken);
         var fromMixedCase = await service.GetAvatarUrlAsync(
             WithUpperCaseDomain(canonicalAddress),
@@ -66,8 +68,8 @@ public class GravatarServiceTests
     public async Task GetAvatarUrlAsync_BuildsTheDocumentedImageUrl()
     {
         // Arrange
-        var emailAddress = TestValues.NewEmailAddress();
-        var service = new GravatarService();
+        var emailAddress = Generated.NewEmailAddress();
+        var service = new GravatarService(_harness.Telemetry);
 
         // Act
         var result = await service.GetAvatarUrlAsync(emailAddress, TestContext.Current.CancellationToken);
@@ -82,9 +84,9 @@ public class GravatarServiceTests
     public async Task GetAvatarUrlAsync_ResolvesAnImageForAnAddressWithNoGravatarAccount()
     {
         // Arrange
-        var registeredAddress = TestValues.NewEmailAddress();
+        var registeredAddress = Generated.NewEmailAddress();
         var unregisteredAddress = $"{Guid.NewGuid()}@example.invalid";
-        var service = new GravatarService();
+        var service = new GravatarService(_harness.Telemetry);
 
         // Act
         var registered = await service.GetAvatarUrlAsync(registeredAddress, TestContext.Current.CancellationToken);
@@ -98,11 +100,11 @@ public class GravatarServiceTests
     }
 
     [Fact]
-    public async Task GetAvatarUrlAsync_ConstructsWithNoCollaboratorAndMakesNoOutboundCall()
+    public async Task GetAvatarUrlAsync_BuildsTheUrlWithoutAnOutboundCall()
     {
         // Arrange
-        var emailAddress = TestValues.NewEmailAddress();
-        var service = new GravatarService();
+        var emailAddress = Generated.NewEmailAddress();
+        var service = new GravatarService(_harness.Telemetry);
 
         // Act
         var result = await service.GetAvatarUrlAsync(emailAddress, TestContext.Current.CancellationToken);
@@ -115,8 +117,8 @@ public class GravatarServiceTests
     public async Task GetAvatarUrlAsync_HonoursCancellation()
     {
         // Arrange
-        var emailAddress = TestValues.NewEmailAddress();
-        var service = new GravatarService();
+        var emailAddress = Generated.NewEmailAddress();
+        var service = new GravatarService(_harness.Telemetry);
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync();
 
@@ -131,23 +133,20 @@ public class GravatarServiceTests
     public async Task GetAvatarUrlAsync_TagsTheActivityWithTheNormalizedHash()
     {
         // Arrange
-        var canonicalAddress = TestValues.NewEmailAddress();
+        var canonicalAddress = Generated.NewEmailAddress();
         var expectedHash = ExpectedHash(canonicalAddress);
         string? capturedOperationName = null;
         string? capturedHashTag = null;
-        const string activitySourceName = nameof(Identity);
-        using var listener = new ActivityListener
+        using var listener = new ActivityListener();
+        listener.ShouldListenTo = source => string.Equals(source.Name, Telemetry.SourceName, StringComparison.Ordinal);
+        listener.Sample = (ref _) => ActivitySamplingResult.AllData;
+        listener.ActivityStopped = activity =>
         {
-            ShouldListenTo = source => string.Equals(source.Name, activitySourceName, StringComparison.Ordinal),
-            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData,
-            ActivityStopped = activity =>
-            {
-                capturedOperationName = activity.OperationName;
-                capturedHashTag = activity.GetTagItem(GravatarService.HashTagName)?.ToString();
-            },
+            capturedOperationName = activity.OperationName;
+            capturedHashTag = activity.GetTagItem(GravatarService.HashTagName)?.ToString();
         };
         ActivitySource.AddActivityListener(listener);
-        var service = new GravatarService();
+        var service = new GravatarService(_harness.Telemetry);
 
         // Act
         await service.GetAvatarUrlAsync(WithUpperCaseDomain(canonicalAddress), TestContext.Current.CancellationToken);
@@ -157,8 +156,10 @@ public class GravatarServiceTests
         Assert.Equal(expectedHash, capturedHashTag);
     }
 
+    public void Dispose() => _harness.Dispose();
+
     private static string AbsoluteUrlOn(string host) =>
-        Uri.UriSchemeHttps + Uri.SchemeDelimiter + host + '/' + TestValues.NewPathSegment();
+        Uri.UriSchemeHttps + Uri.SchemeDelimiter + host + '/' + Generated.NewPathSegment();
 
     private static string WithUpperCaseDomain(string emailAddress)
     {

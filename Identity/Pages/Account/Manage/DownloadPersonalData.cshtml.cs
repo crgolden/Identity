@@ -3,16 +3,16 @@ namespace Identity.Pages.Account.Manage;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using static System.Attribute;
 using static System.Net.Mime.MediaTypeNames.Application;
 using static System.Text.Json.JsonSerializer;
-using static Attribute;
 using static Microsoft.Net.Http.Headers.HeaderNames;
 
-public class DownloadPersonalDataModel : PageModel
+public class DownloadPersonalData : PageModel
 {
     private readonly UserManager<IdentityUser<Guid>> _userManager;
 
-    public DownloadPersonalDataModel(UserManager<IdentityUser<Guid>> userManager)
+    public DownloadPersonalData(UserManager<IdentityUser<Guid>> userManager)
     {
         ThrowIfNull(userManager);
         _userManager = userManager;

@@ -205,7 +205,7 @@ Email confirmation is required (`RequireConfirmedAccount = true`). Unconfirmed u
    | `ClaimTypes.GivenName` (`.../identity/claims/givenname`) | first name |
    | `ClaimTypes.Surname` (`.../identity/claims/surname`) | last name |
 
-4. Because the email claim is always present and verified for Google, `ExternalLoginModel.OnGetCallbackAsync` never shows an editable email field for this provider — it acts immediately:
+4. Because the email claim is always present and verified for Google, `ExternalLogin.OnGetCallbackAsync` never shows an editable email field for this provider — it acts immediately:
    - **An Identity account already exists with that email** — registration is refused. `ErrorMessage` tells the user to log in to the existing account and link the provider from `/Account/Manage/ExternalLogins` instead. This prevents a second, disconnected account from being created for someone who forgot they already registered, and prevents a client-editable form field from being used to claim an email that isn't the caller's.
    - **No account exists** — a new `IdentityUser<Guid>` is created with the Google email as both username and email; no user interaction beyond the initial Google consent screen is required. If the `email_verified` claim is `true`, `EmailConfirmed` is set on the new user at creation time — Google already verified the address, so the app does not also send its own confirmation-token email or gate sign-in behind `/Account/RegisterConfirmation` (`RequireConfirmedAccount`) for that user.
    - The editable-email confirmation page (`Input.Email` + `OnPostConfirmationAsync`) is retained only as a fallback for a hypothetical external provider that doesn't supply an email claim at all; it applies the same existing-account check before creating a user.
@@ -257,7 +257,7 @@ workaround for a real browser or password-manager defect, and none of them is ob
 ### TOTP two-factor authentication
 
 - Users enable TOTP via `/Account/Manage/EnableAuthenticator`, which displays a QR code (rendered client-side via `davidshimjs-qrcodejs`).
-- At login, if 2FA is active, the user is redirected to `/Account/LoginWith2fa`. `LoginWith2faModel.OnGetAsync` calls `GetTwoFactorAuthenticationUserAsync()` to confirm the caller already passed the username/password step; a null result means the page was reached directly rather than via that redirect, and throws.
+- At login, if 2FA is active, the user is redirected to `/Account/LoginWith2fa`. `LoginWith2fa.OnGetAsync` calls `GetTwoFactorAuthenticationUserAsync()` to confirm the caller already passed the username/password step; a null result means the page was reached directly rather than via that redirect, and throws.
 - Recovery codes (generated at `/Account/Manage/GenerateRecoveryCodes`) are the fallback path.
 
 ---

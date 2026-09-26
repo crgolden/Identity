@@ -1,7 +1,7 @@
 namespace Identity.Tests.E2E;
 
 using System.Text.RegularExpressions;
-using Infrastructure;
+using Identity.Tests.E2E.Infrastructure;
 using Microsoft.Playwright;
 
 [Trait("Category", "E2E")]
@@ -16,16 +16,16 @@ public sealed class DiagnosticsTests(PlaywrightFixture fixture)
         var (context, page) = await fixture.NewPageAsync();
         await using (context)
         {
-            await page.GotoAsync("/Account/Login");
+            await page.GotoAsync(PageRoutes.Login);
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("#login-submit");
-            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Login"));
+            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex(PageRoutes.Login));
 
             await page.GotoAsync("/Account/Manage/Diagnostics", new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
 
-            var content = await page.ContentAsync();
-            Assert.Contains("sub", content, StringComparison.OrdinalIgnoreCase);
+            await Assertions.Expect(page.Locator("#diagnostics-claims")).ToBeVisibleAsync();
+            Assert.NotEqual(0, await page.Locator("[id^='diagnostics-claim-']").CountAsync());
         }
     }
 }

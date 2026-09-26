@@ -2,7 +2,7 @@ namespace Identity.Tests.Unit.Extensions;
 
 using System.Security.Claims;
 using Identity.Extensions;
-using Infrastructure;
+using Identity.Tests.Unit.Infrastructure;
 using Microsoft.AspNetCore.Identity;
 using Moq;
 
@@ -14,7 +14,7 @@ public sealed class UserManagerExtensionsTests
     public async Task AddMissingClaimsAsync_UserHasNoClaims_AddsEveryPrincipalClaim()
     {
         // Arrange
-        var user = new IdentityUser<Guid> { Id = TestValues.NewUserId() };
+        var user = new IdentityUser<Guid> { Id = Generated.NewUserId() };
         var userManager = MockHelpers.MockUserManager();
         userManager.Setup(m => m.GetClaimsAsync(user)).ReturnsAsync(new List<Claim>());
         userManager
@@ -24,9 +24,9 @@ public sealed class UserManagerExtensionsTests
 
         Claim[] principalClaims =
         [
-            new Claim(ClaimTypes.Email, TestValues.NewEmailAddress()),
-            new Claim(ClaimTypes.GivenName, TestValues.NewGivenName()),
-            new Claim(Identity.Avatar.AvatarProfileService.PictureClaimType, TestValues.NewPictureUrl())
+            new Claim(ClaimTypes.Email, Generated.NewEmailAddress()),
+            new Claim(ClaimTypes.GivenName, Generated.NewGivenName()),
+            new Claim(Identity.Avatar.AvatarProfileService.PictureClaimType, Generated.NewPictureAddress())
         ];
         var principal = new ClaimsPrincipal(new ClaimsIdentity(principalClaims));
 
@@ -45,10 +45,10 @@ public sealed class UserManagerExtensionsTests
     public async Task AddMissingClaimsAsync_UserAlreadyHasSomeClaimTypes_OnlyAddsMissingTypes()
     {
         // Arrange
-        var user = new IdentityUser<Guid> { Id = TestValues.NewUserId() };
+        var user = new IdentityUser<Guid> { Id = Generated.NewUserId() };
         var userManager = MockHelpers.MockUserManager();
-        var emailAlreadyOnTheUser = TestValues.NewEmailAddress();
-        var emailOfferedByTheProvider = TestValues.NewEmailAddress();
+        var emailAlreadyOnTheUser = Generated.NewEmailAddress();
+        var emailOfferedByTheProvider = Generated.NewEmailAddress();
         userManager.Setup(m => m.GetClaimsAsync(user)).ReturnsAsync(
         [
             new Claim(ClaimTypes.Email, emailAlreadyOnTheUser)
@@ -61,7 +61,7 @@ public sealed class UserManagerExtensionsTests
         var principal = new ClaimsPrincipal(new ClaimsIdentity(
         [
             new Claim(ClaimTypes.Email, emailOfferedByTheProvider),
-            new Claim(ClaimTypes.GivenName, TestValues.NewGivenName())
+            new Claim(ClaimTypes.GivenName, Generated.NewGivenName())
         ]));
 
         // Act
@@ -72,8 +72,7 @@ public sealed class UserManagerExtensionsTests
             m => m.AddClaimsAsync(
                 user,
                 It.Is<IEnumerable<Claim>>(claims =>
-                    claims.Count() == 1 &&
-                    claims.Single().Type == ClaimTypes.GivenName)),
+                    claims.Select(c => c.Type).SequenceEqual(new[] { ClaimTypes.GivenName }))),
             Times.Once);
     }
 
@@ -81,7 +80,7 @@ public sealed class UserManagerExtensionsTests
     public async Task AddMissingClaimsAsync_NameIdentifierClaim_IsNeverPersisted()
     {
         // Arrange
-        var user = new IdentityUser<Guid> { Id = TestValues.NewUserId() };
+        var user = new IdentityUser<Guid> { Id = Generated.NewUserId() };
         var userManager = MockHelpers.MockUserManager();
         userManager.Setup(m => m.GetClaimsAsync(user)).ReturnsAsync(new List<Claim>());
         userManager
@@ -91,8 +90,8 @@ public sealed class UserManagerExtensionsTests
 
         var principal = new ClaimsPrincipal(new ClaimsIdentity(
         [
-            new Claim(ClaimTypes.NameIdentifier, TestValues.NewNumericSubjectId()),
-            new Claim(ClaimTypes.GivenName, TestValues.NewGivenName())
+            new Claim(ClaimTypes.NameIdentifier, Generated.NewNumericSubjectId()),
+            new Claim(ClaimTypes.GivenName, Generated.NewGivenName())
         ]));
 
         // Act
@@ -103,8 +102,7 @@ public sealed class UserManagerExtensionsTests
             m => m.AddClaimsAsync(
                 user,
                 It.Is<IEnumerable<Claim>>(claims =>
-                    claims.Count() == 1 &&
-                    claims.Single().Type == ClaimTypes.GivenName)),
+                    claims.Select(c => c.Type).SequenceEqual(new[] { ClaimTypes.GivenName }))),
             Times.Once);
     }
 
@@ -112,13 +110,13 @@ public sealed class UserManagerExtensionsTests
     public async Task AddMissingClaimsAsync_OnlyNameIdentifierClaimPresent_DoesNotCallAddClaimsAsync()
     {
         // Arrange
-        var user = new IdentityUser<Guid> { Id = TestValues.NewUserId() };
+        var user = new IdentityUser<Guid> { Id = Generated.NewUserId() };
         var userManager = MockHelpers.MockUserManager();
         userManager.Setup(m => m.GetClaimsAsync(user)).ReturnsAsync(new List<Claim>());
 
         var principal = new ClaimsPrincipal(new ClaimsIdentity(
         [
-            new Claim(ClaimTypes.NameIdentifier, TestValues.NewNumericSubjectId())
+            new Claim(ClaimTypes.NameIdentifier, Generated.NewNumericSubjectId())
         ]));
 
         // Act
@@ -132,16 +130,16 @@ public sealed class UserManagerExtensionsTests
     public async Task AddMissingClaimsAsync_UserAlreadyHasAllClaimTypes_DoesNotCallAddClaimsAsync()
     {
         // Arrange
-        var user = new IdentityUser<Guid> { Id = TestValues.NewUserId() };
+        var user = new IdentityUser<Guid> { Id = Generated.NewUserId() };
         var userManager = MockHelpers.MockUserManager();
         userManager.Setup(m => m.GetClaimsAsync(user)).ReturnsAsync(
         [
-            new Claim(ClaimTypes.Email, TestValues.NewEmailAddress())
+            new Claim(ClaimTypes.Email, Generated.NewEmailAddress())
         ]);
 
         var principal = new ClaimsPrincipal(new ClaimsIdentity(
         [
-            new Claim(ClaimTypes.Email, TestValues.NewEmailAddress())
+            new Claim(ClaimTypes.Email, Generated.NewEmailAddress())
         ]));
 
         // Act

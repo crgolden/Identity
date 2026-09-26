@@ -7,7 +7,7 @@
         <tbody>
             @foreach (var row in Model)
             {
-                <tr><td>@row.Type</td></tr>
+                <tr id="claim-type-row-@row.Id"><td>@row.Type</td></tr>
             }
         </tbody>
     </table>

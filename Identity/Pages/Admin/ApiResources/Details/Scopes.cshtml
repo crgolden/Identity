@@ -1,5 +1,5 @@
 @page "{id:int}"
-@model Identity.Pages.Admin.ApiResources.Details.ScopesModel
+@model Identity.Pages.Admin.ApiResources.Details.Scopes
 @{
     ViewData["Title"] = $"API Resource Scopes - {Model.Resource.Name}";
 }
@@ -12,9 +12,9 @@
             <tr><th>Scope</th></tr>
         </thead>
         <tbody>
-            @foreach (var scope in Model.Scopes)
+            @foreach (var scope in Model.Resources)
             {
-                <tr><td>@scope.Scope</td></tr>
+                <tr id="scope-row-@scope.Id"><td>@scope.Scope</td></tr>
             }
         </tbody>
     </table>

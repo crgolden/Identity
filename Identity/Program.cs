@@ -1,6 +1,4 @@
-#pragma warning disable SA1200
 using System.Diagnostics;
-using System.Security.Claims;
 using Azure.Identity;
 using Duende.IdentityServer;
 using Elastic.Ingest.Elasticsearch;
@@ -13,6 +11,9 @@ using Identity.Avatar;
 using Identity.CAPTCHA;
 using Identity.Extensions;
 using Identity.Logging;
+using Identity.Pages.Account;
+using Identity.Pages.Account.Manage;
+using Identity.Pages.Admin;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -22,13 +23,13 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Azure;
+using Microsoft.Extensions.Options;
 using OpenTelemetry.Instrumentation.AspNetCore;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Serilog;
 using Serilog.Filters;
-#pragma warning restore SA1200
 
 Log.Logger = new LoggerConfiguration().WriteTo.Console().CreateBootstrapLogger();
 
@@ -44,6 +45,12 @@ try
     var corsPolicySection = builder.Configuration.GetRequiredSection(nameof(CorsPolicy));
     var corsPolicy = corsPolicySection.Get<CorsPolicy>() ?? throw new InvalidOperationException($"Invalid '{nameof(CorsPolicy)}' section.");
     var recaptchaVerifyEndpoint = builder.Configuration.GetRequired<Uri>("RecaptchaVerifyEndpoint");
+    var recaptchaScriptEndpoint = builder.Configuration.GetRequired<Uri>("RecaptchaScriptEndpoint");
+    var accountEmailSettings = AccountEmailSettings.Read(builder.Configuration);
+    var adminSections = builder.Configuration.GetRequiredSection("AdminSections").Get<AdminSection[]>() ?? throw new InvalidOperationException("Invalid 'AdminSections' section.");
+    var manageSections = builder.Configuration.GetRequiredSection("ManageSections").Get<ManageSection[]>() ?? throw new InvalidOperationException("Invalid 'ManageSections' section.");
+    var consentOptions = builder.Configuration.GetRequiredSection(nameof(ConsentOptions)).Get<ConsentOptions>() ?? throw new InvalidOperationException($"Invalid '{nameof(ConsentOptions)}' section.");
+    var telemetryOptions = builder.Configuration.GetRequiredSection(nameof(TelemetryOptions)).Get<TelemetryOptions>() ?? throw new InvalidOperationException($"Invalid '{nameof(TelemetryOptions)}' section.");
 
     var passkeyOrigin = new Uri(builder.Configuration.GetRequired<string>("PasskeyOrigin"));
     builder.Services.Configure<IdentityPasskeyOptions>(identityPasskeyOptions =>
@@ -52,6 +59,11 @@ try
                 Uri.TryCreate(context.Origin, UriKind.Absolute, out var origin)
                 && string.Equals(origin.Scheme, passkeyOrigin.Scheme, StringComparison.OrdinalIgnoreCase)
                 && string.Equals(origin.Host, passkeyOrigin.Host, StringComparison.OrdinalIgnoreCase)));
+
+    if (builder.Environment.IsDevelopment())
+    {
+        builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+    }
 
     if (builder.Environment.IsProduction())
     {
@@ -104,7 +116,7 @@ try
                 }))
             .WithMetrics(meterProviderBuilder => meterProviderBuilder
                 .AddMeter(Duende.IdentityServer.Telemetry.ServiceName)
-                .AddMeter(nameof(Identity))
+                .AddMeter(Identity.Telemetry.SourceName)
                 .AddMeter("Microsoft.AspNetCore.Hosting")
                 .AddRuntimeInstrumentation()
                 .AddOtlpExporter(o => o.Endpoint = new Uri(builder.Configuration.GetRequired<string>("AlloyEndpoint"))))
@@ -112,7 +124,7 @@ try
                 .SetSampler(new AlwaysOnSampler())
                 .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation()
-                .AddSource(nameof(Identity))
+                .AddSource(Identity.Telemetry.SourceName)
                 .AddSource(IdentityServerConstants.Tracing.Basic)
                 .AddSource(IdentityServerConstants.Tracing.Cache)
                 .AddSource(IdentityServerConstants.Tracing.Services)
@@ -133,13 +145,7 @@ try
     }
     else
     {
-        if (builder.Environment.IsDevelopment())
-        {
-            builder.Configuration.AddUserSecrets("aspnet-Identity-149346d0-999f-4a74-8ff7-2a92d39790f2");
-            builder.Services.AddDatabaseDeveloperPageExceptionFilter();
-        }
-
-        var serviceBusConnectionString = builder.Configuration.GetRequired<string>("ServiceBusConnectionString");
+        var serviceBusConnectionString = builder.Configuration.GetRequired<string>(ServiceBusNames.ConnectionStringSettingKey);
         builder.Services
             .AddSerilog((serviceProvider, loggerConfiguration) => loggerConfiguration
                 .ReadFrom.Configuration(builder.Configuration)
@@ -177,10 +183,10 @@ try
             identityServerOptions.Events.RaiseInformationEvents = true;
             identityServerOptions.Events.RaiseFailureEvents = true;
             identityServerOptions.Events.RaiseSuccessEvents = true;
-            identityServerOptions.UserInteraction.ConsentUrl = "/Account/Manage/Consent";
+            identityServerOptions.UserInteraction.ConsentUrl = PageRoutes.Consent;
             identityServerOptions.UserInteraction.ErrorUrl = "/Error";
-            identityServerOptions.UserInteraction.LoginUrl = "/Account/Login";
-            identityServerOptions.UserInteraction.LogoutUrl = "/Account/Logout";
+            identityServerOptions.UserInteraction.LoginUrl = PageRoutes.Login;
+            identityServerOptions.UserInteraction.LogoutUrl = PageRoutes.Logout;
         })
         .AddAspNetIdentity<IdentityUser<Guid>>()
         .AddProfileService<AvatarProfileService>()
@@ -209,7 +215,14 @@ try
             recaptchaOptions.SiteKey = reCAPTCHASiteKey;
             recaptchaOptions.SecretKey = reCAPTCHASecretKey;
             recaptchaOptions.VerifyEndpoint = recaptchaVerifyEndpoint;
+            recaptchaOptions.ScriptEndpoint = recaptchaScriptEndpoint;
         })
+        .AddSingleton(accountEmailSettings)
+        .AddSingleton(Options.Create<IReadOnlyList<AdminSection>>(adminSections))
+        .AddSingleton(Options.Create<IReadOnlyList<ManageSection>>(manageSections))
+        .AddSingleton(Options.Create(consentOptions))
+        .AddSingleton(Options.Create(telemetryOptions))
+        .AddSingleton<Identity.Telemetry>()
         .AddHttpClient<ICAPTCHAService, ReCAPTCHAService>().Services
         .AddRateLimiter(rateLimiterOptions =>
         {
@@ -236,11 +249,13 @@ try
         })
         .AddAuthorization(authorizationOptions =>
         {
-            authorizationOptions.AddPolicy("Admin", policy => policy.RequireRole("Admin"));
+            authorizationOptions.AddPolicy(
+                AuthorizationNames.AdminPolicy, policy => policy.RequireRole(AuthorizationNames.AdminRole));
         })
         .AddRazorPages(razorPagesOptions =>
         {
-            razorPagesOptions.Conventions.AuthorizeFolder("/Admin", "Admin");
+            razorPagesOptions.Conventions.AuthorizeFolder(
+                AuthorizationNames.AdminFolder, AuthorizationNames.AdminPolicy);
         }).Services
         .AddProblemDetails()
         .AddHealthChecks()
@@ -285,23 +300,11 @@ try
             corsPolicyBuilder.WithOrigins(corsPolicy.Origins.ToArray());
         })
         .UseAuthorization()
-        .Use((ctx, next) =>
-        {
-            if (ctx.User.Identity?.IsAuthenticated != true)
-            {
-                return next(ctx);
-            }
-
-            using (Serilog.Context.LogContext.PushProperty("UserId", ctx.User.FindFirstValue("sub")))
-            using (Serilog.Context.LogContext.PushProperty("UserEmail", ctx.User.FindFirstValue("email")))
-            {
-                return next(ctx);
-            }
-        });
+        .UseUserLogContext();
     webApplication.UseRateLimiter();
     webApplication.MapAdditionalIdentityEndpoints();
     webApplication.MapAvatarEndpoint();
-    webApplication.MapHealthChecks("/health").DisableHttpMetrics();
+    webApplication.MapHealthChecks(PageRoutes.Health).DisableHttpMetrics();
     webApplication.MapStaticAssets();
     webApplication.MapRazorPages().WithStaticAssets().RequireAuthorization();
     await webApplication.RunAsync();

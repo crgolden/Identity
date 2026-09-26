@@ -1,5 +1,5 @@
 @page
-@model ClaimsModel
+@model Claims
 
 @{
     ViewData["Title"] = "Edit Client Claims";
@@ -18,12 +18,12 @@
                 </tr>
             </thead>
             <tbody>
-                @for (var i = 0; i < Model.Claims.Count; i++)
+                @foreach (var i in Enumerable.Range(0, Model.Resources.Count))
                 {
                     <tr>
-                        <input type="hidden" name="Claims[@i].Id" value="@Model.Claims[i].Id" />
-                        <td><input id="claim-type-@i" name="Claims[@i].Type" value="@Model.Claims[i].Type" class="form-control form-control-sm" aria-label="Claim type" /></td>
-                        <td><input id="claim-value-@i" name="Claims[@i].Value" value="@Model.Claims[i].Value" class="form-control form-control-sm" aria-label="Claim value" /></td>
+                        <input type="hidden" name="Resources[@i].Id" value="@Model.Resources[i].Id" />
+                        <td><input id="claim-type-@i" name="Resources[@i].Type" value="@Model.Resources[i].Type" class="form-control form-control-sm" aria-label="Claim type" /></td>
+                        <td><input id="claim-value-@i" name="Resources[@i].Value" value="@Model.Resources[i].Value" class="form-control form-control-sm" aria-label="Claim value" /></td>
                         <td><button id="claim-remove-@i" type="submit" asp-page-handler="RemoveRow" asp-route-id="@Model.Client.Id" asp-route-index="@i" class="btn btn-sm btn-danger">Remove</button></td>
                     </tr>
                 }

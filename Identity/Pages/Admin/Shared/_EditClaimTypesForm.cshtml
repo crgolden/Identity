@@ -10,11 +10,11 @@
                 <tr><th>Type</th><th class="visually-hidden">Actions</th></tr>
             </thead>
             <tbody>
-                @for (var i = 0; i < Model.Count; i++)
+                @foreach (var i in Enumerable.Range(0, Model.Count))
                 {
                     <tr>
-                        <input type="hidden" name="ClaimTypes[@i].Id" value="@Model[i].Id" />
-                        <td><input id="claimtype-@i" class="form-control form-control-sm" name="ClaimTypes[@i].Type" value="@Model[i].Type" aria-label="Claim type" /></td>
+                        <input type="hidden" name="Resources[@i].Id" value="@Model[i].Id" />
+                        <td><input id="claimtype-@i" class="form-control form-control-sm" name="Resources[@i].Type" value="@Model[i].Type" aria-label="Claim type" /></td>
                         <td><button id="claimtype-remove-@i" type="submit" asp-page-handler="RemoveRow" asp-route-id="@entityId" asp-route-index="@i" class="btn btn-sm btn-danger">Remove</button></td>
                     </tr>
                 }

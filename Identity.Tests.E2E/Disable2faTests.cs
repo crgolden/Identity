@@ -1,7 +1,7 @@
 namespace Identity.Tests.E2E;
 
 using System.Text.RegularExpressions;
-using Infrastructure;
+using Identity.Tests.E2E.Infrastructure;
 using Microsoft.Playwright;
 using OtpNet;
 
@@ -18,11 +18,11 @@ public sealed class Disable2faTests(PlaywrightFixture fixture)
         var (setupCtx, setupPage) = await fixture.NewPageAsync();
         await using (setupCtx)
         {
-            await setupPage.GotoAsync("/Account/Login");
+            await setupPage.GotoAsync(PageRoutes.Login);
             await setupPage.FillAsync("input[name='Input.Email']", email);
             await setupPage.FillAsync("input[name='Input.Password']", password);
             await setupPage.ClickAsync("#login-submit");
-            await Assertions.Expect(setupPage).Not.ToHaveURLAsync(new Regex("/Account/Login"));
+            await Assertions.Expect(setupPage).Not.ToHaveURLAsync(new Regex(PageRoutes.Login));
 
             await setupPage.GotoAsync("/Account/Manage/TwoFactorAuthentication");
             await setupPage.ClickAsync("#enable-authenticator");
@@ -48,7 +48,7 @@ public sealed class Disable2faTests(PlaywrightFixture fixture)
         var (loginCtx, loginPage) = await fixture.NewPageAsync();
         await using (loginCtx)
         {
-            await loginPage.GotoAsync("/Account/Login");
+            await loginPage.GotoAsync(PageRoutes.Login);
             await loginPage.FillAsync("input[name='Input.Email']", email);
             await loginPage.FillAsync("input[name='Input.Password']", password);
             await loginPage.ClickAsync("#login-submit");
@@ -58,7 +58,7 @@ public sealed class Disable2faTests(PlaywrightFixture fixture)
         var (disableCtx, disablePage) = await fixture.NewPageAsync();
         await using (disableCtx)
         {
-            await disablePage.GotoAsync("/Account/Login");
+            await disablePage.GotoAsync(PageRoutes.Login);
             await disablePage.FillAsync("input[name='Input.Email']", email);
             await disablePage.FillAsync("input[name='Input.Password']", password);
             await disablePage.ClickAsync("#login-submit");
@@ -80,12 +80,12 @@ public sealed class Disable2faTests(PlaywrightFixture fixture)
         var (verifyCtx, verifyPage) = await fixture.NewPageAsync();
         await using (verifyCtx)
         {
-            await verifyPage.GotoAsync("/Account/Login");
+            await verifyPage.GotoAsync(PageRoutes.Login);
             await verifyPage.FillAsync("input[name='Input.Email']", email);
             await verifyPage.FillAsync("input[name='Input.Password']", password);
             await verifyPage.ClickAsync("#login-submit");
 
-            await Assertions.Expect(verifyPage).Not.ToHaveURLAsync(new Regex("/Account/Login"));
+            await Assertions.Expect(verifyPage).Not.ToHaveURLAsync(new Regex(PageRoutes.Login));
             Assert.DoesNotContain("LoginWith2fa", verifyPage.Url, StringComparison.Ordinal);
         }
     }

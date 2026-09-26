@@ -1,15 +1,19 @@
 namespace Identity.Tests.Unit.Extensions;
 
 using System.Net.Mime;
+using System.Security.Claims;
 using System.Text;
+using Duende.IdentityModel;
 using Identity.Extensions;
-using Infrastructure;
+using Identity.Tests.Unit.Infrastructure;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Net.Http.Headers;
-using SecurityHeaders = Identity.Extensions.ApplicationBuilderExtensions;
+using Serilog;
+using Serilog.Core;
+using Serilog.Events;
 
 [Collection(UnitCollection.Name)]
 [Trait("Category", "Unit")]
@@ -26,8 +30,8 @@ public sealed class ApplicationBuilderExtensionsTests
 
         // Assert
         Assert.Equal(
-            SecurityHeaders.ContentTypeOptionsNoSniff,
-            (string?)context.Response.Headers.XContentTypeOptions);
+            global::Identity.Extensions.ApplicationBuilderExtensions.ContentTypeOptionsNoSniff,
+            context.Response.Headers.XContentTypeOptions);
     }
 
     [Fact]
@@ -41,8 +45,8 @@ public sealed class ApplicationBuilderExtensionsTests
 
         // Assert
         Assert.Equal(
-            SecurityHeaders.FrameOptionsDeny,
-            (string?)context.Response.Headers.XFrameOptions);
+            global::Identity.Extensions.ApplicationBuilderExtensions.FrameOptionsDeny,
+            context.Response.Headers.XFrameOptions);
     }
 
     [Fact]
@@ -56,8 +60,8 @@ public sealed class ApplicationBuilderExtensionsTests
 
         // Assert
         Assert.Equal(
-            SecurityHeaders.ReferrerPolicyNoReferrer,
-            (string?)context.Response.Headers[SecurityHeaders.ReferrerPolicyHeaderName]);
+            global::Identity.Extensions.ApplicationBuilderExtensions.ReferrerPolicyNoReferrer,
+            context.Response.Headers[global::Identity.Extensions.ApplicationBuilderExtensions.ReferrerPolicyHeaderName]);
     }
 
     [Fact]
@@ -71,15 +75,15 @@ public sealed class ApplicationBuilderExtensionsTests
 
         // Assert
         Assert.Equal(
-            SecurityHeaders.ContentSecurityPolicy,
-            (string?)context.Response.Headers.ContentSecurityPolicy);
+            global::Identity.Extensions.ApplicationBuilderExtensions.ContentSecurityPolicy,
+            context.Response.Headers.ContentSecurityPolicy);
     }
 
     [Theory]
-    [InlineData(SecurityHeaders.ScriptSrcDirective, SecurityHeaders.GoogleRecaptchaHost)]
-    [InlineData(SecurityHeaders.ScriptSrcDirective, SecurityHeaders.GoogleStaticHost)]
-    [InlineData(SecurityHeaders.ConnectSrcDirective, SecurityHeaders.GoogleRecaptchaHost)]
-    [InlineData(SecurityHeaders.FrameSrcDirective, SecurityHeaders.GoogleRecaptchaHost)]
+    [InlineData(global::Identity.Extensions.ApplicationBuilderExtensions.ScriptSrcDirective, global::Identity.Extensions.ApplicationBuilderExtensions.GoogleRecaptchaHost)]
+    [InlineData(global::Identity.Extensions.ApplicationBuilderExtensions.ScriptSrcDirective, global::Identity.Extensions.ApplicationBuilderExtensions.GoogleStaticHost)]
+    [InlineData(global::Identity.Extensions.ApplicationBuilderExtensions.ConnectSrcDirective, global::Identity.Extensions.ApplicationBuilderExtensions.GoogleRecaptchaHost)]
+    [InlineData(global::Identity.Extensions.ApplicationBuilderExtensions.FrameSrcDirective, global::Identity.Extensions.ApplicationBuilderExtensions.GoogleRecaptchaHost)]
     public async Task UseSecurityHeaders_CspAllowsRecaptchaHost(string directive, string host)
     {
         // Arrange
@@ -107,7 +111,7 @@ public sealed class ApplicationBuilderExtensionsTests
         var csp = (string?)context.Response.Headers.ContentSecurityPolicy;
         Assert.NotNull(csp);
         Assert.Equal(
-            [SecurityHeaders.GoogleRecaptchaHost, SecurityHeaders.GoogleStaticHost],
+            [global::Identity.Extensions.ApplicationBuilderExtensions.GoogleRecaptchaHost, global::Identity.Extensions.ApplicationBuilderExtensions.GoogleStaticHost],
             ExternalHostsIn(csp));
     }
 
@@ -124,8 +128,8 @@ public sealed class ApplicationBuilderExtensionsTests
         var csp = (string?)context.Response.Headers.ContentSecurityPolicy;
         Assert.NotNull(csp);
         Assert.Contains(
-            SecurityHeaders.AnyHttpsSource,
-            ClauseFor(csp, SecurityHeaders.ImgSrcDirective),
+            global::Identity.Extensions.ApplicationBuilderExtensions.AnyHttpsSource,
+            ClauseFor(csp, global::Identity.Extensions.ApplicationBuilderExtensions.ImgSrcDirective),
             StringComparison.Ordinal);
     }
 
@@ -146,7 +150,7 @@ public sealed class ApplicationBuilderExtensionsTests
         var headers = context.Response.Headers;
         Assert.False(headers.ContainsKey(HeaderNames.XContentTypeOptions));
         Assert.False(headers.ContainsKey(HeaderNames.XFrameOptions));
-        Assert.False(headers.ContainsKey(SecurityHeaders.ReferrerPolicyHeaderName));
+        Assert.False(headers.ContainsKey(global::Identity.Extensions.ApplicationBuilderExtensions.ReferrerPolicyHeaderName));
         Assert.False(headers.ContainsKey(HeaderNames.ContentSecurityPolicy));
     }
 
@@ -154,7 +158,7 @@ public sealed class ApplicationBuilderExtensionsTests
     public async Task UseSecurityHeaders_ExistingCspNotOverwritten()
     {
         // Arrange
-        var existingPolicy = SecurityHeaders.ScriptSrcDirective + ' ' + TestValues.NewPolicyDirectiveSource();
+        var existingPolicy = global::Identity.Extensions.ApplicationBuilderExtensions.ScriptSrcDirective + ' ' + Generated.NewPolicyDirectiveSource();
         var (context, responseFeature) = MakeContext(HtmlContentType());
         context.Response.Headers.ContentSecurityPolicy = existingPolicy;
 
@@ -162,16 +166,16 @@ public sealed class ApplicationBuilderExtensionsTests
         await RunAsync(context, responseFeature);
 
         // Assert
-        Assert.Equal(existingPolicy, (string?)context.Response.Headers.ContentSecurityPolicy);
+        Assert.Equal(existingPolicy, context.Response.Headers.ContentSecurityPolicy);
         Assert.Equal(
-            SecurityHeaders.ContentTypeOptionsNoSniff,
-            (string?)context.Response.Headers.XContentTypeOptions);
+            global::Identity.Extensions.ApplicationBuilderExtensions.ContentTypeOptionsNoSniff,
+            context.Response.Headers.XContentTypeOptions);
         Assert.Equal(
-            SecurityHeaders.FrameOptionsDeny,
-            (string?)context.Response.Headers.XFrameOptions);
+            global::Identity.Extensions.ApplicationBuilderExtensions.FrameOptionsDeny,
+            context.Response.Headers.XFrameOptions);
         Assert.Equal(
-            SecurityHeaders.ReferrerPolicyNoReferrer,
-            (string?)context.Response.Headers[SecurityHeaders.ReferrerPolicyHeaderName]);
+            global::Identity.Extensions.ApplicationBuilderExtensions.ReferrerPolicyNoReferrer,
+            context.Response.Headers[global::Identity.Extensions.ApplicationBuilderExtensions.ReferrerPolicyHeaderName]);
     }
 
     [Fact]
@@ -185,6 +189,81 @@ public sealed class ApplicationBuilderExtensionsTests
 
         // Assert
         Assert.IsType<ArgumentNullException>(exception);
+    }
+
+    [Fact]
+    public void UseUserLogContext_NullApplicationBuilder_Throws()
+    {
+        // Arrange
+        IApplicationBuilder? applicationBuilder = null;
+
+        // Act
+        var exception = Record.Exception(() => applicationBuilder.UseUserLogContext());
+
+        // Assert
+        Assert.IsType<ArgumentNullException>(exception);
+    }
+
+    [Fact]
+    public async Task UseUserLogContext_AuthenticatedUser_AddsTheSubjectAndEmailToEveryEventLoggedDownstream()
+    {
+        // Arrange
+        var subject = Generated.NewIdentitySub().ToString();
+        var email = Generated.NewEmailAddress();
+        var context = new DefaultHttpContext
+        {
+            User = new ClaimsPrincipal(new ClaimsIdentity(
+                [new Claim(JwtClaimTypes.Subject, subject), new Claim(JwtClaimTypes.Email, email)],
+                Generated.NewTokenFromFirstHalfOfAlphabet(8))),
+        };
+
+        // Act
+        var logged = await LogDownstreamOfUserLogContextAsync(context);
+
+        // Assert
+        Assert.Equal(
+            subject,
+            Assert.IsType<ScalarValue>(logged.Properties[global::Identity.Extensions.ApplicationBuilderExtensions.UserIdLogProperty]).Value);
+        Assert.Equal(
+            email,
+            Assert.IsType<ScalarValue>(logged.Properties[global::Identity.Extensions.ApplicationBuilderExtensions.UserEmailLogProperty]).Value);
+    }
+
+    [Fact]
+    public async Task UseUserLogContext_AnonymousRequest_AddsNoUserPropertiesToEventsLoggedDownstream()
+    {
+        // Arrange
+        var context = new DefaultHttpContext();
+
+        // Act
+        var logged = await LogDownstreamOfUserLogContextAsync(context);
+
+        // Assert
+        Assert.False(logged.Properties.ContainsKey(global::Identity.Extensions.ApplicationBuilderExtensions.UserIdLogProperty));
+        Assert.False(logged.Properties.ContainsKey(global::Identity.Extensions.ApplicationBuilderExtensions.UserEmailLogProperty));
+    }
+
+    private static async Task<LogEvent> LogDownstreamOfUserLogContextAsync(HttpContext context)
+    {
+        var sink = new CapturingSink();
+        var logger = new LoggerConfiguration().Enrich.FromLogContext().WriteTo.Sink(sink).CreateLogger();
+        try
+        {
+            var applicationBuilder = new ApplicationBuilder(new ServiceCollection().BuildServiceProvider());
+            applicationBuilder.UseUserLogContext();
+            applicationBuilder.Run(_ =>
+            {
+                logger.Information(Generated.NewTokenFromFirstHalfOfAlphabet(8));
+                return Task.CompletedTask;
+            });
+            await applicationBuilder.Build()(context);
+        }
+        finally
+        {
+            await logger.DisposeAsync();
+        }
+
+        return Assert.Single(sink.Events);
     }
 
     private static string HtmlContentType() =>
@@ -223,6 +302,13 @@ public sealed class ApplicationBuilderExtensionsTests
         applicationBuilder.UseSecurityHeaders();
         await applicationBuilder.Build()(context);
         await responseFeature.FireOnStartingAsync();
+    }
+
+    private sealed class CapturingSink : ILogEventSink
+    {
+        public List<LogEvent> Events { get; } = [];
+
+        public void Emit(LogEvent logEvent) => Events.Add(logEvent);
     }
 
     private sealed class CapturingResponseFeature : IHttpResponseFeature

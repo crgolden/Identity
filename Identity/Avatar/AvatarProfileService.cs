@@ -1,13 +1,14 @@
 namespace Identity.Avatar;
 
 using System.Security.Claims;
+using Duende.IdentityModel;
 using Duende.IdentityServer.AspNetIdentity;
 using Duende.IdentityServer.Models;
 using Microsoft.AspNetCore.Identity;
 
 public class AvatarProfileService : ProfileService<IdentityUser<Guid>>
 {
-    internal const string PictureClaimType = "picture";
+    internal const string PictureClaimType = JwtClaimTypes.Picture;
 
     private readonly IAvatarService _avatarService;
 

@@ -7,15 +7,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 [AllowAnonymous]
-#pragma warning disable S101
-public class LoginWith2faModel : PageModel
-#pragma warning restore S101
+public class LoginWith2fa : PageModel
 {
     internal const string InvalidAuthenticatorCodeMessage = "Invalid authenticator code.";
 
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
 
-    public LoginWith2faModel(SignInManager<IdentityUser<Guid>> signInManager)
+    public LoginWith2fa(SignInManager<IdentityUser<Guid>> signInManager)
     {
         _signInManager = signInManager;
     }
@@ -44,7 +42,7 @@ public class LoginWith2faModel : PageModel
 
     public async Task<IActionResult> OnPostAsync(bool rememberMe, string? returnUrl = null)
     {
-        if (!ModelState.IsValid || IsNullOrWhiteSpace(Input?.TwoFactorCode))
+        if (!ModelState.IsValid || IsNullOrWhiteSpace(Input.TwoFactorCode))
         {
             return Page();
         }

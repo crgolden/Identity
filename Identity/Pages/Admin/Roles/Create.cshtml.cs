@@ -4,13 +4,13 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-public class CreateModel : PageModel
+public class Create : PageModel
 {
     internal const string RoleNameRequiredMessage = "Role name is required.";
 
     private readonly RoleManager<IdentityRole<Guid>> _roleManager;
 
-    public CreateModel(RoleManager<IdentityRole<Guid>> roleManager) => _roleManager = roleManager;
+    public Create(RoleManager<IdentityRole<Guid>> roleManager) => _roleManager = roleManager;
 
     [BindProperty]
     public string? RoleName { get; set; }

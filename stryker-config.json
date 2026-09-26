@@ -29,9 +29,7 @@
     "since": {
       "enabled": false
     },
-    "additional-timeout": 30,
     "test-runner": "mtp",
-    "coverage-analysis": "all",
-    "test-case-filter": "Category=Unit"
+    "coverage-analysis": "perTest"
   }
 }

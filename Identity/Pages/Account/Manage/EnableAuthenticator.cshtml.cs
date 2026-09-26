@@ -7,9 +7,9 @@ using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using static String;
+using static System.String;
 
-public class EnableAuthenticatorModel : PageModel
+public class EnableAuthenticator : PageModel
 {
     internal const int RecoveryCodeCount = 10;
 
@@ -22,14 +22,15 @@ public class EnableAuthenticatorModel : PageModel
     internal const string AuthenticatorVerifiedMessage =
         "Your authenticator app has been verified.";
 
-#pragma warning disable S1075
-    private const string AuthenticatorUriFormat = "otpauth://totp/{0}:{1}?secret={2}&issuer={0}&digits=6";
-#pragma warning restore S1075
+    private const string OtpAuthScheme = "otpauth";
+    private const string TotpUriFormat = "totp/{0}:{1}?secret={2}&issuer={0}&digits=6";
+
+    private static readonly string AuthenticatorUriFormat = OtpAuthScheme + Uri.SchemeDelimiter + TotpUriFormat;
 
     private readonly UserManager<IdentityUser<Guid>> _userManager;
     private readonly UrlEncoder _urlEncoder;
 
-    public EnableAuthenticatorModel(
+    public EnableAuthenticator(
         UserManager<IdentityUser<Guid>> userManager,
         UrlEncoder urlEncoder)
     {
@@ -70,7 +71,7 @@ public class EnableAuthenticatorModel : PageModel
             return NotFound(UserMessages.UnableToLoadUser(_userManager.GetUserId(User)));
         }
 
-        if (!ModelState.IsValid || IsNullOrWhiteSpace(Input?.Code))
+        if (!ModelState.IsValid || IsNullOrWhiteSpace(Input.Code))
         {
             await LoadSharedKeyAndQrCodeUriAsync(user);
             return Page();

@@ -3,17 +3,14 @@ namespace Identity.Pages.Admin.Users.Details;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 
-public class ClaimsModel : PageModel
+public class Claims : ResourcesBase<Claim>
 {
     private readonly UserManager<IdentityUser<Guid>> _userManager;
 
-    public ClaimsModel(UserManager<IdentityUser<Guid>> userManager) => _userManager = userManager;
+    public Claims(UserManager<IdentityUser<Guid>> userManager) => _userManager = userManager;
 
     public IdentityUser<Guid> AppUser { get; private set; } = new();
-
-    public IList<Claim> Claims { get; private set; } = [];
 
     public async Task<IActionResult> OnGetAsync(string id)
     {
@@ -24,7 +21,7 @@ public class ClaimsModel : PageModel
         }
 
         AppUser = user;
-        Claims = await _userManager.GetClaimsAsync(user);
+        Resources = await _userManager.GetClaimsAsync(user);
         return Page();
     }
 }

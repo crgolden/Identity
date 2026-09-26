@@ -19,6 +19,9 @@ internal static class UserMessages
     internal const string UnexpectedErrorLoadingExternalLoginInfo =
         "Unexpected error occurred loading external login info.";
 
+    internal const string UnableToBuildConfirmationLinkFormat =
+        "Unable to build the email confirmation link for user with ID '{0}'.";
+
     internal static string UnableToLoadUser(string? userId) =>
         Format(CultureInfo.InvariantCulture, UnableToLoadUserFormat, userId);
 
@@ -27,4 +30,7 @@ internal static class UserMessages
 
     internal static string UnableToLoadUserByEmail(string? email) =>
         Format(CultureInfo.InvariantCulture, UnableToLoadUserByEmailFormat, email);
+
+    internal static string UnableToBuildConfirmationLink(string? userId) =>
+        Format(CultureInfo.InvariantCulture, UnableToBuildConfirmationLinkFormat, userId);
 }

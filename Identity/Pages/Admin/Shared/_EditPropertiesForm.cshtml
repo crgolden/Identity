@@ -10,12 +10,12 @@
                 <tr><th>Key</th><th>Value</th><th class="visually-hidden">Actions</th></tr>
             </thead>
             <tbody>
-                @for (var i = 0; i < Model.Count; i++)
+                @foreach (var i in Enumerable.Range(0, Model.Count))
                 {
                     <tr>
-                        <input type="hidden" name="Properties[@i].Id" value="@Model[i].Id" />
-                        <td><input id="property-key-@i" class="form-control form-control-sm" name="Properties[@i].Key" value="@Model[i].Key" aria-label="Key" /></td>
-                        <td><input id="property-value-@i" class="form-control form-control-sm" name="Properties[@i].Value" value="@Model[i].Value" aria-label="Value" /></td>
+                        <input type="hidden" name="Resources[@i].Id" value="@Model[i].Id" />
+                        <td><input id="property-key-@i" class="form-control form-control-sm" name="Resources[@i].Key" value="@Model[i].Key" aria-label="Key" /></td>
+                        <td><input id="property-value-@i" class="form-control form-control-sm" name="Resources[@i].Value" value="@Model[i].Value" aria-label="Value" /></td>
                         <td><button id="property-remove-@i" type="submit" asp-page-handler="RemoveRow" asp-route-id="@entityId" asp-route-index="@i" class="btn btn-sm btn-danger">Remove</button></td>
                     </tr>
                 }
