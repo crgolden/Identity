@@ -56,6 +56,7 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         _settings = E2ESettings.Read(configuration);
         _recaptchaScriptEndpoint = Factory.Services.GetRequiredService<ICAPTCHAService>().ScriptEndpoint
             ?? throw new InvalidOperationException($"{nameof(ICAPTCHAService.ScriptEndpoint)} is not configured.");
+        await CleanupDatabaseAsync();
 
         _playwright = await Playwright.CreateAsync();
         _browser = await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
