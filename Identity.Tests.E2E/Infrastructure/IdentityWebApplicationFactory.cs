@@ -91,9 +91,7 @@ public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Progra
 
             services.Configure<PasswordHasherOptions>(opts => opts.IterationCount = 1);
 
-            services.ConfigureDbContext<ApplicationDbContext>(
-                options => options.AddInterceptors(Commands),
-                ServiceLifetime.Singleton);
+            services.ConfigureDbContext<ApplicationDbContext>(options => options.AddInterceptors(Commands));
 
             services.Replace(ServiceDescriptor.Singleton<IAuthenticationSchemeProvider, FakeGoogleSchemeProvider>());
         });

@@ -253,7 +253,7 @@ public sealed class ApplicationBuilderExtensionsTests
             applicationBuilder.UseUserLogContext();
             applicationBuilder.Run(_ =>
             {
-                logger.Information(Generated.NewTokenFromFirstHalfOfAlphabet(8));
+                logger.Write(new LogEvent(DateTimeOffset.UtcNow, LogEventLevel.Information, null, MessageTemplate.Empty, []));
                 return Task.CompletedTask;
             });
             await applicationBuilder.Build()(context);

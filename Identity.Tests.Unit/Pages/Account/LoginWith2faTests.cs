@@ -86,7 +86,7 @@ public class LoginWith2faTests
         var model = BuildModelForTwoFactorUser();
 
         // Act
-        var result = await model.OnGetAsync(false, null);
+        var result = await model.OnGetAsync(false);
 
         // Assert
         AssertReturnsPageWithReturnUrl(result, model, null);

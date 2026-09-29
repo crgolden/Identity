@@ -49,7 +49,7 @@ public sealed class ErrorTests : IDisposable
         using var activityScope = CurrentActivityScope.Start();
 
         // Act
-        await model.OnGetAsync(null);
+        await model.OnGetAsync();
 
         // Assert
         VerifyInteractionServiceNeverCalled(mockInteraction);
@@ -65,7 +65,7 @@ public sealed class ErrorTests : IDisposable
         Activity.Current = null;
 
         // Act
-        await model.OnGetAsync(null);
+        await model.OnGetAsync();
 
         // Assert
         VerifyInteractionServiceNeverCalled(mockInteraction);
