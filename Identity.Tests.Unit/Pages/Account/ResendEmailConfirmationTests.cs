@@ -13,20 +13,6 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ResendEmailConfirmationTests
 {
-    public static IEnumerable<object[]> EmailTestCases()
-    {
-        yield return [string.Empty];
-        yield return [Generated.NewWhitespaceValue()];
-        yield return [Generated.NewEmailAddress()];
-        yield return [Generated.NewOverlongValue()];
-        yield return [Generated.NewControlAndSymbolValue()];
-    }
-
-    public static TheoryData<string> UnknownEmailAddresses() => new()
-    {
-        Generated.NewEmailAddress(),
-    };
-
     [Fact]
     public async Task OnPostAsync_ModelStateInvalid_ReturnsPageWithoutCallingDependencies()
     {
@@ -52,11 +38,11 @@ public class ResendEmailConfirmationTests
         senderMock.Verify(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    [Theory]
-    [MemberData(nameof(UnknownEmailAddresses))]
-    public async Task OnPostAsync_UserNotFound_AddsModelErrorAndReturnsPage(string email)
+    [Fact]
+    public async Task OnPostAsync_UserNotFound_AddsModelErrorAndReturnsPage()
     {
         // Arrange
+        var email = Generated.NewEmailAddress();
         var mockUserManager = MockHelpers.MockUserManager();
 
         mockUserManager

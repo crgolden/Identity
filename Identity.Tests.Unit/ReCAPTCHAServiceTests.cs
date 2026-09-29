@@ -32,13 +32,14 @@ public class ReCaptchaServiceTests
     }
 
     [Fact]
-    public async Task VerifyAsync_EmptyToken_FailsWithZeroScore()
+    public async Task VerifyAsync_BlankToken_FailsWithZeroScore()
     {
         // Arrange
         var (service, _) = CreateService(responseScore: Generated.NewScoreAtOrAbove(ReCAPTCHAOptions.DefaultScoreThreshold));
+        var blankToken = Generated.NewBlank();
 
         // Act
-        var verdict = await service.VerifyAsync(string.Empty, TestContext.Current.CancellationToken);
+        var verdict = await service.VerifyAsync(blankToken, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(verdict.Passed);

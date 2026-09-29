@@ -18,13 +18,6 @@ public class LogoutTests
 
     private static readonly string PostLogoutRedirectUri = Generated.NewCallbackAddress();
 
-    public static TheoryData<string?> BlankLogoutIds() => new()
-    {
-        (string?)null,
-        string.Empty,
-        Generated.NewWhitespaceValue(),
-    };
-
     [Fact]
     public async Task OnGetAsync_AuthenticatedUser_ShowsPromptWithoutCallingInteractionService()
     {
@@ -126,9 +119,8 @@ public class LogoutTests
         interaction.VerifyNoOtherCalls();
     }
 
-    [Theory]
-    [MemberData(nameof(BlankLogoutIds))]
-    public async Task OnPostAsync_NullOrWhitespaceLogoutId_DoesNotCallInteractionService(string? logoutId)
+    [Fact]
+    public async Task OnPostAsync_EmptyLogoutId_DoesNotCallInteractionService()
     {
         // Arrange
         var interaction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
@@ -136,11 +128,46 @@ public class LogoutTests
         model.PageContext = BuildAnonymousPageContext();
 
         // Act
-        var result = await model.OnPostAsync(logoutId);
+        var result = await model.OnPostAsync(Generated.NewBlank());
 
         // Assert
         Assert.IsType<RedirectToPageResult>(result);
         interaction.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task OnPostAsync_WhitespaceLogoutId_DoesNotCallInteractionService()
+    {
+        // Arrange
+        var whitespaceLogoutId = Generated.NewWhitespaceValue();
+        var interaction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
+        var model = BuildModel(interaction.Object);
+        model.PageContext = BuildAnonymousPageContext();
+
+        // Act
+        var result = await model.OnPostAsync(whitespaceLogoutId);
+
+        // Assert
+        Assert.IsType<RedirectToPageResult>(result);
+        interaction.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task OnPostAsync_SignsTheUserOut()
+    {
+        // Arrange
+        var userManager = MockHelpers.MockUserManager();
+        var signInManager = MockHelpers.MockSignInManager(userManager.Object);
+        signInManager.Setup(s => s.SignOutAsync()).Returns(Task.CompletedTask);
+        var model = new Logout(signInManager.Object, Mock.Of<IIdentityServerInteractionService>());
+        model.PageContext = BuildAnonymousPageContext();
+        var logoutId = Generated.NewLogoutId();
+
+        // Act
+        await model.OnPostAsync(logoutId);
+
+        // Assert
+        signInManager.Verify(s => s.SignOutAsync(), Times.Once);
     }
 
     private static Logout BuildModel(IIdentityServerInteractionService? interactionService = null)

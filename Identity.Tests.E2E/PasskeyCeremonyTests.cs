@@ -1,6 +1,5 @@
 namespace Identity.Tests.E2E;
 
-using System.Text.RegularExpressions;
 using Identity.Extensions;
 using Identity.Tests.E2E.Infrastructure;
 using Identity.Tests.E2E.Synthetic;
@@ -57,7 +56,7 @@ public sealed class PasskeyCeremonyTests(PlaywrightFixture fixture)
             await SignInWithPasskeyAsync(page, email);
 
             await Assertions.Expect(page).Not.ToHaveURLAsync(
-                new Regex(PageRoutes.Login));
+                UrlPatterns.Login());
         }
     }
 
@@ -76,6 +75,6 @@ public sealed class PasskeyCeremonyTests(PlaywrightFixture fixture)
         await page.FillAsync("input[name='Input.Password']", password);
         await page.ClickAsync("#login-submit");
         await Assertions.Expect(page).Not.ToHaveURLAsync(
-            new Regex(PageRoutes.Login));
+            UrlPatterns.Login());
     }
 }

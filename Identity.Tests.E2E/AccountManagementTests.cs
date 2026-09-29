@@ -1,6 +1,5 @@
 namespace Identity.Tests.E2E;
 
-using System.Text.RegularExpressions;
 using Identity.Tests.E2E.Infrastructure;
 using Microsoft.Playwright;
 
@@ -21,7 +20,7 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", oldPassword);
             await page.ClickAsync("#login-submit");
-            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex(PageRoutes.Login));
+            await Assertions.Expect(page).Not.ToHaveURLAsync(UrlPatterns.Login());
 
             await page.GotoAsync("/Account/Manage/ChangePassword");
             await page.FillAsync("input[name='Input.OldPassword']", oldPassword);
@@ -38,7 +37,7 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
             await page2.FillAsync("input[name='Input.Email']", email);
             await page2.FillAsync("input[name='Input.Password']", oldPassword);
             await page2.ClickAsync("#login-submit");
-            await Assertions.Expect(page2).ToHaveURLAsync(new Regex(PageRoutes.Login));
+            await Assertions.Expect(page2).ToHaveURLAsync(UrlPatterns.Login());
             var errorText = await page2.TextContentAsync("#validation-errors");
             Assert.NotNull(errorText);
         }
@@ -50,7 +49,7 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
             await page3.FillAsync("input[name='Input.Email']", email);
             await page3.FillAsync("input[name='Input.Password']", newPassword);
             await page3.ClickAsync("#login-submit");
-            await Assertions.Expect(page3).Not.ToHaveURLAsync(new Regex(PageRoutes.Login));
+            await Assertions.Expect(page3).Not.ToHaveURLAsync(UrlPatterns.Login());
             Assert.DoesNotContain(PageRoutes.Login, page3.Url, StringComparison.Ordinal);
         }
     }
@@ -67,13 +66,13 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("#login-submit");
-            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex(PageRoutes.Login));
+            await Assertions.Expect(page).Not.ToHaveURLAsync(UrlPatterns.Login());
 
             await page.GotoAsync("/Account/Manage/DeletePersonalData");
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("#delete-account-submit");
 
-            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("/Account/Manage"));
+            await Assertions.Expect(page).Not.ToHaveURLAsync(UrlPatterns.Manage());
         }
 
         var (ctx2, page2) = await fixture.NewPageAsync();
@@ -83,7 +82,7 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
             await page2.FillAsync("input[name='Input.Email']", email);
             await page2.FillAsync("input[name='Input.Password']", password);
             await page2.ClickAsync("#login-submit");
-            await Assertions.Expect(page2).ToHaveURLAsync(new Regex(PageRoutes.Login));
+            await Assertions.Expect(page2).ToHaveURLAsync(UrlPatterns.Login());
             var errorText = await page2.TextContentAsync("#validation-errors");
             Assert.NotNull(errorText);
         }
@@ -101,7 +100,7 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("#login-submit");
-            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex(PageRoutes.Login));
+            await Assertions.Expect(page).Not.ToHaveURLAsync(UrlPatterns.Login());
 
             await page.GotoAsync(PageRoutes.Logout);
             await page.ClickAsync("#logout-submit");
@@ -126,12 +125,12 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Email']", oldEmail);
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("#login-submit");
-            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex(PageRoutes.Login));
+            await Assertions.Expect(page).Not.ToHaveURLAsync(UrlPatterns.Login());
 
             await page.GotoAsync("/Account/Manage/Email");
             await page.FillAsync("input[name='Input.NewEmail']", newEmail);
             await page.ClickAsync("#change-email-button");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/Manage/Email"));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.ManageEmail());
 
             var changeEmail = fixture.Email.TakeEmail(newEmail);
             var changeLink = fixture.ExtractEmailLink(changeEmail);
@@ -146,7 +145,7 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
             await page2.FillAsync("input[name='Input.Email']", newEmail);
             await page2.FillAsync("input[name='Input.Password']", password);
             await page2.ClickAsync("#login-submit");
-            await Assertions.Expect(page2).Not.ToHaveURLAsync(new Regex(PageRoutes.Login));
+            await Assertions.Expect(page2).Not.ToHaveURLAsync(UrlPatterns.Login());
             Assert.DoesNotContain(PageRoutes.Login, page2.Url, StringComparison.Ordinal);
         }
     }
@@ -165,7 +164,7 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
             await page1.FillAsync("input[name='Input.Password']", password);
             await page1.FillAsync("input[name='Input.ConfirmPassword']", password);
             await page1.ClickAsync("#registerSubmit");
-            await Assertions.Expect(page1).ToHaveURLAsync(new Regex("/Account/RegisterConfirmation"));
+            await Assertions.Expect(page1).ToHaveURLAsync(UrlPatterns.RegisterConfirmation());
             fixture.Email.TakeEmail(email);
         }
 
@@ -192,7 +191,7 @@ public sealed class AccountManagementTests(PlaywrightFixture fixture)
             await page3.FillAsync("input[name='Input.Email']", email);
             await page3.FillAsync("input[name='Input.Password']", password);
             await page3.ClickAsync("#login-submit");
-            await Assertions.Expect(page3).Not.ToHaveURLAsync(new Regex(PageRoutes.Login));
+            await Assertions.Expect(page3).Not.ToHaveURLAsync(UrlPatterns.Login());
             Assert.DoesNotContain(PageRoutes.Login, page3.Url, StringComparison.Ordinal);
         }
     }

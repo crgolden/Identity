@@ -13,17 +13,7 @@ using Moq;
 [Trait("Category", "Unit")]
 public class TwoFactorAuthenticationTests
 {
-    private static readonly string AuthenticatorKey = Generated.NewAuthenticatorKey();
-
     private static readonly string StatusText = Generated.NewValidationMessage();
-
-    public static TheoryData<string?, bool, bool, int> GetOnGetAsyncCases() => new()
-    {
-        { null, false, false, 0 },
-        { AuthenticatorKey, true, true, Generated.NewRecoveryCodeCount() },
-        { Generated.NewAuthenticatorKey(), false, true, int.MaxValue },
-        { null, true, false, int.MinValue },
-    };
 
     [Fact]
     public void Properties_SetAfterConstruction_ReflectAssignedValues()
@@ -137,11 +127,84 @@ public class TwoFactorAuthenticationTests
         Assert.Equal(UserMessages.UnableToLoadUser(expectedId), notFoundResult.Value);
     }
 
-    [Theory]
-    [MemberData(nameof(GetOnGetAsyncCases))]
-    public async Task OnGetAsync_UserFound_SetsPropertiesAndReturnsPageResult(string? authenticatorKey, bool is2faEnabled, bool isMachineRemembered, int recoveryCodes)
+    [Fact]
+    public async Task OnGetAsync_UserWithNothingConfigured_ReportsNoAuthenticatorNo2faAndNoRecoveryCodes()
     {
         // Arrange
+        const int noRecoveryCodes = 0;
+        var pageModel = BuildModelForFoundUser(authenticatorKey: null, is2faEnabled: false, isMachineRemembered: false, noRecoveryCodes);
+
+        // Act
+        var result = await pageModel.OnGetAsync();
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        Assert.False(pageModel.HasAuthenticator);
+        Assert.False(pageModel.Is2faEnabled);
+        Assert.False(pageModel.IsMachineRemembered);
+        Assert.Equal(noRecoveryCodes, pageModel.RecoveryCodesLeft);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_UserWithAuthenticator2faAndRememberedMachine_ReportsAllEnabledWithRecoveryCodesLeft()
+    {
+        // Arrange
+        var authenticatorKey = Generated.NewAuthenticatorKey();
+        var recoveryCodesLeft = Generated.NewRecoveryCodeCount();
+        var pageModel = BuildModelForFoundUser(authenticatorKey, is2faEnabled: true, isMachineRemembered: true, recoveryCodesLeft);
+
+        // Act
+        var result = await pageModel.OnGetAsync();
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        Assert.True(pageModel.HasAuthenticator);
+        Assert.True(pageModel.Is2faEnabled);
+        Assert.True(pageModel.IsMachineRemembered);
+        Assert.Equal(recoveryCodesLeft, pageModel.RecoveryCodesLeft);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_UserWithAuthenticatorAndMaximumRecoveryCodesButNo2fa_ReportsAuthenticatorAndRememberedMachine()
+    {
+        // Arrange
+        var authenticatorKey = Generated.NewAuthenticatorKey();
+        var pageModel = BuildModelForFoundUser(authenticatorKey, is2faEnabled: false, isMachineRemembered: true, int.MaxValue);
+
+        // Act
+        var result = await pageModel.OnGetAsync();
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        Assert.True(pageModel.HasAuthenticator);
+        Assert.False(pageModel.Is2faEnabled);
+        Assert.True(pageModel.IsMachineRemembered);
+        Assert.Equal(int.MaxValue, pageModel.RecoveryCodesLeft);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_UserWith2faButNoAuthenticatorAndMinimumRecoveryCodes_ReportsNoAuthenticator()
+    {
+        // Arrange
+        var pageModel = BuildModelForFoundUser(authenticatorKey: null, is2faEnabled: true, isMachineRemembered: false, int.MinValue);
+
+        // Act
+        var result = await pageModel.OnGetAsync();
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        Assert.False(pageModel.HasAuthenticator);
+        Assert.True(pageModel.Is2faEnabled);
+        Assert.False(pageModel.IsMachineRemembered);
+        Assert.Equal(int.MinValue, pageModel.RecoveryCodesLeft);
+    }
+
+    private static TwoFactorAuthentication BuildModelForFoundUser(
+        string? authenticatorKey,
+        bool is2faEnabled,
+        bool isMachineRemembered,
+        int recoveryCodesLeft)
+    {
         var mockUserManager = MockHelpers.MockUserManager();
 
         var mockSignInManager = MockHelpers.MockSignInManager(mockUserManager.Object);
@@ -158,22 +221,12 @@ public class TwoFactorAuthenticationTests
             .ReturnsAsync(is2faEnabled);
         mockUserManager
             .Setup(um => um.CountRecoveryCodesAsync(user))
-            .ReturnsAsync(recoveryCodes);
+            .ReturnsAsync(recoveryCodesLeft);
 
         mockSignInManager
             .Setup(sm => sm.IsTwoFactorClientRememberedAsync(user))
             .ReturnsAsync(isMachineRemembered);
 
-        var pageModel = new TwoFactorAuthentication(mockUserManager.Object, mockSignInManager.Object);
-
-        // Act
-        var result = await pageModel.OnGetAsync();
-
-        // Assert
-        Assert.IsType<PageResult>(result);
-        Assert.Equal(authenticatorKey != null, pageModel.HasAuthenticator);
-        Assert.Equal(is2faEnabled, pageModel.Is2faEnabled);
-        Assert.Equal(isMachineRemembered, pageModel.IsMachineRemembered);
-        Assert.Equal(recoveryCodes, pageModel.RecoveryCodesLeft);
+        return new TwoFactorAuthentication(mockUserManager.Object, mockSignInManager.Object);
     }
 }

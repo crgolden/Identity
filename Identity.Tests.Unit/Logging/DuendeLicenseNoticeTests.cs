@@ -181,6 +181,7 @@ public class DuendeLicenseNoticeTests
     private static IReadOnlyList<LogEvent> WriteThroughFilter(string sourceContext, EventId eventId, LogLevel logLevel)
     {
         var sink = new CapturingSink();
+        var notice = Generated.NewValidationMessage();
         using (var loggerFactory = LoggerFactory.Create(loggingBuilder => loggingBuilder
                    .SetMinimumLevel(LogLevel.Trace)
                    .AddSerilog(
@@ -193,7 +194,7 @@ public class DuendeLicenseNoticeTests
         {
             loggerFactory
                 .CreateLogger(sourceContext)
-                .Log(logLevel, eventId, Generated.NewValidationMessage());
+                .Log(logLevel, eventId, notice, exception: null, static (state, _) => state);
         }
 
         return sink.Events;

@@ -1,6 +1,5 @@
 namespace Identity.Tests.E2E.Admin;
 
-using System.Text.RegularExpressions;
 using Identity.Pages.Admin;
 using Identity.Tests.E2E.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
@@ -37,6 +36,6 @@ public sealed class AdminLandingTests(PlaywrightFixture fixture)
         await page.FillAsync("input[name='Input.Email']", email);
         await page.FillAsync("input[name='Input.Password']", password);
         await page.ClickAsync("#login-submit");
-        await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex(PageRoutes.Login));
+        await Assertions.Expect(page).Not.ToHaveURLAsync(UrlPatterns.Login());
     }
 }

@@ -2,7 +2,6 @@ namespace Identity.Tests.E2E;
 
 using System.Security.Claims;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using Google.Apis.Auth.AspNetCore3;
 using Identity.Avatar;
 using Identity.Pages.Account;
@@ -40,7 +39,7 @@ public sealed class ExternalLoginTests(PlaywrightFixture fixture)
             await page.GotoAsync(PageRoutes.Login);
             await page.ClickAsync("#external-login-button-GoogleOpenIdConnect");
 
-            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex(PageRoutes.Login));
+            await Assertions.Expect(page).Not.ToHaveURLAsync(UrlPatterns.Login());
             Assert.DoesNotContain("/Account/RegisterConfirmation", page.Url, StringComparison.Ordinal);
         }
 
@@ -80,7 +79,7 @@ public sealed class ExternalLoginTests(PlaywrightFixture fixture)
             await page.GotoAsync(PageRoutes.Login);
             await page.ClickAsync("#external-login-button-GoogleOpenIdConnect");
 
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/RegisterConfirmation"));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.RegisterConfirmation());
         }
 
         await using var scope = fixture.Factory.Services.CreateAsyncScope();
@@ -108,7 +107,7 @@ public sealed class ExternalLoginTests(PlaywrightFixture fixture)
             await page.GotoAsync(PageRoutes.Login);
             await page.ClickAsync("#external-login-button-GoogleOpenIdConnect");
 
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(PageRoutes.Login));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.Login());
             await Assertions.Expect(page.Locator("#validation-errors")).ToHaveAttributeAsync("data-error-code", ExternalLogin.AccountAlreadyExistsErrorCode);
         }
 
@@ -143,7 +142,7 @@ public sealed class ExternalLoginTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("#login-submit");
-            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex(PageRoutes.Login));
+            await Assertions.Expect(page).Not.ToHaveURLAsync(UrlPatterns.Login());
 
             await SetGoogleClaimsAsync(page, new FakeGoogleClaims
             {
@@ -157,7 +156,7 @@ public sealed class ExternalLoginTests(PlaywrightFixture fixture)
             await page.GotoAsync(Pages.Account.Manage.ExternalLogins.ExternalLoginsPagePath);
             await page.ClickAsync("#link-login-button-GoogleOpenIdConnect");
 
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Account.Manage.ExternalLogins.ExternalLoginsPagePath));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.ManageExternalLogins());
         }
 
         await using var scope = fixture.Factory.Services.CreateAsyncScope();

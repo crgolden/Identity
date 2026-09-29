@@ -16,35 +16,6 @@ public sealed class InputSanitizationTests
     private static readonly int Sha256HexLength =
         Convert.ToHexString(new byte[SHA256.HashSizeInBytes]).Length;
 
-    public static TheoryData<string> ExternalUrls()
-    {
-        var host = Generated.NewExternalHost();
-        var absoluteUrl = Uri.UriSchemeHttps + Uri.SchemeDelimiter + host;
-        return new TheoryData<string>
-        {
-            absoluteUrl,
-            Uri.UriSchemeHttp + Uri.SchemeDelimiter + host + Generated.NewLocalPath() +
-                QueryStringStart + Generated.NewPathSegment() + QueryStringAssignment + Generated.NewEntityId(),
-            ProtocolRelativePrefix + host,
-            ProtocolRelativePrefix + host + Generated.NewLocalPath(),
-            JavaScriptScheme + SchemeSeparator + Generated.NewPathSegment(),
-            DataScheme + SchemeSeparator + MediaTypeNames.Text.Html + DataUrlSeparator + Generated.NewPathSegment(),
-            absoluteUrl + Generated.NewLocalPath() + QueryStringStart + Generated.NewPathSegment() +
-                QueryStringAssignment + Uri.UriSchemeHttps + Uri.SchemeDelimiter + Generated.NewExternalHost(),
-            TabCharacter + absoluteUrl,
-            SpaceCharacter + absoluteUrl,
-        };
-    }
-
-    public static TheoryData<string> LocalUrls() => new()
-    {
-        new string(PathSeparator, MinGeneratedInputLength),
-        Generated.NewLocalPath(),
-        Generated.NewLocalPath() + Generated.NewLocalPath(),
-        Generated.NewLocalPath() + Generated.NewLocalPath() + Generated.NewLocalPath(),
-        PageRoutes.ContentRoot + Generated.NewPathSegment(),
-    };
-
     [Fact]
     public void GravatarHash_IsAlwaysLowercase()
     {
@@ -133,23 +104,207 @@ public sealed class InputSanitizationTests
         Assert.Equal(trimmedHash, paddedHash);
     }
 
-    [Theory]
-    [MemberData(nameof(ExternalUrls))]
-    public void ExternalUrl_IsNotLocalUrl(string url)
+    [Fact]
+    public void IsLocalUrl_HttpsAbsoluteUrl_ReturnsFalse()
     {
+        // Arrange
+        var externalHost = Generated.NewExternalHost();
+        var httpsUrl = Uri.UriSchemeHttps + Uri.SchemeDelimiter + externalHost;
+
         // Act
-        var isLocal = IsLocalUrl(url);
+        var isLocal = IsLocalUrl(httpsUrl);
 
         // Assert
         Assert.False(isLocal);
     }
 
-    [Theory]
-    [MemberData(nameof(LocalUrls))]
-    public void LocalUrl_IsLocalUrl(string url)
+    [Fact]
+    public void IsLocalUrl_HttpAbsoluteUrlWithPathAndQuery_ReturnsFalse()
     {
+        // Arrange
+        var externalHost = Generated.NewExternalHost();
+        var path = Generated.NewLocalPath();
+        var queryKey = Generated.NewPathSegment();
+        var queryValue = Generated.NewEntityId();
+        var httpUrl = Uri.UriSchemeHttp + Uri.SchemeDelimiter + externalHost + path +
+            QueryStringStart + queryKey + QueryStringAssignment + queryValue;
+
         // Act
-        var isLocal = IsLocalUrl(url);
+        var isLocal = IsLocalUrl(httpUrl);
+
+        // Assert
+        Assert.False(isLocal);
+    }
+
+    [Fact]
+    public void IsLocalUrl_ProtocolRelativeUrl_ReturnsFalse()
+    {
+        // Arrange
+        var externalHost = Generated.NewExternalHost();
+        var protocolRelativeUrl = ProtocolRelativePrefix + externalHost;
+
+        // Act
+        var isLocal = IsLocalUrl(protocolRelativeUrl);
+
+        // Assert
+        Assert.False(isLocal);
+    }
+
+    [Fact]
+    public void IsLocalUrl_ProtocolRelativeUrlWithPath_ReturnsFalse()
+    {
+        // Arrange
+        var externalHost = Generated.NewExternalHost();
+        var path = Generated.NewLocalPath();
+        var protocolRelativeUrl = ProtocolRelativePrefix + externalHost + path;
+
+        // Act
+        var isLocal = IsLocalUrl(protocolRelativeUrl);
+
+        // Assert
+        Assert.False(isLocal);
+    }
+
+    [Fact]
+    public void IsLocalUrl_JavaScriptUrl_ReturnsFalse()
+    {
+        // Arrange
+        var script = Generated.NewPathSegment();
+        var javaScriptUrl = JavaScriptScheme + SchemeSeparator + script;
+
+        // Act
+        var isLocal = IsLocalUrl(javaScriptUrl);
+
+        // Assert
+        Assert.False(isLocal);
+    }
+
+    [Fact]
+    public void IsLocalUrl_DataUrl_ReturnsFalse()
+    {
+        // Arrange
+        var payload = Generated.NewPathSegment();
+        var dataUrl = DataScheme + SchemeSeparator + MediaTypeNames.Text.Html + DataUrlSeparator + payload;
+
+        // Act
+        var isLocal = IsLocalUrl(dataUrl);
+
+        // Assert
+        Assert.False(isLocal);
+    }
+
+    [Fact]
+    public void IsLocalUrl_AbsoluteUrlCarryingAnotherAbsoluteUrlInItsQuery_ReturnsFalse()
+    {
+        // Arrange
+        var externalHost = Generated.NewExternalHost();
+        var path = Generated.NewLocalPath();
+        var queryKey = Generated.NewPathSegment();
+        var redirectHost = Generated.NewExternalHost();
+        var urlWithRedirectQuery = Uri.UriSchemeHttps + Uri.SchemeDelimiter + externalHost + path + QueryStringStart + queryKey +
+            QueryStringAssignment + Uri.UriSchemeHttps + Uri.SchemeDelimiter + redirectHost;
+
+        // Act
+        var isLocal = IsLocalUrl(urlWithRedirectQuery);
+
+        // Assert
+        Assert.False(isLocal);
+    }
+
+    [Fact]
+    public void IsLocalUrl_TabPrefixedAbsoluteUrl_ReturnsFalse()
+    {
+        // Arrange
+        var externalHost = Generated.NewExternalHost();
+        var tabPrefixedUrl = TabCharacter + Uri.UriSchemeHttps + Uri.SchemeDelimiter + externalHost;
+
+        // Act
+        var isLocal = IsLocalUrl(tabPrefixedUrl);
+
+        // Assert
+        Assert.False(isLocal);
+    }
+
+    [Fact]
+    public void IsLocalUrl_SpacePrefixedAbsoluteUrl_ReturnsFalse()
+    {
+        // Arrange
+        var externalHost = Generated.NewExternalHost();
+        var spacePrefixedUrl = SpaceCharacter + Uri.UriSchemeHttps + Uri.SchemeDelimiter + externalHost;
+
+        // Act
+        var isLocal = IsLocalUrl(spacePrefixedUrl);
+
+        // Assert
+        Assert.False(isLocal);
+    }
+
+    [Fact]
+    public void IsLocalUrl_RootPath_ReturnsTrue()
+    {
+        // Arrange
+        var rootPath = new string(PathSeparator, MinGeneratedInputLength);
+
+        // Act
+        var isLocal = IsLocalUrl(rootPath);
+
+        // Assert
+        Assert.True(isLocal);
+    }
+
+    [Fact]
+    public void IsLocalUrl_SingleSegmentPath_ReturnsTrue()
+    {
+        // Arrange
+        var singleSegmentPath = Generated.NewLocalPath();
+
+        // Act
+        var isLocal = IsLocalUrl(singleSegmentPath);
+
+        // Assert
+        Assert.True(isLocal);
+    }
+
+    [Fact]
+    public void IsLocalUrl_TwoSegmentPath_ReturnsTrue()
+    {
+        // Arrange
+        var firstSegmentPath = Generated.NewLocalPath();
+        var secondSegmentPath = Generated.NewLocalPath();
+        var twoSegmentPath = firstSegmentPath + secondSegmentPath;
+
+        // Act
+        var isLocal = IsLocalUrl(twoSegmentPath);
+
+        // Assert
+        Assert.True(isLocal);
+    }
+
+    [Fact]
+    public void IsLocalUrl_ThreeSegmentPath_ReturnsTrue()
+    {
+        // Arrange
+        var firstSegmentPath = Generated.NewLocalPath();
+        var secondSegmentPath = Generated.NewLocalPath();
+        var thirdSegmentPath = Generated.NewLocalPath();
+        var threeSegmentPath = firstSegmentPath + secondSegmentPath + thirdSegmentPath;
+
+        // Act
+        var isLocal = IsLocalUrl(threeSegmentPath);
+
+        // Assert
+        Assert.True(isLocal);
+    }
+
+    [Fact]
+    public void IsLocalUrl_ContentRootRelativePath_ReturnsTrue()
+    {
+        // Arrange
+        var pageSegment = Generated.NewPathSegment();
+        var contentRootRelativePath = PageRoutes.ContentRoot + pageSegment;
+
+        // Act
+        var isLocal = IsLocalUrl(contentRootRelativePath);
 
         // Assert
         Assert.True(isLocal);

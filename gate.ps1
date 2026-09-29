@@ -1,4 +1,4 @@
-param([string]$Goal)
+param([string]$Goal, [string]$Tests, [string]$TestProject)
 
 $ErrorActionPreference = 'Continue'
 $gateCommon = Join-Path $PSScriptRoot '..\Tools\Gates\GateCommon.ps1'
@@ -7,12 +7,14 @@ if (-not (Test-Path -LiteralPath $gateCommon)) {
     exit 1
 }
 . $gateCommon
+. (Join-Path $PSScriptRoot '..\Tools\Gates\SelectedTests.ps1')
 $gateOutput = Join-Path ([IO.Path]::GetTempPath()) "crgolden-gates\$(Split-Path -Leaf $PSScriptRoot)"
 New-Item -ItemType Directory -Force -Path $gateOutput | Out-Null
-Register-GateSteps @('Install dotnet-coverage', 'Restore local tools', 'Begin Sonar analysis', 'S101 dictionary control',
+Register-GateSteps @('Install dotnet-coverage', 'Restore local tools', 'node_modules install markers', 'npm run lint',
+    'Begin Sonar analysis', 'S101 dictionary control',
     'Build with dotnet', 'jb inspectcode', 'Unit tests (Identity.Tests.Unit', 'Install SqlPackage',
     'Deploy E2E test database schema', 'Install Playwright browsers', 'E2E tests (Identity.Tests.E2E',
-    'End Sonar analysis', 'Run Stryker mutation tests')
+    'End Sonar analysis', 'Fail on open Sonar issues', 'Run Stryker mutation tests')
 $repo = $PSScriptRoot
 $sarif = (Join-Path $gateOutput 'identity-inspect.sarif')
 $unitTrx = Join-Path $repo 'Identity.Tests.Unit\bin\Release\net10.0\TestResults\unit-tests.trx'
@@ -22,6 +24,7 @@ $sonarBranch = "branch-local-$($env:COMPUTERNAME.ToLowerInvariant())"
 $beginSonar = "Begin Sonar analysis (branch $sonarBranch)"
 $build = 'Build with dotnet (Release, RestoreLockedMode)'
 $endSonar = 'End Sonar analysis (quality gate waited)'
+$sonarIssues = 'Fail on open Sonar issues'
 $s101 = 'S101 dictionary control (must FAIL without the dictionary)'
 $unit = 'Unit tests (Identity.Tests.Unit, Category=Unit)'
 $schema = "Deploy E2E test database schema ($testCatalog)"
@@ -30,6 +33,17 @@ $stryker = "Run Stryker mutation tests (dashboard version $sonarBranch)"
 $env:TZ = 'UTC'
 if ($env:TZ -ne 'UTC') { Write-Host 'GATE: FAILED (TZ pin)'; exit 1 }
 Set-Location $repo
+if ($Tests) {
+    Invoke-SelectedTests $repo $TestProject $Tests {
+        if ($TestProject -eq 'Identity.Tests.E2E') {
+            sqllocaldb start MSSQLLocalDB | Out-Null
+            $env:ASPNETCORE_ENVIRONMENT = 'Development'
+            $env:SqlConnectionStringBuilder__InitialCatalog = $testCatalog
+            $env:PasskeyOrigin = 'https://127.0.0.1'
+            pwsh "$repo\Identity.Tests.E2E\bin\Release\net10.0\playwright.ps1" install chromium
+        }
+    }
+}
 Initialize-GateState 'Identity' $repo
 Invoke-CatalogSteps
 
@@ -41,9 +55,24 @@ $global:LASTEXITCODE = $null
 dotnet tool restore
 $null = Test-Exit 'Restore local tools (dotnet tool restore)'
 
-$sonarCarried = Test-StepCarried $endSonar
-if ($sonarCarried) { $null = Test-StepCarried $beginSonar }
+$installed = (Test-Path (Join-Path $repo 'node_modules\.package-lock.json')) -and
+    (Test-Path (Join-Path $repo 'node_modules\.bin\eslint.cmd'))
+if (-not $installed) { Stop-Gate 'node_modules install markers' 'incomplete install; run npm ci deliberately first' }
+Write-Row 'node_modules install markers' 'PASS' '.package-lock.json, eslint.cmd present'
+
+if (-not (Test-StepCarried 'npm run lint')) {
+    $global:LASTEXITCODE = $null
+    npm run lint
+    $null = Test-Exit 'npm run lint'
+}
+
+$sonarCarried = Test-StepCarried $sonarIssues
+if ($sonarCarried) {
+    $null = Test-StepCarried $beginSonar
+    $null = Test-StepCarried $endSonar
+}
 else {
+    $sonarStartedAt = [DateTimeOffset]::UtcNow
     $env:JAVA_HOME = "$env:SystemDrive\sonar-scanner-8.0.1.6346-windows-x64\jre"
     $global:LASTEXITCODE = $null
     dotnet-sonarscanner begin /k:"crgolden_Identity" /o:"crgolden" /d:sonar.token="$env:SONAR_TOKEN" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportsPaths="coverage.opencover.xml" /d:sonar.cs.vscoveragexml.reportsPaths="coverage-e2e.xml" /d:sonar.exclusions="**/bin/**,**/obj/**" /d:sonar.coverage.exclusions="**/Program.cs" /d:sonar.qualitygate.wait=true /d:sonar.scanner.skipJreProvisioning=true /d:sonar.branch.name="$sonarBranch"
@@ -93,7 +122,7 @@ else {
 
 if (-not (Test-StepCarried 'jb inspectcode')) {
     if (Test-Path $sarif) { Remove-Item $sarif -Force }
-    dotnet jb inspectcode "$repo\Identity.slnx" --no-build -e=WARNING --output="$sarif"
+    dotnet jb inspectcode "$repo\Identity.slnx" --no-build -e=WARNING --caches-home="$(New-InspectCodeCaches $gateOutput)" --output="$sarif"
     Test-Sarif $sarif
 }
 
@@ -121,9 +150,7 @@ if (-not (Test-StepCarried $schema)) {
     $null = Test-Exit $schema
 }
 
-$global:LASTEXITCODE = $null
-pwsh "$repo\Identity.Tests.E2E\bin\Release\net10.0\playwright.ps1" install chromium
-$null = Test-Exit 'Install Playwright browsers'
+Install-PlaywrightBrowsers 'Install Playwright browsers' { pwsh "$repo\Identity.Tests.E2E\bin\Release\net10.0\playwright.ps1" install --dry-run chromium } { pwsh "$repo\Identity.Tests.E2E\bin\Release\net10.0\playwright.ps1" install chromium }
 
 if (-not (Test-StepCarried $e2e)) {
     if (Test-Path $e2eTrx) { Remove-Item $e2eTrx -Force }
@@ -142,6 +169,7 @@ if (-not $sonarCarried) {
     $global:LASTEXITCODE = $null
     dotnet-sonarscanner end /d:sonar.token="$env:SONAR_TOKEN"
     $null = Test-Exit $endSonar
+    Test-SonarIssues $sonarIssues 'crgolden_Identity' $sonarBranch $sonarStartedAt
 }
 
 if (-not (Test-StepCarried $stryker)) {

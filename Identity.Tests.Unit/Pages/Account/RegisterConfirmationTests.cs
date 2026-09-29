@@ -12,17 +12,6 @@ using Moq;
 [Trait("Category", "Unit")]
 public class RegisterConfirmationTests
 {
-    public static TheoryData<string> UnknownEmailAddresses() => new()
-    {
-        Generated.NewEmailAddress(),
-    };
-
-    public static TheoryData<string?> ReturnUrlValues() => new()
-    {
-        (string?)null,
-        Generated.NewLocalPath(),
-    };
-
     [Fact]
     public void Constructor_WithValidDependencies_DoesNotThrow()
     {
@@ -73,11 +62,11 @@ public class RegisterConfirmationTests
         Assert.Equal(PageRoutes.Home, redirect.PageName);
     }
 
-    [Theory]
-    [MemberData(nameof(UnknownEmailAddresses))]
-    public async Task OnGetAsync_UserNotFound_ReturnsNotFoundObjectResult_ForVariousEmails(string email)
+    [Fact]
+    public async Task OnGetAsync_UserNotFound_ReturnsNotFoundObjectResult()
     {
         // Arrange
+        var email = Generated.NewEmailAddress();
         var mockUserManager = MockHelpers.MockUserManager();
         mockUserManager.Setup(m => m.FindByEmailAsync(It.IsAny<string>())).ReturnsAsync((IdentityUser<Guid>?)null);
         var mockUrl = new Mock<IUrlHelper>(MockBehavior.Strict);
@@ -94,15 +83,44 @@ public class RegisterConfirmationTests
         Assert.Null(model.Email);
     }
 
-    [Theory]
-    [MemberData(nameof(ReturnUrlValues))]
-    public async Task OnGetAsync_UserFound_SetsPropertiesAndDoesNotGenerateConfirmationUrl_UrlContentBehavior(string? returnUrl)
+    [Fact]
+    public async Task OnGetAsync_UserFoundWithNoReturnUrl_SetsPropertiesAndDoesNotGenerateConfirmationUrl()
     {
         // Arrange
         var testEmail = Generated.NewEmailAddress();
+        var (model, mockUrl) = BuildModelForFoundUser(testEmail);
+
+        // Act
+        var result = await model.OnGetAsync(testEmail);
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        Assert.Equal(testEmail, model.Email);
+        mockUrl.Verify(u => u.Content(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_UserFoundWithLocalReturnUrl_SetsPropertiesAndDoesNotGenerateConfirmationUrl()
+    {
+        // Arrange
+        var testEmail = Generated.NewEmailAddress();
+        var localReturnUrl = Generated.NewLocalPath();
+        var (model, mockUrl) = BuildModelForFoundUser(testEmail);
+
+        // Act
+        var result = await model.OnGetAsync(testEmail, localReturnUrl);
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        Assert.Equal(testEmail, model.Email);
+        mockUrl.Verify(u => u.Content(It.IsAny<string>()), Times.Never);
+    }
+
+    private static (RegisterConfirmation Model, Mock<IUrlHelper> MockUrl) BuildModelForFoundUser(string email)
+    {
         var user = new IdentityUser<Guid>();
         var mockUserManager = MockHelpers.MockUserManager();
-        mockUserManager.Setup(m => m.FindByEmailAsync(It.Is<string>(s => s == testEmail))).ReturnsAsync(user);
+        mockUserManager.Setup(m => m.FindByEmailAsync(It.Is<string>(s => s == email))).ReturnsAsync(user);
         var mockUrl = new Mock<IUrlHelper>(MockBehavior.Strict);
         mockUrl.Setup(u => u.Content(It.IsAny<string>())).Throws(new Exception("Url.Content should not be called"));
 
@@ -110,13 +128,6 @@ public class RegisterConfirmationTests
         {
             Url = mockUrl.Object
         };
-
-        // Act
-        var result = await model.OnGetAsync(testEmail, returnUrl);
-
-        // Assert
-        Assert.IsType<PageResult>(result);
-        Assert.Equal(testEmail, model.Email);
-        mockUrl.Verify(u => u.Content(It.IsAny<string>()), Times.Never);
+        return (model, mockUrl);
     }
 }

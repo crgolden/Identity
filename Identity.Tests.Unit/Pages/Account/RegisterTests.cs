@@ -21,72 +21,111 @@ public sealed class RegisterTests : IDisposable
 {
     private readonly TelemetryHarness _harness = new();
 
-    public static TheoryData<int> ExternalSchemeCounts() => new() { 0, 1, Random.Shared.Next(2, 6) };
+    public static TheoryData<int> NoneOrOneExternalSchemeCounts() => new() { 0, 1 };
 
-    public static TheoryData<string?> ReturnUrlValues() => new()
+    public static TheoryData<string?> NullReturnUrls() => new()
     {
         (string?)null,
-        string.Empty,
-        Generated.NewWhitespaceValue(),
-        Generated.LowercaseToken(1),
-        Generated.NewPunctuatedPageName(),
-        Generated.NewOverlongPageName(),
     };
 
     [Theory]
-    [MemberData(nameof(ReturnUrlValues))]
-    public async Task OnGetAsync_VariousReturnUrlValues_AssignsReturnUrlAndDoesNotThrow(string? returnUrl)
+    [MemberData(nameof(NullReturnUrls))]
+    public async Task OnGetAsync_NullReturnUrl_AssignsReturnUrlAndDoesNotThrow(string? returnUrl)
     {
         // Arrange
-        var userManagerMock = MockHelpers.MockUserManager();
-        userManagerMock.SetupGet(u => u.SupportsUserEmail).Returns(true);
-
-        var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
-        signInManagerMock
-            .Setup(s => s.GetExternalAuthenticationSchemesAsync())
-            .ReturnsAsync([]);
-
-        var model = new Register(
-            userManagerMock.Object,
-            signInManagerMock.Object,
-            CreateClientFactory(),
-            CreateRecaptchaServiceMock().Object,
-            TestValues.NewAccountEmailSettings(),
-            _harness.Telemetry);
+        var model = BuildModelReturningSchemes([]);
 
         // Act
         var ex = await Record.ExceptionAsync(() => model.OnGetAsync(returnUrl));
 
         // Assert
-        Assert.Null(ex);
-        Assert.Equal(returnUrl, model.ReturnUrl);
-        Assert.NotNull(model.ExternalLogins);
-        Assert.Empty(model.ExternalLogins);
+        AssertReturnUrlAssignedWithoutExternalLogins(ex, model, returnUrl);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_WhitespaceReturnUrl_AssignsReturnUrlAndDoesNotThrow()
+    {
+        // Arrange
+        var whitespaceReturnUrl = Generated.NewWhitespaceValue();
+        var model = BuildModelReturningSchemes([]);
+
+        // Act
+        var ex = await Record.ExceptionAsync(() => model.OnGetAsync(whitespaceReturnUrl));
+
+        // Assert
+        AssertReturnUrlAssignedWithoutExternalLogins(ex, model, whitespaceReturnUrl);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_SingleCharacterReturnUrl_AssignsReturnUrlAndDoesNotThrow()
+    {
+        // Arrange
+        var singleCharacterReturnUrl = Generated.LowercaseToken(1);
+        var model = BuildModelReturningSchemes([]);
+
+        // Act
+        var ex = await Record.ExceptionAsync(() => model.OnGetAsync(singleCharacterReturnUrl));
+
+        // Assert
+        AssertReturnUrlAssignedWithoutExternalLogins(ex, model, singleCharacterReturnUrl);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_PunctuatedReturnUrl_AssignsReturnUrlAndDoesNotThrow()
+    {
+        // Arrange
+        var punctuatedReturnUrl = Generated.NewPunctuatedPageName();
+        var model = BuildModelReturningSchemes([]);
+
+        // Act
+        var ex = await Record.ExceptionAsync(() => model.OnGetAsync(punctuatedReturnUrl));
+
+        // Assert
+        AssertReturnUrlAssignedWithoutExternalLogins(ex, model, punctuatedReturnUrl);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_OverlongReturnUrl_AssignsReturnUrlAndDoesNotThrow()
+    {
+        // Arrange
+        var overlongReturnUrl = Generated.NewOverlongPageName();
+        var model = BuildModelReturningSchemes([]);
+
+        // Act
+        var ex = await Record.ExceptionAsync(() => model.OnGetAsync(overlongReturnUrl));
+
+        // Assert
+        AssertReturnUrlAssignedWithoutExternalLogins(ex, model, overlongReturnUrl);
     }
 
     [Theory]
-    [MemberData(nameof(ExternalSchemeCounts))]
+    [MemberData(nameof(NoneOrOneExternalSchemeCounts))]
     public async Task OnGetAsync_ExternalSchemesReturned_PopulatesExternalLogins(int schemeCount)
     {
         // Arrange
         var schemes = NewSchemes(schemeCount);
-        var userManagerMock = MockHelpers.MockUserManager();
-        userManagerMock.SetupGet(u => u.SupportsUserEmail).Returns(true);
+        var model = BuildModelReturningSchemes(schemes);
+        var returnUrl = Generated.NewLocalPath();
 
-        var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
+        // Act
+        await model.OnGetAsync(returnUrl);
 
-        signInManagerMock
-            .Setup(s => s.GetExternalAuthenticationSchemesAsync())
-            .ReturnsAsync(schemes);
+        // Assert
+        Assert.Equal(returnUrl, model.ReturnUrl);
+        Assert.NotNull(model.ExternalLogins);
+        Assert.Equal(schemes.Length, model.ExternalLogins.Count);
+        var expectedNames = schemes.Select(s => s.Name).ToList();
+        var actualNames = model.ExternalLogins.Select(s => s.Name).ToList();
+        Assert.Equal(expectedNames, actualNames);
+    }
 
-        var model = new Register(
-            userManagerMock.Object,
-            signInManagerMock.Object,
-            CreateClientFactory(),
-            CreateRecaptchaServiceMock().Object,
-            TestValues.NewAccountEmailSettings(),
-            _harness.Telemetry);
-
+    [Fact]
+    public async Task OnGetAsync_SeveralExternalSchemesReturned_PopulatesExternalLogins()
+    {
+        // Arrange
+        var severalSchemeCount = Random.Shared.Next(2, 6);
+        var schemes = NewSchemes(severalSchemeCount);
+        var model = BuildModelReturningSchemes(schemes);
         var returnUrl = Generated.NewLocalPath();
 
         // Act
@@ -271,6 +310,33 @@ public sealed class RegisterTests : IDisposable
 
     private static AuthenticationScheme[] NewSchemes(int count) =>
         [.. Enumerable.Range(0, count).Select(_ => new AuthenticationScheme(Generated.NewSchemeName(), Generated.NewDisplayName(), typeof(DummyAuthHandler)))];
+
+    private static void AssertReturnUrlAssignedWithoutExternalLogins(Exception? ex, Register model, string? returnUrl)
+    {
+        Assert.Null(ex);
+        Assert.Equal(returnUrl, model.ReturnUrl);
+        Assert.NotNull(model.ExternalLogins);
+        Assert.Empty(model.ExternalLogins);
+    }
+
+    private Register BuildModelReturningSchemes(AuthenticationScheme[] schemes)
+    {
+        var userManagerMock = MockHelpers.MockUserManager();
+        userManagerMock.SetupGet(u => u.SupportsUserEmail).Returns(true);
+
+        var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
+        signInManagerMock
+            .Setup(s => s.GetExternalAuthenticationSchemesAsync())
+            .ReturnsAsync(schemes);
+
+        return new Register(
+            userManagerMock.Object,
+            signInManagerMock.Object,
+            CreateClientFactory(),
+            CreateRecaptchaServiceMock().Object,
+            TestValues.NewAccountEmailSettings(),
+            _harness.Telemetry);
+    }
 
     private (
         Register Model,

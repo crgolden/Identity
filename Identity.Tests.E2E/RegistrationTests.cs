@@ -1,6 +1,5 @@
 namespace Identity.Tests.E2E;
 
-using System.Text.RegularExpressions;
 using Identity.Tests.E2E.Infrastructure;
 using Microsoft.Playwright;
 
@@ -22,7 +21,7 @@ public sealed class RegistrationTests(PlaywrightFixture fixture)
             await page1.FillAsync("input[name='Input.Password']", password);
             await page1.FillAsync("input[name='Input.ConfirmPassword']", password);
             await page1.ClickAsync("#registerSubmit");
-            await Assertions.Expect(page1).ToHaveURLAsync(new Regex("/Account/RegisterConfirmation"));
+            await Assertions.Expect(page1).ToHaveURLAsync(UrlPatterns.RegisterConfirmation());
         }
 
         var (ctx2, page2) = await fixture.NewPageAsync();
@@ -34,7 +33,7 @@ public sealed class RegistrationTests(PlaywrightFixture fixture)
             await page2.FillAsync("input[name='Input.ConfirmPassword']", password);
             await page2.ClickAsync("#registerSubmit");
 
-            await Assertions.Expect(page2).ToHaveURLAsync(new Regex(PageRoutes.Register));
+            await Assertions.Expect(page2).ToHaveURLAsync(UrlPatterns.Register());
             var errorText = await page2.TextContentAsync("#validation-errors");
             Assert.NotNull(errorText);
         }
@@ -54,7 +53,7 @@ public sealed class RegistrationTests(PlaywrightFixture fixture)
             await page1.FillAsync("input[name='Input.Password']", password);
             await page1.FillAsync("input[name='Input.ConfirmPassword']", password);
             await page1.ClickAsync("#registerSubmit");
-            await Assertions.Expect(page1).ToHaveURLAsync(new Regex("/Account/RegisterConfirmation"));
+            await Assertions.Expect(page1).ToHaveURLAsync(UrlPatterns.RegisterConfirmation());
         }
 
         var (ctx2, page2) = await fixture.NewPageAsync();
@@ -65,7 +64,7 @@ public sealed class RegistrationTests(PlaywrightFixture fixture)
             await page2.FillAsync("input[name='Input.Password']", password);
             await page2.ClickAsync("#login-submit");
 
-            await Assertions.Expect(page2).ToHaveURLAsync(new Regex(PageRoutes.Login));
+            await Assertions.Expect(page2).ToHaveURLAsync(UrlPatterns.Login());
             var errorText = await page2.TextContentAsync("#validation-errors");
             Assert.NotNull(errorText);
         }
@@ -86,7 +85,7 @@ public sealed class RegistrationTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.ConfirmPassword']", password);
             await page.ClickAsync("#registerSubmit");
 
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/RegisterConfirmation"));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.RegisterConfirmation());
 
             var captured = fixture.Email.TakeEmail(email);
             var confirmLink = fixture.ExtractEmailLink(captured);
@@ -99,7 +98,7 @@ public sealed class RegistrationTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("#login-submit");
 
-            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex(PageRoutes.Login));
+            await Assertions.Expect(page).Not.ToHaveURLAsync(UrlPatterns.Login());
             Assert.DoesNotContain(PageRoutes.Login, page.Url, StringComparison.Ordinal);
         }
     }

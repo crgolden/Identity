@@ -23,8 +23,7 @@
     "mutate": [
       "**/*.cs",
       "!obj/**/*.cs",
-      "!Program.cs",
-      "!Properties/**/*.cs"
+      "!Program.cs"
     ],
     "since": {
       "enabled": false

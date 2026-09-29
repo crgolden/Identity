@@ -15,19 +15,6 @@ public class ResetPasswordTests
 {
     private const char InvalidBase64UrlCharacter = '!';
 
-    public static TheoryData<string> GetValidEncodedCases() => new()
-    {
-        Generated.NewEmailConfirmationToken(),
-        Generated.NewPassword(),
-        Generated.NewControlAndSymbolValue(),
-    };
-
-    public static TheoryData<string> MalformedCodes() => new()
-    {
-        Generated.NewUserName() + InvalidBase64UrlCharacter,
-        InvalidBase64UrlCharacter + Generated.NewPathSegment(),
-    };
-
     [Fact]
     public void ResetPasswordModel_ValidUserManager_ConstructsSuccessfully()
     {
@@ -75,15 +62,13 @@ public class ResetPasswordTests
         Assert.Equal(ResetPassword.CodeRequiredMessage, badRequest.Value);
     }
 
-    [Theory]
-    [MemberData(nameof(GetValidEncodedCases))]
-    public void OnGet_ValidBase64UrlEncodedCode_SetsInputCodeAndReturnsPage(string original)
+    [Fact]
+    public void OnGet_EncodedEmailConfirmationToken_SetsInputCodeAndReturnsPage()
     {
         // Arrange
-        var mockUserManager = MockHelpers.MockUserManager();
-        var model = new ResetPassword(mockUserManager.Object);
-
-        var encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(original));
+        var emailConfirmationToken = Generated.NewEmailConfirmationToken();
+        var encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(emailConfirmationToken));
+        var model = BuildModel();
 
         // Act
         var result = model.OnGet(encoded);
@@ -92,19 +77,70 @@ public class ResetPasswordTests
         Assert.IsType<PageResult>(result);
         var input = model.Input;
         Assert.NotNull(input);
-        Assert.Equal(original, input.Code);
+        Assert.Equal(emailConfirmationToken, input.Code);
     }
 
-    [Theory]
-    [MemberData(nameof(MalformedCodes))]
-    public void OnGet_MalformedCode_ThrowsFormatException(string malformed)
+    [Fact]
+    public void OnGet_EncodedPasswordShapedCode_SetsInputCodeAndReturnsPage()
     {
         // Arrange
-        var mockUserManager = MockHelpers.MockUserManager();
-        var model = new ResetPassword(mockUserManager.Object);
+        var passwordShapedCode = Generated.NewPassword();
+        var encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(passwordShapedCode));
+        var model = BuildModel();
 
         // Act
-        var exception = Record.Exception(() => model.OnGet(malformed));
+        var result = model.OnGet(encoded);
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        var input = model.Input;
+        Assert.NotNull(input);
+        Assert.Equal(passwordShapedCode, input.Code);
+    }
+
+    [Fact]
+    public void OnGet_EncodedControlAndSymbolCode_SetsInputCodeAndReturnsPage()
+    {
+        // Arrange
+        var controlAndSymbolCode = Generated.NewControlAndSymbolValue();
+        var encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(controlAndSymbolCode));
+        var model = BuildModel();
+
+        // Act
+        var result = model.OnGet(encoded);
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        var input = model.Input;
+        Assert.NotNull(input);
+        Assert.Equal(controlAndSymbolCode, input.Code);
+    }
+
+    [Fact]
+    public void OnGet_CodeEndingInAnInvalidBase64UrlCharacter_ThrowsFormatException()
+    {
+        // Arrange
+        var validPrefix = Generated.NewUserName();
+        var malformedCode = validPrefix + InvalidBase64UrlCharacter;
+        var model = BuildModel();
+
+        // Act
+        var exception = Record.Exception(() => model.OnGet(malformedCode));
+
+        // Assert
+        Assert.IsType<FormatException>(exception);
+    }
+
+    [Fact]
+    public void OnGet_CodeStartingWithAnInvalidBase64UrlCharacter_ThrowsFormatException()
+    {
+        // Arrange
+        var validSuffix = Generated.NewPathSegment();
+        var malformedCode = InvalidBase64UrlCharacter + validSuffix;
+        var model = BuildModel();
+
+        // Act
+        var exception = Record.Exception(() => model.OnGet(malformedCode));
 
         // Assert
         Assert.IsType<FormatException>(exception);
@@ -273,5 +309,11 @@ public class ResetPasswordTests
                 Code = resetCode
             }
         };
+    }
+
+    private static ResetPassword BuildModel()
+    {
+        var mockUserManager = MockHelpers.MockUserManager();
+        return new ResetPassword(mockUserManager.Object);
     }
 }

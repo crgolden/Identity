@@ -1,6 +1,5 @@
 namespace Identity.Tests.E2E.Admin;
 
-using System.Text.RegularExpressions;
 using Duende.IdentityServer.EntityFramework.Entities;
 using Identity.Tests.E2E.Infrastructure;
 using Microsoft.Playwright;
@@ -39,7 +38,7 @@ public sealed class ApiResourcesTests(PlaywrightFixture fixture)
             await page.FillAsync("#Resource_Name", name);
             await page.FillAsync("#Resource_DisplayName", Generated.NewDisplayName());
             await page.ClickAsync("#create-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/ApiResources/Details"));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminApiResourcesDetails());
             await Assertions.Expect(page.Locator("#btn-edit")).ToBeVisibleAsync();
         }
     }
@@ -57,9 +56,9 @@ public sealed class ApiResourcesTests(PlaywrightFixture fixture)
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/ApiResources");
             await page.ClickAsync($"#delete-{resourceId}");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Delete"));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.DeletePage());
             await page.ClickAsync("#delete-submit");
-            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("Delete"));
+            await Assertions.Expect(page).Not.ToHaveURLAsync(UrlPatterns.DeleteAnywhere());
             await Assertions.Expect(page.Locator($"#delete-{resourceId}")).Not.ToBeVisibleAsync();
         }
     }
@@ -79,7 +78,7 @@ public sealed class ApiResourcesTests(PlaywrightFixture fixture)
             await page.ClickAsync("#btn-add-row");
             await page.FillAsync("#scope-0", scope);
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.ApiResources.Edit.Scopes.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminApiResourcesDetailsScopes());
             var scopeRowId = await fixture.GetSingleAsync<ApiResourceScope, int>(s => s.Scope == scope, s => s.Id);
             await Assertions.Expect(page.Locator($"#scope-row-{scopeRowId}")).ToBeVisibleAsync();
         }
@@ -103,7 +102,7 @@ public sealed class ApiResourcesTests(PlaywrightFixture fixture)
             await page.GotoAsync($"/Admin/ApiResources/Edit/Scopes/{resourceId}");
             await page.ClickAsync("#scope-remove-0");
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.ApiResources.Edit.Scopes.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminApiResourcesDetailsScopes());
             await Assertions.Expect(page.Locator($"#scope-row-{scopeRowId}")).ToHaveCountAsync(0);
         }
     }
@@ -125,7 +124,7 @@ public sealed class ApiResourcesTests(PlaywrightFixture fixture)
             await page.GotoAsync($"/Admin/ApiResources/Edit/Scopes/{resourceId}");
             await page.FillAsync("#scope-0", updatedScope);
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.ApiResources.Edit.Scopes.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminApiResourcesDetailsScopes());
             var scopeRowId = await fixture.GetSingleAsync<ApiResourceScope, int>(s => s.Scope == updatedScope, s => s.Id);
             await Assertions.Expect(page.Locator($"#scope-row-{scopeRowId}")).ToBeVisibleAsync();
         }
@@ -147,7 +146,7 @@ public sealed class ApiResourcesTests(PlaywrightFixture fixture)
             await page.FillAsync("#secret-description-0", description);
             await page.FillAsync("#secret-value-0", Generated.NewSecretValue());
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.ApiResources.Edit.Secrets.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminApiResourcesDetailsSecrets());
             var secretRowId = await fixture.GetSingleAsync<ApiResourceSecret, int>(s => s.Description == description, s => s.Id);
             await Assertions.Expect(page.Locator($"#secret-row-{secretRowId}")).ToBeVisibleAsync();
         }
@@ -171,7 +170,7 @@ public sealed class ApiResourcesTests(PlaywrightFixture fixture)
             await page.GotoAsync($"/Admin/ApiResources/Edit/Secrets/{resourceId}");
             await page.ClickAsync("#secret-remove-0");
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.ApiResources.Edit.Secrets.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminApiResourcesDetailsSecrets());
             await Assertions.Expect(page.Locator($"#secret-row-{secretRowId}")).ToHaveCountAsync(0);
         }
     }
@@ -193,7 +192,7 @@ public sealed class ApiResourcesTests(PlaywrightFixture fixture)
             await page.GotoAsync($"/Admin/ApiResources/Edit/Secrets/{resourceId}");
             await page.FillAsync("#secret-description-0", updatedDescription);
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.ApiResources.Edit.Secrets.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminApiResourcesDetailsSecrets());
             var secretRowId = await fixture.GetSingleAsync<ApiResourceSecret, int>(s => s.Description == updatedDescription, s => s.Id);
             await Assertions.Expect(page.Locator($"#secret-row-{secretRowId}")).ToBeVisibleAsync();
         }
@@ -215,7 +214,7 @@ public sealed class ApiResourcesTests(PlaywrightFixture fixture)
             await page.FillAsync("#property-key-0", key);
             await page.FillAsync("#property-value-0", Generated.NewPropertyValue());
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.ApiResources.Edit.Properties.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminApiResourcesDetailsProperties());
             var propertyRowId = await fixture.GetSingleAsync<ApiResourceProperty, int>(p => p.Key == key, p => p.Id);
             await Assertions.Expect(page.Locator($"#property-row-{propertyRowId}")).ToBeVisibleAsync();
         }
@@ -239,7 +238,7 @@ public sealed class ApiResourcesTests(PlaywrightFixture fixture)
             await page.GotoAsync($"/Admin/ApiResources/Edit/Properties/{resourceId}");
             await page.ClickAsync("#property-remove-0");
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.ApiResources.Edit.Properties.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminApiResourcesDetailsProperties());
             await Assertions.Expect(page.Locator($"#property-row-{propertyRowId}")).ToHaveCountAsync(0);
         }
     }
@@ -261,7 +260,7 @@ public sealed class ApiResourcesTests(PlaywrightFixture fixture)
             await page.GotoAsync($"/Admin/ApiResources/Edit/Properties/{resourceId}");
             await page.FillAsync("#property-value-0", updatedValue);
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.ApiResources.Edit.Properties.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminApiResourcesDetailsProperties());
             var propertyRowId = await fixture.GetSingleAsync<ApiResourceProperty, int>(p => p.Value == updatedValue, p => p.Id);
             await Assertions.Expect(page.Locator($"#property-row-{propertyRowId}")).ToBeVisibleAsync();
         }
@@ -282,7 +281,7 @@ public sealed class ApiResourcesTests(PlaywrightFixture fixture)
             await page.ClickAsync("#btn-add-row");
             await page.FillAsync("#claimtype-0", claimType);
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.ApiResources.Edit.ClaimTypes.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminApiResourcesDetailsClaimTypes());
             var claimTypeRowId = await fixture.GetSingleAsync<ApiResourceClaim, int>(c => c.Type == claimType, c => c.Id);
             await Assertions.Expect(page.Locator($"#claim-type-row-{claimTypeRowId}")).ToBeVisibleAsync();
         }
@@ -306,7 +305,7 @@ public sealed class ApiResourcesTests(PlaywrightFixture fixture)
             await page.GotoAsync($"/Admin/ApiResources/Edit/ClaimTypes/{resourceId}");
             await page.ClickAsync("#claimtype-remove-0");
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.ApiResources.Edit.ClaimTypes.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminApiResourcesDetailsClaimTypes());
             await Assertions.Expect(page.Locator($"#claim-type-row-{claimTypeRowId}")).ToHaveCountAsync(0);
         }
     }
@@ -328,7 +327,7 @@ public sealed class ApiResourcesTests(PlaywrightFixture fixture)
             await page.GotoAsync($"/Admin/ApiResources/Edit/ClaimTypes/{resourceId}");
             await page.FillAsync("#claimtype-0", updatedClaimType);
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.ApiResources.Edit.ClaimTypes.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminApiResourcesDetailsClaimTypes());
             var claimTypeRowId = await fixture.GetSingleAsync<ApiResourceClaim, int>(c => c.Type == updatedClaimType, c => c.Id);
             await Assertions.Expect(page.Locator($"#claim-type-row-{claimTypeRowId}")).ToBeVisibleAsync();
         }
@@ -340,7 +339,7 @@ public sealed class ApiResourcesTests(PlaywrightFixture fixture)
         await page.ClickAsync("#btn-add-row");
         await page.FillAsync("#scope-0", scope);
         await page.ClickAsync("#save-submit");
-        await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.ApiResources.Edit.Scopes.DetailsPageName));
+        await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminApiResourcesDetailsScopes());
     }
 
     private static async Task AddResourceSecretRowAsync(IPage page, int resourceId, string description)
@@ -350,7 +349,7 @@ public sealed class ApiResourcesTests(PlaywrightFixture fixture)
         await page.FillAsync("#secret-description-0", description);
         await page.FillAsync("#secret-value-0", Generated.NewSecretValue());
         await page.ClickAsync("#save-submit");
-        await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.ApiResources.Edit.Secrets.DetailsPageName));
+        await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminApiResourcesDetailsSecrets());
     }
 
     private static async Task AddResourcePropertyRowAsync(IPage page, int resourceId, string key, string value)
@@ -360,7 +359,7 @@ public sealed class ApiResourcesTests(PlaywrightFixture fixture)
         await page.FillAsync("#property-key-0", key);
         await page.FillAsync("#property-value-0", value);
         await page.ClickAsync("#save-submit");
-        await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.ApiResources.Edit.Properties.DetailsPageName));
+        await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminApiResourcesDetailsProperties());
     }
 
     private static async Task AddResourceClaimTypeRowAsync(IPage page, int resourceId, string claimType)
@@ -369,7 +368,7 @@ public sealed class ApiResourcesTests(PlaywrightFixture fixture)
         await page.ClickAsync("#btn-add-row");
         await page.FillAsync("#claimtype-0", claimType);
         await page.ClickAsync("#save-submit");
-        await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.ApiResources.Edit.ClaimTypes.DetailsPageName));
+        await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminApiResourcesDetailsClaimTypes());
     }
 
     private static async Task LoginAsync(IPage page, string email, string password)
@@ -378,6 +377,6 @@ public sealed class ApiResourcesTests(PlaywrightFixture fixture)
         await page.FillAsync("input[name='Input.Email']", email);
         await page.FillAsync("input[name='Input.Password']", password);
         await page.ClickAsync("#login-submit");
-        await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex(PageRoutes.Login));
+        await Assertions.Expect(page).Not.ToHaveURLAsync(UrlPatterns.Login());
     }
 }

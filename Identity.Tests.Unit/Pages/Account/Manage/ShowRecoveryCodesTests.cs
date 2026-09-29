@@ -11,21 +11,9 @@ public class ShowRecoveryCodesTests
 {
     private const int LargeRecoveryCodeCount = 10_000;
 
-    private static readonly string[] SingleCode = [Generated.NewRecoveryCode()];
-    private static readonly string[] DuplicateCodes = DuplicatesOf(Generated.NewRecoveryCode());
-    private static readonly string[] EmptyWhitespaceCodes = [string.Empty, Generated.NewWhitespaceValue()];
-
     public static TheoryData<string[]> InvalidRecoveryCodes() => new()
     {
         Array.Empty<string>(),
-    };
-
-    public static TheoryData<string[]> ValidRecoveryCodes() => new()
-    {
-        SingleCode,
-        DuplicateCodes,
-        EmptyWhitespaceCodes,
-        CreateLargeArray(LargeRecoveryCodeCount, Generated.NewRecoveryCode()),
     };
 
     [Theory]
@@ -46,14 +34,65 @@ public class ShowRecoveryCodesTests
         Assert.Equal(PageRoutes.SiblingTwoFactorAuthentication, redirect.PageName);
     }
 
-    [Theory]
-    [MemberData(nameof(ValidRecoveryCodes))]
-    public void OnGet_RecoveryCodesHasItems_ReturnsPageResult(string[] recoveryCodes)
+    [Fact]
+    public void OnGet_SingleRecoveryCode_ReturnsPageResult()
     {
         // Arrange
+        var recoveryCode = Generated.NewRecoveryCode();
         var model = new ShowRecoveryCodes
         {
-            RecoveryCodes = recoveryCodes,
+            RecoveryCodes = [recoveryCode],
+        };
+
+        // Act
+        var result = model.OnGet();
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+    }
+
+    [Fact]
+    public void OnGet_DuplicateRecoveryCodes_ReturnsPageResult()
+    {
+        // Arrange
+        var duplicatedRecoveryCode = Generated.NewRecoveryCode();
+        var model = new ShowRecoveryCodes
+        {
+            RecoveryCodes = DuplicatesOf(duplicatedRecoveryCode),
+        };
+
+        // Act
+        var result = model.OnGet();
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+    }
+
+    [Fact]
+    public void OnGet_BlankRecoveryCodes_ReturnsPageResult()
+    {
+        // Arrange
+        var whitespaceRecoveryCode = Generated.NewWhitespaceValue();
+        var model = new ShowRecoveryCodes
+        {
+            RecoveryCodes = [Generated.NewBlank(), whitespaceRecoveryCode],
+        };
+
+        // Act
+        var result = model.OnGet();
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+    }
+
+    [Fact]
+    public void OnGet_LargeNumberOfRecoveryCodes_ReturnsPageResult()
+    {
+        // Arrange
+        var repeatedRecoveryCode = Generated.NewRecoveryCode();
+        var model = new ShowRecoveryCodes
+        {
+            RecoveryCodes = CreateLargeArray(LargeRecoveryCodeCount, repeatedRecoveryCode),
         };
 
         // Act

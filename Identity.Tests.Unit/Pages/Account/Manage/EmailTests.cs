@@ -19,12 +19,6 @@ using Moq;
 [Trait("Category", "Unit")]
 public class EmailTests
 {
-    public static TheoryData<string?> ValidEmailCases() => new()
-    {
-        Generated.NewEmailAddress(),
-        Generated.NewTaggedEmailAddress(),
-    };
-
     [Fact]
     public async Task OnPostSendVerificationEmailAsync_UserNotFound_ReturnsNotFoundWithUserId()
     {
@@ -87,60 +81,13 @@ public class EmailTests
         senderMock.Verify(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    [Theory]
-    [MemberData(nameof(ValidEmailCases))]
-    public async Task OnPostSendVerificationEmailAsync_ValidUser_SendsEmailAndRedirects(string? returnedEmail)
+    [Fact]
+    public async Task OnPostSendVerificationEmailAsync_ValidUserWithEmailAddress_SendsEmailAndRedirects()
     {
         // Arrange
-        var userManagerMock = MockHelpers.MockUserManager();
-        var user = new IdentityUser<Guid> { Id = Generated.NewUserId() };
-        var principal = new ClaimsPrincipal(new ClaimsIdentity());
-
-        userManagerMock
-            .Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
-            .ReturnsAsync(user);
-        userManagerMock
-            .Setup(um => um.GetUserIdAsync(It.IsAny<IdentityUser<Guid>>()))
-            .ReturnsAsync(Generated.NewUserId().ToString());
-        userManagerMock
-            .Setup(um => um.GetEmailAsync(It.IsAny<IdentityUser<Guid>>()))
-            .ReturnsAsync(returnedEmail);
-        userManagerMock
-            .Setup(um => um.GenerateEmailConfirmationTokenAsync(It.IsAny<IdentityUser<Guid>>()))
-            .ReturnsAsync(Generated.NewEmailConfirmationToken());
-
-        var fixedCallbackUrl = Generated.NewCallbackAddress();
-        var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
-        var urlRouteData = new RouteData();
-        urlHelperMock.SetupGet(u => u.ActionContext).Returns(
-            new ActionContext(new DefaultHttpContext(), urlRouteData, new ActionDescriptor()));
-
-        urlHelperMock.Setup(u => u.RouteUrl(It.IsAny<UrlRouteContext>())).Returns(fixedCallbackUrl);
-
-        ServiceBusMessage? capturedMessage = null;
-        var senderMock = new Mock<ServiceBusSender>(MockBehavior.Strict);
-        senderMock
-            .Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask)
-            .Callback<ServiceBusMessage, CancellationToken>((msg, _) => capturedMessage = msg);
-        var clientMock = new Mock<ServiceBusClient>(MockBehavior.Strict);
-        clientMock.Setup(c => c.CreateSender(ServiceBusNames.EmailQueueName)).Returns(senderMock.Object);
-        var factoryMock = new Mock<IAzureClientFactory<ServiceBusClient>>(MockBehavior.Strict);
-        factoryMock.Setup(f => f.CreateClient(ServiceBusNames.ClientName)).Returns(clientMock.Object);
-
-        var model = new Email(userManagerMock.Object, factoryMock.Object, TestValues.NewAccountEmailSettings())
-        {
-            PageContext = new PageContext
-            {
-                HttpContext = new DefaultHttpContext
-                {
-                    User = principal
-                }
-            },
-            Url = urlHelperMock.Object
-        };
-
-        model.PageContext.HttpContext.Request.Scheme = Uri.UriSchemeHttps;
+        var emailAddress = Generated.NewEmailAddress();
+        var callbackUrl = Generated.NewCallbackAddress();
+        var (model, senderMock, sentMessages) = BuildModelForVerificationEmail(emailAddress, callbackUrl);
 
         // Act
         var result = await model.OnPostSendVerificationEmailAsync();
@@ -151,11 +98,36 @@ public class EmailTests
 
         senderMock.Verify(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()), Times.Once);
 
-        Assert.NotNull(capturedMessage);
+        var capturedMessage = Assert.Single(sentMessages);
         Assert.Equal(UserMessages.ConfirmEmailSubject, capturedMessage.Subject);
-        Assert.Equal(returnedEmail, capturedMessage.To);
+        Assert.Equal(emailAddress, capturedMessage.To);
         var capturedBody = capturedMessage.Body.ToString();
-        var expectedEncodedUrl = HtmlEncoder.Default.Encode(fixedCallbackUrl);
+        var expectedEncodedUrl = HtmlEncoder.Default.Encode(callbackUrl);
+        Assert.Contains(expectedEncodedUrl, capturedBody, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task OnPostSendVerificationEmailAsync_ValidUserWithTaggedEmailAddress_SendsEmailAndRedirects()
+    {
+        // Arrange
+        var taggedEmailAddress = Generated.NewTaggedEmailAddress();
+        var callbackUrl = Generated.NewCallbackAddress();
+        var (model, senderMock, sentMessages) = BuildModelForVerificationEmail(taggedEmailAddress, callbackUrl);
+
+        // Act
+        var result = await model.OnPostSendVerificationEmailAsync();
+
+        // Assert
+        Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal(Email.VerificationEmailSentMessage, model.StatusMessage);
+
+        senderMock.Verify(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()), Times.Once);
+
+        var capturedMessage = Assert.Single(sentMessages);
+        Assert.Equal(UserMessages.ConfirmEmailSubject, capturedMessage.Subject);
+        Assert.Equal(taggedEmailAddress, capturedMessage.To);
+        var capturedBody = capturedMessage.Body.ToString();
+        var expectedEncodedUrl = HtmlEncoder.Default.Encode(callbackUrl);
         Assert.Contains(expectedEncodedUrl, capturedBody, StringComparison.Ordinal);
     }
 
@@ -461,4 +433,59 @@ public class EmailTests
     }
 
     private static UserManager<IdentityUser<Guid>> CreateUserManager() => MockHelpers.MockUserManager().Object;
+
+    private static (Email Model, Mock<ServiceBusSender> SenderMock, List<ServiceBusMessage> SentMessages) BuildModelForVerificationEmail(
+        string returnedEmail,
+        string callbackUrl)
+    {
+        var userManagerMock = MockHelpers.MockUserManager();
+        var user = new IdentityUser<Guid> { Id = Generated.NewUserId() };
+        var principal = new ClaimsPrincipal(new ClaimsIdentity());
+
+        userManagerMock
+            .Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
+            .ReturnsAsync(user);
+        userManagerMock
+            .Setup(um => um.GetUserIdAsync(It.IsAny<IdentityUser<Guid>>()))
+            .ReturnsAsync(Generated.NewUserId().ToString());
+        userManagerMock
+            .Setup(um => um.GetEmailAsync(It.IsAny<IdentityUser<Guid>>()))
+            .ReturnsAsync(returnedEmail);
+        userManagerMock
+            .Setup(um => um.GenerateEmailConfirmationTokenAsync(It.IsAny<IdentityUser<Guid>>()))
+            .ReturnsAsync(Generated.NewEmailConfirmationToken());
+
+        var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
+        var urlRouteData = new RouteData();
+        urlHelperMock.SetupGet(u => u.ActionContext).Returns(
+            new ActionContext(new DefaultHttpContext(), urlRouteData, new ActionDescriptor()));
+
+        urlHelperMock.Setup(u => u.RouteUrl(It.IsAny<UrlRouteContext>())).Returns(callbackUrl);
+
+        var sentMessages = new List<ServiceBusMessage>();
+        var senderMock = new Mock<ServiceBusSender>(MockBehavior.Strict);
+        senderMock
+            .Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask)
+            .Callback<ServiceBusMessage, CancellationToken>((msg, _) => sentMessages.Add(msg));
+        var clientMock = new Mock<ServiceBusClient>(MockBehavior.Strict);
+        clientMock.Setup(c => c.CreateSender(ServiceBusNames.EmailQueueName)).Returns(senderMock.Object);
+        var factoryMock = new Mock<IAzureClientFactory<ServiceBusClient>>(MockBehavior.Strict);
+        factoryMock.Setup(f => f.CreateClient(ServiceBusNames.ClientName)).Returns(clientMock.Object);
+
+        var model = new Email(userManagerMock.Object, factoryMock.Object, TestValues.NewAccountEmailSettings())
+        {
+            PageContext = new PageContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = principal
+                }
+            },
+            Url = urlHelperMock.Object
+        };
+
+        model.PageContext.HttpContext.Request.Scheme = Uri.UriSchemeHttps;
+        return (model, senderMock, sentMessages);
+    }
 }

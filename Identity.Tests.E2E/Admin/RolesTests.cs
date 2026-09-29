@@ -1,6 +1,5 @@
 namespace Identity.Tests.E2E.Admin;
 
-using System.Text.RegularExpressions;
 using Identity.Tests.E2E.Infrastructure;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Playwright;
@@ -21,7 +20,7 @@ public sealed class RolesTests(PlaywrightFixture fixture)
             await NavigateToAdminRoleDetailsAsync(page);
 
             await page.ClickAsync("#nav-claims");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.Roles.Edit.Claims.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminRolesDetailsClaims());
             await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
         }
     }
@@ -39,7 +38,7 @@ public sealed class RolesTests(PlaywrightFixture fixture)
             await NavigateToAdminRoleDetailsAsync(page);
 
             await page.ClickAsync("#nav-users");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.Roles.Details.Users.PageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminRolesDetailsUsers());
             await Assertions.Expect(page.Locator($"#user-row-{userId}")).ToBeVisibleAsync();
         }
     }
@@ -59,10 +58,10 @@ public sealed class RolesTests(PlaywrightFixture fixture)
             var roleId = await fixture.GetRoleIdAsync(roleName);
 
             await page.ClickAsync("#btn-edit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Edit/(?!Claims|Users)"));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminRolesEditIndex());
             await page.FillAsync("#AppRole_Name", renamedTo);
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Details/(?!Claims|Users)"));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminRolesDetailsIndex());
             await Assertions.Expect(page.Locator("#role-name")).ToBeVisibleAsync();
             Assert.Equal(roleId, await fixture.GetRoleIdAsync(renamedTo));
         }
@@ -104,10 +103,10 @@ public sealed class RolesTests(PlaywrightFixture fixture)
             Assert.True(await fixture.AnyAsync<IdentityRoleClaim<Guid>>(c => c.ClaimType == claimType));
 
             await page.ClickAsync("#btn-edit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Edit/Claims"));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminRolesEditClaims());
             await page.ClickAsync("#claim-remove-0");
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.Roles.Edit.Claims.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminRolesDetailsClaims());
             await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
             Assert.False(await fixture.AnyAsync<IdentityRoleClaim<Guid>>(c => c.ClaimType == claimType));
         }
@@ -129,10 +128,10 @@ public sealed class RolesTests(PlaywrightFixture fixture)
             await AddRoleClaimRowAsync(page, claimType);
 
             await page.ClickAsync("#btn-edit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Edit/Claims"));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminRolesEditClaims());
             await page.FillAsync("#claim-value-0", updatedValue);
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.Roles.Edit.Claims.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminRolesDetailsClaims());
             await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
             Assert.Equal(updatedValue, await fixture.GetSingleAsync<IdentityRoleClaim<Guid>, string?>(c => c.ClaimType == claimType, c => c.ClaimValue));
         }
@@ -142,12 +141,12 @@ public sealed class RolesTests(PlaywrightFixture fixture)
     {
         await page.ClickAsync("#nav-claims");
         await page.ClickAsync("#btn-edit");
-        await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Edit/Claims"));
+        await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminRolesEditClaims());
         await page.ClickAsync("#btn-add-row");
         await page.FillAsync("#claim-type-0", claimType);
         await page.FillAsync("#claim-value-0", Generated.NewPropertyValue());
         await page.ClickAsync("#save-submit");
-        await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.Roles.Edit.Claims.DetailsPageName));
+        await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminRolesDetailsClaims());
     }
 
     private static async Task CreateRoleAsync(IPage page, string roleName)
@@ -155,7 +154,7 @@ public sealed class RolesTests(PlaywrightFixture fixture)
         await page.GotoAsync("/Admin/Roles/Create");
         await page.FillAsync("#RoleName", roleName);
         await page.ClickAsync("#create-submit");
-        await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Details"));
+        await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminRolesDetails());
     }
 
     private static async Task LoginAsync(IPage page, string email, string password)
@@ -164,7 +163,7 @@ public sealed class RolesTests(PlaywrightFixture fixture)
         await page.FillAsync("input[name='Input.Email']", email);
         await page.FillAsync("input[name='Input.Password']", password);
         await page.ClickAsync("#login-submit");
-        await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex(PageRoutes.Login));
+        await Assertions.Expect(page).Not.ToHaveURLAsync(UrlPatterns.Login());
     }
 
     private async Task NavigateToAdminRoleDetailsAsync(IPage page)
@@ -172,6 +171,6 @@ public sealed class RolesTests(PlaywrightFixture fixture)
         var adminRoleId = await fixture.GetRoleIdAsync(AuthorizationNames.AdminRole);
         await page.GotoAsync("/Admin/Roles");
         await page.ClickAsync($"#details-{adminRoleId}");
-        await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Details/(?!Claims|Users)"));
+        await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminRolesDetailsIndex());
     }
 }

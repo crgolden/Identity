@@ -75,13 +75,10 @@ environment variable outranks both files, which is why an explicit `PasskeyOrigi
 one setting that gates origin validation.
 
 **`-trait "Category=E2E"` is not optional.** `Identity.Tests.E2E` also holds the `Category=Load` and
-`Category=Walker` suites, both written to run against a **deployed** target. The walker skips cleanly when
-`WalkerBaseUrl` is unset, so an unfiltered local run no longer fails the way it used to — but it still
-inflates the total, and **the E2E tier alone is the count to compare** against the last green run.
-
-The `Category=Smoke` suite that used to live here (`AccountSmokeTests`) is **gone**, along with the
-`TestEmail` / `X-Synthetic-Marker` machinery it needed to get past reCAPTCHA. Its coverage moved to the
-synthetic walker; see [Synthetic walker](#synthetic-walker).
+`Category=Walker` suites, both written to run against a **deployed** target. The walker skips when
+`WalkerBaseUrl` is unset, but it still inflates an unfiltered total, so **the E2E tier alone is the count to
+compare** against the last green run. The deployed site's account journeys are the synthetic walker's; see
+[Synthetic walker](#synthetic-walker).
 
 ### Single Test (by method name)
 
@@ -96,11 +93,11 @@ synthetic walker; see [Synthetic walker](#synthetic-walker).
 - **`Identity.Tests.Unit`** — xUnit page-model / service / API tests (`Category=Unit`); includes property-based (`PropertyBased/`) sub-folder. No Playwright/`Microsoft.AspNetCore.Mvc.Testing` dependency.
 - **`Identity.Tests.E2E`** — Playwright browser tests (`Category=E2E`); includes OIDC discovery tests (`Oidc/`) and IdentityServer flow tests (`ConsentTests`, `GrantsTests`, `DiagnosticsTests`, `ServerSideSessionsTests`), plus `Security/` (`AntiforgeryTests`, `ConcurrentLockoutTests`, `OpenRedirectTests`)
 - **`Identity.Tests.E2E` — Load** — throughput / failure-rate tests using `Parallel.ForEachAsync` + `HttpClient` (`Category=Load`, `Load/LoadTests.cs`); run separately (requires live server)
-- **`Identity.Tests.E2E` — Walker** — the scheduled synthetic walker (`Category=Walker`, `Synthetic/`), which walks the **deployed** site's menus as a member account and then as an admin. Skips unless `WalkerBaseUrl` is set. This replaced the retired `Category=Smoke` suite
+- **`Identity.Tests.E2E`, Walker**: the scheduled synthetic walker (`Category=Walker`, `Synthetic/`), which walks the **deployed** site's menus as a member account and then as an admin. Skips unless `WalkerBaseUrl` is set
 
 **Test infrastructure**
 - **`IdentityWebApplicationFactory`** (extends `WebApplicationFactory<Program>`) — starts a real Kestrel HTTPS server on a random port for Playwright; replaces `IAzureClientFactory<ServiceBusClient>` with `TestServiceBusClientFactory` (captures sent email via `EmailCaptureSender` instead of calling Azure Service Bus); replaces `IAvatarService` with `NullAvatarService` (no real Gravatar HTTP calls); replaces `ICAPTCHAService` with an always-pass stub returning a passing `CAPTCHAVerdict` (no real Google reCAPTCHA calls); reduces the password hasher's PBKDF2 iteration count to 1 (default 600k iterations is CPU-prohibitive across a whole suite of logins); in Development, replaces the Serilog `ILoggerFactory` with a console logger (avoids an Elasticsearch connection at startup); ignores background-service exceptions (IdentityServer key refresh, token cleanup) so a transient one can't tear down the Kestrel host mid-run.
-- **`PlaywrightFixture`** (xUnit `IAsyncLifetime`) — installs Chromium on first run, warms up the server, provides `NewPageAsync()` per test, stubs client-side `grecaptcha` so form submissions are synchronous, and in CI cleans up the test database after the suite. **The stub is a hermetic test double, not a production bypass**: it pairs with the DI-swapped `AlwaysPassCAPTCHAService` so an in-process run never calls Google at all. The fixture used to carry a second, deployed-target mode with a `X-Synthetic-Marker` header; that went with the smoke tier, and the fixture is now in-process only. The walker has its own fixture (`Synthetic/IdentityWalkerFixture`), which is what keeps the two concerns from sharing a mode flag. Every test creates its own confirmed user via `CreateConfirmedUserAsync()` — there is no shared long-lived account. A prior shared-account optimization (`GrantsTests`, `ServerSideSessionsTests` reusing one account created at fixture startup) was removed 2026-08-16 after it produced a confirmed CI failure: the shared account's first login of a run hit `SignInResult.Failed` ("Invalid login attempt.") for reasons the available Playwright trace/screenshot artifacts couldn't pin down, and the test had no retry — it polled the unchanged `/Account/Login` URL for the full 60s timeout and failed outright. Every other test in this suite, all using a fresh per-test account, has shown no comparable failure across the runs that surfaced this. If a future test wants to avoid per-test account-creation overhead, prefer a scoped shared account per test *class* (created once, used only by tests in that class) over a suite-wide one, and keep first-login assertions retry-capable rather than a bare wait-and-fail.
+- **`PlaywrightFixture`** (xUnit `IAsyncLifetime`): installs Chromium on first run, warms up the server, provides `NewPageAsync()` per test, stubs client-side `grecaptcha` so form submissions are synchronous, and in CI cleans up the test database after the suite. **The stub is a hermetic test double, not a production bypass**: it pairs with the DI-swapped `AlwaysPassCAPTCHAService` so an in-process run never calls Google at all. The fixture is in-process only; the walker has its own fixture (`Synthetic/IdentityWalkerFixture`), so the two concerns never share a mode flag. Every test creates its own confirmed user via `CreateConfirmedUserAsync()`, and there is no shared long-lived account: a suite-wide account couples every test to one login's outcome, so a single failed first login fails tests that have nothing to do with it.
 - Test collections run serially (`parallelizeTestCollections: false` in `xunit.runner.json`, `Identity.Tests.E2E` only) to prevent `WebApplicationFactory` startup from timing out Key Vault calls when the thread pool is saturated.
 - Tests that drive `/connect/authorize` against a client with a fake `redirect_uri` (e.g. `https://localhost:9999/callback` — nothing listens there) must capture the final redirect from the browser's own `Request` event via `page.RunAndWaitForRequestAsync(...)` *before* triggering the click that causes it, rather than awaiting navigation afterward — by the time a post-navigation wait would resolve, the browser has already failed the connection to the fake host (`ERR_CONNECTION_REFUSED`) and the URL is unavailable. The same before-not-after ordering applies to `page.WaitForResponseAsync(...)`: register the listener before the click that triggers the POST, or a fast response can complete before the listener attaches.
 - `page.WaitForURLAsync(...)` can miss a navigation that completes before the listener registers (common right after a form POST that renders in place, e.g. 2FA setup/reset flows). Prefer polling for a DOM element that only appears on the destination page (`Assertions.Expect(page.Locator(...)).ToBeVisibleAsync(...)`) over `WaitForURLAsync` in those spots.
@@ -174,7 +171,7 @@ $env:SYNTHETIC_SEED = '<seed>'; $env:WalkerBaseUrl = 'https://crgolden-identity.
 16. [IdentityServer UI Pages](#16-identityserver-ui-pages)
 17. [Security Tests](#17-security-tests)
 18. [Coverage Summary Matrix](#18-coverage-summary-matrix)
-19. [Load, Property-Based & Resilience Tests](#19-load-property-based--resilience-tests)
+19. [Load & Property-Based Tests](#19-load--property-based-tests)
 20. [Mutation Testing (Stryker)](#20-mutation-testing-stryker)
 21. [Admin UI Pages](#21-admin-ui-pages)
 22. [Playwright Reporting](#22-playwright-reporting)
@@ -300,12 +297,13 @@ flowchart TD
 
 | Path | File | Test Method |
 |---|---|---|
-| GET /Account/Register — return URL variants | `Register.cshtmlTests.cs` | `OnGetAsync_VariousReturnUrlValues_AssignsReturnUrlAndDoesNotThrow` |
-| GET /Account/Register — external scheme population | `Register.cshtmlTests.cs` | `OnGetAsync_ExternalSchemesReturned_PopulatesExternalLogins` |
-| POST /Account/Register — invalid model | `Register.cshtmlTests.cs` | `OnPostAsync_ModelStateInvalid_ReturnsPage` |
-| POST /Account/Register — create with RequireConfirmed | `Register.cshtmlTests.cs` | `OnPostAsync_CreateSucceeds_RespectsRequireConfirmedAccount` |
-| GET /Account/ConfirmEmail — null params redirect | `ConfirmEmail.cshtmlTests.cs` | `OnGetAsync_NullOrWhitespaceUserIdOrCode_RedirectsToIndex` |
-| GET /Account/ConfirmEmail — constructor | `ConfirmEmail.cshtmlTests.cs` | `ConfirmEmailModel_Constructor_UserManagerNull_DoesNotThrowAndStatusMessageIsNull` |
+| GET /Account/Register: return URL variants | `Pages/Account/RegisterTests.cs` | `OnGetAsync_NullOrEmptyReturnUrl_AssignsReturnUrlAndDoesNotThrow`, `OnGetAsync_WhitespaceReturnUrl_AssignsReturnUrlAndDoesNotThrow`, `OnGetAsync_SingleCharacterReturnUrl_AssignsReturnUrlAndDoesNotThrow`, `OnGetAsync_PunctuatedReturnUrl_AssignsReturnUrlAndDoesNotThrow`, `OnGetAsync_OverlongReturnUrl_AssignsReturnUrlAndDoesNotThrow` |
+| GET /Account/Register: external scheme population | `Pages/Account/RegisterTests.cs` | `OnGetAsync_ExternalSchemesReturned_PopulatesExternalLogins`, `OnGetAsync_SeveralExternalSchemesReturned_PopulatesExternalLogins` |
+| POST /Account/Register: invalid model | `Pages/Account/RegisterTests.cs` | `OnPostAsync_ModelStateInvalid_ReturnsPage` |
+| POST /Account/Register: create with or without RequireConfirmedAccount | `Pages/Account/RegisterTests.cs` | `OnPostAsync_CreateSucceedsAndConfirmationRequired_RedirectsToRegisterConfirmationWithoutSigningIn`, `OnPostAsync_CreateSucceedsAndConfirmationNotRequired_SignsInAndRedirectsLocally`, `OnPostAsync_CreateSucceedsWithANonLocalReturnUrl_RedirectsToTheContentRoot` |
+| POST /Account/Register: reCAPTCHA score below threshold | `Pages/Account/RegisterTests.cs` | `OnPostAsync_RecaptchaScoreBelowThreshold_ReturnsPageWithModelError` |
+| GET /Account/ConfirmEmail: null, empty or whitespace user id or code redirects | `Pages/Account/ConfirmEmailTests.cs` | `OnGetAsync_NullUserId_RedirectsToIndex`, `OnGetAsync_NullCode_RedirectsToIndex`, `OnGetAsync_NullUserIdAndCode_RedirectsToIndex`, `OnGetAsync_EmptyUserId_RedirectsToIndex`, `OnGetAsync_WhitespaceUserId_RedirectsToIndex`, `OnGetAsync_EmptyCode_RedirectsToIndex`, `OnGetAsync_WhitespaceCode_RedirectsToIndex` |
+| GET /Account/ConfirmEmail: constructor | `Pages/Account/ConfirmEmailTests.cs` | `ConfirmEmailModel_Constructor_ValidUserManager_InstanceCreatedAndStatusMessageIsNull` |
 | Full register → confirm → login | `RegistrationTests.cs` (E2E) | `Register_ConfirmEmail_Login_Succeeds` |
 | E2E: resend confirmation + confirm with new link | `AccountManagementTests.cs` (E2E) | `ResendEmailConfirmation_NewLink_ConfirmsAccount` |
 
@@ -401,35 +399,41 @@ flowchart TD
 
 | Path | File | Test Method |
 |---|---|---|
-| GET /Account/Login — error message | `Login.cshtmlTests.cs` | `OnGetAsync_WithErrorMessage_AddsModelError` |
-| GET /Account/Login — no error | `Login.cshtmlTests.cs` | `OnGetAsync_WithoutErrorMessage_DoesNotAddModelError` |
-| GET /Account/Login — return URL | `Login.cshtmlTests.cs` | `OnGetAsync_WithReturnUrl_SetsReturnUrl` |
-| GET /Account/Login — default return URL | `Login.cshtmlTests.cs` | `OnGetAsync_WithoutReturnUrl_DefaultsToRoot` |
-| GET /Account/Login — external schemes | `Login.cshtmlTests.cs` | `OnGetAsync_ExternalSchemesAvailable_PopulatesExternalLogins` |
-| POST — password success | `Login.cshtmlTests.cs` | `OnPostAsync_PasswordSignIn_Succeeded_ReturnsLocalRedirect` |
-| POST — requires 2FA | `Login.cshtmlTests.cs` | `OnPostAsync_PasswordSignIn_RequiresTwoFactor_RedirectsToLoginWith2fa` |
-| POST — locked out | `Login.cshtmlTests.cs` | `OnPostAsync_PasswordSignIn_IsLockedOut_RedirectsToLockout` |
-| POST — password failed | `Login.cshtmlTests.cs` | `OnPostAsync_PasswordSignIn_Failed_ReturnsPageWithModelError` |
-| POST — passkey success | `Login.cshtmlTests.cs` | `OnPostAsync_PasskeySignIn_Succeeded_ReturnsLocalRedirect` |
-| POST — invalid model | `Login.cshtmlTests.cs` | `OnPostAsync_InvalidModelState_ReturnsPageWithoutSignIn` |
-| GET /Account/LoginWith2fa — valid state | `LoginWith2fa.cshtmlTests.cs` | `OnGetAsync_TwoFactorUserExists_SetsReturnUrlAndReturnsPage` |
-| GET /Account/LoginWith2fa — null user | `LoginWith2fa.cshtmlTests.cs` | `OnGetAsync_UserIsNull_ThrowsInvalidOperationException` |
-| POST /Account/LoginWith2fa — success | `LoginWith2fa.cshtmlTests.cs` | `OnPostAsync_Succeeds_RedirectsAndSetsStatusMessageAndLogs` |
-| POST /Account/LoginWith2fa — invalid code | `LoginWith2fa.cshtmlTests.cs` | `OnPostAsync_InvalidVerificationCode_AddsModelErrorAndReturnsPage` |
-| POST /Account/LoginWith2fa — no 2FA user | `LoginWith2fa.cshtmlTests.cs` | `OnPostAsync_NoTwoFactorUser_ThrowsInvalidOperationException` |
-| GET /Account/LoginWithRecoveryCode | `LoginWithRecoveryCode.cshtmlTests.cs` | `OnGetAsync_ValidUser_SetsPropertiesAndReturnsPageResult` |
-| POST /Account/LoginWithRecoveryCode — invalid | `LoginWithRecoveryCode.cshtmlTests.cs` | `OnPostAsync_ModelStateInvalid_ReturnsPageResult` |
-| GET /Account/Logout — authenticated user shows prompt | `Logout.cshtmlTests.cs` | `OnGetAsync_AuthenticatedUser_ShowsPromptWithoutCallingInteractionService` |
-| GET /Account/Logout — unauthenticated, no logoutId | `Logout.cshtmlTests.cs` | `OnGetAsync_UnauthenticatedNoLogoutId_ReturnsPageWithoutCallingInteractionService` |
-| GET /Account/Logout — unauthenticated with logoutId, sets context | `Logout.cshtmlTests.cs` | `OnGetAsync_UnauthenticatedWithLogoutId_SetsContextProperties` |
-| POST /Account/Logout — no logoutId signs out and returns page | `Logout.cshtmlTests.cs` | `OnPostAsync_NoLogoutId_SignsOutAndReturnsPageWithoutCallingInteractionService` |
-| POST /Account/Logout — with logoutId signs out and sets context | `Logout.cshtmlTests.cs` | `OnPostAsync_WithLogoutId_SignsOutAndSetsContextProperties` |
+| GET /Account/Login — error message | `Pages/Account/LoginTests.cs` | `OnGetAsync_WithErrorMessage_AddsModelError` |
+| GET /Account/Login — no error | `Pages/Account/LoginTests.cs` | `OnGetAsync_WithoutErrorMessage_DoesNotAddModelError` |
+| GET /Account/Login — return URL | `Pages/Account/LoginTests.cs` | `OnGetAsync_WithReturnUrl_SetsReturnUrl` |
+| GET /Account/Login — default return URL | `Pages/Account/LoginTests.cs` | `OnGetAsync_WithoutReturnUrl_DefaultsToRoot` |
+| GET /Account/Login — external schemes | `Pages/Account/LoginTests.cs` | `OnGetAsync_ExternalSchemesAvailable_PopulatesExternalLogins` |
+| POST — password success | `Pages/Account/LoginTests.cs` | `OnPostAsync_PasswordSignIn_Succeeded_ReturnsLocalRedirect` |
+| POST — requires 2FA | `Pages/Account/LoginTests.cs` | `OnPostAsync_PasswordSignIn_RequiresTwoFactor_RedirectsToLoginWith2fa` |
+| POST — locked out | `Pages/Account/LoginTests.cs` | `OnPostAsync_PasswordSignIn_IsLockedOut_RedirectsToLockout` |
+| POST — password failed | `Pages/Account/LoginTests.cs` | `OnPostAsync_PasswordSignIn_Failed_ReturnsPageWithModelError` |
+| POST — passkey success | `Pages/Account/LoginTests.cs` | `OnPostAsync_PasskeySignIn_Succeeded_ReturnsLocalRedirect` |
+| POST — invalid model | `Pages/Account/LoginTests.cs` | `OnPostAsync_InvalidModelState_ReturnsPageWithoutSignIn` |
+| GET /Account/LoginWith2fa: valid state, per remember-me and return URL | `Pages/Account/LoginWith2faTests.cs` | `OnGetAsync_ValidUser_SetsPropertiesAndReturnsPageResult`, `OnGetAsync_ValidUserRememberedWithLocalReturnUrl_SetsPropertiesAndReturnsPageResult`, `OnGetAsync_ValidUserRememberedWithWhitespaceReturnUrl_SetsPropertiesAndReturnsPageResult`, `OnGetAsync_ValidUserNotRememberedWithOverlongReturnUrl_SetsPropertiesAndReturnsPageResult`, `OnGetAsync_ValidUserRememberedWithControlAndSymbolReturnUrl_SetsPropertiesAndReturnsPageResult` |
+| GET /Account/LoginWith2fa: null user | `Pages/Account/LoginWith2faTests.cs` | `OnGetAsync_UserIsNull_ThrowsInvalidOperationException` |
+| POST /Account/LoginWith2fa: invalid model | `Pages/Account/LoginWith2faTests.cs` | `OnPostAsync_ModelStateInvalid_ReturnsPage` |
+| POST /Account/LoginWith2fa: locked out | `Pages/Account/LoginWith2faTests.cs` | `OnPostAsync_LockedOut_RedirectsToLockoutPage` |
+| POST /Account/LoginWith2fa: invalid code | `Pages/Account/LoginWith2faTests.cs` | `OnPostAsync_InvalidCode_AddsModelErrorAndReturnsPage` |
+| POST /Account/LoginWith2fa: no 2FA user | `Pages/Account/LoginWith2faTests.cs` | `OnPostAsync_NoTwoFactorUser_ThrowsInvalidOperationException` |
+| GET /Account/LoginWithRecoveryCode: 2FA user, per return URL | `Pages/Account/LoginWithRecoveryCodeTests.cs` | `OnGetAsync_TwoFactorUserExists_SetsReturnUrlAndReturnsPage`, `OnGetAsync_TwoFactorUserExistsWithWhitespaceReturnUrl_SetsReturnUrlAndReturnsPage`, `OnGetAsync_TwoFactorUserExistsWithLocalReturnUrlAndQuery_SetsReturnUrlAndReturnsPage`, `OnGetAsync_TwoFactorUserExistsWithNestedReturnUrlAndControlAndSymbolQueryValue_SetsReturnUrlAndReturnsPage`, `OnGetAsync_TwoFactorUserExistsWithOverlongReturnUrl_SetsReturnUrlAndReturnsPage` |
+| GET /Account/LoginWithRecoveryCode: no 2FA user | `Pages/Account/LoginWithRecoveryCodeTests.cs` | `OnGetAsync_NoTwoFactorUser_ThrowsInvalidOperationException` |
+| POST /Account/LoginWithRecoveryCode: invalid model | `Pages/Account/LoginWithRecoveryCodeTests.cs` | `OnPostAsync_ModelStateInvalid_ReturnsPageResult` |
+| POST /Account/LoginWithRecoveryCode: succeeded, locked out, invalid code, no 2FA user | `Pages/Account/LoginWithRecoveryCodeTests.cs` | `OnPostAsync_Succeeded_RedirectsToRoot`, `OnPostAsync_LockedOut_RedirectsToLockoutPage`, `OnPostAsync_InvalidCode_AddsModelErrorAndReturnsPage`, `OnPostAsync_NoTwoFactorUser_ThrowsInvalidOperationException` |
+| GET /Account/Logout — authenticated user shows prompt | `Pages/Account/LogoutTests.cs` | `OnGetAsync_AuthenticatedUser_ShowsPromptWithoutCallingInteractionService` |
+| GET /Account/Logout — unauthenticated, no logoutId | `Pages/Account/LogoutTests.cs` | `OnGetAsync_UnauthenticatedNoLogoutId_ReturnsPageWithoutCallingInteractionService` |
+| GET /Account/Logout — unauthenticated with logoutId, sets context | `Pages/Account/LogoutTests.cs` | `OnGetAsync_UnauthenticatedWithLogoutId_SetsContextProperties` |
+| POST /Account/Logout: no logoutId redirects without calling the interaction service | `Pages/Account/LogoutTests.cs` | `OnPostAsync_NoLogoutId_SignsOutAndRedirectsWithoutCallingInteractionService` |
+| POST /Account/Logout: empty or whitespace logoutId redirects without calling the interaction service | `Pages/Account/LogoutTests.cs` | `OnPostAsync_EmptyLogoutId_DoesNotCallInteractionService`, `OnPostAsync_WhitespaceLogoutId_DoesNotCallInteractionService` |
+| POST /Account/Logout: with logoutId redirects to itself carrying it | `Pages/Account/LogoutTests.cs` | `OnPostAsync_WithLogoutId_SignsOutAndRedirectsToSelfWithLogoutId` |
+| POST /Account/Logout: signs the user out | `Pages/Account/LogoutTests.cs` | `OnPostAsync_SignsTheUserOut` |
 | E2E: logout clears session | `AccountManagementTests.cs` (E2E) | `Logout_Succeeds_ProtectedPageRedirectsToLogin` |
 | E2E: valid credentials | `LoginTests.cs` (E2E) | `Login_ValidCredentials_Succeeds` |
 | E2E: wrong password | `LoginTests.cs` (E2E) | `Login_WrongPassword_ShowsError` |
-| E2E: lockout after 5 failures | `LoginTests.cs` (E2E) | `Login_FiveFailedAttempts_LocksAccount` |
-| E2E: TOTP 2FA login | `TwoFactorTests.cs` (E2E) | `TwoFactor_Setup_Login_WithTotpCode_Succeeds` |
-| E2E: recovery code login | `TwoFactorTests.cs` (E2E) | `TwoFactor_Login_WithRecoveryCode_Succeeds` |
+| E2E: empty submit renders client validation without a script error | `LoginTests.cs` (E2E) | `Login_EmptySubmit_RendersClientValidationWithoutAScriptError` |
+| E2E: lockout after the maximum failed attempts | `LoginTests.cs` (E2E) | `Login_MaxFailedAttempts_LocksAccount` |
+| E2E: TOTP 2FA login | `TwoFactorAuthenticationTests.cs` (E2E) | `TwoFactor_Setup_Login_WithTotpCode_Succeeds` |
+| E2E: recovery code login | `TwoFactorAuthenticationTests.cs` (E2E) | `TwoFactor_Login_WithRecoveryCode_Succeeds` |
 
 ---
 
@@ -499,14 +503,14 @@ flowchart TD
 
 | Path | File | Test Method |
 |---|---|---|
-| POST — invalid model | `ForgotPassword.cshtmlTests.cs` | `OnPostAsync_ModelStateInvalid_ReturnsPage` |
-| POST — user null or unconfirmed | `ForgotPassword.cshtmlTests.cs` | `OnPostAsync_UserNullOrUnconfirmed_RedirectsToConfirmation_DoesNotSendEmail` |
-| GET /ResetPassword — no code | `ResetPassword.cshtmlTests.cs` | `OnGet_CodeIsNull_ReturnsBadRequestWithMessage` |
-| GET /ResetPassword: malformed code, a character outside base64url at the start or the end. A trailing `%` is not malformed: since .NET 9 `WebEncoders.Base64UrlDecode` goes through `Base64Url`, which reads `%` as padding | `ResetPassword.cshtmlTests.cs` | `OnGet_MalformedCode_ThrowsFormatException` |
-| GET /ResetPassword — valid code | `ResetPassword.cshtmlTests.cs` | `OnGet_ValidBase64UrlEncodedCode_SetsInputCodeAndReturnsPage` |
-| POST /ResetPassword — invalid model | `ResetPassword.cshtmlTests.cs` | `OnPostAsync_ModelStateInvalid_ReturnsPage` |
-| POST /ResetPassword — reset fails | `ResetPassword.cshtmlTests.cs` | `OnPostAsync_ResetPasswordFails_AddsModelErrorsAndReturnsPage` |
-| POST /ResetPassword — user missing or success | `ResetPassword.cshtmlTests.cs` | `OnPostAsync_UserMissingOrResetSucceeds_RedirectsToConfirmation` |
+| POST — invalid model | `Pages/Account/ForgotPasswordTests.cs` | `OnPostAsync_ModelStateInvalid_ReturnsPage` |
+| POST: unknown or unconfirmed email | `Pages/Account/ForgotPasswordTests.cs` | `OnPostAsync_UnknownEmail_RedirectsToConfirmationWithoutSendingEmail`, `OnPostAsync_UnconfirmedEmail_RedirectsToConfirmationWithoutSendingEmail` |
+| GET /ResetPassword — no code | `Pages/Account/ResetPasswordTests.cs` | `OnGet_CodeIsNull_ReturnsBadRequestWithMessage` |
+| GET /ResetPassword: malformed code, a character outside base64url at the start or the end. A trailing `%` is not malformed: since .NET 9 `WebEncoders.Base64UrlDecode` goes through `Base64Url`, which reads `%` as padding | `Pages/Account/ResetPasswordTests.cs` | `OnGet_CodeEndingInAnInvalidBase64UrlCharacter_ThrowsFormatException`, `OnGet_CodeStartingWithAnInvalidBase64UrlCharacter_ThrowsFormatException` |
+| GET /ResetPassword: valid code | `Pages/Account/ResetPasswordTests.cs` | `OnGet_EncodedEmailConfirmationToken_SetsInputCodeAndReturnsPage`, `OnGet_EncodedPasswordShapedCode_SetsInputCodeAndReturnsPage`, `OnGet_EncodedControlAndSymbolCode_SetsInputCodeAndReturnsPage` |
+| POST /ResetPassword — invalid model | `Pages/Account/ResetPasswordTests.cs` | `OnPostAsync_ModelStateInvalid_ReturnsPage` |
+| POST /ResetPassword — reset fails | `Pages/Account/ResetPasswordTests.cs` | `OnPostAsync_ResetPasswordFails_AddsModelErrorsAndReturnsPage` |
+| POST /ResetPassword: unknown email or success | `Pages/Account/ResetPasswordTests.cs` | `OnPostAsync_UnknownEmail_RedirectsToConfirmationWithoutResettingAPassword`, `OnPostAsync_ResetSucceeds_RedirectsToConfirmation` |
 | E2E: full forgot/reset flow | `PasswordResetTests.cs` (E2E) | `ForgotPassword_Reset_LoginWithNewPassword_Succeeds` |
 
 ---
@@ -601,26 +605,28 @@ flowchart TD
 
 | Path | File | Test Method |
 |---|---|---|
-| GET /TwoFactorAuthentication — user found | `TwoFactorAuthentication.cshtmlTests.cs` | `OnGetAsync_UserFound_SetsPropertiesAndReturnsPageResult` |
-| GET /TwoFactorAuthentication — user not found | `TwoFactorAuthentication.cshtmlTests.cs` | `OnGetAsync_UserNotFound_ReturnsNotFoundObjectResult` |
-| GET /EnableAuthenticator — user not found | `EnableAuthenticator.cshtmlTests.cs` | `OnGetAsync_UserNotFound_ReturnsNotFoundWithMessage` |
-| POST /EnableAuthenticator — user not found | `EnableAuthenticator.cshtmlTests.cs` | `OnPostAsync_UserNotFound_ReturnsNotFoundObjectResult` |
-| POST /EnableAuthenticator — invalid code | `EnableAuthenticator.cshtmlTests.cs` | `OnPostAsync_InvalidVerificationCode_AddsModelErrorAndReturnsPage` |
-| POST /EnableAuthenticator — valid, redirect | `EnableAuthenticator.cshtmlTests.cs` | `OnPostAsync_ValidToken_RedirectsBasedOnRecoveryCodesCount` |
-| GET /ShowRecoveryCodes — empty | `ShowRecoveryCodes.cshtmlTests.cs` | `OnGet_RecoveryCodesNullOrEmpty_RedirectsToTwoFactorAuthentication` |
-| GET /ShowRecoveryCodes — has codes | `ShowRecoveryCodes.cshtmlTests.cs` | `OnGet_RecoveryCodesHasItems_ReturnsPageResult` |
-| GET /GenerateRecoveryCodes — user not found | `GenerateRecoveryCodes.cshtmlTests.cs` | `OnGetAsync_UserNotFound_ReturnsNotFoundWithUserIdMessage` |
-| POST /GenerateRecoveryCodes — 2FA disabled | `GenerateRecoveryCodes.cshtmlTests.cs` | `OnPostAsync_TwoFactorDisabled_ThrowsInvalidOperationException` |
-| POST /GenerateRecoveryCodes — generate | `GenerateRecoveryCodes.cshtmlTests.cs` | `OnPostAsync_TwoFactorEnabled_GeneratesCodesAndRedirects` |
-| GET /Disable2fa — state check | `Disable2fa.cshtmlTests.cs` | `OnGet_TwoFactorState_BehavesAsExpected` |
-| GET /Disable2fa — user null | `Disable2fa.cshtmlTests.cs` | `OnGet_UserIsNull_ReturnsNotFoundWithUserIdInMessage` |
-| POST /Disable2fa — fails | `Disable2fa.cshtmlTests.cs` | `OnPostAsync_DisableFails_ThrowsInvalidOperationException` |
-| POST /Disable2fa — success | `Disable2fa.cshtmlTests.cs` | `OnPostAsync_Succeeds_RedirectsAndSetsStatusMessageAndLogs` |
-| GET /ResetAuthenticator — user existence | `ResetAuthenticator.cshtmlTests.cs` | `OnGet_UserExistence_ReturnsExpectedResult` |
-| POST /ResetAuthenticator | `ResetAuthenticator.cshtmlTests.cs` | `OnPostAsync_UserExists_ResetsAndRedirectsRegardlessOfIdentityResult` |
-| POST /ResetAuthenticator — user not found | `ResetAuthenticator.cshtmlTests.cs` | `OnPostAsync_UserNotFound_ReturnsNotFoundWithExpectedMessage` |
-| E2E: TOTP setup + login | `TwoFactorTests.cs` (E2E) | `TwoFactor_Setup_Login_WithTotpCode_Succeeds` |
-| E2E: recovery code login | `TwoFactorTests.cs` (E2E) | `TwoFactor_Login_WithRecoveryCode_Succeeds` |
+| GET /TwoFactorAuthentication: user found, per authenticator/2FA/recovery-code state | `Pages/Account/Manage/TwoFactorAuthenticationTests.cs` | `OnGetAsync_UserWithNothingConfigured_ReportsNoAuthenticatorNo2faAndNoRecoveryCodes`, `OnGetAsync_UserWithAuthenticator2faAndRememberedMachine_ReportsAllEnabledWithRecoveryCodesLeft`, `OnGetAsync_UserWithAuthenticatorAndMaximumRecoveryCodesButNo2fa_ReportsAuthenticatorAndRememberedMachine`, `OnGetAsync_UserWith2faButNoAuthenticatorAndMinimumRecoveryCodes_ReportsNoAuthenticator` |
+| GET /TwoFactorAuthentication — user not found | `Pages/Account/Manage/TwoFactorAuthenticationTests.cs` | `OnGetAsync_UserNotFound_ReturnsNotFoundObjectResult` |
+| GET /EnableAuthenticator — user not found | `Pages/Account/Manage/EnableAuthenticatorTests.cs` | `OnGetAsync_UserNotFound_ReturnsNotFoundWithMessage` |
+| POST /EnableAuthenticator — user not found | `Pages/Account/Manage/EnableAuthenticatorTests.cs` | `OnPostAsync_UserNotFound_ReturnsNotFoundObjectResult` |
+| POST /EnableAuthenticator — invalid code | `Pages/Account/Manage/EnableAuthenticatorTests.cs` | `OnPostAsync_InvalidVerificationCode_AddsModelErrorAndReturnsPage` |
+| POST /EnableAuthenticator: valid token, redirect by recovery codes left | `Pages/Account/Manage/EnableAuthenticatorTests.cs` | `OnPostAsync_ValidTokenAndNoRecoveryCodesLeft_RedirectsToShowRecoveryCodes`, `OnPostAsync_ValidTokenAndRecoveryCodesRemaining_RedirectsToTwoFactorAuthentication` |
+| GET /ShowRecoveryCodes: empty | `Pages/Account/Manage/ShowRecoveryCodesTests.cs` | `OnGet_RecoveryCodesEmpty_RedirectsToTwoFactorAuthentication` |
+| GET /ShowRecoveryCodes: has codes | `Pages/Account/Manage/ShowRecoveryCodesTests.cs` | `OnGet_SingleRecoveryCode_ReturnsPageResult`, `OnGet_DuplicateRecoveryCodes_ReturnsPageResult`, `OnGet_EmptyAndWhitespaceRecoveryCodes_ReturnsPageResult`, `OnGet_LargeNumberOfRecoveryCodes_ReturnsPageResult` |
+| GET /GenerateRecoveryCodes — user not found | `Pages/Account/Manage/GenerateRecoveryCodesTests.cs` | `OnGetAsync_UserNotFound_ReturnsNotFoundWithUserIdMessage` |
+| POST /GenerateRecoveryCodes — 2FA disabled | `Pages/Account/Manage/GenerateRecoveryCodesTests.cs` | `OnPostAsync_TwoFactorDisabled_ThrowsInvalidOperationException` |
+| POST /GenerateRecoveryCodes — generate | `Pages/Account/Manage/GenerateRecoveryCodesTests.cs` | `OnPostAsync_TwoFactorEnabled_GeneratesCodesAndRedirects` |
+| GET /Disable2fa: 2FA enabled or not | `Pages/Account/Manage/Disable2faTests.cs` | `OnGet_TwoFactorEnabled_ReturnsPageResult`, `OnGet_TwoFactorNotEnabled_ThrowsInvalidOperationException` |
+| GET /Disable2fa — user null | `Pages/Account/Manage/Disable2faTests.cs` | `OnGet_UserIsNull_ReturnsNotFoundWithUserIdInMessage` |
+| POST /Disable2fa — fails | `Pages/Account/Manage/Disable2faTests.cs` | `OnPostAsync_DisableFails_ThrowsInvalidOperationException` |
+| POST /Disable2fa: user not found | `Pages/Account/Manage/Disable2faTests.cs` | `OnPostAsync_UserNotFound_ReturnsNotFoundObjectResult` |
+| POST /Disable2fa: success | `Pages/Account/Manage/Disable2faTests.cs` | `OnPostAsync_Succeeds_RedirectsAndSetsStatusMessage` |
+| GET /ResetAuthenticator: user exists or missing | `Pages/Account/Manage/ResetAuthenticatorTests.cs` | `OnGet_UserExists_ReturnsPage`, `OnGet_UserMissing_ReturnsNotFoundNamingTheUserId` |
+| POST /ResetAuthenticator: reset succeeds or fails, both redirect | `Pages/Account/Manage/ResetAuthenticatorTests.cs` | `OnPostAsync_ResetSucceeds_ResetsKeyAndRedirectsToEnableAuthenticator`, `OnPostAsync_ResetFails_StillResetsKeyAndRedirectsToEnableAuthenticator` |
+| POST /ResetAuthenticator — user not found | `Pages/Account/Manage/ResetAuthenticatorTests.cs` | `OnPostAsync_UserNotFound_ReturnsNotFoundWithExpectedMessage` |
+| E2E: TOTP setup + login | `TwoFactorAuthenticationTests.cs` (E2E) | `TwoFactor_Setup_Login_WithTotpCode_Succeeds` |
+| E2E: recovery code login | `TwoFactorAuthenticationTests.cs` (E2E) | `TwoFactor_Login_WithRecoveryCode_Succeeds` |
+| E2E: reset authenticator disables 2FA and returns to setup | `TwoFactorAuthenticationTests.cs` (E2E) | `TwoFactor_ResetAuthenticator_DisablesAndRedirectsToSetup` |
 | E2E: disable 2FA, subsequent login skips challenge | `Disable2faTests.cs` (E2E) | `Disable2fa_AfterSetup_SubsequentLogin_DoesNotRequire2fa` |
 
 ---
@@ -721,24 +727,26 @@ flowchart TD
 
 | Path | File | Test Method |
 |---|---|---|
-| `MapAdditionalIdentityEndpoints` null guard | `EndpointRouteBuilderExtensionsTests.cs` | `MapAdditionalIdentityEndpoints_NullEndpoints_ThrowsArgumentNullException` |
 | POST /PasskeyCreationOptions — user not found | `EndpointRouteBuilderExtensionsTests.cs` | `PasskeyCreationOptions_UserNotFound_Returns404` |
 | POST /PasskeyCreationOptions — 200 + JSON | `EndpointRouteBuilderExtensionsTests.cs` | `PasskeyCreationOptions_UserFound_ReturnsOkWithJson` |
 | POST /PasskeyCreationOptions — user entity | `EndpointRouteBuilderExtensionsTests.cs` | `PasskeyCreationOptions_UserFound_PassesUserEntityToSignInManager` |
+| POST /PasskeyCreationOptions: no user name falls back to a display name | `EndpointRouteBuilderExtensionsTests.cs` | `PasskeyCreationOptions_NullUserName_UsesUserAsFallbackDisplayName` |
 | POST /PasskeyRequestOptions — null username | `EndpointRouteBuilderExtensionsTests.cs` | `PasskeyRequestOptions_NullUsername_MakesRequestOptionsWithNullUser` |
 | POST /PasskeyRequestOptions — whitespace | `EndpointRouteBuilderExtensionsTests.cs` | `PasskeyRequestOptions_WhitespaceUsername_MakesRequestOptionsWithNullUser` |
 | POST /PasskeyRequestOptions — with username | `EndpointRouteBuilderExtensionsTests.cs` | `PasskeyRequestOptions_UsernameProvided_FindsUserAndMakesRequestOptions` |
 | POST /PasskeyRequestOptions — 200 | `EndpointRouteBuilderExtensionsTests.cs` | `PasskeyRequestOptions_ReturnsOkWithJson` |
-| GET /Manage/Passkeys — not found | `Passkeys.cshtmlTests.cs` | `OnGetAsync_UserNotFound_ReturnsNotFoundObjectResult` |
-| GET /Manage/Passkeys — constructor | `Passkeys.cshtmlTests.cs` | `PasskeysModel_Ctor_ValidManagers_PropertiesInitializedToNull` |
-| AddPasskey — user not found | `Passkeys.cshtmlTests.cs` | `OnPostAddPasskeyAsync_UserNotFound_ReturnsNotFound` |
-| AddPasskey — attestation fails (skipped) | `Passkeys.cshtmlTests.cs` | `OnPostAddPasskeyAsync_AttestationFails_RedirectsWithFailureMessage_Partial` |
-| AddPasskey — add/update fails (skipped) | `Passkeys.cshtmlTests.cs` | `OnPostAddPasskeyAsync_AddOrUpdateFails_RedirectsWithFailureMessage_Partial` |
-| AddPasskey — success (skipped) | `Passkeys.cshtmlTests.cs` | `OnPostAddPasskeyAsync_Success_RedirectsToRenamePasskey_Partial` |
-| UpdatePasskey — user not found | `Passkeys.cshtmlTests.cs` | `OnPostUpdatePasskeyAsync_UserNotFound_ReturnsNotFoundObjectResult` |
-| GET /RenamePasskey — invalid base64 | `RenamePasskey.cshtmlTests.cs` | `OnGetAsync_InvalidBase64Id_RedirectsToPasskeysAndSetsStatusMessage` |
-| GET /RenamePasskey — not found | `RenamePasskey.cshtmlTests.cs` | `OnGetAsync_PasskeyNotFound_ReturnsNotFoundWithMessage` |
-| POST /RenamePasskey — user not found | `RenamePasskey.cshtmlTests.cs` | `OnPostAsync_UserNotFound_ReturnsNotFoundWithMessage` |
+| GET /Manage/Passkeys: constructor | `Pages/Account/Manage/PasskeysTests.cs` | `Constructor_ValidManagers_InitializesProperties` |
+| GET /Manage/Passkeys: user not found or found | `Pages/Account/Manage/PasskeysTests.cs` | `OnGetAsync_UserNotFound_ReturnsNotFound`, `OnGetAsync_UserFound_LoadsPasskeysAndReturnsPage` |
+| AddPasskey: user not found | `Pages/Account/Manage/PasskeysTests.cs` | `OnPostAddPasskeyAsync_UserNotFound_ReturnsNotFound` |
+| AddPasskey: browser error, no credential, attestation fails, add or update fails | `Pages/Account/Manage/PasskeysTests.cs` | `OnPostAddPasskeyAsync_BrowserReportedError_SetsStatusAndRedirects`, `OnPostAddPasskeyAsync_NoCredentialJson_SetsStatusAndRedirects`, `OnPostAddPasskeyAsync_AttestationFails_SetsStatusAndRedirects`, `OnPostAddPasskeyAsync_AddOrUpdateFails_SetsStatusAndRedirects` |
+| AddPasskey: success | `Pages/Account/Manage/PasskeysTests.cs` | `OnPostAddPasskeyAsync_Success_RedirectsToRenamePasskey` |
+| UpdatePasskey: user not found | `Pages/Account/Manage/PasskeysTests.cs` | `OnPostUpdatePasskeyAsync_UserNotFound_ReturnsNotFound` |
+| UpdatePasskey: blank or malformed credential id, unknown action | `Pages/Account/Manage/PasskeysTests.cs` | `OnPostUpdatePasskeyAsync_BlankCredentialId_SetsStatusAndRedirects`, `OnPostUpdatePasskeyAsync_InvalidFormatCredentialId_SetsStatusAndRedirects`, `OnPostUpdatePasskeyAsync_UnknownAction_SetsStatusAndRedirects` |
+| UpdatePasskey: rename, delete, delete fails | `Pages/Account/Manage/PasskeysTests.cs` | `OnPostUpdatePasskeyAsync_ActionRename_RedirectsToRenamePasskey`, `OnPostUpdatePasskeyAsync_ActionDelete_Success_RemovesAndRedirects`, `OnPostUpdatePasskeyAsync_ActionDelete_RemoveFails_Throws` |
+| RenamePasskey: constructor | `Pages/Account/Manage/RenamePasskeyTests.cs` | `Constructor_ValidDependencies_InitializesInput` |
+| GET /RenamePasskey: user not found, malformed id, passkey not found, passkey found | `Pages/Account/Manage/RenamePasskeyTests.cs` | `OnGetAsync_UserNotFound_ReturnsNotFound`, `OnGetAsync_InvalidFormatId_RedirectsToPasskeys`, `OnGetAsync_PasskeyNotFound_ReturnsNotFound`, `OnGetAsync_PasskeyFound_PopulatesInputAndReturnsPage` |
+| POST /RenamePasskey: user not found, malformed id, passkey not found | `Pages/Account/Manage/RenamePasskeyTests.cs` | `OnPostAsync_UserNotFound_ReturnsNotFound`, `OnPostAsync_InvalidFormatCredentialId_RedirectsToPasskeys`, `OnPostAsync_PasskeyNotFound_ReturnsNotFound` |
+| POST /RenamePasskey: add or update fails or succeeds | `Pages/Account/Manage/RenamePasskeyTests.cs` | `OnPostAsync_AddOrUpdateFails_Throws`, `OnPostAsync_AddOrUpdateSucceeds_RenamesThePasskeyAndRedirects` |
 
 > **Note:** The WebAuthn browser ceremony (navigator.credentials.create/get) has no automated test coverage; the three skip-marked tests represent intended future coverage.
 
@@ -810,20 +818,20 @@ overwritten. See `UserManagerExtensions.AddMissingClaimsAsync`.
 
 | Path | File | Test Method |
 |---|---|---|
-| GET /Login — external schemes | `Login.cshtmlTests.cs` | `OnGetAsync_ExternalSchemesAvailable_PopulatesExternalLogins` |
-| Callback — remote error | `ExternalLogin.cshtmlTests.cs` | `OnGetCallbackAsync_RemoteError_RedirectsToLogin` |
-| Callback — info null | `ExternalLogin.cshtmlTests.cs` | `OnGetCallbackAsync_InfoNull_RedirectsToLogin` |
-| Callback — locked out | `ExternalLogin.cshtmlTests.cs` | `OnGetCallbackAsync_LockedOut_RedirectsToLockout` |
-| Callback — no email claim, fallback page | `ExternalLogin.cshtmlTests.cs` | `OnGetCallbackAsync_RequiresRegistration_NoEmailClaim_ReturnsPageWithoutInputEmail` |
-| Callback — email claim, no existing user, auto-creates + signs in | `ExternalLogin.cshtmlTests.cs` | `OnGetCallbackAsync_WithEmailClaim_NoExistingUser_CreatesAccountAndSignsIn` |
-| Callback — email claim, existing user, blocks registration | `ExternalLogin.cshtmlTests.cs` | `OnGetCallbackAsync_WithEmailClaim_ExistingUser_RedirectsToLoginWithoutCreatingAccount` |
-| Callback — `email_verified=true` skips confirmation email | `ExternalLogin.cshtmlTests.cs` | `OnGetCallbackAsync_EmailVerifiedClaimTrue_SkipsConfirmationEmailAndSignsInImmediately` |
-| Callback — `email_verified=false` still confirms by email | `ExternalLogin.cshtmlTests.cs` | `OnGetCallbackAsync_EmailVerifiedClaimFalse_DoesNotConfirmEmail` |
-| Confirmation fallback — model invalid | `ExternalLogin.cshtmlTests.cs` | `OnPostConfirmationAsync_ModelStateInvalid_ReturnsPage` |
-| Confirmation fallback — info null | `ExternalLogin.cshtmlTests.cs` | `OnPostConfirmationAsync_InfoNull_RedirectsToLogin` |
-| Confirmation fallback — existing user, blocks | `ExternalLogin.cshtmlTests.cs` | `OnPostConfirmationAsync_ExistingUser_RedirectsToLoginWithoutCreatingAccount` |
-| Confirmation fallback — create + add login variants | `ExternalLogin.cshtmlTests.cs` | `OnPostConfirmationAsync_CreateSucceeds_*`, `OnPostConfirmationAsync_CreateFails_AddsErrorsAndReturnsPage` |
-| Link to existing logged-in user — add/skip claim sync | `Manage/ExternalLogins.cshtmlTests.cs` | `OnGetLinkLoginCallbackAsync_AddLoginResult_UpdatesStatusMessageAndRedirects` |
+| GET /Login — external schemes | `Pages/Account/LoginTests.cs` | `OnGetAsync_ExternalSchemesAvailable_PopulatesExternalLogins` |
+| Callback — remote error | `Pages/Account/ExternalLoginTests.cs` | `OnGetCallbackAsync_RemoteError_RedirectsToLogin` |
+| Callback — info null | `Pages/Account/ExternalLoginTests.cs` | `OnGetCallbackAsync_InfoNull_RedirectsToLogin` |
+| Callback — locked out | `Pages/Account/ExternalLoginTests.cs` | `OnGetCallbackAsync_LockedOut_RedirectsToLockout` |
+| Callback — no email claim, fallback page | `Pages/Account/ExternalLoginTests.cs` | `OnGetCallbackAsync_RequiresRegistration_NoEmailClaim_ReturnsPageWithoutInputEmail` |
+| Callback — email claim, no existing user, auto-creates + signs in | `Pages/Account/ExternalLoginTests.cs` | `OnGetCallbackAsync_WithEmailClaim_NoExistingUser_CreatesAccountAndSignsIn` |
+| Callback — email claim, existing user, blocks registration | `Pages/Account/ExternalLoginTests.cs` | `OnGetCallbackAsync_WithEmailClaim_ExistingUser_RedirectsToLoginWithoutCreatingAccount` |
+| Callback — `email_verified=true` skips confirmation email | `Pages/Account/ExternalLoginTests.cs` | `OnGetCallbackAsync_EmailVerifiedClaimTrue_SkipsConfirmationEmailAndSignsInImmediately` |
+| Callback — `email_verified=false` still confirms by email | `Pages/Account/ExternalLoginTests.cs` | `OnGetCallbackAsync_EmailVerifiedClaimFalse_DoesNotConfirmEmail` |
+| Confirmation fallback — model invalid | `Pages/Account/ExternalLoginTests.cs` | `OnPostConfirmationAsync_ModelStateInvalid_ReturnsPage` |
+| Confirmation fallback — info null | `Pages/Account/ExternalLoginTests.cs` | `OnPostConfirmationAsync_InfoNull_RedirectsToLogin` |
+| Confirmation fallback — existing user, blocks | `Pages/Account/ExternalLoginTests.cs` | `OnPostConfirmationAsync_ExistingUser_RedirectsToLoginWithoutCreatingAccount` |
+| Confirmation fallback — create + add login variants | `Pages/Account/ExternalLoginTests.cs` | `OnPostConfirmationAsync_CreateSucceeds_*`, `OnPostConfirmationAsync_CreateFails_AddsErrorsAndReturnsPage` |
+| Link to existing logged-in user: add login succeeds or fails | `Pages/Account/Manage/ExternalLoginsTests.cs` | `OnGetLinkLoginCallbackAsync_AddLoginSucceeds_RedirectsWithAddedStatusMessage`, `OnGetLinkLoginCallbackAsync_AddLoginFails_RedirectsWithNotAddedStatusMessage` |
 | Claim-sync contract (add missing, never overwrite) | `Extensions/UserManagerExtensionsTests.cs` | `AddMissingClaimsAsync_*` |
 
 E2E (`Category=E2E`, `ExternalLoginTests.cs`) exercises the real button-click → challenge → callback path
@@ -882,18 +890,16 @@ flowchart TD
 
 | Path | File | Test Method |
 |---|---|---|
-| GET — user not found | `Manage/Index.cshtmlTests.cs` | `OnGetAsync_UserNotFound_ReturnsNotFoundObjectResult` |
-| GET — user found | `Manage/Index.cshtmlTests.cs` | `OnGetAsync_UserExists_LoadsUsernameAndPhoneAndReturnsPage` |
-| POST — user not found | `Manage/Index.cshtmlTests.cs` | `OnPostAsync_UserNotFound_ReturnsNotFoundWithUserIdMessage` |
-| POST — invalid model | `Manage/Index.cshtmlTests.cs` | `OnPostAsync_ModelStateInvalid_ReturnsPageAndDoesNotChangePhoneOrSignIn` |
-| Gravatar — profile found | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_ProfileFound_ReturnsAvatarUrl` |
-| Gravatar — not found | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_ProfileNotFound_ReturnsNull` |
-| Gravatar — null avatar URL | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_ProfileReturnsNullAvatarUrl_ReturnsNull` |
-| Gravatar — non-404 exception | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_NonNotFoundApiException_PropagatesException` |
-| Gravatar — SHA-256 hash casing | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_AlwaysHashesEmailToSha256Lowercase` |
-| Gravatar — cancellation | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_PassesCancellationToken` |
+| GET — user not found | `Pages/Account/Manage/IndexTests.cs` | `OnGetAsync_UserNotFound_ReturnsNotFoundObjectResult` |
+| GET: user found | `Pages/Account/Manage/IndexTests.cs` | `OnGetAsync_UserWithUserNameAndPhoneNumber_LoadsBothAndReturnsPage`, `OnGetAsync_UserWithEmptyUserNameAndPhoneNumber_LoadsBothAndReturnsPage`, `OnGetAsync_UserWithWhitespaceUserNameAndControlAndSymbolPhoneNumber_LoadsBothAndReturnsPage`, `OnGetAsync_UserWithOverlongUserNameAndNoPhoneNumber_LoadsBothAndReturnsPage` |
+| POST — user not found | `Pages/Account/Manage/IndexTests.cs` | `OnPostAsync_UserNotFound_ReturnsNotFoundWithUserIdMessage` |
+| POST — invalid model | `Pages/Account/Manage/IndexTests.cs` | `OnPostAsync_ModelStateInvalid_ReturnsPageAndDoesNotChangePhoneOrSignIn` |
+| POST: phone number unchanged, blank or cleared | `Pages/Account/Manage/IndexTests.cs` | `OnPostAsync_NoStoredPhoneNumberAndBlankInput_RefreshesSignInWithoutSettingPhoneNumber`, `OnPostAsync_InputPhoneNumberEqualsStored_RefreshesSignInWithoutSettingPhoneNumber`, `OnPostAsync_StoredPhoneNumberAndNullInput_RefreshesSignInWithoutSettingPhoneNumber` |
+| POST: phone number changed, set succeeds or fails | `Pages/Account/Manage/IndexTests.cs` | `OnPostAsync_PhoneNumberChangedAndSetSucceeds_SetsPhoneNumberAndRefreshesSignIn`, `OnPostAsync_PhoneNumberChangedAndSetFails_ReportsErrorAndDoesNotRefreshSignIn` |
 
-`Index.OnPostAsync` only calls `SetPhoneNumberAsync` when the existing and submitted phone numbers are both non-null/non-whitespace *and* different from each other; `OnPostAsync_PhoneUpdateScenarios` (`Manage/IndexTests.cs`, via `PhoneUpdateCases`) covers all six combinations of that condition against `existingPhone`/`inputPhone`/`setSucceeds`/`expectSetCall`/`expectRefreshCall`/`expectedStatusMessage`.
+Gravatar URL construction is covered in § 14 "Service Tests".
+
+`Index.OnPostAsync` calls `SetPhoneNumberAsync` only when the submitted phone number differs from the stored one; the five POST phone tests above cover each branch of that condition.
 
 ---
 
@@ -958,17 +964,17 @@ flowchart TD
 
 | Path | File | Test Method |
 |---|---|---|
-| GET — constructor defaults | `Manage/Email.cshtmlTests.cs` | `Constructor_ValidDependencies_InitializesDefaults` |
-| POST SendVerification — invalid model | `Manage/Email.cshtmlTests.cs` | `OnPostSendVerificationEmailAsync_InvalidModelState_ReturnsPage` |
-| POST SendVerification — user not found | `Manage/Email.cshtmlTests.cs` | `OnPostSendVerificationEmailAsync_UserNotFound_ReturnsNotFoundWithUserId` |
-| POST SendVerification — success | `Manage/Email.cshtmlTests.cs` | `OnPostSendVerificationEmailAsync_ValidUser_SendsEmailAndRedirects` |
-| POST ChangeEmail — user not found | `Manage/Email.cshtmlTests.cs` | `OnPostChangeEmailAsync_UserNotFound_ReturnsNotFound` |
-| GET /ConfirmEmailChange — null params | `ConfirmEmailChange.cshtmlTests.cs` | `OnGetAsync_NullParameters_RedirectsToIndex` |
-| GET /ConfirmEmailChange — special char email | `ConfirmEmailChange.cshtmlTests.cs` | `OnGetAsync_SpecialCharacterEmail_ProceedsAndReturnSuccess` |
-| GET /ConfirmEmailChange — empty email | `ConfirmEmailChange.cshtmlTests.cs` | `OnGetAsync_EmptyOrWhitespaceEmail_RedirectsToIndex` |
-| GET /ConfirmEmailChange — change fails | `ConfirmEmailChange.cshtmlTests.cs` | `OnGetAsync_ChangeEmailFails_ReturnsPageAndSetsStatusMessage` |
-| GET /ConfirmEmailChange — set username fails | `ConfirmEmailChange.cshtmlTests.cs` | `OnGetAsync_SetUserNameFails_ReturnsPageAndSetsStatusMessage` |
-| GET /ConfirmEmailChange — success | `ConfirmEmailChange.cshtmlTests.cs` | `OnGetAsync_AllOperationsSucceed_RefreshesSignInAndSetsSuccessMessage` |
+| GET — constructor defaults | `Pages/Account/Manage/EmailTests.cs` | `Constructor_ValidDependencies_InitializesDefaults` |
+| POST SendVerification — invalid model | `Pages/Account/Manage/EmailTests.cs` | `OnPostSendVerificationEmailAsync_InvalidModelState_ReturnsPage` |
+| POST SendVerification — user not found | `Pages/Account/Manage/EmailTests.cs` | `OnPostSendVerificationEmailAsync_UserNotFound_ReturnsNotFoundWithUserId` |
+| POST SendVerification: success | `Pages/Account/Manage/EmailTests.cs` | `OnPostSendVerificationEmailAsync_ValidUserWithEmailAddress_SendsEmailAndRedirects`, `OnPostSendVerificationEmailAsync_ValidUserWithTaggedEmailAddress_SendsEmailAndRedirects` |
+| POST ChangeEmail — user not found | `Pages/Account/Manage/EmailTests.cs` | `OnPostChangeEmailAsync_UserNotFound_ReturnsNotFound` |
+| GET /ConfirmEmailChange: null params | `Pages/Account/ConfirmEmailChangeTests.cs` | `OnGetAsync_NullUserId_RedirectsToIndex`, `OnGetAsync_NullEmail_RedirectsToIndex`, `OnGetAsync_NullCode_RedirectsToIndex` |
+| GET /ConfirmEmailChange — special char email | `Pages/Account/ConfirmEmailChangeTests.cs` | `OnGetAsync_SpecialCharacterEmail_ProceedsAndReturnSuccess` |
+| GET /ConfirmEmailChange: empty or whitespace email | `Pages/Account/ConfirmEmailChangeTests.cs` | `OnGetAsync_EmptyEmail_RedirectsToIndex`, `OnGetAsync_WhitespaceEmail_RedirectsToIndex` |
+| GET /ConfirmEmailChange — change fails | `Pages/Account/ConfirmEmailChangeTests.cs` | `OnGetAsync_ChangeEmailFails_ReturnsPageAndSetsStatusMessage` |
+| GET /ConfirmEmailChange — set username fails | `Pages/Account/ConfirmEmailChangeTests.cs` | `OnGetAsync_SetUserNameFails_ReturnsPageAndSetsStatusMessage` |
+| GET /ConfirmEmailChange — success | `Pages/Account/ConfirmEmailChangeTests.cs` | `OnGetAsync_AllOperationsSucceed_RefreshesSignInAndSetsSuccessMessage` |
 | E2E: change email, confirm, new email works | `EmailChangeTests.cs` (E2E) | `ChangeEmail_Success_NewEmailConfirmed_OldEmailNoLongerValid` |
 | E2E: change email, confirm via link in new browser context | `EmailChangeTests.cs` (E2E) | `ChangeEmail_SameEmail_DoesNotSendConfirmation` |
 | E2E: change email end-to-end | `AccountManagementTests.cs` (E2E) | `ChangeEmail_Succeeds_NewEmailWorks` |
@@ -1035,13 +1041,16 @@ flowchart TD
 
 | Path | File | Test Method |
 |---|---|---|
-| GET /ChangePassword — user not found | `Manage/ChangePassword.cshtmlTests.cs` | `OnGetAsync_UserNotFound_ReturnsNotFoundObjectResult` |
-| POST /ChangePassword — invalid model | `Manage/ChangePassword.cshtmlTests.cs` | `OnPostAsync_ModelStateInvalid_ReturnsPage` |
-| POST /ChangePassword — user not found | `Manage/ChangePassword.cshtmlTests.cs` | `OnPostAsync_UserNotFound_ReturnsNotFoundWithUserId` |
-| GET /SetPassword — user not found | `Manage/SetPassword.cshtmlTests.cs` | `OnGetAsync_UserNotFound_ReturnsNotFoundWithUserIdInMessage` |
-| GET /SetPassword — hasPassword check | `Manage/SetPassword.cshtmlTests.cs` | `OnGetAsync_ExistingUser_BehavesBasedOnHasPassword` |
-| POST /SetPassword — invalid model | `Manage/SetPassword.cshtmlTests.cs` | `OnPostAsync_ModelStateInvalid_ReturnsPage` |
-| POST /SetPassword — user not found | `Manage/SetPassword.cshtmlTests.cs` | `OnPostAsync_UserNotFound_ReturnsNotFoundWithMessage` |
+| GET /ChangePassword: user not found | `Pages/Account/Manage/ChangePasswordTests.cs` | `OnGetAsync_UserNotFound_ReturnsNotFound` |
+| GET /ChangePassword: user with or without a password | `Pages/Account/Manage/ChangePasswordTests.cs` | `OnGetAsync_UserHasPassword_ReturnsPage`, `OnGetAsync_UserHasNoPassword_RedirectsToSetPassword` |
+| POST /ChangePassword: invalid model | `Pages/Account/Manage/ChangePasswordTests.cs` | `OnPostAsync_ModelStateInvalid_ReturnsPage`, `OnPostAsync_NullOldPassword_ReturnsPageWithoutCallingGetUser` |
+| POST /ChangePassword: user not found | `Pages/Account/Manage/ChangePasswordTests.cs` | `OnPostAsync_UserNotFound_ReturnsNotFoundWithUserId` |
+| POST /ChangePassword: change fails or succeeds | `Pages/Account/Manage/ChangePasswordTests.cs` | `OnPostAsync_ChangePasswordFails_ReturnsPageWithModelErrors`, `OnPostAsync_ChangePasswordSucceeds_SetsStatusMessageAndRedirects` |
+| GET /SetPassword: user not found | `Pages/Account/Manage/SetPasswordTests.cs` | `OnGetAsync_UserNotFound_ReturnsNotFoundWithUserIdInMessage` |
+| GET /SetPassword: user with or without a password | `Pages/Account/Manage/SetPasswordTests.cs` | `OnGetAsync_UserAlreadyHasPassword_RedirectsToChangePassword`, `OnGetAsync_UserHasNoPassword_ReturnsPage` |
+| POST /SetPassword: invalid model | `Pages/Account/Manage/SetPasswordTests.cs` | `OnPostAsync_ModelStateInvalid_ReturnsPage` |
+| POST /SetPassword: user not found | `Pages/Account/Manage/SetPasswordTests.cs` | `OnPostAsync_UserNotFound_ReturnsNotFoundWithMessage` |
+| POST /SetPassword: add fails or succeeds | `Pages/Account/Manage/SetPasswordTests.cs` | `OnPostAsync_AddPasswordFails_AddsModelErrorsAndReturnsPage`, `OnPostAsync_AddPasswordSucceeds_RefreshesSignInAndRedirects` |
 | E2E: change password, old no longer works | `AccountManagementTests.cs` (E2E) | `ChangePassword_Success_OldPasswordNoLongerWorks` |
 
 ---
@@ -1102,14 +1111,13 @@ flowchart TD
 
 | Path | File | Test Method |
 |---|---|---|
-| GET — user not found | `Manage/ExternalLogins.cshtmlTests.cs` | `OnGetAsync_UserNotFound_ReturnsNotFoundWithMessage` |
-| POST LinkLogin — challenge | `Manage/ExternalLogins.cshtmlTests.cs` | `OnPostLinkLoginAsync_Provider_ReturnsChallengeAndSignsOut` |
-| GET Callback — no info | `Manage/ExternalLogins.cshtmlTests.cs` | `OnGetLinkLoginCallbackAsync_NoExternalLoginInfo_ThrowsInvalidOperationException` |
-| GET Callback — user not found | `Manage/ExternalLogins.cshtmlTests.cs` | `OnGetLinkLoginCallbackAsync_UserNotFound_ReturnsNotFoundObjectResult` |
-| GET Callback — add login result | `Manage/ExternalLogins.cshtmlTests.cs` | `OnGetLinkLoginCallbackAsync_AddLoginResult_UpdatesStatusMessageAndRedirects` |
-| POST RemoveLogin — user not found | `Manage/ExternalLogins.cshtmlTests.cs` | `OnPostRemoveLoginAsync_UserNotFound_ReturnsNotFound` |
-| POST RemoveLogin — fails | `Manage/ExternalLogins.cshtmlTests.cs` | `OnPostRemoveLoginAsync_RemoveLoginFails_SetsFailureMessageAndRedirects` |
-| POST RemoveLogin — success | `Manage/ExternalLogins.cshtmlTests.cs` | `OnPostRemoveLoginAsync_RemoveLoginSucceeds_RefreshesSignInAndSetsSuccessMessage` |
+| POST LinkLogin: challenge | `Pages/Account/Manage/ExternalLoginsTests.cs` | `OnPostLinkLoginAsync_SchemeNameProvider_ReturnsChallengeAndSignsOut`, `OnPostLinkLoginAsync_EmptyProvider_ReturnsChallengeAndSignsOut`, `OnPostLinkLoginAsync_WhitespaceProvider_ReturnsChallengeAndSignsOut`, `OnPostLinkLoginAsync_PunctuatedProvider_ReturnsChallengeAndSignsOut` |
+| GET Callback — no info | `Pages/Account/Manage/ExternalLoginsTests.cs` | `OnGetLinkLoginCallbackAsync_NoExternalLoginInfo_ThrowsInvalidOperationException` |
+| GET Callback — user not found | `Pages/Account/Manage/ExternalLoginsTests.cs` | `OnGetLinkLoginCallbackAsync_UserNotFound_ReturnsNotFoundObjectResult` |
+| GET Callback: add login result | `Pages/Account/Manage/ExternalLoginsTests.cs` | `OnGetLinkLoginCallbackAsync_AddLoginSucceeds_RedirectsWithAddedStatusMessage`, `OnGetLinkLoginCallbackAsync_AddLoginFails_RedirectsWithNotAddedStatusMessage` |
+| POST RemoveLogin — user not found | `Pages/Account/Manage/ExternalLoginsTests.cs` | `OnPostRemoveLoginAsync_UserNotFound_ReturnsNotFound` |
+| POST RemoveLogin: fails | `Pages/Account/Manage/ExternalLoginsTests.cs` | `OnPostRemoveLoginAsync_RemoveLoginFailsForEmptyLoginProvider_SetsFailureMessageAndRedirects`, `OnPostRemoveLoginAsync_RemoveLoginFailsForWhitespaceLoginProviderAndProviderKey_SetsFailureMessageAndRedirects`, `OnPostRemoveLoginAsync_RemoveLoginFailsForEmptyProviderKey_SetsFailureMessageAndRedirects`, `OnPostRemoveLoginAsync_RemoveLoginFailsForOverlongProviderKey_SetsFailureMessageAndRedirects` |
+| POST RemoveLogin — success | `Pages/Account/Manage/ExternalLoginsTests.cs` | `OnPostRemoveLoginAsync_RemoveLoginSucceeds_RefreshesSignInAndSetsSuccessMessage` |
 
 ---
 
@@ -1160,12 +1168,16 @@ flowchart TD
 
 | Path | File | Test Method |
 |---|---|---|
-| GET /PersonalData — constructor | `Manage/PersonalData.cshtmlTests.cs` | `PersonalDataModel_WithValidDependencies_DoesNotThrowAndCreatesInstance` |
-| GET /PersonalData — multiple instances | `Manage/PersonalData.cshtmlTests.cs` | `PersonalDataModel_WithDifferentLoggerInstances_CreatesDistinctInstances` |
-| POST /DownloadPersonalData — not found | `Manage/DownloadPersonalData.cshtmlTests.cs` | `OnGet_UserNotFound_ReturnsNotFoundObjectResultWithMessage` |
-| GET /DeletePersonalData — not found | `Manage/DeletePersonalData.cshtmlTests.cs` | `OnGet_UserNotFound_ReturnsNotFoundObjectResultWithMessage` |
-| POST /DeletePersonalData — invalid model | `Manage/DeletePersonalData.cshtmlTests.cs` | `OnPostAsync_ModelStateInvalid_ReturnsPage` |
-| POST /DeletePersonalData — not found | `Manage/DeletePersonalData.cshtmlTests.cs` | `OnPostAsync_UserNotFound_ReturnsNotFoundObjectResult` |
+| GET /PersonalData — constructor | `Pages/Account/Manage/PersonalDataTests.cs` | `PersonalDataModel_WithValidDependencies_DoesNotThrowAndCreatesInstance` |
+| GET /PersonalData — multiple instances | `Pages/Account/Manage/PersonalDataTests.cs` | `PersonalDataModel_WithDifferentLoggerInstances_CreatesDistinctInstances` |
+| GET /DownloadPersonalData: not an endpoint | `Pages/Account/Manage/DownloadPersonalDataTests.cs` | `OnGet_DefaultState_ReturnsNotFoundResult`, `Constructor_WithValidDependencies_InstanceCreatedAndOnGetReturnsNotFound` |
+| POST /DownloadPersonalData: not found | `Pages/Account/Manage/DownloadPersonalDataTests.cs` | `OnPostAsync_UserNotFound_ReturnsNotFoundObjectResult` |
+| DeletePersonalData: constructor | `Pages/Account/Manage/DeletePersonalDataTests.cs` | `Constructor_ValidDependencies_InitializesDefaults` |
+| GET /DeletePersonalData: user not found or found | `Pages/Account/Manage/DeletePersonalDataTests.cs` | `OnGet_UserNotFound_ReturnsNotFound`, `OnGet_UserFound_SetsRequirePasswordAndReturnsPage` |
+| POST /DeletePersonalData: not found | `Pages/Account/Manage/DeletePersonalDataTests.cs` | `OnPostAsync_UserNotFound_ReturnsNotFound` |
+| POST /DeletePersonalData: password required and blank or wrong | `Pages/Account/Manage/DeletePersonalDataTests.cs` | `OnPostAsync_PasswordRequired_BlankPassword_AddsModelErrorAndReturnsPage`, `OnPostAsync_PasswordRequired_WrongPassword_AddsModelErrorAndReturnsPage` |
+| POST /DeletePersonalData: deletes, signs out and redirects | `Pages/Account/Manage/DeletePersonalDataTests.cs` | `OnPostAsync_NoPasswordRequired_DeletesSignsOutAndRedirects`, `OnPostAsync_PasswordRequired_CorrectPassword_DeletesSignsOutAndRedirects` |
+| POST /DeletePersonalData: delete fails | `Pages/Account/Manage/DeletePersonalDataTests.cs` | `OnPostAsync_DeleteFails_Throws` |
 | E2E: delete account, login fails | `AccountManagementTests.cs` (E2E) | `DeleteAccount_Success_SubsequentLoginFails` |
 
 ---
@@ -1245,10 +1257,11 @@ flowchart TD
 | Gravatar — trim + lowercase before hashing | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_NormalizesTheEmailBeforeHashing` |
 | Gravatar — documented image URL | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_BuildsTheDocumentedImageUrl` |
 | Gravatar — address with no Gravatar account still resolves | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_ResolvesAnImageForAnAddressWithNoGravatarAccount` |
-| Gravatar — no collaborator, no outbound call | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_ConstructsWithNoCollaboratorAndMakesNoOutboundCall` |
+| Gravatar: no outbound call | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_BuildsTheUrlWithoutAnOutboundCall` |
 | Gravatar — cancellation token | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_HonoursCancellation` |
 | Gravatar — activity tagged with the normalized hash | `GravatarServiceTests.cs` | `GetAvatarUrlAsync_TagsTheActivityWithTheNormalizedHash` |
-| Gravatar — own-URL recognition, hosts and non-hosts | `GravatarServiceTests.cs` | `IsOwnComputedUrl_RecognizesEveryGravatarHostAndNothingElse` |
+| Gravatar: own-URL recognition, hosts | `GravatarServiceTests.cs` | `IsOwnComputedUrl_UrlOnTheGravatarHost_IsTrue`, `IsOwnComputedUrl_UrlOnASingleLetterSubdomainOfTheGravatarHost_IsTrue`, `IsOwnComputedUrl_UrlOnAHostLabelSubdomainOfTheGravatarHost_IsTrue`, `IsOwnComputedUrl_UrlOnTheUpperCaseGravatarHost_IsTrue` |
+| Gravatar: own-URL recognition, non-hosts | `GravatarServiceTests.cs` | `IsOwnComputedUrl_UrlOnAnExternalHost_IsFalse`, `IsOwnComputedUrl_UrlOnAHostEndingInTheGravatarHostWithoutADot_IsFalse`, `IsOwnComputedUrl_NotAUrl_IsFalse` |
 | Profile service — stored picture claim wins | `Avatar/AvatarProfileServiceTests.cs` | `GetProfileDataAsync_PrefersAStoredPictureClaimOverTheComputedGravatarUrl` |
 | Profile service — falls back to the computed URL | `Avatar/AvatarProfileServiceTests.cs` | `GetProfileDataAsync_FallsBackToTheComputedGravatarUrlWhenNoPictureClaimIsStored` |
 | Profile service — legacy worker-written claim is recomputed | `Avatar/AvatarProfileServiceTests.cs` | `GetProfileDataAsync_RecomputesOverALegacyGravatarClaimLeftByThePictureClaimWorker` |
@@ -1262,7 +1275,16 @@ flowchart TD
 | Avatar endpoint — unknown `sub` is 404 | `Avatar/AvatarEndpointsTests.cs` | `GetAvatarAsync_ReturnsNotFoundForASubWithNoUser` |
 | Avatar endpoint — a stored-claim redirect carries `public, max-age=300` | `Avatar/AvatarEndpointsTests.cs` | `GetAvatarAsync_SetsCacheControlOnAStoredClaimRedirect` |
 | Avatar endpoint — a computed-URL redirect carries `public, max-age=300` | `Avatar/AvatarEndpointsTests.cs` | `GetAvatarAsync_SetsCacheControlOnTheComputedUrlRedirect` |
-| Avatar endpoint — a 404 carries no `Cache-Control` | `Avatar/AvatarEndpointsTests.cs` | `GetAvatarAsync_LeavesCacheControlUnsetOnANotFound` |
+| Avatar endpoint: a 404 carries no `Cache-Control` | `Avatar/AvatarEndpointsTests.cs` | `GetAvatarAsync_ReturnsNotFoundWhenTheAvatarServiceResolvesNoUrl`, `GetAvatarAsync_ReturnsNotFoundForAUserWithNoEmailOrUserName`, `GetAvatarAsync_ReturnsNotFoundForASubWithNoUser` |
+| Client store: `IClientStore` is the single-query store behind Duende's validation | `SingleQueryClientStoreTests.cs` (E2E) | `ClientStoreRegistration_ResolvesTheSingleQueryStoreBehindDuendesValidation` |
+| Client store: same client model as Duende's split-query store | `SingleQueryClientStoreTests.cs` (E2E) | `FindClientByIdAsync_ReturnsTheSameClientAsDuendesStore`, guarded by `SeedClientAsync_FillsEveryCollectionNavigationTheModelDeclares_SoTheParityTestCannotPassVacuously` |
+| Client store: an id differing only in case finds nothing, as in Duende's store | `SingleQueryClientStoreTests.cs` (E2E) | `FindClientByIdAsync_WhenTheIdDiffersOnlyInCase_ReturnsNullLikeDuendesStore` |
+| Client store: one command per lookup | `SingleQueryClientStoreTests.cs` (E2E) | `FindClientByIdAsync_ReadsTheClientAndEveryCollectionInOneCommand`, against the control `DuendesClientStore_ReadsTheClientInOneCommandPerCollectionPlusOne_SoTheCommandCountDiscriminates` |
+
+The client-store tests need the real database, so they sit in the E2E tier and read the commands EF executes
+through `IdentityWebApplicationFactory.Commands`, a `DbCommandInterceptor` the test host adds with
+`ConfigureDbContext`. A command is attributed to a lookup by carrying the lookup's generated client id as a
+parameter, which keeps the background services' own commands out of the count.
 
 `GetAvatarAsync_IgnoresAStoredClaimWhoseSchemeIsNotHttpsAndComputesInstead` is the scheme allowlist's
 regression cover, and it discriminates: removing the `Uri.UriSchemeHttps` comparison from
@@ -1319,28 +1341,16 @@ the only thing that tells an operator which setting the deployment is missing. T
 because `GetRequired<T>` delegates to `GetValue<T?>`, whose non-`string` conversions go through a
 `TypeConverter` — a behaviour of the binder, not of this method, and therefore worth pinning here.
 
-**Startup wiring itself lives inline in `Program.cs` and is not extracted into testable extension
-methods.** This section previously listed eight rows naming test methods on a
-`HostApplicationBuilderExtensionsTests.cs` that was an empty class, against six production methods
-(`AddCors` and `AddDataProtection` twice each, plus `AddObservabilityAsync`, `AddPersistenceAsync`,
-`AddPictureAsync` and `AddAuthAsync`), **none of which is an Identity-authored extension method.** No C#
-source defined or called four of them; the other two are ASP.NET Core built-ins invoked inline —
-`AddDataProtection` at `Program.cs:122` and `:156`, `AddCors` at `:232` — so grepping for them finds hits
-that confirm the point rather than contradict it. The rows were removed rather than corrected because
-there was nothing to correct them to. `AddPictureAsync` in particular never existed: avatar registration
-is `Program.cs`'s `.AddProfileService<AvatarProfileService>()` and
-`.AddScoped<IAvatarService, GravatarService>()`.
+**Startup wiring lives inline in `Program.cs` and is not extracted into testable extension methods.**
+`AddCors` and `AddDataProtection` there are ASP.NET Core built-ins, and avatar registration is
+`.AddProfileService<AvatarProfileService>()` plus `.AddScoped<IAvatarService, GravatarService>()`, so
+there is no Identity-authored startup extension to test. `Program.cs` needs `using Identity.Extensions;`
+only for `GetRequired`.
 
-`Identity/Extensions/HostApplicationBuilderExtensions.cs` and its test stub have both been deleted: the
-production class was an extension shell with zero members and zero callers, so the stub was testing
-nothing and the class was carrying nothing. `Program.cs` still needs `using Identity.Extensions;` for
-`GetRequired`.
-
-The real gap this leaves is worth stating rather than pointing at: **`Program.cs`'s configuration-failure
-paths have no tests.** The deleted rows described the useful ones — a missing `CorsPolicy` section, a
-missing Data Protection blob URI or key identifier, a missing `ElasticsearchNode`, a missing
-`SqlConnectionStringBuilder` section — each of which should throw at startup rather than boot degraded.
-Closing that gap means testing `Program.cs`, not reviving an empty extension class.
+**`Program.cs`'s configuration-failure paths have no tests**, by the operator's decision
+([Identity.md](../AGENTS/REPOS/Identity.md) § `/avatar/{sub}`): a missing `CorsPolicy` section, Data
+Protection blob URI or key identifier, `ElasticsearchNode` or `SqlConnectionStringBuilder` section each
+throws at startup.
 
 ### Log Filter Tests
 
@@ -1424,10 +1434,10 @@ flowchart TD
 | GET / — signed-in body names the user | `Identity.Tests.E2E/HomeTests.cs` | `Home_SignedIn_Body_Agrees_With_Navbar` |
 | GET / — Admin shortcut, admin role | `Identity.Tests.E2E/HomeTests.cs` | `Home_AdminLink_Visible_When_AdminRole` |
 | GET / — Admin shortcut, non-admin role | `Identity.Tests.E2E/HomeTests.cs` | `Home_AdminLink_Hidden_When_NonAdminRole` |
-| GET /Error — no error ID | `Pages/Error.cshtmlTests.cs` | `OnGetAsync_NullOrWhitespaceErrorId_SkipsInteractionService` |
-| GET /Error — with error ID | `Pages/Error.cshtmlTests.cs` | `OnGetAsync_ValidErrorId_CallsInteractionService` |
-| GET /Error — with error message (logs) | `Pages/Error.cshtmlTests.cs` | `OnGetAsync_ValidErrorId_WithErrorMessage_LogsError` |
-| GET /Error — ShowRequestId property | `Pages/Error.cshtmlTests.cs` | `ShowRequestId_VariousValues_ReturnsExpected` |
+| GET /Error: null, empty or whitespace error ID skips the interaction service | `Pages/ErrorTests.cs` | `OnGetAsync_NullOrEmptyErrorIdWithCurrentActivity_UsesActivityIdAndSkipsInteractionService`, `OnGetAsync_NullOrEmptyErrorIdWithNoCurrentActivity_UsesTraceIdentifierAndSkipsInteractionService`, `OnGetAsync_WhitespaceErrorIdWithCurrentActivity_UsesActivityIdAndSkipsInteractionService`, `OnGetAsync_WhitespaceErrorIdWithNoCurrentActivity_UsesTraceIdentifierAndSkipsInteractionService` |
+| GET /Error: with error ID calls the interaction service | `Pages/ErrorTests.cs` | `OnGetAsync_ErrorIdWithCurrentActivity_CallsInteractionServiceAndUsesActivityId`, `OnGetAsync_ErrorIdWithNoCurrentActivity_CallsInteractionServiceAndUsesTraceIdentifier`, `OnGetAsync_OverlongErrorId_CallsInteractionServiceAndUsesActivityId`, `OnGetAsync_ControlAndSymbolErrorId_CallsInteractionServiceAndUsesActivityId` |
+| GET /Error: OIDC error activity | `Pages/ErrorTests.cs` | `OnGetAsync_ValidErrorId_StartsOidcActivity` |
+| GET /Error: ShowRequestId property | `Pages/ErrorTests.cs` | `ShowRequestId_NullEmptyOrLineBreaksOnly_IsFalse`, `ShowRequestId_SpacesOnly_IsFalse`, `ShowRequestId_NullCharacterOnly_IsTrue`, `ShowRequestId_RequestId_IsTrue`, `ShowRequestId_OverlongValue_IsTrue`, `ShowRequestId_PunctuatedValue_IsTrue` |
 
 ### Home page ids
 
@@ -1454,14 +1464,14 @@ These pages implement the IdentityServer interactive UI — consent, grants, dev
 
 | Path | Unit Test File | E2E Test File | Coverage |
 |---|---|---|---|
-| `/Account/Manage/Consent` | `Pages/Account/Manage/Consent.cshtmlTests.cs` | `E2E/ConsentTests.cs` | ✅ Unit + E2E |
-| `/Account/Manage/Grants` | `Pages/Account/Manage/Grants.cshtmlTests.cs` | `E2E/GrantsTests.cs` | ✅ Unit + E2E |
-| `/Account/Manage/Device` | `Pages/Account/Manage/Device.cshtmlTests.cs` | — | 🟡 Unit only |
-| `/Account/Manage/DeviceSuccess` | `Pages/Account/Manage/DeviceSuccess.cshtmlTests.cs` | — | 🟡 Unit only |
-| `/Ciba` | `Pages/Ciba.cshtmlTests.cs` | — | 🟡 Unit only |
-| `/Account/Manage/ServerSideSessions` | `Pages/Account/Manage/ServerSideSessions.cshtmlTests.cs` | `E2E/ServerSideSessionsTests.cs` | ✅ Unit + E2E |
-| `/Redirect` | `Pages/Redirect.cshtmlTests.cs` | — | 🟡 Unit only |
-| `/Account/Manage/Diagnostics` | `Pages/Account/Manage/Diagnostics.cshtmlTests.cs` | `E2E/DiagnosticsTests.cs` | ✅ Unit + E2E |
+| `/Account/Manage/Consent` | `Pages/Account/Manage/ConsentTests.cs` | `Identity.Tests.E2E/ConsentTests.cs` | ✅ Unit + E2E |
+| `/Account/Manage/Grants` | `Pages/Account/Manage/GrantsTests.cs` | `Identity.Tests.E2E/GrantsTests.cs` | ✅ Unit + E2E |
+| `/Account/Manage/Device` | `Pages/Account/Manage/DeviceTests.cs` | — | 🟡 Unit only |
+| `/Account/Manage/DeviceSuccess` | `Pages/Account/Manage/DeviceSuccessTests.cs` | — | 🟡 Unit only |
+| `/Ciba` | `Pages/CibaTests.cs` | — | 🟡 Unit only |
+| `/Account/Manage/ServerSideSessions` | `Pages/Account/Manage/ServerSideSessionsTests.cs` | `Identity.Tests.E2E/ServerSideSessionsTests.cs` | ✅ Unit + E2E |
+| `/Redirect` | `Pages/RedirectTests.cs` | — | 🟡 Unit only |
+| `/Account/Manage/Diagnostics` | `Pages/Account/Manage/DiagnosticsTests.cs` | `Identity.Tests.E2E/DiagnosticsTests.cs` | ✅ Unit + E2E |
 
 ### Security header middleware tests
 
@@ -1474,7 +1484,7 @@ These pages implement the IdentityServer interactive UI — consent, grants, dev
 | HTML response sets `Referrer-Policy: no-referrer` | `Extensions/ApplicationBuilderExtensionsTests.cs` | `UseSecurityHeaders_HtmlResponse_SetsReferrerPolicyNoReferrer` |
 | HTML response sets the exact default Content-Security-Policy | `Extensions/ApplicationBuilderExtensionsTests.cs` | `UseSecurityHeaders_HtmlResponse_SetsDefaultContentSecurityPolicy` |
 | CSP allows each reCAPTCHA host per directive | `Extensions/ApplicationBuilderExtensionsTests.cs` | `UseSecurityHeaders_CspAllowsRecaptchaHost` |
-| CSP contains no CDN host, locking in self-hosting | `Extensions/ApplicationBuilderExtensionsTests.cs` | `UseSecurityHeaders_CspExcludesSelfHostedLibraryCdn` |
+| CSP names only the allowed external hosts, so no CDN host can appear | `Extensions/ApplicationBuilderExtensionsTests.cs` | `UseSecurityHeaders_CspNamesOnlyTheAllowedExternalHosts` |
 | CSP allows external client logo images | `Extensions/ApplicationBuilderExtensionsTests.cs` | `UseSecurityHeaders_CspAllowsExternalClientLogoImages` |
 | Non-HTML response sets no headers, so protocol redirects are untouched | `Extensions/ApplicationBuilderExtensionsTests.cs` | `UseSecurityHeaders_NonHtmlResponse_DoesNotSetAnyHeaders` |
 | Pre-existing CSP is not overwritten, deferring to Duende | `Extensions/ApplicationBuilderExtensionsTests.cs` | `UseSecurityHeaders_ExistingCspNotOverwritten` |
@@ -1506,7 +1516,7 @@ Custom `Identity` meter counters (`Telemetry.cs`) are verified with `MeterListen
 | `ConsentDenied` empty scopes → `scope_count` = 0 | `TelemetryTests.cs` | `ConsentDenied_EmptyScopes_ScopeCountTagIsZero` |
 | `GrantsRevoked` emits counter with value 1 | `TelemetryTests.cs` | `GrantsRevoked_EmitsCounterWithValueOne` |
 | `GrantsRevoked` tags contain `client_id` | `TelemetryTests.cs` | `GrantsRevoked_TagsContainClientId` |
-| `GrantsRevoked` null `client_id` still emits | `TelemetryTests.cs` | `GrantsRevoked_NullClientId_EmitsCounterWithNullClientId` |
+| `GrantsRevoked` null `client_id` still emits | `TelemetryTests.cs` | `GrantsRevoked_NullClientId_EmitsCounterWithNullClientIdTag` |
 
 **E2E test helpers:**
 - `Infrastructure/TestClientHelper.cs` — seeds a minimal OIDC client (`RequireConsent=true`, `authorization_code` grant, `openid` scope) and identity resources into `ApplicationDbContext` for use by `ConsentTests`
@@ -1624,7 +1634,7 @@ The following paths have no meaningful behavioral test coverage and are candidat
 
 | Gap | Impact | Suggested Test |
 |---|---|---|
-| WebAuthn browser ceremony (create + sign) | High — core passkey flow untestable | Skip-marked tests in `Passkeys.cshtmlTests.cs` need completion |
+| WebAuthn browser ceremony (create + sign) | High — core passkey flow untestable | Skip-marked tests in `Pages/Account/Manage/PasskeysTests.cs` need completion |
 | `POST /Account/PasskeyCreationOptions` — antiforgery rejection | Medium | Integration test with missing antiforgery header |
 | `POST /Account/PasskeyRequestOptions` — antiforgery rejection | Medium | Integration test with missing antiforgery header |
 | `GET /Health` | Low | Simple `WebApplicationFactory` integration test |
@@ -1633,7 +1643,7 @@ The following paths have no meaningful behavioral test coverage and are candidat
 
 ---
 
-## 19. Load, Property-Based & Resilience Tests
+## 19. Load & Property-Based Tests
 
 ### Load Tests (`Identity.Tests.E2E/Load/`)
 
@@ -1666,28 +1676,17 @@ Every figure is a required key of the `LoadSettings` configuration section, read
 
 `PasswordHashingTests` builds its `PasswordHasher<IdentityUser<Guid>>` with `IterationCount = 1` instead of the ASP.NET Core Identity default (600,000): these tests verify the API contract (round-trip, uniqueness, wrong-password rejection), not the strength of the iteration count, and 600k iterations × ~100 CsCheck samples per test method would cost minutes of CPU time per run. `Identity.Tests.E2E`'s `IdentityWebApplicationFactory` makes the same iteration-count reduction for the same reason (avoiding a real per-login hashing cost across the whole E2E suite).
 
-### Resilience Tests (`Identity.Tests.Unit/Resilience/`)
-
-`[Trait("Category", "Unit")]` — run with the normal unit test suite.
-
-| File | Focus |
-|---|---|
-| `ServiceResilienceTests.cs` | `GravatarService` surfaces non-404 API exceptions; services tolerate `CancellationToken` cancellation |
-
 ---
 
 ## 20. Mutation Testing (Stryker)
 
-Stryker.NET is configured in `stryker-config.json` with `mutation-level: Advanced`. It mutates the whole `Identity` project, minus three exclusions:
+Stryker.NET is configured in `stryker-config.json` with `mutation-level: Advanced`. It mutates the whole `Identity` project, minus two exclusions:
 
 | Excluded | Why |
 |---|---|
-| `obj/**/*.cs` | Build-generated sources; mutating generated code measures the generator, not this codebase. (Kept as a standing guard — the NSwag Gravatar client that originally motivated it is gone: `GravatarService` now builds the avatar URL by construction, so nothing is generated into `obj/` for it any more. See `ARCHITECTURE.md`.) |
+| `obj/**/*.cs` | Build-generated sources; mutating generated code measures the generator, not this codebase |
 | `Program.cs` | Top-level startup wiring, already excluded from coverage via `sonar.coverage.exclusions` |
-| `Properties/**/*.cs` | `AssemblyInfo.cs` and `GlobalUsings.cs` carry no executable logic |
-
-**Nothing is excluded for being slow.** This is a shared authentication server that is deployed rarely, so a long mutation run costs far less than a defect reaching production. `Pages/Admin/` in particular — 112 files, 1,410 mutants — is the configuration surface of the authorization server: redirect URI and post-logout redirect URI allow-lists, CORS origins, grant types, scopes, and client secrets. A mutant surviving there is the shape of an open redirect or a token-leak path, which makes it the highest-value code in the repo to mutate, not the most skippable. It also scores well (107 of its 112 files have a matching unit-test file), so including it *raises* the overall score rather than threatening the gate.
-
+**Nothing is excluded for being slow.** This is a shared authentication server that is deployed rarely, so a long mutation run costs far less than a defect reaching production. `Pages/Admin/` in particular is the configuration surface of the authorization server: redirect URI and post-logout redirect URI allow-lists, CORS origins, grant types, scopes, and client secrets. A mutant surviving there is the shape of an open redirect or a token-leak path, which makes it the highest-value code in the repo to mutate, not the most skippable.
 **Pin the Stryker version: the score moves with it.** `dotnet-stryker` is pinned in the repo's `dotnet-tools.json`, so the CI `mutation` job (`dotnet tool restore`) and the local gate run the same release. Two releases score identical code and config differently, so an unpinned install lets the gate's number move on someone else's release schedule, with no commit to blame. Bump the pin deliberately and re-derive the thresholds in the same change.
 
 **What the scope costs, measured 2026-08-20 under 4.16.0.** Narrowing is possible but has been rejected deliberately; the numbers are recorded so the trade is not re-litigated from guesswork:
@@ -1714,21 +1713,23 @@ Only the unit tests run under Stryker, because `test-projects` names `Identity.T
 
 **Never add a `test-case-filter`.** Every test in that project is `Category=Unit`, so a filter selects nothing more, and under dotnet-stryker 5.0.0's MTP runner a filter is what strands a static-initializer mutant: its every-test run is aggregated against a filtered count that can never match the discovered total, the mutant stays `Pending`, and the dashboard refuses a report holding one (400, "Submitting pending reports to the completed reports endpoint is not allowed").
 
-**Thresholds:** high=75, low=65, break=60 (CI fails if mutation score < 60). Re-derived 2026-08-20 against the current scope and pin, which measured **70.56 %** — Killed 1,462, Survived 409, Timeout 0, Errors 0, across 1,871 tested mutants. That leaves about 10 points of headroom, roughly 190 mutants, so the gate is a real floor rather than a formality; lower `break` toward 50 if it proves too tight in practice. The previous 85.71 % was measured over the old three-file allowlist and just **20 mutants**; the two numbers are not comparable, and the difference is a wider denominator, not a regression in the code.
+**Thresholds:** high=75, low=65, break=60 (CI fails if mutation score < 60). Read the current score from the Stryker dashboard, never from this file.
 
-**This replaced a hand-maintained allowlist that had silently gone stale four times.** The old `mutate` array was seeded with five files in `efe74d0` (2026-03-19) and every subsequent edit was a deletion or a rename chasing a file that had moved: `PasskeyEndpointRouteBuilderExtensions.cs` renamed (`1ab0aae`), `SecretClientExtensions.cs` deleted (`798a47a`), the `Identity.Api/` prefix stripped (`8c9dd8e`), `EmailSender.cs` dropped once it no longer existed (`dd4e4e4`), and finally `GravatarService.cs` left pointing at the project root after the Avatar slice moved it. Nothing was ever added. A stale entry never failed the job — Stryker just mutated a smaller set and still reported a score, so the run stayed green while covering less, and the score's denominator moved whenever a file left the list. Do not reintroduce a filename allowlist; add an exclusion with a stated reason instead.
+**Do not reintroduce a filename allowlist in `mutate`; add an exclusion with a stated reason instead.** An allowlisted file that moves or is renamed drops out silently: Stryker mutates a smaller set, still reports a score, and the run stays green while covering less.
 
 ```bash
 # Install the pinned version from the tool manifest
 dotnet tool restore
 
-# Run (about 70 minutes on a developer machine at the current scope)
+# Run
 dotnet stryker --config-file stryker-config.json
 ```
 
-The CI `mutation` job runs on every push, on manual dispatch, and on pull requests raised from branches in this repository — fork PRs are skipped because they cannot read `STRYKER_DASHBOARD_API_KEY` and the `dashboard` reporter would fail. It runs in parallel with `build` and is not a deploy dependency, so a score dip turns the commit red without blocking the release. Reports are uploaded as the `stryker-report` artifact (HTML + JSON). The `Run Stryker mutation tests` step sets `working-directory: Identity`, so Stryker writes `StrykerOutput/` under `Identity/`, not the repo root — the `Upload Stryker report` step's `path:` must read `Identity/StrykerOutput/**/*` to match (fixed 2026-08-17; it previously read the repo-root-relative `StrykerOutput/**/*`, which matched nothing and silently produced `No files were found ... No artifacts will be uploaded` on every mutation run without failing the job — same working-directory/hardcoded-path mismatch shape as the E2E `--results-directory` issue documented in [the workspace-level TESTING.md](../AGENTS/TESTING.md)).
+The CI `mutation` job runs on every push, on manual dispatch, and on pull requests raised from branches in this repository; fork PRs are skipped because they cannot read `STRYKER_DASHBOARD_API_KEY` and the `dashboard` reporter would fail. It runs in parallel with `build` and is not a deploy dependency, so a score dip turns the commit red without blocking the release. Reports are uploaded as the `stryker-report` artifact (HTML + JSON). The `Run Stryker mutation tests` step sets `working-directory: Identity`, so Stryker writes `StrykerOutput/` under `Identity/`, not the repo root, so the `Upload Stryker report` step's `path:` must read `Identity/StrykerOutput/**/*`. A repo-root-relative `StrykerOutput/**/*` matches nothing and uploads nothing without failing the job, the same working-directory mismatch as the E2E `--results-directory` trap in [the workspace-level TESTING.md](../AGENTS/TESTING.md).
 
-The `mutation` job does **not** depend on (`needs:`) the `build` job, and this is correct, not an oversight — Stryker performs its own build as part of its "Initial test run" phase and never consumes anything the `build` job produces. Confirmed from a live CI log (2026-08-17): the job used to run an explicit `dotnet build --configuration Release` over the whole solution before invoking Stryker, taking ~52s — then Stryker immediately built `Identity.Tests.Unit.csproj` itself, in **Debug** config, discarding the prior Release build entirely (`Building project Identity.Tests.Unit.csproj using dotnet build ... -c Debug`). That step was removed as pure dead work; `needs: build` would not have helped either, since Stryker needs the source tree and its own build cycle, not the `build` job's published output. The step's `NuGetPackageSourceCredentials_GitHub` env var was also dead for this repo specifically — neither `Identity.csproj` nor `Identity.Tests.Unit.csproj` reference anything from the private `crgolden` GitHub Packages feed, and there is no `NuGet.config` adding it as a global source, so nothing needed the credential.
+The `mutation` job does **not** depend on (`needs:`) the `build` job, and does not build first: Stryker builds `Identity.Tests.Unit.csproj` itself, in Debug, during its initial test run, so a prior Release build is discarded work and `needs: build` would buy nothing.
+
+**Every job that restores Identity needs the `crgolden` GitHub Packages credential** (`NuGetPackageSourceCredentials_GitHub` from `PACKAGES_READ_TOKEN`), because `Identity`, `Identity.Tests.Unit` and `Identity.Tests.E2E` all reference the `Shared` package from that feed. A job without it fails at restore with `NU1301 ... 401 (Unauthorized)`, and in `synthetic.yml` that failure means the walk never runs.
 
 ---
 
@@ -1830,7 +1831,7 @@ Each retained folder contains:
 
 CI uploads the retained failure artifacts as `identity-playwright-artifacts`, separately from the existing `test-results` TRX artifact.
 
-GitHub Actions artifacts are the only reporting destination. The workflow steps that used to mirror the same TRX outcomes to Azure DevOps test runs and Azure Monitor custom events are retired and removed.
+GitHub Actions artifacts are the only reporting destination; nothing mirrors TRX outcomes to Azure DevOps or Azure Monitor ([RETIRED/AZURE_DEVOPS.md](../AGENTS/RETIRED/AZURE_DEVOPS.md)).
 
 One workflow decision that is not obvious from reading the YAML:
 
@@ -1878,9 +1879,8 @@ $env:SONAR_TOKEN = "<token>"
 ```
 
 The exclusion arguments must stay byte-for-byte identical to the ones
-`.github/workflows/main_crgolden-identity.yml` passes to `dotnet-sonarscanner begin`. They are the same
-policy written twice, and this copy had already lost `sonar.coverage.exclusions` while the section above
-claimed `Program.cs` was excluded by it.
+`.github/workflows/main_crgolden-identity.yml` passes to `dotnet-sonarscanner begin`: they are the same
+policy written twice, and a copy that drifts measures a different codebase from the one CI reports.
 
 Required coverage files: `coverage.opencover.xml` (unit, OpenCover), `coverage-e2e.xml` (E2E, VS Coverage).
 

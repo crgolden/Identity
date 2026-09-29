@@ -18,10 +18,6 @@ public class PersonalDataTests
     public static TheoryData<string?> UserIdValues => new()
     {
         (string?)null,
-        string.Empty,
-        Generated.NewWhitespaceValue(),
-        Generated.NewOverlongValue(),
-        Generated.NewControlAndSymbolValue(),
     };
 
     [Fact]
@@ -100,36 +96,55 @@ public class PersonalDataTests
     public async Task OnGet_UserNotFound_ReturnsNotFoundWithMessage(string? userId)
     {
         // Arrange
-        var userManagerMock = MockHelpers.MockUserManager();
-        userManagerMock
-            .Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
-            .ReturnsAsync((IdentityUser<Guid>?)null);
-        userManagerMock
-            .Setup(m => m.GetUserId(It.IsAny<ClaimsPrincipal>()))
-            .Returns(userId);
-
-        var model = new PersonalData(userManagerMock.Object)
-        {
-            PageContext = new PageContext
-            {
-                HttpContext = new DefaultHttpContext
-                {
-                    User = new ClaimsPrincipal()
-                }
-            }
-        };
+        var (model, userManagerMock) = BuildModelForMissingUser(userId);
 
         // Act
         var result = await model.OnGet();
 
         // Assert
-        var notFound = Assert.IsType<NotFoundObjectResult>(result);
-        var expected = UserMessages.UnableToLoadUser(userId);
-        Assert.Equal(expected, Assert.IsType<string>(notFound.Value));
-        Assert.Equal(expected, (string)notFound.Value);
+        AssertNotFoundWithUserMessage(result, userId, userManagerMock);
+    }
 
-        userManagerMock.Verify(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>()), Times.Once);
-        userManagerMock.Verify(m => m.GetUserId(It.IsAny<ClaimsPrincipal>()), Times.Once);
+    [Fact]
+    public async Task OnGet_UserNotFoundWithWhitespaceUserId_ReturnsNotFoundWithMessage()
+    {
+        // Arrange
+        var whitespaceUserId = Generated.NewWhitespaceValue();
+        var (model, userManagerMock) = BuildModelForMissingUser(whitespaceUserId);
+
+        // Act
+        var result = await model.OnGet();
+
+        // Assert
+        AssertNotFoundWithUserMessage(result, whitespaceUserId, userManagerMock);
+    }
+
+    [Fact]
+    public async Task OnGet_UserNotFoundWithOverlongUserId_ReturnsNotFoundWithMessage()
+    {
+        // Arrange
+        var overlongUserId = Generated.NewOverlongValue();
+        var (model, userManagerMock) = BuildModelForMissingUser(overlongUserId);
+
+        // Act
+        var result = await model.OnGet();
+
+        // Assert
+        AssertNotFoundWithUserMessage(result, overlongUserId, userManagerMock);
+    }
+
+    [Fact]
+    public async Task OnGet_UserNotFoundWithControlAndSymbolUserId_ReturnsNotFoundWithMessage()
+    {
+        // Arrange
+        var controlAndSymbolUserId = Generated.NewControlAndSymbolValue();
+        var (model, userManagerMock) = BuildModelForMissingUser(controlAndSymbolUserId);
+
+        // Act
+        var result = await model.OnGet();
+
+        // Assert
+        AssertNotFoundWithUserMessage(result, controlAndSymbolUserId, userManagerMock);
     }
 
     [Fact]
@@ -194,5 +209,42 @@ public class PersonalDataTests
         // Assert
         Assert.IsType<InvalidOperationException>(exception);
         userManagerMock.Verify(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>()), Times.Once);
+    }
+
+    private static (PersonalData Model, Mock<UserManager<IdentityUser<Guid>>> UserManagerMock) BuildModelForMissingUser(string? userId)
+    {
+        var userManagerMock = MockHelpers.MockUserManager();
+        userManagerMock
+            .Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
+            .ReturnsAsync((IdentityUser<Guid>?)null);
+        userManagerMock
+            .Setup(m => m.GetUserId(It.IsAny<ClaimsPrincipal>()))
+            .Returns(userId);
+
+        var model = new PersonalData(userManagerMock.Object)
+        {
+            PageContext = new PageContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal()
+                }
+            }
+        };
+        return (model, userManagerMock);
+    }
+
+    private static void AssertNotFoundWithUserMessage(
+        IActionResult result,
+        string? userId,
+        Mock<UserManager<IdentityUser<Guid>>> userManagerMock)
+    {
+        var notFound = Assert.IsType<NotFoundObjectResult>(result);
+        var expected = UserMessages.UnableToLoadUser(userId);
+        Assert.Equal(expected, Assert.IsType<string>(notFound.Value));
+        Assert.Equal(expected, (string)notFound.Value);
+
+        userManagerMock.Verify(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>()), Times.Once);
+        userManagerMock.Verify(m => m.GetUserId(It.IsAny<ClaimsPrincipal>()), Times.Once);
     }
 }

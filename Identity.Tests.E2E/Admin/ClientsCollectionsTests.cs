@@ -37,7 +37,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.FillAsync("#claim-type-0", claimType);
             await page.FillAsync("#claim-value-0", Generated.NewPropertyValue());
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.Clients.Edit.Claims.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminClientsDetailsClaims());
             var claimRowId = await fixture.GetSingleAsync<ClientClaim, int>(c => c.Type == claimType, c => c.Id);
             await Assertions.Expect(page.Locator($"#claim-row-{claimRowId}")).ToBeVisibleAsync();
         }
@@ -61,7 +61,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.GotoAsync($"/Admin/Clients/Edit/Claims?id={clientDbId}");
             await page.ClickAsync("#claim-remove-0");
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.Clients.Edit.Claims.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminClientsDetailsClaims());
             await Assertions.Expect(page.Locator($"#claim-row-{claimRowId}")).ToHaveCountAsync(0);
         }
     }
@@ -83,7 +83,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.GotoAsync($"/Admin/Clients/Edit/Claims?id={clientDbId}");
             await page.FillAsync("#claim-value-0", updatedValue);
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.Clients.Edit.Claims.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminClientsDetailsClaims());
             var claimRowId = await fixture.GetSingleAsync<ClientClaim, int>(c => c.Value == updatedValue, c => c.Id);
             await Assertions.Expect(page.Locator($"#claim-row-{claimRowId}")).ToBeVisibleAsync();
         }
@@ -104,7 +104,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.ClickAsync("#btn-add-row");
             await page.FillAsync("#corsorigin-0", origin);
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.Clients.Edit.CorsOrigins.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminClientsDetailsCorsOrigins());
             var originRowId = await fixture.GetSingleAsync<ClientCorsOrigin, int>(o => o.Origin == origin, o => o.Id);
             await Assertions.Expect(page.Locator($"#cors-origin-row-{originRowId}")).ToBeVisibleAsync();
         }
@@ -128,7 +128,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.GotoAsync($"/Admin/Clients/Edit/CorsOrigins?id={clientDbId}");
             await page.ClickAsync("#corsorigin-remove-0");
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.Clients.Edit.CorsOrigins.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminClientsDetailsCorsOrigins());
             await Assertions.Expect(page.Locator($"#cors-origin-row-{originRowId}")).ToHaveCountAsync(0);
         }
     }
@@ -150,7 +150,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.GotoAsync($"/Admin/Clients/Edit/CorsOrigins?id={clientDbId}");
             await page.FillAsync("#corsorigin-0", updatedOrigin);
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.Clients.Edit.CorsOrigins.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminClientsDetailsCorsOrigins());
             var originRowId = await fixture.GetSingleAsync<ClientCorsOrigin, int>(o => o.Origin == updatedOrigin, o => o.Id);
             await Assertions.Expect(page.Locator($"#cors-origin-row-{originRowId}")).ToBeVisibleAsync();
         }
@@ -171,7 +171,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.ClickAsync("#btn-add-row");
             await page.FillAsync("#granttype-0", grantType);
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.Clients.Edit.GrantTypes.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminClientsDetailsGrantTypes());
             var grantTypeRowId = await fixture.GetSingleAsync<ClientGrantType, int>(g => g.GrantType == grantType, g => g.Id);
             await Assertions.Expect(page.Locator($"#grant-type-row-{grantTypeRowId}")).ToBeVisibleAsync();
         }
@@ -195,7 +195,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.GotoAsync($"/Admin/Clients/Edit/GrantTypes?id={clientDbId}");
             await page.ClickAsync("#granttype-remove-0");
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.Clients.Edit.GrantTypes.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminClientsDetailsGrantTypes());
             await Assertions.Expect(page.Locator($"#grant-type-row-{grantTypeRowId}")).ToHaveCountAsync(0);
         }
     }
@@ -217,7 +217,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.GotoAsync($"/Admin/Clients/Edit/GrantTypes?id={clientDbId}");
             await page.FillAsync("#granttype-0", updatedGrantType);
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.Clients.Edit.GrantTypes.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminClientsDetailsGrantTypes());
             var grantTypeRowId = await fixture.GetSingleAsync<ClientGrantType, int>(g => g.GrantType == updatedGrantType, g => g.Id);
             await Assertions.Expect(page.Locator($"#grant-type-row-{grantTypeRowId}")).ToBeVisibleAsync();
         }
@@ -238,7 +238,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.ClickAsync("#btn-add-row");
             await page.FillAsync("#idprestriction-0", provider);
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.Clients.Edit.IdPRestrictions.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminClientsDetailsIdPRestrictions());
             var restrictionRowId = await fixture.GetSingleAsync<ClientIdPRestriction, int>(r => r.Provider == provider, r => r.Id);
             await Assertions.Expect(page.Locator($"#idp-restriction-row-{restrictionRowId}")).ToBeVisibleAsync();
         }
@@ -262,7 +262,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.GotoAsync($"/Admin/Clients/Edit/IdPRestrictions?id={clientDbId}");
             await page.ClickAsync("#idprestriction-remove-0");
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.Clients.Edit.IdPRestrictions.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminClientsDetailsIdPRestrictions());
             await Assertions.Expect(page.Locator($"#idp-restriction-row-{restrictionRowId}")).ToHaveCountAsync(0);
         }
     }
@@ -284,7 +284,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.GotoAsync($"/Admin/Clients/Edit/IdPRestrictions?id={clientDbId}");
             await page.FillAsync("#idprestriction-0", updatedProvider);
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.Clients.Edit.IdPRestrictions.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminClientsDetailsIdPRestrictions());
             var restrictionRowId = await fixture.GetSingleAsync<ClientIdPRestriction, int>(r => r.Provider == updatedProvider, r => r.Id);
             await Assertions.Expect(page.Locator($"#idp-restriction-row-{restrictionRowId}")).ToBeVisibleAsync();
         }
@@ -305,7 +305,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.ClickAsync("#btn-add-row");
             await page.FillAsync("#postlogoutredirecturi-0", uri);
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.Clients.Edit.PostLogoutRedirectUris.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminClientsDetailsPostLogoutRedirectUris());
             var uriRowId = await fixture.GetSingleAsync<ClientPostLogoutRedirectUri, int>(u => u.PostLogoutRedirectUri == uri, u => u.Id);
             await Assertions.Expect(page.Locator($"#post-logout-redirect-uri-row-{uriRowId}")).ToBeVisibleAsync();
         }
@@ -329,7 +329,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.GotoAsync($"/Admin/Clients/Edit/PostLogoutRedirectUris?id={clientDbId}");
             await page.ClickAsync("#postlogoutredirecturi-remove-0");
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.Clients.Edit.PostLogoutRedirectUris.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminClientsDetailsPostLogoutRedirectUris());
             await Assertions.Expect(page.Locator($"#post-logout-redirect-uri-row-{uriRowId}")).ToHaveCountAsync(0);
         }
     }
@@ -351,7 +351,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.GotoAsync($"/Admin/Clients/Edit/PostLogoutRedirectUris?id={clientDbId}");
             await page.FillAsync("#postlogoutredirecturi-0", updatedUri);
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.Clients.Edit.PostLogoutRedirectUris.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminClientsDetailsPostLogoutRedirectUris());
             var uriRowId = await fixture.GetSingleAsync<ClientPostLogoutRedirectUri, int>(u => u.PostLogoutRedirectUri == updatedUri, u => u.Id);
             await Assertions.Expect(page.Locator($"#post-logout-redirect-uri-row-{uriRowId}")).ToBeVisibleAsync();
         }
@@ -373,7 +373,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.FillAsync("#property-key-0", key);
             await page.FillAsync("#property-value-0", Generated.NewPropertyValue());
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.Clients.Edit.Properties.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminClientsDetailsProperties());
             var propertyRowId = await fixture.GetSingleAsync<ClientProperty, int>(p => p.Key == key, p => p.Id);
             await Assertions.Expect(page.Locator($"#property-row-{propertyRowId}")).ToBeVisibleAsync();
         }
@@ -397,7 +397,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.GotoAsync($"/Admin/Clients/Edit/Properties?id={clientDbId}");
             await page.ClickAsync("#property-remove-0");
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.Clients.Edit.Properties.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminClientsDetailsProperties());
             await Assertions.Expect(page.Locator($"#property-row-{propertyRowId}")).ToHaveCountAsync(0);
         }
     }
@@ -419,7 +419,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.GotoAsync($"/Admin/Clients/Edit/Properties?id={clientDbId}");
             await page.FillAsync("#property-value-0", updatedValue);
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.Clients.Edit.Properties.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminClientsDetailsProperties());
             var propertyRowId = await fixture.GetSingleAsync<ClientProperty, int>(p => p.Value == updatedValue, p => p.Id);
             await Assertions.Expect(page.Locator($"#property-row-{propertyRowId}")).ToBeVisibleAsync();
         }
@@ -440,7 +440,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.ClickAsync("#btn-add-row");
             await page.FillAsync("#redirecturi-0", uri);
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.Clients.Edit.RedirectUris.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminClientsDetailsRedirectUris());
             var uriRowId = await fixture.GetSingleAsync<ClientRedirectUri, int>(u => u.RedirectUri == uri, u => u.Id);
             await Assertions.Expect(page.Locator($"#redirect-uri-row-{uriRowId}")).ToBeVisibleAsync();
         }
@@ -464,7 +464,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.GotoAsync($"/Admin/Clients/Edit/RedirectUris?id={clientDbId}");
             await page.ClickAsync("#redirecturi-remove-0");
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.Clients.Edit.RedirectUris.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminClientsDetailsRedirectUris());
             await Assertions.Expect(page.Locator($"#redirect-uri-row-{uriRowId}")).ToHaveCountAsync(0);
         }
     }
@@ -486,7 +486,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.GotoAsync($"/Admin/Clients/Edit/RedirectUris?id={clientDbId}");
             await page.FillAsync("#redirecturi-0", updatedUri);
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.Clients.Edit.RedirectUris.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminClientsDetailsRedirectUris());
             var uriRowId = await fixture.GetSingleAsync<ClientRedirectUri, int>(u => u.RedirectUri == updatedUri, u => u.Id);
             await Assertions.Expect(page.Locator($"#redirect-uri-row-{uriRowId}")).ToBeVisibleAsync();
         }
@@ -507,7 +507,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.ClickAsync("#btn-add-row");
             await page.FillAsync("#scope-0", scope);
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.Clients.Edit.Scopes.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminClientsDetailsScopes());
             var scopeRowId = await fixture.GetSingleAsync<ClientScope, int>(s => s.Scope == scope, s => s.Id);
             await Assertions.Expect(page.Locator($"#scope-row-{scopeRowId}")).ToBeVisibleAsync();
         }
@@ -531,7 +531,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.GotoAsync($"/Admin/Clients/Edit/Scopes?id={clientDbId}");
             await page.ClickAsync("#scope-remove-0");
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.Clients.Edit.Scopes.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminClientsDetailsScopes());
             await Assertions.Expect(page.Locator($"#scope-row-{scopeRowId}")).ToHaveCountAsync(0);
         }
     }
@@ -553,7 +553,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.GotoAsync($"/Admin/Clients/Edit/Scopes?id={clientDbId}");
             await page.FillAsync("#scope-0", updatedScope);
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.Clients.Edit.Scopes.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminClientsDetailsScopes());
             var scopeRowId = await fixture.GetSingleAsync<ClientScope, int>(s => s.Scope == updatedScope, s => s.Id);
             await Assertions.Expect(page.Locator($"#scope-row-{scopeRowId}")).ToBeVisibleAsync();
         }
@@ -575,7 +575,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.FillAsync("#secret-description-0", description);
             await page.FillAsync("#secret-value-0", Generated.NewSecretValue());
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.Clients.Edit.Secrets.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminClientsDetailsSecrets());
             var secretRowId = await fixture.GetSingleAsync<ClientSecret, int>(s => s.Description == description, s => s.Id);
             await Assertions.Expect(page.Locator($"#secret-row-{secretRowId}")).ToBeVisibleAsync();
         }
@@ -599,7 +599,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.GotoAsync($"/Admin/Clients/Edit/Secrets?id={clientDbId}");
             await page.ClickAsync("#secret-remove-0");
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.Clients.Edit.Secrets.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminClientsDetailsSecrets());
             await Assertions.Expect(page.Locator($"#secret-row-{secretRowId}")).ToHaveCountAsync(0);
         }
     }
@@ -621,7 +621,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
             await page.GotoAsync($"/Admin/Clients/Edit/Secrets?id={clientDbId}");
             await page.FillAsync("#secret-description-0", updatedDescription);
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.Clients.Edit.Secrets.DetailsPageName));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminClientsDetailsSecrets());
             var secretRowId = await fixture.GetSingleAsync<ClientSecret, int>(s => s.Description == updatedDescription, s => s.Id);
             await Assertions.Expect(page.Locator($"#secret-row-{secretRowId}")).ToBeVisibleAsync();
         }
@@ -634,7 +634,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
         await page.FillAsync("#claim-type-0", claimType);
         await page.FillAsync("#claim-value-0", Generated.NewPropertyValue());
         await page.ClickAsync("#save-submit");
-        await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.Clients.Edit.Claims.DetailsPageName));
+        await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminClientsDetailsClaims());
     }
 
     private static async Task AddPropertyRowAsync(IPage page, int clientDbId, string key, string value)
@@ -644,7 +644,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
         await page.FillAsync("#property-key-0", key);
         await page.FillAsync("#property-value-0", value);
         await page.ClickAsync("#save-submit");
-        await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.Clients.Edit.Properties.DetailsPageName));
+        await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminClientsDetailsProperties());
     }
 
     private static async Task AddSecretRowAsync(IPage page, int clientDbId, string description)
@@ -654,7 +654,7 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
         await page.FillAsync("#secret-description-0", description);
         await page.FillAsync("#secret-value-0", Generated.NewSecretValue());
         await page.ClickAsync("#save-submit");
-        await Assertions.Expect(page).ToHaveURLAsync(new Regex(Pages.Admin.Clients.Edit.Secrets.DetailsPageName));
+        await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminClientsDetailsSecrets());
     }
 
     private static async Task AddSingleFieldRowAsync(
@@ -673,6 +673,6 @@ public sealed class ClientsCollectionsTests(PlaywrightFixture fixture)
         await page.FillAsync("input[name='Input.Email']", email);
         await page.FillAsync("input[name='Input.Password']", password);
         await page.ClickAsync("#login-submit");
-        await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex(PageRoutes.Login));
+        await Assertions.Expect(page).Not.ToHaveURLAsync(UrlPatterns.Login());
     }
 }

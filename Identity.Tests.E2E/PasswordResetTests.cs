@@ -1,6 +1,5 @@
 namespace Identity.Tests.E2E;
 
-using System.Text.RegularExpressions;
 using Identity.Tests.E2E.Infrastructure;
 using Microsoft.Playwright;
 
@@ -20,7 +19,7 @@ public sealed class PasswordResetTests(PlaywrightFixture fixture)
             await page.GotoAsync(PageRoutes.ForgotPassword);
             await page.FillAsync("input[name='Input.Email']", email);
             await page.ClickAsync("#forgot-password-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/ForgotPasswordConfirmation"));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.ForgotPasswordConfirmation());
 
             var resetEmail = fixture.Email.TakeEmail(email);
             var resetLink = fixture.ExtractEmailLink(resetEmail);
@@ -30,13 +29,13 @@ public sealed class PasswordResetTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Password']", newPassword);
             await page.FillAsync("input[name='Input.ConfirmPassword']", newPassword);
             await page.ClickAsync("#reset-password-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/ResetPasswordConfirmation"));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.ResetPasswordConfirmation());
 
             await page.GotoAsync(PageRoutes.Login);
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", newPassword);
             await page.ClickAsync("#login-submit");
-            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex(PageRoutes.Login));
+            await Assertions.Expect(page).Not.ToHaveURLAsync(UrlPatterns.Login());
             Assert.DoesNotContain(PageRoutes.Login, page.Url, StringComparison.Ordinal);
         }
     }
@@ -53,7 +52,7 @@ public sealed class PasswordResetTests(PlaywrightFixture fixture)
             await page.GotoAsync(PageRoutes.ForgotPassword);
             await page.FillAsync("input[name='Input.Email']", email);
             await page.ClickAsync("#forgot-password-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/ForgotPasswordConfirmation"));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.ForgotPasswordConfirmation());
 
             var resetEmail = fixture.Email.TakeEmail(email);
             var resetLink = fixture.ExtractEmailLink(resetEmail);
@@ -63,13 +62,13 @@ public sealed class PasswordResetTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Password']", newPassword);
             await page.FillAsync("input[name='Input.ConfirmPassword']", newPassword);
             await page.ClickAsync("#reset-password-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/ResetPasswordConfirmation"));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.ResetPasswordConfirmation());
 
             await page.GotoAsync(PageRoutes.Login);
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", oldPassword);
             await page.ClickAsync("#login-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(PageRoutes.Login));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.Login());
             var errorText = await page.TextContentAsync("#validation-errors");
             Assert.NotNull(errorText);
         }

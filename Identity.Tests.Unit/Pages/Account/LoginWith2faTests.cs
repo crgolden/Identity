@@ -11,16 +11,6 @@ using Moq;
 [Trait("Category", "Unit")]
 public class LoginWith2faTests
 {
-    public static TheoryData<bool, string?> ValidUserCases() => new()
-    {
-        { false, null },
-        { true, Generated.NewLocalPath() },
-        { false, string.Empty },
-        { true, Generated.NewWhitespaceValue() },
-        { false, Generated.NewOverlongValue() },
-        { true, Generated.NewControlAndSymbolValue() },
-    };
-
     [Fact]
     public async Task OnPostAsync_ModelStateInvalid_ReturnsPage()
     {
@@ -89,26 +79,93 @@ public class LoginWith2faTests
         Assert.Equal(UserMessages.UnableToLoadTwoFactorUser, ex.Message);
     }
 
-    [Theory]
-    [MemberData(nameof(ValidUserCases))]
-    public async Task OnGetAsync_ValidUser_SetsPropertiesAndReturnsPageResult(bool rememberMe, string? returnUrl)
+    [Fact]
+    public async Task OnGetAsync_ValidUserNotRememberedWithNullReturnUrl_SetsPropertiesAndReturnsPageResult()
     {
         // Arrange
-        var signInManagerMock = CreateSignInManagerMock();
-        var user = new IdentityUser<Guid> { Id = Generated.NewUserId(), UserName = Generated.NewUserName() };
-        signInManagerMock
-            .Setup(s => s.GetTwoFactorAuthenticationUserAsync())
-            .ReturnsAsync(user);
-
-        var model = new LoginWith2fa(signInManagerMock.Object);
+        var model = BuildModelForTwoFactorUser();
 
         // Act
-        var result = await model.OnGetAsync(rememberMe, returnUrl);
+        var result = await model.OnGetAsync(false, null);
 
         // Assert
-        Assert.IsType<PageResult>(result);
-        Assert.Equal(returnUrl, model.ReturnUrl);
-        Assert.Equal(rememberMe, model.RememberMe);
+        AssertReturnsPageWithReturnUrl(result, model, null);
+        Assert.False(model.RememberMe);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_ValidUserNotRememberedWithBlankReturnUrl_SetsPropertiesAndReturnsPageResult()
+    {
+        // Arrange
+        var blankReturnUrl = Generated.NewBlank();
+        var model = BuildModelForTwoFactorUser();
+
+        // Act
+        var result = await model.OnGetAsync(false, blankReturnUrl);
+
+        // Assert
+        AssertReturnsPageWithReturnUrl(result, model, blankReturnUrl);
+        Assert.False(model.RememberMe);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_ValidUserRememberedWithLocalReturnUrl_SetsPropertiesAndReturnsPageResult()
+    {
+        // Arrange
+        var localReturnUrl = Generated.NewLocalPath();
+        var model = BuildModelForTwoFactorUser();
+
+        // Act
+        var result = await model.OnGetAsync(true, localReturnUrl);
+
+        // Assert
+        AssertReturnsPageWithReturnUrl(result, model, localReturnUrl);
+        Assert.True(model.RememberMe);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_ValidUserRememberedWithWhitespaceReturnUrl_SetsPropertiesAndReturnsPageResult()
+    {
+        // Arrange
+        var whitespaceReturnUrl = Generated.NewWhitespaceValue();
+        var model = BuildModelForTwoFactorUser();
+
+        // Act
+        var result = await model.OnGetAsync(true, whitespaceReturnUrl);
+
+        // Assert
+        AssertReturnsPageWithReturnUrl(result, model, whitespaceReturnUrl);
+        Assert.True(model.RememberMe);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_ValidUserNotRememberedWithOverlongReturnUrl_SetsPropertiesAndReturnsPageResult()
+    {
+        // Arrange
+        var overlongReturnUrl = Generated.NewOverlongValue();
+        var model = BuildModelForTwoFactorUser();
+
+        // Act
+        var result = await model.OnGetAsync(false, overlongReturnUrl);
+
+        // Assert
+        AssertReturnsPageWithReturnUrl(result, model, overlongReturnUrl);
+        Assert.False(model.RememberMe);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_ValidUserRememberedWithControlAndSymbolReturnUrl_SetsPropertiesAndReturnsPageResult()
+    {
+        // Arrange
+        var controlAndSymbolReturnUrl = Generated.NewControlAndSymbolValue();
+        var model = BuildModelForTwoFactorUser();
+
+        // Act
+        var result = await model.OnGetAsync(true, controlAndSymbolReturnUrl);
+
+        // Assert
+        AssertReturnsPageWithReturnUrl(result, model, controlAndSymbolReturnUrl);
+        Assert.True(model.RememberMe);
     }
 
     [Fact]
@@ -210,5 +267,21 @@ public class LoginWith2faTests
     {
         var userManagerMock = MockHelpers.MockUserManager();
         return MockHelpers.MockSignInManager(userManagerMock.Object);
+    }
+
+    private static LoginWith2fa BuildModelForTwoFactorUser()
+    {
+        var signInManagerMock = CreateSignInManagerMock();
+        var user = new IdentityUser<Guid> { Id = Generated.NewUserId(), UserName = Generated.NewUserName() };
+        signInManagerMock
+            .Setup(s => s.GetTwoFactorAuthenticationUserAsync())
+            .ReturnsAsync(user);
+        return new LoginWith2fa(signInManagerMock.Object);
+    }
+
+    private static void AssertReturnsPageWithReturnUrl(IActionResult result, LoginWith2fa model, string? returnUrl)
+    {
+        Assert.IsType<PageResult>(result);
+        Assert.Equal(returnUrl, model.ReturnUrl);
     }
 }

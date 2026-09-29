@@ -2,9 +2,7 @@
 
 [![Build and deploy ASP.Net Core app to Azure Web App - crgolden-identity](https://github.com/crgolden/Identity/actions/workflows/main_crgolden-identity.yml/badge.svg)](https://github.com/crgolden/Identity/actions/workflows/main_crgolden-identity.yml)
 
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=crgolden_Identity&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=crgolden_Identity)
-
-[![Mutation testing badge](https://img.shields.io/endpoint?style=flat&url=https%3A%2F%2Fbadge-api.stryker-mutator.io%2Fgithub.com%2Fcrgolden%2FIdentity%2Fmain)](https://dashboard.stryker-mutator.io/reports/github.com/crgolden/Identity/main)
+[![Quality gate](https://sonarcloud.io/api/project_badges/quality_gate?project=crgolden_Identity)](https://sonarcloud.io/summary/new_code?id=crgolden_Identity)
 
 A standalone **OpenID Connect Identity Provider** built with [Duende IdentityServer](https://duendesoftware.com/products/identityserver) and ASP.NET Core Identity, deployed to Azure App Service.
 

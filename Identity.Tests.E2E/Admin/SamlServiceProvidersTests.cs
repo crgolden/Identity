@@ -1,6 +1,5 @@
 namespace Identity.Tests.E2E.Admin;
 
-using System.Text.RegularExpressions;
 using Duende.IdentityServer.EntityFramework.Entities;
 using Identity.Tests.E2E.Infrastructure;
 using Microsoft.Playwright;
@@ -23,7 +22,7 @@ public sealed class SamlServiceProvidersTests(PlaywrightFixture fixture)
             await page.FillAsync("#SamlServiceProvider_EntityId", entityId);
             await page.FillAsync("#SamlServiceProvider_DisplayName", Generated.NewDisplayName());
             await page.ClickAsync("#create-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/SamlServiceProviders/Details"));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminSamlServiceProvidersDetails());
             await Assertions.Expect(page.Locator("#btn-edit")).ToBeVisibleAsync();
         }
     }
@@ -42,10 +41,10 @@ public sealed class SamlServiceProvidersTests(PlaywrightFixture fixture)
             await CreateSamlServiceProviderAsync(page, entityId);
 
             await page.ClickAsync("#btn-edit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/SamlServiceProviders/Edit"));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminSamlServiceProvidersEdit());
             await page.FillAsync("#SamlServiceProvider_DisplayName", updatedDisplayName);
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/SamlServiceProviders/Details"));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminSamlServiceProvidersDetails());
             await Assertions.Expect(page.Locator("#sp-display-name")).ToBeVisibleAsync();
             var persistedDisplayName = await fixture.GetSingleAsync<SamlServiceProvider, string>(p => p.EntityId == entityId, p => p.DisplayName);
             Assert.Equal(updatedDisplayName, persistedDisplayName);
@@ -67,12 +66,12 @@ public sealed class SamlServiceProvidersTests(PlaywrightFixture fixture)
             await page.GotoAsync("/Admin/SamlServiceProviders");
             await Assertions.Expect(page.Locator($"#details-{serviceProviderId}")).ToBeVisibleAsync();
             await page.ClickAsync($"#details-{serviceProviderId}");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/SamlServiceProviders/Details"));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminSamlServiceProvidersDetails());
 
             await page.ClickAsync("#btn-delete");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Delete"));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.DeletePage());
             await page.ClickAsync("#delete-submit");
-            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("Delete"));
+            await Assertions.Expect(page).Not.ToHaveURLAsync(UrlPatterns.DeleteAnywhere());
             await page.GotoAsync("/Admin/SamlServiceProviders");
             await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
             await Assertions.Expect(page.Locator($"#details-{serviceProviderId}")).ToHaveCountAsync(0);
@@ -85,7 +84,7 @@ public sealed class SamlServiceProvidersTests(PlaywrightFixture fixture)
         await page.FillAsync("#SamlServiceProvider_EntityId", entityId);
         await page.FillAsync("#SamlServiceProvider_DisplayName", Generated.NewDisplayName());
         await page.ClickAsync("#create-submit");
-        await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/SamlServiceProviders/Details"));
+        await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminSamlServiceProvidersDetails());
     }
 
     private static async Task LoginAsync(IPage page, string email, string password)
@@ -94,6 +93,6 @@ public sealed class SamlServiceProvidersTests(PlaywrightFixture fixture)
         await page.FillAsync("input[name='Input.Email']", email);
         await page.FillAsync("input[name='Input.Password']", password);
         await page.ClickAsync("#login-submit");
-        await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex(PageRoutes.Login));
+        await Assertions.Expect(page).Not.ToHaveURLAsync(UrlPatterns.Login());
     }
 }

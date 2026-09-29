@@ -25,7 +25,7 @@ public sealed class LoginTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("#login-submit");
 
-            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex(PageRoutes.Login));
+            await Assertions.Expect(page).Not.ToHaveURLAsync(UrlPatterns.Login());
             Assert.DoesNotContain(PageRoutes.Login, page.Url, StringComparison.Ordinal);
         }
     }
@@ -43,7 +43,7 @@ public sealed class LoginTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Password']", Generated.NewPassword());
             await page.ClickAsync("#login-submit");
 
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(PageRoutes.Login));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.Login());
             var errorText = await page.TextContentAsync("#validation-errors");
             Assert.NotNull(errorText);
         }
@@ -66,7 +66,7 @@ public sealed class LoginTests(PlaywrightFixture fixture)
 
             await Assertions.Expect(page.Locator("#login-email-validation")).ToHaveClassAsync(new Regex(HtmlHelper.ValidationMessageCssClassName));
             await Assertions.Expect(page.Locator("#login-email-validation")).Not.ToBeEmptyAsync();
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex(PageRoutes.Login));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.Login());
             Assert.False(postSent);
             Assert.Empty(scriptErrors);
         }

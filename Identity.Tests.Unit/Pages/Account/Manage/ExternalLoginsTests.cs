@@ -19,28 +19,7 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ExternalLoginsTests
 {
-    public static TheoryData<string> Providers() => new()
-    {
-        Generated.NewSchemeName(),
-        string.Empty,
-        Generated.NewWhitespaceValue(),
-        Generated.NewPunctuatedPageName(),
-    };
-
-    public static TheoryData<string, string> RemoveLoginArguments() => new()
-    {
-        { string.Empty, Generated.NewProviderKey() },
-        { Generated.NewWhitespaceValue(), Generated.NewWhitespaceValue() },
-        { Generated.NewSchemeName(), string.Empty },
-        { Generated.NewSchemeName(), Generated.NewOverlongDisplayName() },
-    };
-
-    public static TheoryData<string, string> RemovableLogins() => new()
-    {
-        { Generated.NewSchemeName(), Generated.NewProviderKey() },
-        { Generated.NewSchemeName(), Generated.NewProviderKey() },
-        { Generated.LowercaseToken(1), Generated.LowercaseToken(1) },
-    };
+    private const int SingleCharacterLength = 1;
 
     [Fact]
     public async Task OnGetLinkLoginCallbackAsync_UserNotFound_ReturnsNotFoundObjectResult()
@@ -178,117 +157,176 @@ public class ExternalLoginsTests
         signInManagerMock.Verify(s => s.RefreshSignInAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
     }
 
-    [Theory]
-    [MemberData(nameof(RemoveLoginArguments))]
-    public async Task OnPostRemoveLoginAsync_RemoveLoginFails_SetsFailureMessageAndRedirects(string loginProvider, string providerKey)
+    [Fact]
+    public async Task OnPostRemoveLoginAsync_RemoveLoginFailsForBlankLoginProvider_SetsFailureMessageAndRedirects()
     {
         // Arrange
-        var user = new IdentityUser<Guid> { Id = Generated.NewUserId() };
-        var userStoreMockForCtor = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
-            userStoreMockForCtor,
-            Mock.Of<IOptions<IdentityOptions>>(),
-            Mock.Of<IPasswordHasher<IdentityUser<Guid>>>(),
-            Array.Empty<IUserValidator<IdentityUser<Guid>>>(),
-            Array.Empty<IPasswordValidator<IdentityUser<Guid>>>(),
-            Mock.Of<ILookupNormalizer>(),
-            Mock.Of<IdentityErrorDescriber>(),
-            Mock.Of<IServiceProvider>(),
-            NullLogger<UserManager<IdentityUser<Guid>>>.Instance);
-
-        userManagerMock
-            .Setup(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
-            .ReturnsAsync(user);
-
-        var failedResult = IdentityResult.Failed(new IdentityError { Description = Generated.NewFailureReason() });
-        userManagerMock
-            .Setup(u => u.RemoveLoginAsync(It.Is<IdentityUser<Guid>>(x => x == user), loginProvider, providerKey))
-            .ReturnsAsync(failedResult);
-
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManagerMock.Object,
-            Mock.Of<IHttpContextAccessor>(),
-            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
-            Mock.Of<IOptions<IdentityOptions>>(),
-            NullLogger<SignInManager<IdentityUser<Guid>>>.Instance,
-            Mock.Of<IAuthenticationSchemeProvider>(),
-            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
-
-        signInManagerMock
-            .Setup(s => s.RefreshSignInAsync(It.IsAny<IdentityUser<Guid>>()))
-            .Returns(Task.CompletedTask);
-
-        var model = new ExternalLogins(userManagerMock.Object, signInManagerMock.Object, Mock.Of<IUserStore<IdentityUser<Guid>>>());
-        Assert.Null(model.StatusMessage);
+        var blankLoginProvider = Generated.NewBlank();
+        var providerKey = Generated.NewProviderKey();
+        var removal = BuildModelForRemoveLogin(blankLoginProvider, providerKey, RemoveLoginFailure());
+        Assert.Null(removal.Model.StatusMessage);
 
         // Act
-        var result = await model.OnPostRemoveLoginAsync(loginProvider, providerKey);
+        var result = await removal.Model.OnPostRemoveLoginAsync(blankLoginProvider, providerKey);
 
         // Assert
         Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal(ExternalLogins.LoginNotRemovedMessage, model.StatusMessage);
-        userManagerMock.Verify(u => u.RemoveLoginAsync(It.Is<IdentityUser<Guid>>(x => x == user), loginProvider, providerKey), Times.Once);
-        signInManagerMock.Verify(s => s.RefreshSignInAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
+        Assert.Equal(ExternalLogins.LoginNotRemovedMessage, removal.Model.StatusMessage);
+        removal.UserManagerMock.Verify(u => u.RemoveLoginAsync(It.Is<IdentityUser<Guid>>(x => x == removal.User), blankLoginProvider, providerKey), Times.Once);
+        removal.SignInManagerMock.Verify(s => s.RefreshSignInAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
     }
 
-    [Theory]
-    [MemberData(nameof(RemovableLogins))]
-    public async Task OnPostRemoveLoginAsync_RemoveLoginSucceeds_RefreshesSignInAndSetsSuccessMessage(string loginProvider, string providerKey)
+    [Fact]
+    public async Task OnPostRemoveLoginAsync_RemoveLoginFailsForWhitespaceLoginProviderAndProviderKey_SetsFailureMessageAndRedirects()
     {
         // Arrange
-        var user = new IdentityUser<Guid> { Id = Generated.NewUserId() };
-        var userStoreMockForCtor = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
-            userStoreMockForCtor,
-            Mock.Of<IOptions<IdentityOptions>>(),
-            Mock.Of<IPasswordHasher<IdentityUser<Guid>>>(),
-            Array.Empty<IUserValidator<IdentityUser<Guid>>>(),
-            Array.Empty<IPasswordValidator<IdentityUser<Guid>>>(),
-            Mock.Of<ILookupNormalizer>(),
-            Mock.Of<IdentityErrorDescriber>(),
-            Mock.Of<IServiceProvider>(),
-            NullLogger<UserManager<IdentityUser<Guid>>>.Instance);
-
-        userManagerMock
-            .Setup(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
-            .ReturnsAsync(user);
-
-        userManagerMock
-            .Setup(u => u.RemoveLoginAsync(It.Is<IdentityUser<Guid>>(x => x == user), loginProvider, providerKey))
-            .ReturnsAsync(IdentityResult.Success);
-
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
-            userManagerMock.Object,
-            Mock.Of<IHttpContextAccessor>(),
-            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
-            Mock.Of<IOptions<IdentityOptions>>(),
-            NullLogger<SignInManager<IdentityUser<Guid>>>.Instance,
-            Mock.Of<IAuthenticationSchemeProvider>(),
-            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
-
-        signInManagerMock
-            .Setup(s => s.RefreshSignInAsync(It.Is<IdentityUser<Guid>>(x => x == user)))
-            .Returns(Task.CompletedTask)
-            .Verifiable();
-
-        var model = new ExternalLogins(userManagerMock.Object, signInManagerMock.Object, Mock.Of<IUserStore<IdentityUser<Guid>>>());
+        var whitespaceLoginProvider = Generated.NewWhitespaceValue();
+        var whitespaceProviderKey = Generated.NewWhitespaceValue();
+        var removal = BuildModelForRemoveLogin(whitespaceLoginProvider, whitespaceProviderKey, RemoveLoginFailure());
+        Assert.Null(removal.Model.StatusMessage);
 
         // Act
-        var result = await model.OnPostRemoveLoginAsync(loginProvider, providerKey);
+        var result = await removal.Model.OnPostRemoveLoginAsync(whitespaceLoginProvider, whitespaceProviderKey);
 
         // Assert
         Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal(ExternalLogins.LoginRemovedMessage, model.StatusMessage);
-
-        userManagerMock.Verify(u => u.RemoveLoginAsync(It.Is<IdentityUser<Guid>>(x => x == user), loginProvider, providerKey), Times.Once);
-        signInManagerMock.Verify(s => s.RefreshSignInAsync(It.Is<IdentityUser<Guid>>(x => x == user)), Times.Once);
+        Assert.Equal(ExternalLogins.LoginNotRemovedMessage, removal.Model.StatusMessage);
+        removal.UserManagerMock.Verify(u => u.RemoveLoginAsync(It.Is<IdentityUser<Guid>>(x => x == removal.User), whitespaceLoginProvider, whitespaceProviderKey), Times.Once);
+        removal.SignInManagerMock.Verify(s => s.RefreshSignInAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
     }
 
-    [Theory]
-    [MemberData(nameof(Providers))]
-    public async Task OnPostLinkLoginAsync_Provider_ReturnsChallengeAndSignsOut(string provider)
+    [Fact]
+    public async Task OnPostRemoveLoginAsync_RemoveLoginFailsForBlankProviderKey_SetsFailureMessageAndRedirects()
     {
         // Arrange
+        var loginProvider = Generated.NewSchemeName();
+        var blankProviderKey = Generated.NewBlank();
+        var removal = BuildModelForRemoveLogin(loginProvider, blankProviderKey, RemoveLoginFailure());
+        Assert.Null(removal.Model.StatusMessage);
+
+        // Act
+        var result = await removal.Model.OnPostRemoveLoginAsync(loginProvider, blankProviderKey);
+
+        // Assert
+        Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal(ExternalLogins.LoginNotRemovedMessage, removal.Model.StatusMessage);
+        removal.UserManagerMock.Verify(u => u.RemoveLoginAsync(It.Is<IdentityUser<Guid>>(x => x == removal.User), loginProvider, blankProviderKey), Times.Once);
+        removal.SignInManagerMock.Verify(s => s.RefreshSignInAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task OnPostRemoveLoginAsync_RemoveLoginFailsForOverlongProviderKey_SetsFailureMessageAndRedirects()
+    {
+        // Arrange
+        var loginProvider = Generated.NewSchemeName();
+        var overlongProviderKey = Generated.NewOverlongDisplayName();
+        var removal = BuildModelForRemoveLogin(loginProvider, overlongProviderKey, RemoveLoginFailure());
+        Assert.Null(removal.Model.StatusMessage);
+
+        // Act
+        var result = await removal.Model.OnPostRemoveLoginAsync(loginProvider, overlongProviderKey);
+
+        // Assert
+        Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal(ExternalLogins.LoginNotRemovedMessage, removal.Model.StatusMessage);
+        removal.UserManagerMock.Verify(u => u.RemoveLoginAsync(It.Is<IdentityUser<Guid>>(x => x == removal.User), loginProvider, overlongProviderKey), Times.Once);
+        removal.SignInManagerMock.Verify(s => s.RefreshSignInAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task OnPostRemoveLoginAsync_RemoveLoginSucceeds_RefreshesSignInAndSetsSuccessMessage()
+    {
+        // Arrange
+        var loginProvider = Generated.NewSchemeName();
+        var providerKey = Generated.NewProviderKey();
+        var removal = BuildModelForRemoveLogin(loginProvider, providerKey, IdentityResult.Success);
+
+        // Act
+        var result = await removal.Model.OnPostRemoveLoginAsync(loginProvider, providerKey);
+
+        // Assert
+        Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal(ExternalLogins.LoginRemovedMessage, removal.Model.StatusMessage);
+        removal.UserManagerMock.Verify(u => u.RemoveLoginAsync(It.Is<IdentityUser<Guid>>(x => x == removal.User), loginProvider, providerKey), Times.Once);
+        removal.SignInManagerMock.Verify(s => s.RefreshSignInAsync(It.Is<IdentityUser<Guid>>(x => x == removal.User)), Times.Once);
+    }
+
+    [Fact]
+    public async Task OnPostRemoveLoginAsync_RemoveLoginSucceedsForSingleCharacterLoginProviderAndProviderKey_RefreshesSignInAndSetsSuccessMessage()
+    {
+        // Arrange
+        var singleCharacterLoginProvider = Generated.LowercaseToken(SingleCharacterLength);
+        var singleCharacterProviderKey = Generated.LowercaseToken(SingleCharacterLength);
+        var removal = BuildModelForRemoveLogin(singleCharacterLoginProvider, singleCharacterProviderKey, IdentityResult.Success);
+
+        // Act
+        var result = await removal.Model.OnPostRemoveLoginAsync(singleCharacterLoginProvider, singleCharacterProviderKey);
+
+        // Assert
+        Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal(ExternalLogins.LoginRemovedMessage, removal.Model.StatusMessage);
+        removal.UserManagerMock.Verify(u => u.RemoveLoginAsync(It.Is<IdentityUser<Guid>>(x => x == removal.User), singleCharacterLoginProvider, singleCharacterProviderKey), Times.Once);
+        removal.SignInManagerMock.Verify(s => s.RefreshSignInAsync(It.Is<IdentityUser<Guid>>(x => x == removal.User)), Times.Once);
+    }
+
+    [Fact]
+    public async Task OnPostLinkLoginAsync_SchemeNameProvider_ReturnsChallengeAndSignsOut()
+    {
+        // Arrange
+        var schemeNameProvider = Generated.NewSchemeName();
+        var linking = BuildModelForLinkLogin(schemeNameProvider);
+
+        // Act
+        var result = await linking.Model.OnPostLinkLoginAsync(schemeNameProvider);
+
+        // Assert
+        AssertChallengedAndSignedOut(result, linking, schemeNameProvider);
+    }
+
+    [Fact]
+    public async Task OnPostLinkLoginAsync_BlankProvider_ReturnsChallengeAndSignsOut()
+    {
+        // Arrange
+        var blankProvider = Generated.NewBlank();
+        var linking = BuildModelForLinkLogin(blankProvider);
+
+        // Act
+        var result = await linking.Model.OnPostLinkLoginAsync(blankProvider);
+
+        // Assert
+        AssertChallengedAndSignedOut(result, linking, blankProvider);
+    }
+
+    [Fact]
+    public async Task OnPostLinkLoginAsync_WhitespaceProvider_ReturnsChallengeAndSignsOut()
+    {
+        // Arrange
+        var whitespaceProvider = Generated.NewWhitespaceValue();
+        var linking = BuildModelForLinkLogin(whitespaceProvider);
+
+        // Act
+        var result = await linking.Model.OnPostLinkLoginAsync(whitespaceProvider);
+
+        // Assert
+        AssertChallengedAndSignedOut(result, linking, whitespaceProvider);
+    }
+
+    [Fact]
+    public async Task OnPostLinkLoginAsync_PunctuatedProvider_ReturnsChallengeAndSignsOut()
+    {
+        // Arrange
+        var punctuatedProvider = Generated.NewPunctuatedPageName();
+        var linking = BuildModelForLinkLogin(punctuatedProvider);
+
+        // Act
+        var result = await linking.Model.OnPostLinkLoginAsync(punctuatedProvider);
+
+        // Assert
+        AssertChallengedAndSignedOut(result, linking, punctuatedProvider);
+    }
+
+    private static LinkLoginArrangement BuildModelForLinkLogin(string provider)
+    {
         var mockUserStoreForUserManager = new Mock<IUserStore<IdentityUser<Guid>>>().Object;
         var mockUserManager = new Mock<UserManager<IdentityUser<Guid>>>(
             mockUserStoreForUserManager,
@@ -355,26 +393,86 @@ public class ExternalLoginsTests
             PageContext = new PageContext { HttpContext = httpContext }
         };
 
-        // Act
-        var result = await model.OnPostLinkLoginAsync(provider);
+        return new LinkLoginArrangement
+        {
+            Model = model,
+            UserManagerMock = mockUserManager,
+            SignInManagerMock = mockSignInManager,
+            AuthServiceMock = mockAuthService,
+            HttpContext = httpContext,
+            ExpectedProperties = expectedProperties,
+            ExpectedRedirect = expectedRedirect,
+            ExpectedUserId = expectedUserId,
+        };
+    }
 
-        // Assert
+    private static void AssertChallengedAndSignedOut(IActionResult result, LinkLoginArrangement linking, string provider)
+    {
         var challenge = Assert.IsType<ChallengeResult>(result);
         Assert.Contains(provider, challenge.AuthenticationSchemes);
-        Assert.Same(expectedProperties, challenge.Properties);
-        mockAuthService.Verify(
+        Assert.Same(linking.ExpectedProperties, challenge.Properties);
+        linking.AuthServiceMock.Verify(
             a => a.SignOutAsync(
-                httpContext,
+                linking.HttpContext,
                 IdentityConstants.ExternalScheme,
                 It.IsAny<AuthenticationProperties>()),
             Times.Once);
-        mockSignInManager.Verify(
+        linking.SignInManagerMock.Verify(
             s => s.ConfigureExternalAuthenticationProperties(
                 It.Is<string>(p => p == provider),
-                It.Is<string>(r => r == expectedRedirect),
-                It.Is<string>(id => id == expectedUserId)),
+                It.Is<string>(r => r == linking.ExpectedRedirect),
+                It.Is<string>(id => id == linking.ExpectedUserId)),
             Times.Once);
-        mockUserManager.Verify(u => u.GetUserId(httpContext.User), Times.Once);
+        linking.UserManagerMock.Verify(u => u.GetUserId(linking.HttpContext.User), Times.Once);
+    }
+
+    private static IdentityResult RemoveLoginFailure() =>
+        IdentityResult.Failed(new IdentityError { Description = Generated.NewFailureReason() });
+
+    private static RemoveLoginArrangement BuildModelForRemoveLogin(string loginProvider, string providerKey, IdentityResult removeLoginResult)
+    {
+        var user = new IdentityUser<Guid> { Id = Generated.NewUserId() };
+        var userStoreMockForCtor = Mock.Of<IUserStore<IdentityUser<Guid>>>();
+        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
+            userStoreMockForCtor,
+            Mock.Of<IOptions<IdentityOptions>>(),
+            Mock.Of<IPasswordHasher<IdentityUser<Guid>>>(),
+            Array.Empty<IUserValidator<IdentityUser<Guid>>>(),
+            Array.Empty<IPasswordValidator<IdentityUser<Guid>>>(),
+            Mock.Of<ILookupNormalizer>(),
+            Mock.Of<IdentityErrorDescriber>(),
+            Mock.Of<IServiceProvider>(),
+            NullLogger<UserManager<IdentityUser<Guid>>>.Instance);
+
+        userManagerMock
+            .Setup(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
+            .ReturnsAsync(user);
+
+        userManagerMock
+            .Setup(u => u.RemoveLoginAsync(It.Is<IdentityUser<Guid>>(x => x == user), loginProvider, providerKey))
+            .ReturnsAsync(removeLoginResult);
+
+        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
+            userManagerMock.Object,
+            Mock.Of<IHttpContextAccessor>(),
+            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
+            Mock.Of<IOptions<IdentityOptions>>(),
+            NullLogger<SignInManager<IdentityUser<Guid>>>.Instance,
+            Mock.Of<IAuthenticationSchemeProvider>(),
+            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
+
+        signInManagerMock
+            .Setup(s => s.RefreshSignInAsync(It.IsAny<IdentityUser<Guid>>()))
+            .Returns(Task.CompletedTask);
+
+        var model = new ExternalLogins(userManagerMock.Object, signInManagerMock.Object, Mock.Of<IUserStore<IdentityUser<Guid>>>());
+        return new RemoveLoginArrangement
+        {
+            Model = model,
+            UserManagerMock = userManagerMock,
+            SignInManagerMock = signInManagerMock,
+            User = user,
+        };
     }
 
     private static ExternalLogins BuildModelForLinkLoginCallback(IdentityResult addLoginResult)
@@ -424,5 +522,35 @@ public class ExternalLoginsTests
             HttpContext = new DefaultHttpContext { RequestServices = services.Object }
         };
         return model;
+    }
+
+    private sealed class LinkLoginArrangement
+    {
+        public required ExternalLogins Model { get; init; }
+
+        public required Mock<UserManager<IdentityUser<Guid>>> UserManagerMock { get; init; }
+
+        public required Mock<SignInManager<IdentityUser<Guid>>> SignInManagerMock { get; init; }
+
+        public required Mock<IAuthenticationService> AuthServiceMock { get; init; }
+
+        public required HttpContext HttpContext { get; init; }
+
+        public required AuthenticationProperties ExpectedProperties { get; init; }
+
+        public required string ExpectedRedirect { get; init; }
+
+        public required string ExpectedUserId { get; init; }
+    }
+
+    private sealed class RemoveLoginArrangement
+    {
+        public required ExternalLogins Model { get; init; }
+
+        public required Mock<UserManager<IdentityUser<Guid>>> UserManagerMock { get; init; }
+
+        public required Mock<SignInManager<IdentityUser<Guid>>> SignInManagerMock { get; init; }
+
+        public required IdentityUser<Guid> User { get; init; }
     }
 }

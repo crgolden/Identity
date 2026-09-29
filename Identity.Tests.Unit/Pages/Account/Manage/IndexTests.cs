@@ -17,26 +17,6 @@ using Moq;
 [Trait("Category", "Unit")]
 public class IndexTests
 {
-    public static TheoryData<string?, string?> ValidUserData() => new()
-    {
-        { Generated.NewUserName(), Generated.NewPhoneNumber() },
-        { string.Empty, string.Empty },
-        { Generated.NewWhitespaceValue(), Generated.NewControlAndSymbolValue() },
-        { Generated.NewOverlongValue(), null },
-    };
-
-    public static TheoryData<string?, string?> PhoneNumbersThatNeedNoUpdate()
-    {
-        var storedPhoneNumber = Generated.NewPhoneNumber();
-        return new TheoryData<string?, string?>
-        {
-            { null, null },
-            { storedPhoneNumber, storedPhoneNumber },
-            { storedPhoneNumber, null },
-            { null, string.Empty },
-        };
-    }
-
     [Fact]
     public async Task OnGetAsync_UserNotFound_ReturnsNotFoundObjectResult()
     {
@@ -58,30 +38,84 @@ public class IndexTests
         Assert.Equal(expectedMessage, notFound.Value);
     }
 
-    [Theory]
-    [MemberData(nameof(ValidUserData))]
-    public async Task OnGetAsync_UserExists_LoadsUsernameAndPhoneAndReturnsPage(string? returnedUserName, string? returnedPhoneNumber)
+    [Fact]
+    public async Task OnGetAsync_UserWithUserNameAndPhoneNumber_LoadsBothAndReturnsPage()
     {
         // Arrange
-        var userManagerMock = MockHelpers.MockUserManager();
-        var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
-        var user = new IdentityUser<Guid>
-        {
-            Id = Generated.NewUserId()
-        };
-        userManagerMock.Setup(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
-        userManagerMock.Setup(u => u.GetUserNameAsync(user)).ReturnsAsync(returnedUserName);
-        userManagerMock.Setup(u => u.GetPhoneNumberAsync(user)).ReturnsAsync(returnedPhoneNumber);
-        var model = new Index(userManagerMock.Object, signInManagerMock.Object);
+        var userName = Generated.NewUserName();
+        var phoneNumber = Generated.NewPhoneNumber();
+        var (model, userManagerMock, user) = BuildModelForExistingUser(userName, phoneNumber);
 
         // Act
         var result = await model.OnGetAsync();
 
         // Assert
         Assert.IsType<PageResult>(result);
-        Assert.Equal(returnedUserName, model.Username);
+        Assert.Equal(userName, model.Username);
         Assert.NotNull(model.Input);
-        Assert.Equal(returnedPhoneNumber, model.Input.PhoneNumber);
+        Assert.Equal(phoneNumber, model.Input.PhoneNumber);
+        userManagerMock.Verify(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>()), Times.Once);
+        userManagerMock.Verify(u => u.GetUserNameAsync(user), Times.Once);
+        userManagerMock.Verify(u => u.GetPhoneNumberAsync(user), Times.Once);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_UserWithBlankUserNameAndPhoneNumber_LoadsBothAndReturnsPage()
+    {
+        // Arrange
+        var blankUserName = Generated.NewBlank();
+        var blankPhoneNumber = Generated.NewBlank();
+        var (model, userManagerMock, user) = BuildModelForExistingUser(blankUserName, blankPhoneNumber);
+
+        // Act
+        var result = await model.OnGetAsync();
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        Assert.Equal(blankUserName, model.Username);
+        Assert.NotNull(model.Input);
+        Assert.Equal(blankPhoneNumber, model.Input.PhoneNumber);
+        userManagerMock.Verify(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>()), Times.Once);
+        userManagerMock.Verify(u => u.GetUserNameAsync(user), Times.Once);
+        userManagerMock.Verify(u => u.GetPhoneNumberAsync(user), Times.Once);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_UserWithWhitespaceUserNameAndControlAndSymbolPhoneNumber_LoadsBothAndReturnsPage()
+    {
+        // Arrange
+        var whitespaceUserName = Generated.NewWhitespaceValue();
+        var controlAndSymbolPhoneNumber = Generated.NewControlAndSymbolValue();
+        var (model, userManagerMock, user) = BuildModelForExistingUser(whitespaceUserName, controlAndSymbolPhoneNumber);
+
+        // Act
+        var result = await model.OnGetAsync();
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        Assert.Equal(whitespaceUserName, model.Username);
+        Assert.NotNull(model.Input);
+        Assert.Equal(controlAndSymbolPhoneNumber, model.Input.PhoneNumber);
+        userManagerMock.Verify(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>()), Times.Once);
+        userManagerMock.Verify(u => u.GetUserNameAsync(user), Times.Once);
+        userManagerMock.Verify(u => u.GetPhoneNumberAsync(user), Times.Once);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_UserWithOverlongUserNameAndNoPhoneNumber_LoadsBothAndReturnsPage()
+    {
+        // Arrange
+        var overlongUserName = Generated.NewOverlongValue();
+        var (model, userManagerMock, user) = BuildModelForExistingUser(overlongUserName, returnedPhoneNumber: null);
+
+        // Act
+        var result = await model.OnGetAsync();
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        Assert.Equal(overlongUserName, model.Username);
+        Assert.NotNull(model.Input);
+        Assert.Null(model.Input.PhoneNumber);
         userManagerMock.Verify(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>()), Times.Once);
         userManagerMock.Verify(u => u.GetUserNameAsync(user), Times.Once);
         userManagerMock.Verify(u => u.GetPhoneNumberAsync(user), Times.Once);
@@ -137,21 +171,62 @@ public class IndexTests
         signInManagerMock.Verify(s => s.RefreshSignInAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
     }
 
-    [Theory]
-    [MemberData(nameof(PhoneNumbersThatNeedNoUpdate))]
-    public async Task OnPostAsync_PhoneNumberUnchangedOrBlank_RefreshesSignInWithoutSettingPhoneNumber(
-        string? existingPhone,
-        string? inputPhone)
+    [Fact]
+    public async Task OnPostAsync_NoStoredPhoneNumberAndNullInput_RefreshesSignInWithoutSettingPhoneNumber()
     {
         // Arrange
-        var userManagerMock = MockHelpers.MockUserManager();
-        var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
-        var user = new IdentityUser<Guid> { Id = Generated.NewUserId() };
-        userManagerMock.Setup(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
-        userManagerMock.Setup(u => u.GetPhoneNumberAsync(user)).ReturnsAsync(existingPhone);
-        signInManagerMock.Setup(s => s.RefreshSignInAsync(user)).Returns(Task.CompletedTask);
+        var (page, userManagerMock, signInManagerMock, user) = BuildPostPageForUnchangedPhoneNumber(existingPhone: null, inputPhone: null);
 
-        var page = BuildPostPage(userManagerMock, signInManagerMock, inputPhone);
+        // Act
+        var result = await page.OnPostAsync();
+
+        // Assert
+        Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal(Index.ProfileUpdatedMessage, page.StatusMessage);
+        userManagerMock.Verify(u => u.SetPhoneNumberAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>()), Times.Never);
+        signInManagerMock.Verify(s => s.RefreshSignInAsync(user), Times.Once);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_NoStoredPhoneNumberAndBlankInput_RefreshesSignInWithoutSettingPhoneNumber()
+    {
+        // Arrange
+        var blankInputPhone = Generated.NewBlank();
+        var (page, userManagerMock, signInManagerMock, user) = BuildPostPageForUnchangedPhoneNumber(existingPhone: null, blankInputPhone);
+
+        // Act
+        var result = await page.OnPostAsync();
+
+        // Assert
+        Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal(Index.ProfileUpdatedMessage, page.StatusMessage);
+        userManagerMock.Verify(u => u.SetPhoneNumberAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>()), Times.Never);
+        signInManagerMock.Verify(s => s.RefreshSignInAsync(user), Times.Once);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_InputPhoneNumberEqualsStored_RefreshesSignInWithoutSettingPhoneNumber()
+    {
+        // Arrange
+        var storedPhoneNumber = Generated.NewPhoneNumber();
+        var (page, userManagerMock, signInManagerMock, user) = BuildPostPageForUnchangedPhoneNumber(storedPhoneNumber, storedPhoneNumber);
+
+        // Act
+        var result = await page.OnPostAsync();
+
+        // Assert
+        Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal(Index.ProfileUpdatedMessage, page.StatusMessage);
+        userManagerMock.Verify(u => u.SetPhoneNumberAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>()), Times.Never);
+        signInManagerMock.Verify(s => s.RefreshSignInAsync(user), Times.Once);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_StoredPhoneNumberAndNullInput_RefreshesSignInWithoutSettingPhoneNumber()
+    {
+        // Arrange
+        var storedPhoneNumber = Generated.NewPhoneNumber();
+        var (page, userManagerMock, signInManagerMock, user) = BuildPostPageForUnchangedPhoneNumber(storedPhoneNumber, inputPhone: null);
 
         // Act
         var result = await page.OnPostAsync();
@@ -255,4 +330,36 @@ public class IndexTests
             TempData = new TempDataDictionary(new DefaultHttpContext(), Mock.Of<ITempDataProvider>()),
             Input = new Index.InputModel { PhoneNumber = inputPhone }
         };
+
+    private static (Index Model, Mock<UserManager<IdentityUser<Guid>>> UserManagerMock, IdentityUser<Guid> User) BuildModelForExistingUser(
+        string? returnedUserName,
+        string? returnedPhoneNumber)
+    {
+        var userManagerMock = MockHelpers.MockUserManager();
+        var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
+        var user = new IdentityUser<Guid>
+        {
+            Id = Generated.NewUserId()
+        };
+        userManagerMock.Setup(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
+        userManagerMock.Setup(u => u.GetUserNameAsync(user)).ReturnsAsync(returnedUserName);
+        userManagerMock.Setup(u => u.GetPhoneNumberAsync(user)).ReturnsAsync(returnedPhoneNumber);
+        var model = new Index(userManagerMock.Object, signInManagerMock.Object);
+        return (model, userManagerMock, user);
+    }
+
+    private static (Index Page, Mock<UserManager<IdentityUser<Guid>>> UserManagerMock, Mock<SignInManager<IdentityUser<Guid>>> SignInManagerMock, IdentityUser<Guid> User) BuildPostPageForUnchangedPhoneNumber(
+        string? existingPhone,
+        string? inputPhone)
+    {
+        var userManagerMock = MockHelpers.MockUserManager();
+        var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
+        var user = new IdentityUser<Guid> { Id = Generated.NewUserId() };
+        userManagerMock.Setup(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
+        userManagerMock.Setup(u => u.GetPhoneNumberAsync(user)).ReturnsAsync(existingPhone);
+        signInManagerMock.Setup(s => s.RefreshSignInAsync(user)).Returns(Task.CompletedTask);
+
+        var page = BuildPostPage(userManagerMock, signInManagerMock, inputPhone);
+        return (page, userManagerMock, signInManagerMock, user);
+    }
 }

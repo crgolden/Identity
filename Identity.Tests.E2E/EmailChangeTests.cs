@@ -1,6 +1,5 @@
 namespace Identity.Tests.E2E;
 
-using System.Text.RegularExpressions;
 using Identity.Tests.E2E.Infrastructure;
 using Microsoft.Playwright;
 
@@ -21,7 +20,7 @@ public sealed class EmailChangeTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Email']", originalEmail);
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("#login-submit");
-            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex(PageRoutes.Login));
+            await Assertions.Expect(page).Not.ToHaveURLAsync(UrlPatterns.Login());
 
             await page.GotoAsync("/Account/Manage/Email");
             await page.WaitForURLAsync("**/Account/Manage/Email**");
@@ -49,7 +48,7 @@ public sealed class EmailChangeTests(PlaywrightFixture fixture)
             await page3.FillAsync("input[name='Input.Email']", newEmail);
             await page3.FillAsync("input[name='Input.Password']", password);
             await page3.ClickAsync("#login-submit");
-            await Assertions.Expect(page3).Not.ToHaveURLAsync(new Regex(PageRoutes.Login));
+            await Assertions.Expect(page3).Not.ToHaveURLAsync(UrlPatterns.Login());
             Assert.DoesNotContain(PageRoutes.Login, page3.Url, StringComparison.Ordinal);
         }
 
@@ -60,7 +59,7 @@ public sealed class EmailChangeTests(PlaywrightFixture fixture)
             await page4.FillAsync("input[name='Input.Email']", originalEmail);
             await page4.FillAsync("input[name='Input.Password']", password);
             await page4.ClickAsync("#login-submit");
-            await Assertions.Expect(page4).ToHaveURLAsync(new Regex(PageRoutes.Login));
+            await Assertions.Expect(page4).ToHaveURLAsync(UrlPatterns.Login());
             var errorText = await page4.TextContentAsync("#validation-errors");
             Assert.NotNull(errorText);
         }
@@ -78,7 +77,7 @@ public sealed class EmailChangeTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("#login-submit");
-            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex(PageRoutes.Login));
+            await Assertions.Expect(page).Not.ToHaveURLAsync(UrlPatterns.Login());
 
             await page.GotoAsync("/Account/Manage/Email");
             await page.FillAsync("input[name='Input.NewEmail']", email);

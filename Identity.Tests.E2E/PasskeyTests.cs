@@ -1,6 +1,5 @@
 namespace Identity.Tests.E2E;
 
-using System.Text.RegularExpressions;
 using Identity.Pages.Account.Manage;
 using Identity.Tests.E2E.Infrastructure;
 using Microsoft.Playwright;
@@ -21,7 +20,7 @@ public sealed class PasskeyTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("#login-submit");
-            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex(PageRoutes.Login));
+            await Assertions.Expect(page).Not.ToHaveURLAsync(UrlPatterns.Login());
 
             await page.GotoAsync("/Account/Manage/Passkeys");
             await page.WaitForLoadStateAsync();

@@ -29,6 +29,8 @@ public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Progra
 
     public EmailCaptureSender EmailCapture { get; } = new();
 
+    public RecordingCommandInterceptor Commands { get; } = new();
+
     public string? RefusedCatalog { get; private set; }
 
     public string ServerAddress => _serverAddress ?? throw new InvalidOperationException("Server address is not available. Call Factory.CreateClient() first.");
@@ -88,6 +90,10 @@ public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Progra
             services.AddSingleton<ICAPTCHAService, AlwaysPassCAPTCHAService>();
 
             services.Configure<PasswordHasherOptions>(opts => opts.IterationCount = 1);
+
+            services.ConfigureDbContext<ApplicationDbContext>(
+                options => options.AddInterceptors(Commands),
+                ServiceLifetime.Singleton);
 
             services.Replace(ServiceDescriptor.Singleton<IAuthenticationSchemeProvider, FakeGoogleSchemeProvider>());
         });

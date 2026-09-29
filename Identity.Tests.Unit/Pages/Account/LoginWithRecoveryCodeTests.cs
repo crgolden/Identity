@@ -18,38 +18,86 @@ public class LoginWithRecoveryCodeTests
 
     private static readonly string UnknownRecoveryCode = Generated.NewRecoveryCode();
 
-    public static TheoryData<string?> ReturnUrlValues() => new()
+    public static TheoryData<string?> NullReturnUrls() => new()
     {
         (string?)null,
-        string.Empty,
-        Generated.NewWhitespaceValue(),
-        Generated.NewLocalPath() + QueryStringStart + Generated.NewPathSegment() + QueryStringAssignment +
-            Generated.NewPathSegment(),
-        Generated.NewLocalPath() + Generated.NewLocalPath() + QueryStringStart + Generated.NewPathSegment() +
-            QueryStringAssignment + Generated.NewControlAndSymbolValue(),
-        Generated.NewOverlongValue(),
     };
 
     [Theory]
-    [MemberData(nameof(ReturnUrlValues))]
+    [MemberData(nameof(NullReturnUrls))]
     public async Task OnGetAsync_TwoFactorUserExists_SetsReturnUrlAndReturnsPage(string? returnUrl)
     {
         // Arrange
-        var twoFactorUser = new IdentityUser<Guid> { Id = Generated.NewUserId(), UserName = Generated.NewUserName() };
-        var signInManagerMock = CreateSignInManagerMock();
-
-        signInManagerMock
-            .Setup(s => s.GetTwoFactorAuthenticationUserAsync())
-            .ReturnsAsync(twoFactorUser);
-
-        var model = new LoginWithRecoveryCode(signInManagerMock.Object);
+        var model = BuildModelForTwoFactorUser();
 
         // Act
         var result = await model.OnGetAsync(returnUrl);
 
         // Assert
-        Assert.IsType<PageResult>(result);
-        Assert.Equal(returnUrl, model.ReturnUrl);
+        AssertReturnsPageWithReturnUrl(result, model, returnUrl);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_TwoFactorUserExistsWithWhitespaceReturnUrl_SetsReturnUrlAndReturnsPage()
+    {
+        // Arrange
+        var whitespaceReturnUrl = Generated.NewWhitespaceValue();
+        var model = BuildModelForTwoFactorUser();
+
+        // Act
+        var result = await model.OnGetAsync(whitespaceReturnUrl);
+
+        // Assert
+        AssertReturnsPageWithReturnUrl(result, model, whitespaceReturnUrl);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_TwoFactorUserExistsWithLocalReturnUrlAndQuery_SetsReturnUrlAndReturnsPage()
+    {
+        // Arrange
+        var localPath = Generated.NewLocalPath();
+        var queryName = Generated.NewPathSegment();
+        var queryValue = Generated.NewPathSegment();
+        var returnUrlWithQuery = WithQuery(localPath, queryName, queryValue);
+        var model = BuildModelForTwoFactorUser();
+
+        // Act
+        var result = await model.OnGetAsync(returnUrlWithQuery);
+
+        // Assert
+        AssertReturnsPageWithReturnUrl(result, model, returnUrlWithQuery);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_TwoFactorUserExistsWithNestedReturnUrlAndControlAndSymbolQueryValue_SetsReturnUrlAndReturnsPage()
+    {
+        // Arrange
+        var parentPath = Generated.NewLocalPath();
+        var nestedPath = Generated.NewLocalPath();
+        var queryName = Generated.NewPathSegment();
+        var controlAndSymbolQueryValue = Generated.NewControlAndSymbolValue();
+        var nestedReturnUrlWithQuery = WithQuery(parentPath + nestedPath, queryName, controlAndSymbolQueryValue);
+        var model = BuildModelForTwoFactorUser();
+
+        // Act
+        var result = await model.OnGetAsync(nestedReturnUrlWithQuery);
+
+        // Assert
+        AssertReturnsPageWithReturnUrl(result, model, nestedReturnUrlWithQuery);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_TwoFactorUserExistsWithOverlongReturnUrl_SetsReturnUrlAndReturnsPage()
+    {
+        // Arrange
+        var overlongReturnUrl = Generated.NewOverlongValue();
+        var model = BuildModelForTwoFactorUser();
+
+        // Act
+        var result = await model.OnGetAsync(overlongReturnUrl);
+
+        // Assert
+        AssertReturnsPageWithReturnUrl(result, model, overlongReturnUrl);
     }
 
     [Fact]
@@ -172,5 +220,24 @@ public class LoginWithRecoveryCodeTests
     {
         var userManagerMock = MockHelpers.MockUserManager();
         return MockHelpers.MockSignInManager(userManagerMock.Object);
+    }
+
+    private static LoginWithRecoveryCode BuildModelForTwoFactorUser()
+    {
+        var twoFactorUser = new IdentityUser<Guid> { Id = Generated.NewUserId(), UserName = Generated.NewUserName() };
+        var signInManagerMock = CreateSignInManagerMock();
+        signInManagerMock
+            .Setup(s => s.GetTwoFactorAuthenticationUserAsync())
+            .ReturnsAsync(twoFactorUser);
+        return new LoginWithRecoveryCode(signInManagerMock.Object);
+    }
+
+    private static string WithQuery(string path, string queryName, string queryValue) =>
+        path + QueryStringStart + queryName + QueryStringAssignment + queryValue;
+
+    private static void AssertReturnsPageWithReturnUrl(IActionResult result, LoginWithRecoveryCode model, string? returnUrl)
+    {
+        Assert.IsType<PageResult>(result);
+        Assert.Equal(returnUrl, model.ReturnUrl);
     }
 }

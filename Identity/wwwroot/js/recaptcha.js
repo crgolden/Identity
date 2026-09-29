@@ -1,17 +1,17 @@
 (function () {
-    var token = document.getElementById("recaptcha-token");
+    const token = document.getElementById("recaptcha-token");
     if (!token) {
         return;
     }
 
-    var form = token.closest("form");
+    const form = token.closest("form");
     if (!form) {
         return;
     }
 
     function passesClientValidation() {
-        var jQuery = window.jQuery;
-        if (!jQuery || !jQuery(form).data("validator")) {
+        const jQuery = window.jQuery;
+        if (!jQuery?.(form).data("validator")) {
             return true;
         }
 
@@ -19,7 +19,7 @@
     }
 
     form.addEventListener("submit", function (event) {
-        if (event.submitter && event.submitter.hasAttribute("formnovalidate")) {
+        if (event.submitter?.hasAttribute("formnovalidate")) {
             return;
         }
 

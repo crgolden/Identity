@@ -12,29 +12,106 @@ public sealed class GravatarServiceTests : IDisposable
 {
     private readonly TelemetryHarness _harness = new();
 
-    public static TheoryData<string, bool> CandidateAvatarUrls() => new()
-    {
-        { AbsoluteUrlOn(GravatarService.GravatarHost), true },
-        { AbsoluteUrlOn(Generated.LowercaseToken(1) + '.' + GravatarService.GravatarHost), true },
-        { AbsoluteUrlOn(Generated.NewHostLabel() + '.' + GravatarService.GravatarHost), true },
-        { AbsoluteUrlOn(GravatarService.GravatarHost.ToUpperInvariant()), true },
-        { AbsoluteUrlOn(Generated.NewExternalHost()), false },
-        { AbsoluteUrlOn(Generated.NewHostLabel() + GravatarService.GravatarHost), false },
-        { Generated.NewValidationMessage(), false },
-    };
-
-    [Theory]
-    [MemberData(nameof(CandidateAvatarUrls))]
-    public void IsOwnComputedUrl_RecognizesEveryGravatarHostAndNothingElse(string candidate, bool expected)
+    [Fact]
+    public void IsOwnComputedUrl_UrlOnTheGravatarHost_IsTrue()
     {
         // Arrange
+        var gravatarUrl = AbsoluteUrlOn(GravatarService.GravatarHost);
         var service = new GravatarService(_harness.Telemetry);
 
         // Act
-        var actual = service.IsOwnComputedUrl(candidate);
+        var isOwn = service.IsOwnComputedUrl(gravatarUrl);
 
         // Assert
-        Assert.Equal(expected, actual);
+        Assert.True(isOwn);
+    }
+
+    [Fact]
+    public void IsOwnComputedUrl_UrlOnASingleLetterSubdomainOfTheGravatarHost_IsTrue()
+    {
+        // Arrange
+        var singleLetterSubdomain = Generated.LowercaseToken(1);
+        var subdomainUrl = AbsoluteUrlOn(singleLetterSubdomain + '.' + GravatarService.GravatarHost);
+        var service = new GravatarService(_harness.Telemetry);
+
+        // Act
+        var isOwn = service.IsOwnComputedUrl(subdomainUrl);
+
+        // Assert
+        Assert.True(isOwn);
+    }
+
+    [Fact]
+    public void IsOwnComputedUrl_UrlOnAHostLabelSubdomainOfTheGravatarHost_IsTrue()
+    {
+        // Arrange
+        var subdomainLabel = Generated.NewHostLabel();
+        var subdomainUrl = AbsoluteUrlOn(subdomainLabel + '.' + GravatarService.GravatarHost);
+        var service = new GravatarService(_harness.Telemetry);
+
+        // Act
+        var isOwn = service.IsOwnComputedUrl(subdomainUrl);
+
+        // Assert
+        Assert.True(isOwn);
+    }
+
+    [Fact]
+    public void IsOwnComputedUrl_UrlOnTheUpperCaseGravatarHost_IsTrue()
+    {
+        // Arrange
+        var upperCaseHostUrl = AbsoluteUrlOn(GravatarService.GravatarHost.ToUpperInvariant());
+        var service = new GravatarService(_harness.Telemetry);
+
+        // Act
+        var isOwn = service.IsOwnComputedUrl(upperCaseHostUrl);
+
+        // Assert
+        Assert.True(isOwn);
+    }
+
+    [Fact]
+    public void IsOwnComputedUrl_UrlOnAnExternalHost_IsFalse()
+    {
+        // Arrange
+        var externalHost = Generated.NewExternalHost();
+        var externalUrl = AbsoluteUrlOn(externalHost);
+        var service = new GravatarService(_harness.Telemetry);
+
+        // Act
+        var isOwn = service.IsOwnComputedUrl(externalUrl);
+
+        // Assert
+        Assert.False(isOwn);
+    }
+
+    [Fact]
+    public void IsOwnComputedUrl_UrlOnAHostEndingInTheGravatarHostWithoutADot_IsFalse()
+    {
+        // Arrange
+        var hostLabelPrefix = Generated.NewHostLabel();
+        var lookalikeUrl = AbsoluteUrlOn(hostLabelPrefix + GravatarService.GravatarHost);
+        var service = new GravatarService(_harness.Telemetry);
+
+        // Act
+        var isOwn = service.IsOwnComputedUrl(lookalikeUrl);
+
+        // Assert
+        Assert.False(isOwn);
+    }
+
+    [Fact]
+    public void IsOwnComputedUrl_NotAUrl_IsFalse()
+    {
+        // Arrange
+        var notAUrl = Generated.NewValidationMessage();
+        var service = new GravatarService(_harness.Telemetry);
+
+        // Act
+        var isOwn = service.IsOwnComputedUrl(notAUrl);
+
+        // Assert
+        Assert.False(isOwn);
     }
 
     [Fact]

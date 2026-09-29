@@ -15,31 +15,103 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ConfirmEmailTests
 {
-    public static TheoryData<string?, string?> RedirectNullOrWhitespaceCases() => new()
-    {
-        { null, Generated.NewEmailConfirmationToken() },
-        { Generated.NewUserId().ToString(), null },
-        { null, null },
-        { string.Empty, Generated.NewEmailConfirmationToken() },
-        { Generated.NewWhitespaceValue(), Generated.NewEmailConfirmationToken() },
-        { Generated.NewUserId().ToString(), string.Empty },
-        { Generated.NewUserId().ToString(), Generated.NewWhitespaceValue() },
-    };
-
-    [Theory]
-    [MemberData(nameof(RedirectNullOrWhitespaceCases))]
-    public async Task OnGetAsync_NullOrWhitespaceUserIdOrCode_RedirectsToIndex(string? userId, string? code)
+    [Fact]
+    public async Task OnGetAsync_NullUserId_RedirectsToIndex()
     {
         // Arrange
-        var userManagerMock = MockHelpers.MockUserManager();
-        var model = new ConfirmEmail(userManagerMock.Object);
+        var code = Generated.NewEmailConfirmationToken();
+        var model = BuildModel();
 
         // Act
-        var result = await model.OnGetAsync(userId, code);
+        var result = await model.OnGetAsync(null, code);
 
         // Assert
-        var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal(PageRoutes.Home, redirect.PageName);
+        AssertRedirectsToIndex(result);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_NullCode_RedirectsToIndex()
+    {
+        // Arrange
+        var userId = Generated.NewUserId().ToString();
+        var model = BuildModel();
+
+        // Act
+        var result = await model.OnGetAsync(userId, null);
+
+        // Assert
+        AssertRedirectsToIndex(result);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_NullUserIdAndCode_RedirectsToIndex()
+    {
+        // Arrange
+        var model = BuildModel();
+
+        // Act
+        var result = await model.OnGetAsync(null, null);
+
+        // Assert
+        AssertRedirectsToIndex(result);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_EmptyUserId_RedirectsToIndex()
+    {
+        // Arrange
+        var code = Generated.NewEmailConfirmationToken();
+        var model = BuildModel();
+
+        // Act
+        var result = await model.OnGetAsync(Generated.NewBlank(), code);
+
+        // Assert
+        AssertRedirectsToIndex(result);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_WhitespaceUserId_RedirectsToIndex()
+    {
+        // Arrange
+        var whitespaceUserId = Generated.NewWhitespaceValue();
+        var code = Generated.NewEmailConfirmationToken();
+        var model = BuildModel();
+
+        // Act
+        var result = await model.OnGetAsync(whitespaceUserId, code);
+
+        // Assert
+        AssertRedirectsToIndex(result);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_EmptyCode_RedirectsToIndex()
+    {
+        // Arrange
+        var userId = Generated.NewUserId().ToString();
+        var model = BuildModel();
+
+        // Act
+        var result = await model.OnGetAsync(userId, Generated.NewBlank());
+
+        // Assert
+        AssertRedirectsToIndex(result);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_WhitespaceCode_RedirectsToIndex()
+    {
+        // Arrange
+        var userId = Generated.NewUserId().ToString();
+        var whitespaceCode = Generated.NewWhitespaceValue();
+        var model = BuildModel();
+
+        // Act
+        var result = await model.OnGetAsync(userId, whitespaceCode);
+
+        // Assert
+        AssertRedirectsToIndex(result);
     }
 
     [Fact]
@@ -136,5 +208,17 @@ public class ConfirmEmailTests
         // Assert
         Assert.NotNull(model);
         Assert.Null(model.StatusMessage);
+    }
+
+    private static ConfirmEmail BuildModel()
+    {
+        var userManagerMock = MockHelpers.MockUserManager();
+        return new ConfirmEmail(userManagerMock.Object);
+    }
+
+    private static void AssertRedirectsToIndex(IActionResult result)
+    {
+        var redirect = Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal(PageRoutes.Home, redirect.PageName);
     }
 }

@@ -32,6 +32,8 @@ jobs:
           dotnet-version: '10.x'
 
       - name: Build walker
+        env:
+          NuGetPackageSourceCredentials_GitHub: Username=${{ github.actor }};Password=${{ secrets.PACKAGES_READ_TOKEN }}
         run: dotnet build Identity.Tests.E2E --configuration Release
 
       - name: Get Playwright version

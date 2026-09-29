@@ -1,6 +1,5 @@
 namespace Identity.Tests.E2E;
 
-using System.Text.RegularExpressions;
 using Identity.Pages.Admin;
 using Identity.Tests.E2E.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
@@ -129,7 +128,7 @@ public sealed class AdminTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Client.ClientId']", clientId);
             await page.FillAsync("input[name='Client.ClientName']", Generated.NewDisplayName());
             await page.ClickAsync("#create-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Clients/Details"));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminClientsDetails());
             await Assertions.Expect(page.Locator("#btn-edit")).ToBeVisibleAsync();
         }
     }
@@ -180,7 +179,7 @@ public sealed class AdminTests(PlaywrightFixture fixture)
             await page.GotoAsync($"/Admin/Clients/Edit/Index?id={clientDbId}");
             await page.CheckAsync("#CoordinateLifetimeWithUserSession");
             await page.ClickAsync("#save-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Clients/Details"));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminClientsDetails());
 
             await page.GotoAsync($"/Admin/Clients/Edit/Index?id={clientDbId}");
             await Assertions.Expect(page.Locator("#CoordinateLifetimeWithUserSession")).ToBeCheckedAsync();
@@ -200,9 +199,9 @@ public sealed class AdminTests(PlaywrightFixture fixture)
             await LoginAsync(page, email, password);
             await page.GotoAsync("/Admin/Clients");
             await page.ClickAsync($"#delete-{clientDbId}");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Delete"));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.DeletePage());
             await page.ClickAsync("#delete-submit");
-            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("Delete"));
+            await Assertions.Expect(page).Not.ToHaveURLAsync(UrlPatterns.DeleteAnywhere());
             await Assertions.Expect(page.Locator($"#delete-{clientDbId}")).Not.ToBeVisibleAsync();
         }
     }
@@ -445,7 +444,7 @@ public sealed class AdminTests(PlaywrightFixture fixture)
             var userId = await fixture.GetUserIdAsync(email);
             await page.GotoAsync("/Admin/Users");
             await page.ClickAsync($"#details-{userId}");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Users/Details"));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminUsersDetails());
             await Assertions.Expect(page.Locator("#nav-claims")).ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("#nav-roles")).ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("#nav-logins")).ToBeVisibleAsync();
@@ -484,16 +483,16 @@ public sealed class AdminTests(PlaywrightFixture fixture)
             await page.GotoAsync("/Admin/Roles/Create");
             await page.FillAsync("input[name='RoleName']", roleName);
             await page.ClickAsync("#create-submit");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Details"));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminRolesDetails());
 
             var roleId = await fixture.GetRoleIdAsync(roleName);
             await page.GotoAsync("/Admin/Roles");
             await Assertions.Expect(page.Locator($"#details-{roleId}")).ToBeVisibleAsync();
 
             await page.ClickAsync($"#delete-{roleId}");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("Delete"));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.DeleteAnywhere());
             await page.ClickAsync("#delete-submit");
-            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex("Delete"));
+            await Assertions.Expect(page).Not.ToHaveURLAsync(UrlPatterns.DeleteAnywhere());
             await Assertions.Expect(page.Locator("#page-table")).ToBeVisibleAsync();
             await Assertions.Expect(page.Locator($"#details-{roleId}")).ToHaveCountAsync(0);
         }
@@ -511,7 +510,7 @@ public sealed class AdminTests(PlaywrightFixture fixture)
             var adminRoleId = await fixture.GetRoleIdAsync(AuthorizationNames.AdminRole);
             await page.GotoAsync("/Admin/Roles");
             await page.ClickAsync($"#details-{adminRoleId}");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Admin/Roles/Details"));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.AdminRolesDetails());
             await Assertions.Expect(page.Locator("#nav-claims")).ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("#nav-users")).ToBeVisibleAsync();
             await Assertions.Expect(page.Locator("#btn-edit")).ToBeVisibleAsync();
@@ -525,6 +524,6 @@ public sealed class AdminTests(PlaywrightFixture fixture)
         await page.FillAsync("input[name='Input.Email']", email);
         await page.FillAsync("input[name='Input.Password']", password);
         await page.ClickAsync("#login-submit");
-        await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex(PageRoutes.Login));
+        await Assertions.Expect(page).Not.ToHaveURLAsync(UrlPatterns.Login());
     }
 }

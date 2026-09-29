@@ -1,6 +1,5 @@
 namespace Identity.Tests.E2E;
 
-using System.Text.RegularExpressions;
 using Identity.Tests.E2E.Infrastructure;
 using Microsoft.Playwright;
 using OtpNet;
@@ -21,7 +20,7 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("#login-submit");
-            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex(PageRoutes.Login));
+            await Assertions.Expect(page).Not.ToHaveURLAsync(UrlPatterns.Login());
 
             await page.GotoAsync("/Account/Manage/TwoFactorAuthentication");
             await page.ClickAsync("#enable-authenticator");
@@ -56,7 +55,7 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
             await setupPage.FillAsync("input[name='Input.Email']", email);
             await setupPage.FillAsync("input[name='Input.Password']", password);
             await setupPage.ClickAsync("#login-submit");
-            await Assertions.Expect(setupPage).Not.ToHaveURLAsync(new Regex(PageRoutes.Login));
+            await Assertions.Expect(setupPage).Not.ToHaveURLAsync(UrlPatterns.Login());
 
             await setupPage.GotoAsync("/Account/Manage/TwoFactorAuthentication");
             await setupPage.ClickAsync("#enable-authenticator");
@@ -88,14 +87,14 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
             await loginPage.FillAsync("input[name='Input.Password']", password);
             await loginPage.ClickAsync("#login-submit");
 
-            await Assertions.Expect(loginPage).ToHaveURLAsync(new Regex("/Account/LoginWith2fa"));
+            await Assertions.Expect(loginPage).ToHaveURLAsync(UrlPatterns.LoginWith2fa());
 
             await loginPage.ClickAsync("#recovery-code-login");
-            await Assertions.Expect(loginPage).ToHaveURLAsync(new Regex("/Account/LoginWithRecoveryCode"));
+            await Assertions.Expect(loginPage).ToHaveURLAsync(UrlPatterns.LoginWithRecoveryCode());
             await loginPage.FillAsync("input[name='Input.RecoveryCode']", recoveryCode);
             await loginPage.ClickAsync("#recovery-code-submit");
 
-            await Assertions.Expect(loginPage).Not.ToHaveURLAsync(new Regex(PageRoutes.Login));
+            await Assertions.Expect(loginPage).Not.ToHaveURLAsync(UrlPatterns.Login());
             Assert.DoesNotContain(PageRoutes.Login, loginPage.Url, StringComparison.Ordinal);
         }
     }
@@ -112,7 +111,7 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
             await page.FillAsync("input[name='Input.Email']", email);
             await page.FillAsync("input[name='Input.Password']", password);
             await page.ClickAsync("#login-submit");
-            await Assertions.Expect(page).Not.ToHaveURLAsync(new Regex(PageRoutes.Login));
+            await Assertions.Expect(page).Not.ToHaveURLAsync(UrlPatterns.Login());
 
             await page.GotoAsync("/Account/Manage/TwoFactorAuthentication");
             await page.ClickAsync("#enable-authenticator");
@@ -125,7 +124,7 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
 
             await page.GotoAsync("/Account/Manage/TwoFactorAuthentication");
             await page.ClickAsync("#reset-authenticator");
-            await Assertions.Expect(page).ToHaveURLAsync(new Regex("/Account/Manage/ResetAuthenticator"));
+            await Assertions.Expect(page).ToHaveURLAsync(UrlPatterns.ManageResetAuthenticator());
             await page.ClickAsync("#reset-authenticator-button");
 
             await Assertions.Expect(page.Locator("#shared-key")).ToBeVisibleAsync();
@@ -137,9 +136,6 @@ public sealed class TwoFactorAuthenticationTests(PlaywrightFixture fixture)
     {
         var sharedKeyText = await page.Locator("#shared-key").TextContentAsync();
         Assert.NotNull(sharedKeyText);
-        return sharedKeyText
-            .Replace(" ", string.Empty, StringComparison.Ordinal)
-            .Replace("-", string.Empty, StringComparison.Ordinal)
-            .ToUpperInvariant();
+        return string.Concat(sharedKeyText.Where(char.IsLetterOrDigit)).ToUpperInvariant();
     }
 }

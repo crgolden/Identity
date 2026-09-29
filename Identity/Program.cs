@@ -195,6 +195,7 @@ try
         {
             configurationStoreOptions.EnablePooling = true;
         })
+        .AddClientStore<SingleQueryClientStore>()
         .AddOperationalStore<ApplicationDbContext>(operationalStoreOptions =>
         {
             operationalStoreOptions.EnablePooling = true;

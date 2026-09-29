@@ -16,19 +16,6 @@ using Moq;
 [Trait("Category", "Unit")]
 public class ConfirmEmailChangeTests
 {
-    public static TheoryData<string?, string?, string?> MissingArgumentCases() => new()
-    {
-        { null, Generated.NewEmailAddress(), Generated.NewEmailConfirmationToken() },
-        { Generated.NewUserId().ToString(), null, Generated.NewEmailConfirmationToken() },
-        { Generated.NewUserId().ToString(), Generated.NewEmailAddress(), null },
-    };
-
-    public static TheoryData<string> BlankEmailCases() => new()
-    {
-        string.Empty,
-        Generated.NewWhitespaceValue(),
-    };
-
     [Fact]
     public void Constructor_WithValidDependencies_DoesNotThrow()
     {
@@ -57,21 +44,49 @@ public class ConfirmEmailChangeTests
         Assert.NotNull(model);
     }
 
-    [Theory]
-    [MemberData(nameof(MissingArgumentCases))]
-    public async Task OnGetAsync_NullParameters_RedirectsToIndex(string? userId, string? email, string? code)
+    [Fact]
+    public async Task OnGetAsync_NullUserId_RedirectsToIndex()
     {
         // Arrange
-        var userManagerMock = MockHelpers.MockUserManager();
-        var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
-        var model = new ConfirmEmailChange(userManagerMock.Object, signInManagerMock.Object);
+        var email = Generated.NewEmailAddress();
+        var code = Generated.NewEmailConfirmationToken();
+        var model = BuildModel();
 
         // Act
-        var result = await model.OnGetAsync(userId, email, code);
+        var result = await model.OnGetAsync(null, email, code);
 
         // Assert
-        var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal(PageRoutes.Home, redirect.PageName);
+        AssertRedirectsToIndex(result);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_NullEmail_RedirectsToIndex()
+    {
+        // Arrange
+        var userId = Generated.NewUserId().ToString();
+        var code = Generated.NewEmailConfirmationToken();
+        var model = BuildModel();
+
+        // Act
+        var result = await model.OnGetAsync(userId, null, code);
+
+        // Assert
+        AssertRedirectsToIndex(result);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_NullCode_RedirectsToIndex()
+    {
+        // Arrange
+        var userId = Generated.NewUserId().ToString();
+        var email = Generated.NewEmailAddress();
+        var model = BuildModel();
+
+        // Act
+        var result = await model.OnGetAsync(userId, email, null);
+
+        // Assert
+        AssertRedirectsToIndex(result);
     }
 
     [Fact]
@@ -177,24 +192,37 @@ public class ConfirmEmailChangeTests
         signInManagerMock.Verify(s => s.RefreshSignInAsync(It.Is<IdentityUser<Guid>>(u => u == user)), Times.Once);
     }
 
-    [Theory]
-    [MemberData(nameof(BlankEmailCases))]
-    public async Task OnGetAsync_EmptyOrWhitespaceEmail_RedirectsToIndex(string email)
+    [Fact]
+    public async Task OnGetAsync_EmptyEmail_RedirectsToIndex()
     {
         // Arrange
         var userId = Generated.NewUserId().ToString();
         var token = Generated.NewEmailConfirmationToken();
         var encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
-        var userManagerMock = MockHelpers.MockUserManager();
-        var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
-        var model = new ConfirmEmailChange(userManagerMock.Object, signInManagerMock.Object);
+        var model = BuildModel();
 
         // Act
-        var result = await model.OnGetAsync(userId, email, encoded);
+        var result = await model.OnGetAsync(userId, Generated.NewBlank(), encoded);
 
         // Assert
-        var redirect = Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal(PageRoutes.Home, redirect.PageName);
+        AssertRedirectsToIndex(result);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_WhitespaceEmail_RedirectsToIndex()
+    {
+        // Arrange
+        var userId = Generated.NewUserId().ToString();
+        var whitespaceEmail = Generated.NewWhitespaceValue();
+        var token = Generated.NewEmailConfirmationToken();
+        var encoded = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+        var model = BuildModel();
+
+        // Act
+        var result = await model.OnGetAsync(userId, whitespaceEmail, encoded);
+
+        // Assert
+        AssertRedirectsToIndex(result);
     }
 
     [Fact]
@@ -223,5 +251,18 @@ public class ConfirmEmailChangeTests
         // Assert
         Assert.IsType<PageResult>(result);
         Assert.Equal(ConfirmEmailChange.EmailChangeConfirmedMessage, model.StatusMessage);
+    }
+
+    private static ConfirmEmailChange BuildModel()
+    {
+        var userManagerMock = MockHelpers.MockUserManager();
+        var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
+        return new ConfirmEmailChange(userManagerMock.Object, signInManagerMock.Object);
+    }
+
+    private static void AssertRedirectsToIndex(IActionResult result)
+    {
+        var redirect = Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal(PageRoutes.Home, redirect.PageName);
     }
 }
