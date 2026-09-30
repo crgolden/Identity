@@ -15,8 +15,8 @@
     <PackageReference Include="Azure.Extensions.AspNetCore.DataProtection.Blobs" Version="1.5.4" />
     <PackageReference Include="Azure.Extensions.AspNetCore.DataProtection.Keys" Version="1.6.4" />
     <PackageReference Include="Azure.Identity" Version="1.21.0" />
-    <PackageReference Include="Duende.IdentityServer.AspNetIdentity" Version="8.0.8" />
-    <PackageReference Include="Duende.IdentityServer.EntityFramework" Version="8.0.8" />
+    <PackageReference Include="Duende.IdentityServer.AspNetIdentity" Version="8.0.9" />
+    <PackageReference Include="Duende.IdentityServer.EntityFramework" Version="8.0.9" />
     <PackageReference Include="Elastic.Serilog.Sinks" Version="9.0.0" />
     <PackageReference Include="Google.Apis.Auth.AspNetCore3" Version="1.76.0" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="10.0.12" />
@@ -35,12 +35,12 @@
     <PackageReference Include="OpenTelemetry.Instrumentation.EntityFrameworkCore" Version="1.15.1-beta.1" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.19.0" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.19.0" />
-    <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.20.2" />
+    <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.21.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
-    <PackageReference Include="Shared" Version="1.5.0" />
-    <PackageReference Include="SonarAnalyzer.CSharp" Version="10.34.0.3385">
+    <PackageReference Include="Shared" Version="1.5.1" />
+    <PackageReference Include="SonarAnalyzer.CSharp" Version="10.35.0.4138">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
