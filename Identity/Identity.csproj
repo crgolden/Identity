@@ -53,6 +53,8 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Identity.Tests.Unit" />
     <InternalsVisibleTo Include="Identity.Tests.E2E" />
+    <InternalsVisibleTo Include="Identity.Tests.Integration" />
+    <InternalsVisibleTo Include="Identity.Tests.Load" />
   </ItemGroup>
 
   <ItemGroup>

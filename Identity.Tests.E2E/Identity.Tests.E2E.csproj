@@ -9,10 +9,12 @@
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <OutputType>Exe</OutputType>
     <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
+    <ReqnrollUseIntermediateOutputPathForCodeBehind>true</ReqnrollUseIntermediateOutputPathForCodeBehind>
   </PropertyGroup>
 
   <ItemGroup>
     <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="reqnroll.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
@@ -21,6 +23,10 @@
 
   <ItemGroup>
     <None Include="..\.editorconfig" Link=".editorconfig" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Identity.Tests.Integration\Oidc\OidcDiscoveryConstants.cs" Link="Host\OidcDiscoveryConstants.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -37,6 +43,7 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
     <PackageReference Include="Microsoft.Playwright" Version="1.63.0" />
     <PackageReference Include="Otp.NET" Version="1.4.1" />
+    <PackageReference Include="Reqnroll.xunit.v3" Version="3.3.4" />
     <PackageReference Include="Shared" Version="1.5.1" />
     <PackageReference Include="SonarAnalyzer.CSharp" Version="10.35.0.4138">
       <PrivateAssets>all</PrivateAssets>

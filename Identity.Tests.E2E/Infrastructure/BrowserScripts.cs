@@ -12,8 +12,6 @@ internal static class BrowserScripts
 
     internal static string LoginFormValidatorAttached => Read(nameof(LoginFormValidatorAttached));
 
-    internal static string PasskeyRequestOptionsFetch => Read(nameof(PasskeyRequestOptionsFetch));
-
     private static string Read(string name)
     {
         using var stream = typeof(BrowserScripts).Assembly.GetManifestResourceStream(name)

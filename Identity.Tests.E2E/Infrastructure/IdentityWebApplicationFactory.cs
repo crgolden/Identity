@@ -31,8 +31,6 @@ public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Progra
 
     public RecordingCommandInterceptor Commands { get; } = new();
 
-    public string? RefusedCatalog { get; private set; }
-
     public string ServerAddress => _serverAddress ?? throw new InvalidOperationException("Server address is not available. Call Factory.CreateClient() first.");
 
     protected override IHost CreateHost(IHostBuilder builder)
@@ -65,7 +63,6 @@ public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Progra
             var testCatalogSuffix = E2ESettings.Read(context.Configuration).TestCatalogSuffix;
             if (catalog is null || !catalog.EndsWith(testCatalogSuffix, StringComparison.Ordinal))
             {
-                RefusedCatalog = catalog;
                 throw new InvalidOperationException(
                     $"The E2E tier writes to the catalog it is given, so it refuses '{catalog}': the catalog must end in '{testCatalogSuffix}'.");
             }

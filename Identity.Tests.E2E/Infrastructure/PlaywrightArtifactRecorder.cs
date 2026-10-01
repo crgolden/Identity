@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using Microsoft.Playwright;
+using Reqnroll;
 using Xunit;
 
 public sealed class PlaywrightArtifactRecorder
@@ -84,14 +85,23 @@ public sealed class PlaywrightArtifactRecorder
         }
     }
 
-    public static void Finalize(string testId, TestResultState? state)
+    public static void Finalize(string testId, TestResultState? state) =>
+        Finalize(testId, state?.Result == TestResult.Failed, path => WriteFailureMetadata(path, state));
+
+    public static void Finalize(string testId, ScenarioContext scenario, Exception? teardownError)
+    {
+        ArgumentNullException.ThrowIfNull(scenario);
+        var failed = scenario.ScenarioExecutionStatus != ScenarioExecutionStatus.OK || teardownError is not null;
+        Finalize(testId, failed, path => WriteFailureMetadata(path, scenario, teardownError));
+    }
+
+    private static void Finalize(string testId, bool failed, Action<string> writeFailureMetadata)
     {
         if (!PendingArtifacts.TryRemove(testId, out var artifacts))
         {
             return;
         }
 
-        var failed = state?.Result == TestResult.Failed;
         foreach (var artifact in artifacts)
         {
             var tempParent = Path.GetDirectoryName(artifact.TempDirectory);
@@ -111,7 +121,7 @@ public sealed class PlaywrightArtifactRecorder
 
             Directory.Move(artifact.TempDirectory, targetDirectory);
             DeleteDirectoryIfEmpty(tempParent);
-            WriteFailureMetadata(Path.Combine(targetDirectory, artifact.FailureFileName), state);
+            writeFailureMetadata(Path.Combine(targetDirectory, artifact.FailureFileName));
         }
     }
 
@@ -201,6 +211,28 @@ public sealed class PlaywrightArtifactRecorder
             exceptionMessages = state?.ExceptionMessages,
             exceptionStackTraces = state?.ExceptionStackTraces,
             failureCause = state?.FailureCause?.ToString()
+        };
+        File.WriteAllText(path, JsonSerializer.Serialize(payload, JsonOptions()));
+    }
+
+    private static void WriteFailureMetadata(string path, ScenarioContext scenario, Exception? teardownError)
+    {
+        var exceptions = new List<Exception>();
+        foreach (var rootError in new[] { scenario.TestError, teardownError })
+        {
+            for (var exception = rootError; exception is not null; exception = exception.InnerException)
+            {
+                exceptions.Add(exception);
+            }
+        }
+
+        var payload = new
+        {
+            outcome = scenario.ScenarioExecutionStatus.ToString(),
+            failedInTeardown = teardownError is not null,
+            exceptionTypes = exceptions.Select(exception => exception.GetType().FullName).ToArray(),
+            exceptionMessages = exceptions.Select(exception => exception.Message).ToArray(),
+            exceptionStackTraces = exceptions.Select(exception => exception.StackTrace).ToArray()
         };
         File.WriteAllText(path, JsonSerializer.Serialize(payload, JsonOptions()));
     }

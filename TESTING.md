@@ -25,9 +25,9 @@ dotnet build Identity.Tests.Unit --configuration Debug
 
 A `PageModel` test whose handler calls `Url.Page(...)` or `Url.RouteUrl(...)` must set up the mocked `IUrlHelper`'s `ActionContext` (`urlHelperMock.SetupGet(u => u.ActionContext).Returns(new ActionContext(new DefaultHttpContext(), routeData, new ActionDescriptor()))`) even though the test never reads it: `UrlHelperExtensions.Page`/`RouteUrl` read it on every call and throw on null. `Pages/Account/ExternalLoginTests.cs` is the pattern.
 
-### E2E Tests (local, `Identity.Tests.E2E`)
+### E2E and Integration Tests (local, `Identity.Tests.E2E`, `Identity.Tests.Integration`)
 
-Require a running SQL Server with test database `IdentityTest` and configured User Secrets. No `az login` needed — Azure credentials are only constructed inside `IsProduction()` in `Program.cs`, which is never reached in Development.
+Both host the app in-process through the same `IdentityHostFixture` and therefore need the same setup. They require a running SQL Server with test database `IdentityTest` and configured User Secrets. No `az login` needed: Azure credentials are only constructed inside `IsProduction()` in `Program.cs`, which is never reached in Development.
 
 **Check that the server is actually up first — a stopped one fails as something else entirely.** Locally it is `(localdb)\MSSQLLocalDB` (`appsettings.Development.json`), which auto-creates but does **not** auto-start reliably under load. A stopped instance surfaces as `SqlException : Connection Timeout Expired ... pre-login handshake` with a multi-second `initialization=` figure, on every test at once, which reads like the suite or the app is broken. `sqllocaldb info MSSQLLocalDB` reports `State:`; `sqllocaldb start MSSQLLocalDB` fixes it. Cold-starting it while a build, a test run or a browser suite is competing for the box is what produces the slowest version of this.
 
@@ -38,6 +38,8 @@ $env:SqlConnectionStringBuilder__InitialCatalog = "IdentityTest"
 $env:PasskeyOrigin = "https://127.0.0.1"
 dotnet build Identity.Tests.E2E --configuration Debug
 .\Identity.Tests.E2E\bin\Debug\net10.0\Identity.Tests.E2E.exe -trait "Category=E2E" -showLiveOutput
+dotnet build Identity.Tests.Integration --configuration Debug
+.\Identity.Tests.Integration\bin\Debug\net10.0\Identity.Tests.Integration.exe -trait "Category=Integration" -showLiveOutput
 
 # Redirect output for in-flight inspection
 cmd /c "Identity.Tests.E2E\bin\Debug\net10.0\Identity.Tests.E2E.exe -trait ""Category=E2E"" -showLiveOutput > C:\temp\identity-e2e.txt 2>&1"
@@ -74,10 +76,14 @@ same environment variables CI sets rather than relying on the Development file �
 environment variable outranks both files, which is why an explicit `PasskeyOrigin` makes the two agree on the
 one setting that gates origin validation.
 
-**`-trait "Category=E2E"` is not optional.** `Identity.Tests.E2E` also holds the `Category=Load` and
-`Category=Walker` suites, both written to run against a **deployed** target. The walker skips when
-`WalkerBaseUrl` is unset, but it still inflates an unfiltered total, so **the E2E tier alone is the count to
-compare** against the last green run. The deployed site's account journeys are the synthetic walker's; see
+**`-trait "Category=E2E"` is not optional.** `Identity.Tests.E2E` also holds the `Category=Walker` suite,
+written to run against a **deployed** target. The walker skips when `WalkerBaseUrl` is unset, but it still
+inflates an unfiltered total, so **the E2E tier alone is the count to compare** against the last green run.
+`gate.ps1`'s `Test-Trx` calls assert a floor per tier: the E2E floor is `executedTestFloor` in
+`Identity.Tests.E2E/e2e-settings.json`, and **27** Integration tests. The gate and CI's "Assert E2E executed at least
+its floor" step read that one file, and both also require one `testCaseFinished` per floor scenario in the Cucumber
+messages report, whose path both derive from `reqnroll.json`. A run that executes fewer fails, and a floor changes
+only in the same edit that deliberately adds or removes a scenario or test. The deployed site's account journeys are the synthetic walker's; see
 [Synthetic walker](#synthetic-walker).
 
 ### Single Test (by method name)
@@ -85,20 +91,25 @@ compare** against the last green run. The deployed site's account journeys are t
 ```powershell
 .\Identity.Tests.Unit\bin\Debug\net10.0\Identity.Tests.Unit.exe -method "*MethodName*" -showLiveOutput
 .\Identity.Tests.E2E\bin\Debug\net10.0\Identity.Tests.E2E.exe -method "*MethodName*" -showLiveOutput
+.\Identity.Tests.Integration\bin\Debug\net10.0\Identity.Tests.Integration.exe -method "*MethodName*" -showLiveOutput
 ```
 
 ---
 
-**Test types (two physical projects)**
+**Test types (four physical projects, one layer each)**
 - **`Identity.Tests.Unit`** — xUnit page-model / service / API tests (`Category=Unit`); includes property-based (`PropertyBased/`) sub-folder. No Playwright/`Microsoft.AspNetCore.Mvc.Testing` dependency.
-- **`Identity.Tests.E2E`** — Playwright browser tests (`Category=E2E`); includes OIDC discovery tests (`Oidc/`) and IdentityServer flow tests (`ConsentTests`, `GrantsTests`, `DiagnosticsTests`, `ServerSideSessionsTests`), plus `Security/` (`AntiforgeryTests`, `ConcurrentLockoutTests`, `OpenRedirectTests`)
-- **`Identity.Tests.E2E` — Load** — throughput / failure-rate tests using `Parallel.ForEachAsync` + `HttpClient` (`Category=Load`, `Load/LoadTests.cs`); run separately (requires live server)
+- **`Identity.Tests.E2E`**: browser journeys written as Gherkin features (`Category=E2E`), one folder per slice: `SignIn/`, `Registration/`, `PasswordReset/`, `AccountManagement/`, `TwoFactor/`, `PasskeySignIn/`, `GoogleSignIn/`, `ApplicationConsent/`, `Home/`, `AdminArea/`, `AdminClients/`, `AdminResources/`, `AdminProviders/`, `AdminPeople/`, `AdminGrants/`. Every test here is a journey; a test that drives an endpoint or a service belongs in `Identity.Tests.Integration`.
+- **`Identity.Tests.Integration`**: xunit tests over `HttpClient` and the host's services (`Category=Integration`), with no browser: OIDC discovery (`Oidc/`), `GrantsTests`, `ServerSideSessionsTests`, `PasskeyTests`, `AccessTests` (unauthenticated and non-admin redirects), `SingleQueryClientStoreTests`, `IdentityWebApplicationFactoryTests`, and `Security/` (`AntiforgeryTests`, `ConcurrentLockoutTests`, `PasskeyRequestOptionsTests`). `Infrastructure/AccountSession` signs a client in by posting the login form with its antiforgery token and never follows a redirect, so a test asserts the `Location` path itself.
+- **`Identity.Tests.Load`**: throughput / failure-rate tests using `Parallel.ForEachAsync` + `HttpClient` (`Category=Load`, `LoadTests.cs`); run separately, on `workflow_dispatch` only
 - **`Identity.Tests.E2E`, Walker**: the scheduled synthetic walker (`Category=Walker`, `Synthetic/`), which walks the **deployed** site's menus as a member account and then as an admin. Skips unless `WalkerBaseUrl` is set
+
+**One host fixture, three projects.** `IdentityHostFixture` (in `Identity.Tests.E2E/Infrastructure/`) owns the `IdentityWebApplicationFactory`, the seed and lookup helpers and the database cleanup; `PlaywrightFixture` derives from it and adds the browser, while `IntegrationFixture` and `LoadFixture` derive from it unchanged. Microsoft.Testing.Platform test projects cannot reference one another, so `Identity.Tests.Integration` and `Identity.Tests.Load` compile the host files in through `<Compile Include="..\Identity.Tests.E2E\Infrastructure\..." Link="Host\..." />` rather than a `ProjectReference`; a host file added to the fixture's dependency graph needs a link line in both csproj files.
 
 **Test infrastructure**
 - **`IdentityWebApplicationFactory`** (extends `WebApplicationFactory<Program>`) — starts a real Kestrel HTTPS server on a random port for Playwright; replaces `IAzureClientFactory<ServiceBusClient>` with `TestServiceBusClientFactory` (captures sent email via `EmailCaptureSender` instead of calling Azure Service Bus); replaces `IAvatarService` with `NullAvatarService` (no real Gravatar HTTP calls); replaces `ICAPTCHAService` with an always-pass stub returning a passing `CAPTCHAVerdict` (no real Google reCAPTCHA calls); reduces the password hasher's PBKDF2 iteration count to 1 (default 600k iterations is CPU-prohibitive across a whole suite of logins); in Development, replaces the Serilog `ILoggerFactory` with a console logger (avoids an Elasticsearch connection at startup); ignores background-service exceptions (IdentityServer key refresh, token cleanup) so a transient one can't tear down the Kestrel host mid-run.
-- **`PlaywrightFixture`** (xUnit `IAsyncLifetime`): installs Chromium on first run, warms up the server, provides `NewPageAsync()` per test, stubs client-side `grecaptcha` so form submissions are synchronous, and in CI cleans up the test database after the suite. **The stub is a hermetic test double, not a production bypass**: it pairs with the DI-swapped `AlwaysPassCAPTCHAService` so an in-process run never calls Google at all. The fixture is in-process only; the walker has its own fixture (`Synthetic/IdentityWalkerFixture`), so the two concerns never share a mode flag. Every test creates its own confirmed user via `CreateConfirmedUserAsync()`, and there is no shared long-lived account: a suite-wide account couples every test to one login's outcome, so a single failed first login fails tests that have nothing to do with it.
-- Test collections run serially (`parallelizeTestCollections: false` in `xunit.runner.json`, `Identity.Tests.E2E` only) to prevent `WebApplicationFactory` startup from timing out Key Vault calls when the thread pool is saturated.
+- **`PlaywrightFixture`** (an `IdentityHostFixture`): installs Chromium on first run, warms up the server, provides `NewPageAsync()` per test, and stubs client-side `grecaptcha` so form submissions are synchronous; the database cleanup it runs is the host fixture's. **The stub is a hermetic test double, not a production bypass**: it pairs with the DI-swapped `AlwaysPassCAPTCHAService` so an in-process run never calls Google at all. The fixture is in-process only; the walker has its own fixture (`Synthetic/IdentityWalkerFixture`), so the two concerns never share a mode flag. Every test creates its own confirmed user via `CreateConfirmedUserAsync()`, and there is no shared long-lived account: a suite-wide account couples every test to one login's outcome, so a single failed first login fails tests that have nothing to do with it.
+- **E2E journeys are Gherkin scenarios run by Reqnroll** (`Reqnroll.xunit.v3`): one folder per vertical slice holds `<Slice>.feature`, `<Slice>Steps.cs` and `<Slice>Feature.cs`. Reqnroll generates each feature's xunit class into `obj/` (`ReqnrollUseIntermediateOutputPathForCodeBehind`), so no generated code sits in the tree. The feature's `@E2E` tag becomes the class's `Category=E2E` trait, which is what `--filter-trait "Category=E2E"` selects. **`<Slice>Feature.cs` is the generated class's other `partial` half, and its only job is `[Collection(E2ECollection.Name)]`**: that puts every scenario in the one E2E collection, so `BrowserScenario` reaches the one shared `PlaywrightFixture` through `TestContext.Current.GetFixture<PlaywrightFixture>()` and fails naming the fix when a feature lacks it. `BrowserScenario` opens a page per scenario and, in `[AfterScenario]`, disposes every session and then finalizes the scenario's artifacts itself: any `ScenarioExecutionStatus` but `OK` (an undefined or pending step and a binding error included), or an exception from the disposal itself, keeps them under `PlaywrightArtifacts/E2E/<scenario>` with `failure.json`, and a pass deletes them. **The assembly-level `PlaywrightArtifactFinalizerAttribute` cannot do this for a scenario**: the generated class runs `[AfterScenario]` from its `DisposeAsync` (`OnScenarioEndAsync` in `TestTearDownAsync`), after xunit's `After` has already finalized, and a session registers its artifacts only when it is disposed, so the attribute finds nothing and every session's video, trace and screenshot would stay in `.tmp`. The attribute remains for the plain `[Fact]` walker, which disposes its session inside the test method. `reqnroll.json` writes the Cucumber HTML report and the Cucumber Messages NDJSON under `TestResults/cucumber-report/` in the output folder.
+- Test collections run serially (`parallelizeTestCollections: false` in `xunit.runner.json`, in every project that hosts the app) to prevent `WebApplicationFactory` startup from timing out Key Vault calls when the thread pool is saturated.
 - Tests that drive `/connect/authorize` against a client with a fake `redirect_uri` (e.g. `https://localhost:9999/callback` — nothing listens there) must capture the final redirect from the browser's own `Request` event via `page.RunAndWaitForRequestAsync(...)` *before* triggering the click that causes it, rather than awaiting navigation afterward — by the time a post-navigation wait would resolve, the browser has already failed the connection to the fake host (`ERR_CONNECTION_REFUSED`) and the URL is unavailable. The same before-not-after ordering applies to `page.WaitForResponseAsync(...)`: register the listener before the click that triggers the POST, or a fast response can complete before the listener attaches.
 - `page.WaitForURLAsync(...)` can miss a navigation that completes before the listener registers (common right after a form POST that renders in place, e.g. 2FA setup/reset flows). Prefer polling for a DOM element that only appears on the destination page (`Assertions.Expect(page.Locator(...)).ToBeVisibleAsync(...)`) over `WaitForURLAsync` in those spots.
 
@@ -304,8 +315,8 @@ flowchart TD
 | POST /Account/Register: reCAPTCHA score below threshold | `Pages/Account/RegisterTests.cs` | `OnPostAsync_RecaptchaScoreBelowThreshold_ReturnsPageWithModelError` |
 | GET /Account/ConfirmEmail: null, empty or whitespace user id or code redirects | `Pages/Account/ConfirmEmailTests.cs` | `OnGetAsync_NullUserId_RedirectsToIndex`, `OnGetAsync_NullCode_RedirectsToIndex`, `OnGetAsync_NullUserIdAndCode_RedirectsToIndex`, `OnGetAsync_EmptyUserId_RedirectsToIndex`, `OnGetAsync_WhitespaceUserId_RedirectsToIndex`, `OnGetAsync_EmptyCode_RedirectsToIndex`, `OnGetAsync_WhitespaceCode_RedirectsToIndex` |
 | GET /Account/ConfirmEmail: constructor | `Pages/Account/ConfirmEmailTests.cs` | `ConfirmEmailModel_Constructor_ValidUserManager_InstanceCreatedAndStatusMessageIsNull` |
-| Full register → confirm → login | `RegistrationTests.cs` (E2E) | `Register_ConfirmEmail_Login_Succeeds` |
-| E2E: resend confirmation + confirm with new link | `AccountManagementTests.cs` (E2E) | `ResendEmailConfirmation_NewLink_ConfirmsAccount` |
+| Full register → confirm → login | `Registration/Registration.feature` (E2E) | A visitor registers, confirms their email and signs in |
+| E2E: resend confirmation + confirm with new link | `Registration/Registration.feature` (E2E) | A new member asks for another confirmation email and uses it to confirm |
 
 ---
 
@@ -395,7 +406,7 @@ flowchart TD
 
 ### Login Tests
 
-**The two lockout tests read `IdentityOptions.Lockout.MaxFailedAccessAttempts` out of the running app; do not put the number back.** `LoginTests.Login_MaxFailedAttempts_LocksAccount` and `Security/ConcurrentLockoutTests` each used to restate ASP.NET Identity's default of 5 as a bare literal (`for (var i = 0; i < 5; i++)` with an `if (i < 4)` inside it, and `Enumerable.Range(0, 10)`), so raising or lowering the policy would have left both tests asserting the old threshold while still passing. They now resolve `IOptions<IdentityOptions>` from `fixture.Factory.Services`, which is the same options instance the app signs in against. `ConcurrentLockoutTests` overshoots it by `AttemptsPerThreshold` rather than by a second hardcoded count. This is [CODE-STYLE.md](../AGENTS/CODE-STYLE.md) rule 11's "a policy threshold the SUT owns moves to a production constant the SUT reads", not a cosmetic rename.
+**The two lockout tests read `IdentityOptions.Lockout.MaxFailedAccessAttempts` out of the running app; do not put the number back.** The "Repeated wrong passwords lock the account" step in `SignIn/SignInSteps.cs` and `Identity.Tests.Integration/Security/ConcurrentLockoutTests` resolve `IOptions<IdentityOptions>` from `fixture.Factory.Services`, which is the same options instance the app signs in against, so raising or lowering the policy moves both tests with it; a restated literal (ASP.NET Identity's default of 5) would keep asserting the old threshold while still passing. `ConcurrentLockoutTests` overshoots it by a generated multiple rather than by a second hardcoded count. This is [CODE-STYLE.md](../AGENTS/CODE-STYLE.md) rule 11's "a policy threshold the SUT owns moves to a production constant the SUT reads", not a cosmetic rename.
 
 | Path | File | Test Method |
 |---|---|---|
@@ -427,13 +438,13 @@ flowchart TD
 | POST /Account/Logout: empty or whitespace logoutId redirects without calling the interaction service | `Pages/Account/LogoutTests.cs` | `OnPostAsync_EmptyLogoutId_DoesNotCallInteractionService`, `OnPostAsync_WhitespaceLogoutId_DoesNotCallInteractionService` |
 | POST /Account/Logout: with logoutId redirects to itself carrying it | `Pages/Account/LogoutTests.cs` | `OnPostAsync_WithLogoutId_SignsOutAndRedirectsToSelfWithLogoutId` |
 | POST /Account/Logout: signs the user out | `Pages/Account/LogoutTests.cs` | `OnPostAsync_SignsTheUserOut` |
-| E2E: logout clears session | `AccountManagementTests.cs` (E2E) | `Logout_Succeeds_ProtectedPageRedirectsToLogin` |
-| E2E: valid credentials | `LoginTests.cs` (E2E) | `Login_ValidCredentials_Succeeds` |
-| E2E: wrong password | `LoginTests.cs` (E2E) | `Login_WrongPassword_ShowsError` |
-| E2E: empty submit renders client validation without a script error | `LoginTests.cs` (E2E) | `Login_EmptySubmit_RendersClientValidationWithoutAScriptError` |
-| E2E: lockout after the maximum failed attempts | `LoginTests.cs` (E2E) | `Login_MaxFailedAttempts_LocksAccount` |
-| E2E: TOTP 2FA login | `TwoFactorAuthenticationTests.cs` (E2E) | `TwoFactor_Setup_Login_WithTotpCode_Succeeds` |
-| E2E: recovery code login | `TwoFactorAuthenticationTests.cs` (E2E) | `TwoFactor_Login_WithRecoveryCode_Succeeds` |
+| E2E: logout clears session | `SignIn/SignIn.feature` (E2E) | A member signs out and must sign in again to manage their account |
+| E2E: valid credentials | `SignIn/SignIn.feature` (E2E) | A member signs in with their password |
+| E2E: wrong password | `SignIn/SignIn.feature` (E2E) | A wrong password is refused |
+| E2E: empty submit renders client validation without a script error | `SignIn/SignIn.feature` (E2E) | An empty form is caught before it is sent |
+| E2E: lockout after the maximum failed attempts | `SignIn/SignIn.feature` (E2E) | Repeated wrong passwords lock the account |
+| E2E: TOTP 2FA login | `TwoFactor/TwoFactor.feature` (E2E) | A member turns off two-factor sign-in and is no longer asked for a code (its sign-in step enters a TOTP code) |
+| E2E: recovery code login | `TwoFactor/TwoFactor.feature` (E2E) | A member with two-factor on signs in with a recovery code |
 
 ---
 
@@ -511,7 +522,7 @@ flowchart TD
 | POST /ResetPassword — invalid model | `Pages/Account/ResetPasswordTests.cs` | `OnPostAsync_ModelStateInvalid_ReturnsPage` |
 | POST /ResetPassword — reset fails | `Pages/Account/ResetPasswordTests.cs` | `OnPostAsync_ResetPasswordFails_AddsModelErrorsAndReturnsPage` |
 | POST /ResetPassword: unknown email or success | `Pages/Account/ResetPasswordTests.cs` | `OnPostAsync_UnknownEmail_RedirectsToConfirmationWithoutResettingAPassword`, `OnPostAsync_ResetSucceeds_RedirectsToConfirmation` |
-| E2E: full forgot/reset flow | `PasswordResetTests.cs` (E2E) | `ForgotPassword_Reset_LoginWithNewPassword_Succeeds` |
+| E2E: full forgot/reset flow | `PasswordReset/PasswordReset.feature` (E2E) | A member who forgot their password resets it by email and signs in with the new one; After a reset, the old password is refused |
 
 ---
 
@@ -624,10 +635,10 @@ flowchart TD
 | GET /ResetAuthenticator: user exists or missing | `Pages/Account/Manage/ResetAuthenticatorTests.cs` | `OnGet_UserExists_ReturnsPage`, `OnGet_UserMissing_ReturnsNotFoundNamingTheUserId` |
 | POST /ResetAuthenticator: reset succeeds or fails, both redirect | `Pages/Account/Manage/ResetAuthenticatorTests.cs` | `OnPostAsync_ResetSucceeds_ResetsKeyAndRedirectsToEnableAuthenticator`, `OnPostAsync_ResetFails_StillResetsKeyAndRedirectsToEnableAuthenticator` |
 | POST /ResetAuthenticator — user not found | `Pages/Account/Manage/ResetAuthenticatorTests.cs` | `OnPostAsync_UserNotFound_ReturnsNotFoundWithExpectedMessage` |
-| E2E: TOTP setup + login | `TwoFactorAuthenticationTests.cs` (E2E) | `TwoFactor_Setup_Login_WithTotpCode_Succeeds` |
-| E2E: recovery code login | `TwoFactorAuthenticationTests.cs` (E2E) | `TwoFactor_Login_WithRecoveryCode_Succeeds` |
-| E2E: reset authenticator disables 2FA and returns to setup | `TwoFactorAuthenticationTests.cs` (E2E) | `TwoFactor_ResetAuthenticator_DisablesAndRedirectsToSetup` |
-| E2E: disable 2FA, subsequent login skips challenge | `Disable2faTests.cs` (E2E) | `Disable2fa_AfterSetup_SubsequentLogin_DoesNotRequire2fa` |
+| E2E: TOTP setup | `TwoFactor/TwoFactor.feature` (E2E) | A member sets up an authenticator app |
+| E2E: recovery code login | `TwoFactor/TwoFactor.feature` (E2E) | A member with two-factor on signs in with a recovery code |
+| E2E: reset authenticator disables 2FA and returns to setup | `TwoFactor/TwoFactor.feature` (E2E) | A member resets their authenticator and is taken back to set it up |
+| E2E: disable 2FA, subsequent login skips challenge | `TwoFactor/TwoFactor.feature` (E2E) | A member turns off two-factor sign-in and is no longer asked for a code |
 
 ---
 
@@ -645,7 +656,7 @@ flowchart TD
 
 The second row is the easy one to misread. Its fingerprint is a small `application/x-www-form-urlencoded` body (antiforgery token plus `__passkeySubmit=`), a valid ModelState, a 302, and **zero** `/Account/PasskeyCreationOptions` requests anywhere in the log — because no ceremony code executed at all. An empty token *value* does not produce it: the fetch still fires and shows a 400. Only a listener that never attached, or an element that never upgraded, does.
 
-`PasskeyCeremonyTests` probes these prerequisites before clicking and reports them on failure. Confirm the probe still discriminates by suppressing the upgrade — `page.AddInitScriptAsync("customElements.define('passkey-submit', class extends HTMLElement {});")` pre-empts the real registration, and the probe must go red with `elementUpgraded:false, elementSeesForm:false` while every other value stays true.
+The `PasskeySignIn/PasskeySignIn.feature` step "they add a passkey to their account" probes these prerequisites before clicking and reports them on failure. Confirm the probe still discriminates by suppressing the upgrade — `page.AddInitScriptAsync("customElements.define('passkey-submit', class extends HTMLElement {});")` pre-empts the real registration, and the probe must go red with `elementUpgraded:false, elementSeesForm:false` while every other value stays true.
 
 ```mermaid
 flowchart TD
@@ -834,7 +845,7 @@ overwritten. See `UserManagerExtensions.AddMissingClaimsAsync`.
 | Link to existing logged-in user: add login succeeds or fails | `Pages/Account/Manage/ExternalLoginsTests.cs` | `OnGetLinkLoginCallbackAsync_AddLoginSucceeds_RedirectsWithAddedStatusMessage`, `OnGetLinkLoginCallbackAsync_AddLoginFails_RedirectsWithNotAddedStatusMessage` |
 | Claim-sync contract (add missing, never overwrite) | `Extensions/UserManagerExtensionsTests.cs` | `AddMissingClaimsAsync_*` |
 
-E2E (`Category=E2E`, `ExternalLoginTests.cs`) exercises the real button-click → challenge → callback path
+E2E (`Category=E2E`, `GoogleSignIn/GoogleSignIn.feature`) exercises the real button-click → challenge → callback path
 end to end against a real Kestrel host and SQL Server, without a live Google account —
 `FakeGoogleSchemeProvider` decorates `IAuthenticationSchemeProvider` to resolve the Google scheme to
 `FakeExternalAuthenticationHandler`, which signs into the external cookie scheme with a claim set the test
@@ -975,9 +986,8 @@ flowchart TD
 | GET /ConfirmEmailChange — change fails | `Pages/Account/ConfirmEmailChangeTests.cs` | `OnGetAsync_ChangeEmailFails_ReturnsPageAndSetsStatusMessage` |
 | GET /ConfirmEmailChange — set username fails | `Pages/Account/ConfirmEmailChangeTests.cs` | `OnGetAsync_SetUserNameFails_ReturnsPageAndSetsStatusMessage` |
 | GET /ConfirmEmailChange — success | `Pages/Account/ConfirmEmailChangeTests.cs` | `OnGetAsync_AllOperationsSucceed_RefreshesSignInAndSetsSuccessMessage` |
-| E2E: change email, confirm, new email works | `EmailChangeTests.cs` (E2E) | `ChangeEmail_Success_NewEmailConfirmed_OldEmailNoLongerValid` |
-| E2E: change email, confirm via link in new browser context | `EmailChangeTests.cs` (E2E) | `ChangeEmail_SameEmail_DoesNotSendConfirmation` |
-| E2E: change email end-to-end | `AccountManagementTests.cs` (E2E) | `ChangeEmail_Succeeds_NewEmailWorks` |
+| E2E: change email, confirm, new email works and the old one is refused | `AccountManagement/AccountManagement.feature` (E2E) | A member changes their email and signs in with the new address only |
+| E2E: changing to the current email sends no confirmation | `AccountManagement/AccountManagement.feature` (E2E) | Changing to the email already on the account sends nothing |
 
 ---
 
@@ -1051,7 +1061,7 @@ flowchart TD
 | POST /SetPassword: invalid model | `Pages/Account/Manage/SetPasswordTests.cs` | `OnPostAsync_ModelStateInvalid_ReturnsPage` |
 | POST /SetPassword: user not found | `Pages/Account/Manage/SetPasswordTests.cs` | `OnPostAsync_UserNotFound_ReturnsNotFoundWithMessage` |
 | POST /SetPassword: add fails or succeeds | `Pages/Account/Manage/SetPasswordTests.cs` | `OnPostAsync_AddPasswordFails_AddsModelErrorsAndReturnsPage`, `OnPostAsync_AddPasswordSucceeds_RefreshesSignInAndRedirects` |
-| E2E: change password, old no longer works | `AccountManagementTests.cs` (E2E) | `ChangePassword_Success_OldPasswordNoLongerWorks` |
+| E2E: change password, old no longer works | `AccountManagement/AccountManagement.feature` (E2E) | A member changes their password and only the new one works |
 
 ---
 
@@ -1178,7 +1188,7 @@ flowchart TD
 | POST /DeletePersonalData: password required and blank or wrong | `Pages/Account/Manage/DeletePersonalDataTests.cs` | `OnPostAsync_PasswordRequired_BlankPassword_AddsModelErrorAndReturnsPage`, `OnPostAsync_PasswordRequired_WrongPassword_AddsModelErrorAndReturnsPage` |
 | POST /DeletePersonalData: deletes, signs out and redirects | `Pages/Account/Manage/DeletePersonalDataTests.cs` | `OnPostAsync_NoPasswordRequired_DeletesSignsOutAndRedirects`, `OnPostAsync_PasswordRequired_CorrectPassword_DeletesSignsOutAndRedirects` |
 | POST /DeletePersonalData: delete fails | `Pages/Account/Manage/DeletePersonalDataTests.cs` | `OnPostAsync_DeleteFails_Throws` |
-| E2E: delete account, login fails | `AccountManagementTests.cs` (E2E) | `DeleteAccount_Success_SubsequentLoginFails` |
+| E2E: delete account, login fails | `AccountManagement/AccountManagement.feature` (E2E) | A member deletes their account and can no longer sign in |
 
 ---
 
@@ -1276,10 +1286,10 @@ flowchart TD
 | Avatar endpoint — a stored-claim redirect carries `public, max-age=300` | `Avatar/AvatarEndpointsTests.cs` | `GetAvatarAsync_SetsCacheControlOnAStoredClaimRedirect` |
 | Avatar endpoint — a computed-URL redirect carries `public, max-age=300` | `Avatar/AvatarEndpointsTests.cs` | `GetAvatarAsync_SetsCacheControlOnTheComputedUrlRedirect` |
 | Avatar endpoint: a 404 carries no `Cache-Control` | `Avatar/AvatarEndpointsTests.cs` | `GetAvatarAsync_ReturnsNotFoundWhenTheAvatarServiceResolvesNoUrl`, `GetAvatarAsync_ReturnsNotFoundForAUserWithNoEmailOrUserName`, `GetAvatarAsync_ReturnsNotFoundForASubWithNoUser` |
-| Client store: `IClientStore` is the single-query store behind Duende's validation | `SingleQueryClientStoreTests.cs` (E2E) | `ClientStoreRegistration_ResolvesTheSingleQueryStoreBehindDuendesValidation` |
-| Client store: same client model as Duende's split-query store | `SingleQueryClientStoreTests.cs` (E2E) | `FindClientByIdAsync_ReturnsTheSameClientAsDuendesStore`, guarded by `SeedClientAsync_FillsEveryCollectionNavigationTheModelDeclares_SoTheParityTestCannotPassVacuously` |
-| Client store: an id differing only in case finds nothing, as in Duende's store | `SingleQueryClientStoreTests.cs` (E2E) | `FindClientByIdAsync_WhenTheIdDiffersOnlyInCase_ReturnsNullLikeDuendesStore` |
-| Client store: one command per lookup | `SingleQueryClientStoreTests.cs` (E2E) | `FindClientByIdAsync_ReadsTheClientAndEveryCollectionInOneCommand`, against the control `DuendesClientStore_ReadsTheClientInOneCommandPerCollectionPlusOne_SoTheCommandCountDiscriminates` |
+| Client store: `IClientStore` is the single-query store behind Duende's validation | `SingleQueryClientStoreTests.cs` (Integration) | `ClientStoreRegistration_ResolvesTheSingleQueryStoreBehindDuendesValidation` |
+| Client store: same client model as Duende's split-query store | `SingleQueryClientStoreTests.cs` (Integration) | `FindClientByIdAsync_ReturnsTheSameClientAsDuendesStore`, guarded by `SeedClientAsync_FillsEveryCollectionNavigationTheModelDeclares_SoTheParityTestCannotPassVacuously` |
+| Client store: an id differing only in case finds nothing, as in Duende's store | `SingleQueryClientStoreTests.cs` (Integration) | `FindClientByIdAsync_WhenTheIdDiffersOnlyInCase_ReturnsNullLikeDuendesStore` |
+| Client store: one command per lookup | `SingleQueryClientStoreTests.cs` (Integration) | `FindClientByIdAsync_ReadsTheClientAndEveryCollectionInOneCommand`, against the control `DuendesClientStore_ReadsTheClientInOneCommandPerCollectionPlusOne_SoTheCommandCountDiscriminates` |
 
 The client-store tests need the real database, so they sit in the E2E tier and read the commands EF executes
 through `IdentityWebApplicationFactory.Commands`, a `DbCommandInterceptor` the test host adds with
@@ -1429,11 +1439,11 @@ flowchart TD
 
 | Path | File | Test Method |
 |---|---|---|
-| GET / — anonymous CTAs and title | `Identity.Tests.E2E/HomeTests.cs` | `Home_Anonymous_Shows_Register_And_SignIn_Calls_To_Action` |
-| GET / — signed-in CTAs and title | `Identity.Tests.E2E/HomeTests.cs` | `Home_SignedIn_Shows_Account_Links_Instead_Of_Register_And_SignIn` |
-| GET / — signed-in body names the user | `Identity.Tests.E2E/HomeTests.cs` | `Home_SignedIn_Body_Agrees_With_Navbar` |
-| GET / — Admin shortcut, admin role | `Identity.Tests.E2E/HomeTests.cs` | `Home_AdminLink_Visible_When_AdminRole` |
-| GET / — Admin shortcut, non-admin role | `Identity.Tests.E2E/HomeTests.cs` | `Home_AdminLink_Hidden_When_NonAdminRole` |
+| GET / — anonymous CTAs and title | `Home/Home.feature` (E2E) | A visitor is invited to register or sign in |
+| GET / — signed-in CTAs and title | `Home/Home.feature` (E2E) | A signed-in member is offered their account instead |
+| GET / — signed-in body names the user | `Home/Home.feature` (E2E) | A signed-in member sees who is signed in |
+| GET / — Admin shortcut, admin role | `Home/Home.feature` (E2E) | An administrator is offered the admin area |
+| GET / — Admin shortcut, non-admin role | `Home/Home.feature` (E2E) | A member is not offered the admin area |
 | GET /Error: null, empty or whitespace error ID skips the interaction service | `Pages/ErrorTests.cs` | `OnGetAsync_NullOrEmptyErrorIdWithCurrentActivity_UsesActivityIdAndSkipsInteractionService`, `OnGetAsync_NullOrEmptyErrorIdWithNoCurrentActivity_UsesTraceIdentifierAndSkipsInteractionService`, `OnGetAsync_WhitespaceErrorIdWithCurrentActivity_UsesActivityIdAndSkipsInteractionService`, `OnGetAsync_WhitespaceErrorIdWithNoCurrentActivity_UsesTraceIdentifierAndSkipsInteractionService` |
 | GET /Error: with error ID calls the interaction service | `Pages/ErrorTests.cs` | `OnGetAsync_ErrorIdWithCurrentActivity_CallsInteractionServiceAndUsesActivityId`, `OnGetAsync_ErrorIdWithNoCurrentActivity_CallsInteractionServiceAndUsesTraceIdentifier`, `OnGetAsync_OverlongErrorId_CallsInteractionServiceAndUsesActivityId`, `OnGetAsync_ControlAndSymbolErrorId_CallsInteractionServiceAndUsesActivityId` |
 | GET /Error: OIDC error activity | `Pages/ErrorTests.cs` | `OnGetAsync_ValidErrorId_StartsOidcActivity` |
@@ -1441,7 +1451,7 @@ flowchart TD
 
 ### Home page ids
 
-The home page branches on the same predicate the navbar does — `SignInManager.IsSignedIn(User)` in `Pages/Index.cshtml`, matching `Pages/Shared/_LoginPartial.cshtml` — so the two regions cannot disagree. `HomeTests` selects the branch-specific links by id:
+The home page branches on the same predicate the navbar does — `SignInManager.IsSignedIn(User)` in `Pages/Index.cshtml`, matching `Pages/Shared/_LoginPartial.cshtml` — so the two regions cannot disagree. `Home.feature`'s steps select the branch-specific links by id:
 
 | Element | `id` |
 |---|---|
@@ -1458,20 +1468,20 @@ The anonymous branch's `ViewData["Title"]` and `ViewData["Description"]` are the
 
 ## 16. IdentityServer UI Pages
 
-These pages implement the IdentityServer interactive UI — consent, grants, device flow, CIBA, server-side sessions, redirect, and diagnostics. All C# page models have unit tests; Consent, Grants, Diagnostics, and ServerSideSessions also have E2E tests.
+These pages implement the IdentityServer interactive UI: consent, grants, device flow, CIBA, server-side sessions, redirect, and diagnostics. All C# page models have unit tests; Consent and Diagnostics also have E2E tests, and Grants and ServerSideSessions have Integration tests.
 
 ### IdentityServer Page Tests
 
-| Path | Unit Test File | E2E Test File | Coverage |
+| Path | Unit Test File | E2E or Integration Test File | Coverage |
 |---|---|---|---|
-| `/Account/Manage/Consent` | `Pages/Account/Manage/ConsentTests.cs` | `Identity.Tests.E2E/ConsentTests.cs` | ✅ Unit + E2E |
-| `/Account/Manage/Grants` | `Pages/Account/Manage/GrantsTests.cs` | `Identity.Tests.E2E/GrantsTests.cs` | ✅ Unit + E2E |
+| `/Account/Manage/Consent` | `Pages/Account/Manage/ConsentTests.cs` | `Identity.Tests.E2E/ApplicationConsent/ApplicationConsent.feature` | ✅ Unit + E2E |
+| `/Account/Manage/Grants` | `Pages/Account/Manage/GrantsTests.cs` | `Identity.Tests.Integration/GrantsTests.cs` | ✅ Unit + Integration |
 | `/Account/Manage/Device` | `Pages/Account/Manage/DeviceTests.cs` | — | 🟡 Unit only |
 | `/Account/Manage/DeviceSuccess` | `Pages/Account/Manage/DeviceSuccessTests.cs` | — | 🟡 Unit only |
 | `/Ciba` | `Pages/CibaTests.cs` | — | 🟡 Unit only |
-| `/Account/Manage/ServerSideSessions` | `Pages/Account/Manage/ServerSideSessionsTests.cs` | `Identity.Tests.E2E/ServerSideSessionsTests.cs` | ✅ Unit + E2E |
+| `/Account/Manage/ServerSideSessions` | `Pages/Account/Manage/ServerSideSessionsTests.cs` | `Identity.Tests.Integration/ServerSideSessionsTests.cs` | ✅ Unit + Integration |
 | `/Redirect` | `Pages/RedirectTests.cs` | — | 🟡 Unit only |
-| `/Account/Manage/Diagnostics` | `Pages/Account/Manage/DiagnosticsTests.cs` | `Identity.Tests.E2E/DiagnosticsTests.cs` | ✅ Unit + E2E |
+| `/Account/Manage/Diagnostics` | `Pages/Account/Manage/DiagnosticsTests.cs` | `Identity.Tests.E2E/AccountManagement/AccountManagement.feature` | ✅ Unit + E2E |
 
 ### Security header middleware tests
 
@@ -1518,20 +1528,19 @@ Custom `Identity` meter counters (`Telemetry.cs`) are verified with `MeterListen
 | `GrantsRevoked` tags contain `client_id` | `TelemetryTests.cs` | `GrantsRevoked_TagsContainClientId` |
 | `GrantsRevoked` null `client_id` still emits | `TelemetryTests.cs` | `GrantsRevoked_NullClientId_EmitsCounterWithNullClientIdTag` |
 
-**E2E test helpers:**
-- `Infrastructure/TestClientHelper.cs` — seeds a minimal OIDC client (`RequireConsent=true`, `authorization_code` grant, `openid` scope) and identity resources into `ApplicationDbContext` for use by `ConsentTests`
-- `Infrastructure/PlaywrightFixture.cs` — shared xUnit collection fixture that owns the `IdentityWebApplicationFactory`, the Playwright browser, and provides:
-  - `NewPageAsync()` — creates a new browser context + page configured with `BaseAddress`; it sets no timeout of its own ([CODE-STYLE.md](../AGENTS/CODE-STYLE.md) rule 17)
-  - `CreateConfirmedUserAsync()` — creates a confirmed user **directly via `UserManager` (no browser flow)**. Use this in any test that needs a pre-existing authenticated user but does not test the registration UI. This is orders of magnitude faster than the browser-based registration flow. Always call `fixture.CreateConfirmedUserAsync()` rather than writing a local helper.
-  - `SharedEmail` / `SharedPassword` — a pre-confirmed user created during fixture initialization for tests that only need an authenticated session and don't care about the specific user identity (e.g. `GrantsTests`, `ServerSideSessionsTests`)
+**E2E and Integration test helpers:**
+- `Infrastructure/TestClientHelper.cs` — seeds a minimal OIDC client (`RequireConsent=true`, `authorization_code` grant, `openid` scope) and identity resources into `ApplicationDbContext` for the consent and issued-grant scenarios
+- `Infrastructure/IdentityHostFixture.cs` owns the `IdentityWebApplicationFactory` and provides `CreateConfirmedUserAsync()`, which creates a confirmed user **directly via `UserManager` (no browser flow)**. Use it in any test that needs a pre-existing authenticated user but does not test the registration UI; it is orders of magnitude faster than the browser-based registration flow. Always call `fixture.CreateConfirmedUserAsync()` rather than writing a local helper.
+- `Infrastructure/PlaywrightFixture.cs` adds the Playwright browser and `NewPageAsync()`, which creates a new browser context + page configured with `BaseAddress`; it sets no timeout of its own ([CODE-STYLE.md](../AGENTS/CODE-STYLE.md) rule 17)
+- `Identity.Tests.Integration/Infrastructure/AccountSession.cs` gives an Integration test an `HttpClient` against the host, signed in through the real login form when the test needs a session
 
 ---
 
 ## 17. Security Tests
 
-`Identity.Tests.E2E/Security/OpenRedirectTests.cs` — `[Trait("Category", "E2E")]`
+The open-redirect scenarios in `Identity.Tests.E2E/SignIn/SignIn.feature` (`Category=E2E`): "A sign-in link that points at another site keeps the member on this site" and "A member who signs in from a protected page lands back on it".
 
-These tests use Playwright to verify that all login paths reject attacker-controlled `returnUrl` values and never issue redirects to external hosts.
+These scenarios use Playwright to verify that all login paths reject attacker-controlled `returnUrl` values and never issue redirects to external hosts.
 
 **Background:** Protocol-relative URLs such as `//evil.com` can bypass naïve external-URL checks because they start with `/` yet cause browsers to navigate to an external host. All login-path handlers in this app guard against this with an explicit `Url.IsLocalUrl(returnUrl)` check before calling `LocalRedirect` — falling back to `~/` for any URL that fails the check. `LocalRedirect` alone is not sufficient because its built-in `IsLocalUrl` guard may not reliably reject protocol-relative URLs in all .NET versions.
 
@@ -1547,7 +1556,7 @@ These tests use Playwright to verify that all login paths reject attacker-contro
 - `LoginWithRecoveryCode.cshtml.cs` — recovery code sign-in
 - `ExternalLogin.cshtml.cs` — external provider callback + new-user confirmation
 
-`Identity.Tests.E2E/Security/ConcurrentLockoutTests.cs` fires 10 concurrent wrong-password login attempts — more than the 5-attempt lockout threshold — because a race on the failure counter's increment means fewer attempts aren't reliably guaranteed to trip it. The verification step then accepts either `/Account/Lockout` or `/Account/Login` as the resulting URL: the test's purpose is confirming the server stays healthy and throws no unhandled exception under concurrent load, not pinning down which of the two valid outcomes the race resolves to.
+`Identity.Tests.Integration/Security/ConcurrentLockoutTests.cs` fires a generated multiple of the configured `MaxFailedAccessAttempts` as concurrent wrong-password posts and asserts that every response is either the login page re-rendered (`200`) or a redirect to `/Account/Lockout`: the server stays healthy and signs nobody in, which a `500` or a redirect anywhere else would fail. **It must not assert that the account ends up locked.** ASP.NET Core Identity saves the failure count under an optimistic-concurrency stamp, so concurrent posts collide and only some are counted. The CVE-2023-33170 fix in `SignInManager` ("Always return SignInResult.Failed if updating AccessFailedCount fails") makes every colliding attempt fail without revealing whether its password was right, so the attacker gains no guess from it; it does not make every collision count toward lockout.
 
 ---
 
@@ -1584,7 +1593,7 @@ quadrantChart
 | `/Account/Register` | ✅ | ✅ | ✅ | |
 | `/Account/RegisterConfirmation` | ✅ | — | ✅ | |
 | `/Account/ConfirmEmail` | ✅ | — | ✅ | |
-| `/Account/ConfirmEmailChange` | ✅ | — | ✅ | Via EmailChangeTests |
+| `/Account/ConfirmEmailChange` | ✅ | — | ✅ | Via `AccountManagement.feature` |
 | `/Account/ResendEmailConfirmation` | 🔵 | 🔵 | ✅ | Constructor only (unit); E2E via `ResendEmailConfirmation_NewLink_ConfirmsAccount` |
 | `/Account/Login` | ✅ | ✅ | ✅ | |
 | `/Account/LoginWith2fa` | ✅ | ✅ | ✅ | |
@@ -1595,28 +1604,28 @@ quadrantChart
 | `/Account/ForgotPasswordConfirmation` | 🔵 | — | ✅ | Constructor only |
 | `/Account/ResetPassword` | ✅ | ✅ | ✅ | |
 | `/Account/ResetPasswordConfirmation` | 🔵 | — | ✅ | Constructor only |
-| `/Account/ExternalLogin` | ✅ | ✅ | ✅ | `ExternalLoginTests.cs` via `FakeGoogleSchemeProvider` (no live Google account needed) |
+| `/Account/ExternalLogin` | ✅ | ✅ | ✅ | `GoogleSignIn.feature` via `FakeGoogleSchemeProvider` (no live Google account needed) |
 | `/Account/AccessDenied` | 🔵 | — | ❌ | Constructor only |
-| `/Account/Manage/Index` | ✅ | ✅ | ✅ | Via AccountManagementTests |
-| `/Account/Manage/Email` | ✅ | ✅ | ✅ | Via EmailChangeTests |
+| `/Account/Manage/Index` | ✅ | ✅ | ✅ | Via `AccountManagement.feature` |
+| `/Account/Manage/Email` | ✅ | ✅ | ✅ | Via `AccountManagement.feature` |
 | `/Account/Manage/ChangePassword` | ✅ | ✅ | ✅ | |
 | `/Account/Manage/SetPassword` | ✅ | ✅ | ❌ | |
 | `/Account/Manage/TwoFactorAuthentication` | ✅ | — | ✅ | |
 | `/Account/Manage/EnableAuthenticator` | ✅ | ✅ | ✅ | |
 | `/Account/Manage/ShowRecoveryCodes` | ✅ | — | ✅ | |
 | `/Account/Manage/GenerateRecoveryCodes` | ✅ | ✅ | ✅ | |
-| `/Account/Manage/Disable2fa` | ✅ | ✅ | ✅ | Via Disable2faTests |
+| `/Account/Manage/Disable2fa` | ✅ | ✅ | ✅ | Via `TwoFactor.feature` |
 | `/Account/Manage/ResetAuthenticator` | ✅ | ✅ | ❌ | |
 | `/Account/Manage/Passkeys` | ✅ | ⚠️ | ❌ | 3 tests Skipped |
 | `/Account/Manage/RenamePasskey` | ✅ | ✅ | ❌ | |
-| `/Account/Manage/ExternalLogins` | ✅ | ✅ | ✅ | `ExternalLoginTests.cs` — link-to-existing-account flow |
+| `/Account/Manage/ExternalLogins` | ✅ | ✅ | ✅ | `GoogleSignIn.feature` — link-to-existing-account flow |
 | `/Account/Manage/PersonalData` | ✅ | — | ❌ | |
 | `/Account/Manage/DownloadPersonalData` | ✅ | — | ❌ | |
 | `/Account/Manage/DeletePersonalData` | ✅ | ✅ | ✅ | |
 | `POST /Account/PasskeyCreationOptions` | — | ✅ | ❌ | Minimal API |
 | `POST /Account/PasskeyRequestOptions` | — | ✅ | ❌ | Minimal API |
 | `/Health` | ❌ | — | ❌ | Infrastructure endpoint |
-| `/` | ❌ | — | ✅ | E2E only (`HomeTests.cs`). The anonymous/signed-in branch lives in the view, so `Index` has no seam a unit test can reach — the ❌ is a property of the design, not a gap someone forgot |
+| `/` | ❌ | — | ✅ | E2E only (`Home/Home.feature`). The anonymous/signed-in branch lives in the view, so `Index` has no seam a unit test can reach — the ❌ is a property of the design, not a gap someone forgot |
 | `/Privacy` | 🔵 | — | ❌ | Constructor only |
 | `/Error` | ✅ | — | ❌ | |
 | `/Account/Manage/Consent` | ✅ | ✅ | ✅ | Allow, Deny, no-scopes E2E flows |
@@ -1645,16 +1654,16 @@ The following paths have no meaningful behavioral test coverage and are candidat
 
 ## 19. Load & Property-Based Tests
 
-### Load Tests (`Identity.Tests.E2E/Load/`)
+### Load Tests (`Identity.Tests.Load`)
 
 ```bash
-# Debug is fine for local runs — no Angular build or other Release-only artifact involved.
-ASPNETCORE_ENVIRONMENT=Development SqlConnectionStringBuilder__InitialCatalog=IdentityTest dotnet test --project Identity.Tests.E2E --configuration Debug -- --filter-trait "Category=Load"
+# Debug is fine for local runs: no Angular build or other Release-only artifact involved.
+ASPNETCORE_ENVIRONMENT=Development SqlConnectionStringBuilder__InitialCatalog=IdentityTest dotnet test --project Identity.Tests.Load --configuration Debug -- --filter-trait "Category=Load"
 ```
 
-Load tests use `Parallel.ForEachAsync` + `HttpClient` (self-signed cert ignored) against the real Kestrel server started by `PlaywrightFixture`. They are excluded from normal CI runs and only execute on `workflow_dispatch`; the workflow has no `schedule`.
+Load tests use `Parallel.ForEachAsync` + `HttpClient` (self-signed cert ignored) against the real Kestrel server started by `LoadFixture`, an `IdentityHostFixture` with no browser. They are excluded from normal CI runs and only execute on `workflow_dispatch`; the workflow has no `schedule`.
 
-> **Test parallelism note:** `Identity.Tests.E2E/xunit.runner.json` sets `parallelizeTestCollections: false`. This is required because `PlaywrightFixture` initializes `WebApplicationFactory<Program>`, whose startup makes concurrent external calls. When many E2E tests run in parallel, thread pool saturation causes those async calls to time out and the factory throws "The entry point exited without ever building an IHost." Serializing collections eliminates the contention at the cost of a longer combined run. If you see this error, do not change the parallelism setting — diagnose the Azure credential or network path instead. `Identity.Tests.Unit` has no such constraint and runs with `parallelizeTestCollections: true` since Playwright/`WebApplicationFactory` left with the E2E split.
+> **Test parallelism note:** the `xunit.runner.json` of every project that hosts the app sets `parallelizeTestCollections: false`. This is required because `IdentityHostFixture` initializes `WebApplicationFactory<Program>`, whose startup makes concurrent external calls. When many E2E tests run in parallel, thread pool saturation causes those async calls to time out and the factory throws "The entry point exited without ever building an IHost." Serializing collections eliminates the contention at the cost of a longer combined run. If you see this error, do not change the parallelism setting; diagnose the Azure credential or network path instead. `Identity.Tests.Unit` has no such constraint and runs with `parallelizeTestCollections: true` since Playwright/`WebApplicationFactory` left with the E2E split.
 
 | Test | Endpoint | Requests × parallelism | Pass Criterion |
 |---|---|---|---|
@@ -1729,19 +1738,19 @@ The CI `mutation` job runs on every push, on manual dispatch, and on pull reques
 
 The `mutation` job does **not** depend on (`needs:`) the `build` job, and does not build first: Stryker builds `Identity.Tests.Unit.csproj` itself, in Debug, during its initial test run, so a prior Release build is discarded work and `needs: build` would buy nothing.
 
-**Every job that restores Identity needs the `crgolden` GitHub Packages credential** (`NuGetPackageSourceCredentials_GitHub` from `PACKAGES_READ_TOKEN`), because `Identity`, `Identity.Tests.Unit` and `Identity.Tests.E2E` all reference the `Shared` package from that feed. A job without it fails at restore with `NU1301 ... 401 (Unauthorized)`, and in `synthetic.yml` that failure means the walk never runs.
+**Every job that restores Identity needs the `crgolden` GitHub Packages credential** (`NuGetPackageSourceCredentials_GitHub` from `PACKAGES_READ_TOKEN`), because `Identity` and every `Identity.Tests.*` project reference the `Shared` package from that feed. A job without it fails at restore with `NU1301 ... 401 (Unauthorized)`, and in `synthetic.yml` that failure means the walk never runs.
 
 ---
 
 ## 21. Admin UI Pages
 
-All pages under `Identity/Pages/Admin/` are unit-tested. E2E tests (`Category=E2E`) are in `Identity.Tests.E2E/AdminTests.cs` and require the `PlaywrightFixture` with seeded IS configuration entities and an admin-role user.
+All pages under `Identity/Pages/Admin/` are unit-tested. E2E journeys (`Category=E2E`) are the `Admin*` feature folders under `Identity.Tests.E2E/` and run as a signed-in administrator against the shared `PlaywrightFixture`.
 
-`AdminTests.cs`'s unauthenticated-redirect assertions (`Admin_Unauthenticated_Redirects_To_Login`, `Manage_Unauthenticated_Redirects_To_Login`) compare `new Uri(page.Url).AbsolutePath` for exact equality against `/Account/Login`, not with `Contains`: a substring check would also pass if the challenge ever landed on `/Identity/Account/Login` (the ASP.NET Core Identity scaffolded UI's own login route), silently masking a `.AddDefaultUI()` regression instead of catching it (see [ARCHITECTURE.md](ARCHITECTURE.md) for why `.AddDefaultUI()` must stay out of the `AddIdentity<...>()` chain).
+`Identity.Tests.Integration/AccessTests.cs`'s unauthenticated-redirect assertions (`Admin_Unauthenticated_Redirects_To_Login`, `Manage_Unauthenticated_Redirects_To_Login`) compare the absolute path of the response's `Location` for exact equality against `PageRoutes.Login`, not with `Contains`: a substring check would also pass if the challenge ever landed on `/Identity/Account/Login` (the ASP.NET Core Identity scaffolded UI's own login route), silently masking a `.AddDefaultUI()` regression instead of catching it (see [ARCHITECTURE.md](ARCHITECTURE.md) for why `.AddDefaultUI()` must stay out of the `AddIdentity<...>()` chain).
 
-`Admin_Clients_Edit_Loads` exists because `Admin_Clients_Details_Shows_Edit_And_Delete` only checks that the Edit *button* is visible on the Details page — it never navigates into Edit itself. That gap let a real regression through: `Client.CoordinateLifetimeWithUserSession` is `bool?` on the Duende entity, and `asp-for` cannot bind a checkbox `<input>` directly to a nullable `bool`, so the Edit page 500'd on every request until a dedicated test actually rendered it.
+The scenario "An administrator opens a client's settings for editing" exists because "A client's details offer editing and deleting" only checks that the Edit *button* is visible on the Details page — it never navigates into Edit itself. That gap let a real regression through: `Client.CoordinateLifetimeWithUserSession` is `bool?` on the Duende entity, and `asp-for` cannot bind a checkbox `<input>` directly to a nullable `bool`, so the Edit page 500'd on every request until a dedicated test actually rendered it.
 
-Secrets (on Clients and API Resources) are write-only once stored — the Edit form never redisplays a previously saved `Value`. The `Secrets_Add_Persists` E2E tests assert the `Description`/`Type` that Details *does* echo back, never the raw `Value`.
+Secrets (on Clients and API Resources) are write-only once stored — the Edit form never redisplays a previously saved `Value`. The Secrets rows of the add-an-entry outlines assert the `Description`/`Type` that Details *does* echo back, never the raw `Value`.
 
 ### ID convention
 
@@ -1769,7 +1778,7 @@ The fleet-wide rule (why positional/class selectors are banned, how loop indices
 
 `page-heading`, `page-table` and `page-list` are page-scoped generic ids in the same family as `btn-edit` and `save-submit`: exactly one per page, so a test that has already navigated to a page names the element without naming its markup. A value that appears *inside* one of them is asserted with `ToContainTextAsync`/`ToHaveTextAsync` on the container — selection by id, text as the assertion — never with `GetByText`, which selects by copy. Where a single field is the subject rather than a collection, the field carries its own id (`user-phone-number`, `role-name`, `grant-client-id`, `idp-display-name`, `sp-display-name`) and the assertion is `ToHaveTextAsync`, which is stricter than a substring match over a whole table.
 
-Reaching one specific row uses the **entity key**, resolved from the database first: `PlaywrightFixture.GetUserIdAsync`, `GetRoleIdAsync` and `GetPersistedGrantKeyAsync` exist for exactly that, and replace the `Locator("tr", new PageLocatorOptions { HasText = … }).Locator("[id^='details-']").First` shape. One case cannot use a `#id` selector: `PersistedGrant.Key` is Duende's Base64 SHA-256 handle and can contain `+`, `/` and `=`, which are not legal in a CSS `#` id selector — `ReadOnlyGrantSectionsTests` therefore selects `[id='details-{key}']`, the attribute form of the same id.
+Reaching one specific row uses the **entity key**, resolved from the database first: `PlaywrightFixture.GetUserIdAsync`, `GetRoleIdAsync` and `GetPersistedGrantKeyAsync` exist for exactly that, and replace the `Locator("tr", new PageLocatorOptions { HasText = … }).Locator("[id^='details-']").First` shape. One case cannot use a `#id` selector: `PersistedGrant.Key` is Duende's Base64 SHA-256 handle and can contain `+`, `/` and `=`, which are not legal in a CSS `#` id selector — `AdminGrants/AdminGrantsSteps.cs` therefore selects `[id='details-{key}']`, the attribute form of the same id.
 
 Collection row ids are index-based (`{index}` = the row's position in the bound list, 0-based) and come from a single server-rendered `@foreach` loop over `Enumerable.Range(0, count)`. Clicking "Add"/"Remove" posts to an `OnPostAddRowAsync`/`OnPostRemoveRowAsync` page handler that mutates the bound list and returns `Page()`, so the same loop renders both pre-existing and freshly added rows with no separate client-side templating step. The pattern uses no JavaScript, and none may be added: a client-side `<template>` clone depends on a script being served intact under load, which a server-only round trip does not. Every Add/Remove button carries an explicit `asp-route-id` rather than relying on the browser reusing the current URL, since after a round trip that URL still carries the previous `?handler=` query value.
 
@@ -1798,7 +1807,7 @@ Every page under `Identity/Pages/Admin/` has unit tests. The 16 sections and the
 
 ### E2E test coverage
 
-The admin area's E2E coverage is spread across `Identity.Tests.E2E/AdminTests.cs` (Auth/Access Control, Landing Page card visibility, Client CRUD, Index-loads for every section, Roles Create/Delete round-trip) and focused files under `Identity.Tests.E2E/Admin/`: `ClientsCollectionsTests.cs` (add/remove/update for all 9 Client collection sub-pages), `ApiResourcesTests.cs`/`ApiScopesTests.cs`/`IdentityResourcesTests.cs` (CRUD plus their ClaimTypes/Properties/Scopes/Secrets collection sub-pages), `IdentityProvidersTests.cs`/`SamlServiceProvidersTests.cs` (flat-form CRUD), `ReadOnlyGrantSectionsTests.cs` (Details/Delete for the one grant-store section with a realistic production path), `UsersTests.cs`/`RolesTests.cs` (Details sub-pages, Edit-flow persistence, Claims/Roles add-remove), and `AdminLandingTests.cs` (L2 — every landing-page card's "Manage" link navigates to the right section).
+The admin area's E2E coverage is one feature per folder: `AdminArea/` (navigation, the landing page's cards, and a Scenario Outline following every section's card to its list), `AdminClients/` (client CRUD plus add/remove/change outlines over all 9 client collections), `AdminResources/` (API resources, API scopes and identity resources: CRUD plus their Scopes/Secrets/Properties/ClaimTypes outlines), `AdminProviders/` (identity and SAML service provider CRUD), `AdminGrants/` (Details/Delete for the one grant-store section with a realistic production path), and `AdminPeople/` (users and roles: details sub-pages, edit persistence, claim and role add/remove/change). The add/remove/change outlines share `AdminLists/`: one `ListEditor` per (owner, collection) and one set of steps. The unauthenticated and non-admin redirect checks assert only a URL, so they are Integration tests (`AccessTests.cs`), not journeys.
 
 A handful of sections deliberately stay at an Index-loads-only assertion because no code path in this app can ever populate them, so fabricating rows would test something that can't happen in practice:
 - **Server-Side Sessions** — `Program.cs`'s `.AddIdentityServer(...)` chain never calls `.AddServerSideSessions()`; the table has no writer.
@@ -1806,10 +1815,10 @@ A handful of sections deliberately stay at an Index-loads-only assertion because
 - **Device Flow Codes / Pushed Authorization Requests** — no existing UI-driven flow produces a row, and building one is out of proportion to the value for a single test.
 
 Current test infrastructure:
-- `PlaywrightFixture.CreateAdminUserAsync()` — creates a confirmed user and assigns the `Admin` role
-- `PlaywrightFixture.GetUserIdAsync(email)`, `GetRoleIdAsync(roleName)`, `GetPersistedGrantKeyAsync(clientId)` — entity-key lookups, so a test that means *this* row clicks `#details-{key}` instead of matching row text
-- `PlaywrightFixture.SeedClientAsync(clientId)`, `SeedApiResourceAsync(name)`, `SeedApiScopeAsync(name)`, `SeedIdentityResourceAsync(name)` — find-or-create seed helpers via `IConfigurationDbContext`. `IdentityProvider`/`SamlServiceProvider` have no seed method since their scenarios are Create-driven (the UI Create flow itself produces the row).
-- No per-test cleanup: none of the `Admin/*.cs` test classes have an `IAsyncLifetime`/`DisposeAsync`. Seeded config entities and test users are removed only by `PlaywrightFixture.CleanupDatabaseAsync()`, which runs twice, in `InitializeAsync` before the first test and in `DisposeAsync` after the last, locally and in CI alike, each time only after it confirms the connected catalog ends in the test suffix. The start-of-run pass is what keeps a crashed or killed run's rows, whose `DisposeAsync` never ran, out of the next run. Every test that mutates shared, by-name-looked-up state (the `Admin` role, the `Admin` user) creates its own uniquely `Guid`-suffixed row instead.
+- `IdentityHostFixture.CreateAdminUserAsync()`: creates a confirmed user and assigns the `Admin` role
+- `IdentityHostFixture.GetUserIdAsync(email)`, `GetRoleIdAsync(roleName)`, `GetPersistedGrantKeyAsync(clientId)`: entity-key lookups, so a test that means *this* row clicks `#details-{key}` instead of matching row text
+- `IdentityHostFixture.SeedClientAsync(clientId)`, `SeedApiResourceAsync(name)`, `SeedApiScopeAsync(name)`, `SeedIdentityResourceAsync(name)`: find-or-create seed helpers via `IConfigurationDbContext`. `IdentityProvider`/`SamlServiceProvider` have no seed method since their scenarios are Create-driven (the UI Create flow itself produces the row).
+- No per-test cleanup: none of the `Admin/*.cs` test classes have an `IAsyncLifetime`/`DisposeAsync`. Seeded config entities and test users are removed only by `IdentityHostFixture`'s database cleanup, which runs twice in every project that hosts the app, in `InitializeAsync` before the first test and in `DisposeAsync` after the last, locally and in CI alike, each time only after it confirms the connected catalog ends in the test suffix. The start-of-run pass is what keeps a crashed or killed run's rows, whose `DisposeAsync` never ran, out of the next run. Every test that mutates shared, by-name-looked-up state (the `Admin` role, the `Admin` user) creates its own uniquely `Guid`-suffixed row instead.
 
 ---
 
@@ -1863,7 +1872,7 @@ Do not run Git commands when implementing or verifying Playwright reporting chan
 
 ## Local SonarCloud analysis
 
-Generate coverage first, then run from `Identity/`. Unit coverage is OpenCover (branch-bearing, via `coverlet.console`; see the workspace `TESTING.md` for the command); E2E coverage stays VS Coverage XML. SonarCloud unions both reports.
+Generate coverage first, then run from `Identity/`. Unit coverage is OpenCover (branch-bearing, via `coverlet.console`; see the workspace `TESTING.md` for the command); E2E and Integration coverage stay VS Coverage XML. SonarCloud unions every report.
 
 ```powershell
 $env:SONAR_TOKEN = "<token>"
@@ -1871,18 +1880,18 @@ $env:SONAR_TOKEN = "<token>"
   "-Dsonar.projectKey=crgolden_Identity" `
   "-Dsonar.organization=crgolden" `
   "-Dsonar.sources=Identity" `
-  "-Dsonar.tests=Identity.Tests.Unit,Identity.Tests.E2E" `
+  "-Dsonar.tests=Identity.Tests.Unit,Identity.Tests.E2E,Identity.Tests.Integration,Identity.Tests.Load" `
   "-Dsonar.exclusions=**/bin/**,**/obj/**" `
-  "-Dsonar.coverage.exclusions=**/Program.cs" `
+  "-Dsonar.coverage.exclusions=**/Program.cs,**/gate.ps1" `
   "-Dsonar.cs.opencover.reportsPaths=coverage.opencover.xml" `
-  "-Dsonar.cs.vscoveragexml.reportsPaths=coverage-e2e.xml"
+  "-Dsonar.cs.vscoveragexml.reportsPaths=coverage-e2e.xml,coverage-integration.xml"
 ```
 
 The exclusion arguments must stay byte-for-byte identical to the ones
 `.github/workflows/main_crgolden-identity.yml` passes to `dotnet-sonarscanner begin`: they are the same
 policy written twice, and a copy that drifts measures a different codebase from the one CI reports.
 
-Required coverage files: `coverage.opencover.xml` (unit, OpenCover), `coverage-e2e.xml` (E2E, VS Coverage).
+Required coverage files: `coverage.opencover.xml` (unit, OpenCover), `coverage-e2e.xml` (E2E, VS Coverage), `coverage-integration.xml` (Integration, VS Coverage). `gate.ps1` is excluded from coverage because it is the local gate script, not application code.
 
 ### When to build a truth table
 

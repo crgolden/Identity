@@ -134,8 +134,11 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
+          registry-url: https://npm.pkg.github.com
 
       - name: Install npm dependencies
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.PACKAGES_READ_TOKEN }}
         run: npm ci --ignore-scripts
 
       - name: Lint
@@ -155,9 +158,9 @@ jobs:
             /d:sonar.token="$env:SONAR_TOKEN" `
             /d:sonar.host.url="https://sonarcloud.io" `
             /d:sonar.cs.opencover.reportsPaths="coverage.opencover.xml" `
-            /d:sonar.cs.vscoveragexml.reportsPaths="coverage-e2e.xml" `
+            /d:sonar.cs.vscoveragexml.reportsPaths="coverage-e2e.xml,coverage-integration.xml" `
             /d:sonar.exclusions="**/bin/**,**/obj/**" `
-            /d:sonar.coverage.exclusions="**/Program.cs" `
+            /d:sonar.coverage.exclusions="**/Program.cs,**/gate.ps1" `
             /d:sonar.qualitygate.wait=true `
             /d:sonar.scanner.skipJreProvisioning=true
 
@@ -228,6 +231,7 @@ jobs:
         run: pwsh "${{ github.workspace }}\Identity.Tests.E2E\bin\Release\net10.0\playwright.ps1" install --with-deps chromium
 
       - name: Run E2E tests with coverage
+        id: e2e
         if: github.actor != 'dependabot[bot]'
         env:
           ASPNETCORE_ENVIRONMENT: CI
@@ -261,6 +265,74 @@ jobs:
             "dotnet test --project Identity.Tests.E2E --no-build --configuration Release -- --filter-trait Category=E2E --stop-on-fail on --report-xunit-trx --report-xunit-trx-filename e2e-tests.trx --results-directory=Identity.Tests.E2E/bin/Release/net10.0/${{ vars.PLAYWRIGHT_TEST_RESULTS_FOLDER_NAME }}" `
             -f xml -o "coverage-e2e.xml" -s "coverage.settings.xml"
 
+      - name: Locate the Cucumber messages report
+        id: cucumber-report
+        if: ${{ !cancelled() && (steps.e2e.outcome == 'success' || steps.e2e.outcome == 'failure') && github.actor != 'dependabot[bot]' }}
+        run: |
+          $relative = (Get-Content Identity.Tests.E2E/reqnroll.json -Raw | ConvertFrom-Json).formatters.message.outputFilePath
+          $messages = "Identity.Tests.E2E/bin/Release/net10.0/$relative"
+          "messages=$messages" >> $env:GITHUB_OUTPUT
+          "directory=$(Split-Path $messages -Parent)" >> $env:GITHUB_OUTPUT
+
+      - name: Assert E2E executed at least its floor
+        if: steps.e2e.outcome == 'success'
+        env:
+          E2E_TRX: Identity.Tests.E2E/bin/Release/net10.0/${{ vars.PLAYWRIGHT_TEST_RESULTS_FOLDER_NAME }}/e2e-tests.trx
+          CUCUMBER_MESSAGES: ${{ steps.cucumber-report.outputs.messages }}
+        run: |
+          $floor = [int](Get-Content Identity.Tests.E2E/e2e-settings.json -Raw | ConvertFrom-Json).executedTestFloor
+          if (-not (Test-Path $env:E2E_TRX)) {
+            Write-Output "::error::$env:E2E_TRX is missing - the E2E suite never reported."
+            exit 1
+          }
+          $executed = [int]([xml](Get-Content $env:E2E_TRX -Raw)).TestRun.ResultSummary.Counters.executed
+          $finished = if (Test-Path $env:CUCUMBER_MESSAGES) { @(Select-String -LiteralPath $env:CUCUMBER_MESSAGES -SimpleMatch '"testCaseFinished"').Count } else { 0 }
+          "E2E executed $executed, Cucumber report finished $finished, floor $floor" >> $env:GITHUB_STEP_SUMMARY
+          if ($floor -le 0 -or $executed -lt $floor -or $finished -lt $floor) {
+            Write-Output "::error::E2E executed $executed and the Cucumber report finished $finished, below the floor of $floor."
+            exit 1
+          }
+
+      - name: Run integration tests with coverage
+        if: github.actor != 'dependabot[bot]'
+        env:
+          ASPNETCORE_ENVIRONMENT: CI
+          GoogleClientId: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GoogleClientSecret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          ReCAPTCHASiteKey: ${{ secrets.RECAPTCHA_SITE_KEY_E2E }}
+          ReCAPTCHASecretKey: ${{ secrets.RECAPTCHA_SECRET_KEY }}
+          SqlConnectionStringBuilder__DataSource: ${{ vars.DB_SERVER }}
+          SqlConnectionStringBuilder__InitialCatalog: ${{ vars.DB_NAME_E2E }}
+          SqlConnectionStringBuilder__IntegratedSecurity: false
+          SqlConnectionStringBuilder__UserID: ${{ secrets.DB_USERID }}
+          SqlConnectionStringBuilder__Password: ${{ secrets.DB_PASSWORD }}
+          ServiceBusConnectionString: ${{ secrets.SERVICE_BUS_CONNECTION_STRING }}
+          PasskeyOrigin: https://127.0.0.1
+          E2ESettings__TestCatalogSuffix: ${{ vars.E2E_TEST_CATALOG_SUFFIX }}
+          E2ESettings__IndependentlyPinnedAdminCardCount: ${{ vars.E2E_INDEPENDENTLY_PINNED_ADMIN_CARD_COUNT }}
+        run: |
+          dotnet-coverage collect `
+            "dotnet test --project Identity.Tests.Integration --no-build --configuration Release -- --filter-trait Category=Integration --stop-on-fail on --report-xunit-trx --report-xunit-trx-filename integration-tests.trx --results-directory=Identity.Tests.Integration/bin/Release/net10.0/TestResults" `
+            -f xml -o "coverage-integration.xml" -s "coverage.settings.xml"
+
+      - name: Publish E2E scenario results
+        if: ${{ !cancelled() && steps.cucumber-report.outcome == 'success' }}
+        env:
+          PGHOST: ${{ vars.TEST_RESULTS_PGHOST }}
+          PGDATABASE: ${{ vars.TEST_RESULTS_PGDATABASE }}
+          PGUSER: ${{ vars.TEST_RESULTS_PGUSER }}
+          PGSSLMODE: ${{ vars.TEST_RESULTS_PGSSLMODE }}
+          PGPASSWORD: ${{ secrets.TEST_RESULTS_PGPASSWORD }}
+        run: npx --no publish-bdd-results --app ${{ vars.TEST_RESULTS_APP }} ${{ steps.cucumber-report.outputs.messages }}
+
+      - name: Upload Cucumber report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        if: always() && steps.cucumber-report.outcome == 'success'
+        with:
+          name: identity-cucumber-report
+          path: ${{ steps.cucumber-report.outputs.directory }}
+          if-no-files-found: ignore
+
       - name: Upload test results
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: always() && github.actor != 'dependabot[bot]'
@@ -270,6 +342,7 @@ jobs:
           path: |
             Identity.Tests.Unit/bin/Release/net10.0/TestResults/
             Identity.Tests.E2E/bin/Release/net10.0/${{ vars.PLAYWRIGHT_TEST_RESULTS_FOLDER_NAME }}/
+            Identity.Tests.Integration/bin/Release/net10.0/TestResults/
 
       - name: Upload Playwright failure artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
@@ -294,18 +367,6 @@ jobs:
           SqlConnectionStringBuilder__Password: ${{ secrets.DB_PASSWORD }}
           ServiceBusConnectionString: ${{ secrets.SERVICE_BUS_CONNECTION_STRING }}
           PasskeyOrigin: https://127.0.0.1
-          PlaywrightSettings__Headless: ${{ vars.PLAYWRIGHT_HEADLESS }}
-          PlaywrightSettings__TestResultsFolderName: ${{ vars.PLAYWRIGHT_TEST_RESULTS_FOLDER_NAME }}
-          PlaywrightSettings__ArtifactsFolderName: ${{ vars.PLAYWRIGHT_ARTIFACTS_FOLDER_NAME }}
-          PlaywrightSettings__TempFolderName: ${{ vars.PLAYWRIGHT_TEMP_FOLDER_NAME }}
-          PlaywrightSettings__ScreenshotFileName: ${{ vars.PLAYWRIGHT_SCREENSHOT_FILE_NAME }}
-          PlaywrightSettings__TraceFileName: ${{ vars.PLAYWRIGHT_TRACE_FILE_NAME }}
-          PlaywrightSettings__BrowserLogFileName: ${{ vars.PLAYWRIGHT_BROWSER_LOG_FILE_NAME }}
-          PlaywrightSettings__MetadataFileName: ${{ vars.PLAYWRIGHT_METADATA_FILE_NAME }}
-          PlaywrightSettings__FailureFileName: ${{ vars.PLAYWRIGHT_FAILURE_FILE_NAME }}
-          PlaywrightSettings__RecordedVideoWidth: ${{ vars.PLAYWRIGHT_RECORDED_VIDEO_WIDTH }}
-          PlaywrightSettings__RecordedVideoHeight: ${{ vars.PLAYWRIGHT_RECORDED_VIDEO_HEIGHT }}
-          PlaywrightSettings__MaxArtifactNameLength: ${{ vars.PLAYWRIGHT_MAX_ARTIFACT_NAME_LENGTH }}
           E2ESettings__TestCatalogSuffix: ${{ vars.E2E_TEST_CATALOG_SUFFIX }}
           E2ESettings__IndependentlyPinnedAdminCardCount: ${{ vars.E2E_INDEPENDENTLY_PINNED_ADMIN_CARD_COUNT }}
           LoadSettings__RequestScale: ${{ inputs.loadRequestScale || vars.LOAD_REQUEST_SCALE }}
@@ -321,7 +382,7 @@ jobs:
           LoadSettings__HealthRequests: ${{ vars.LOAD_HEALTH_REQUESTS }}
           LoadSettings__HealthParallelism: ${{ vars.LOAD_HEALTH_PARALLELISM }}
         run: |
-          dotnet test --project Identity.Tests.E2E --no-build --configuration Release -- --filter-trait Category=Load
+          dotnet test --project Identity.Tests.Load --no-build --configuration Release -- --filter-trait Category=Load
 
       - name: dotnet publish
         env:

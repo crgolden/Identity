@@ -1,0 +1,7 @@
+{
+  "$schema": "https://schemas.reqnroll.net/reqnroll-config-latest.json",
+  "formatters": {
+    "html": { "outputFilePath": "TestResults/cucumber-report/index.html" },
+    "message": { "outputFilePath": "TestResults/cucumber-report/messages.ndjson" }
+  }
+}

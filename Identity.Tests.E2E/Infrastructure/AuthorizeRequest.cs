@@ -1,6 +1,6 @@
 namespace Identity.Tests.E2E.Infrastructure;
 
-using Identity.Tests.E2E.Oidc;
+using Identity.Tests.Integration.Oidc;
 
 internal static class AuthorizeRequest
 {

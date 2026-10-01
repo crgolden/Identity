@@ -46,8 +46,6 @@ internal static partial class UrlPatterns
 
     private const string AdminPersistedGrantsDetailsPattern = "/Admin/PersistedGrants/Details";
 
-    private const string AdminUsersDetailsPattern = "/Admin/Users/Details";
-
     private const string AdminUsersDetailsIndexPattern = "/Admin/Users/Details/(?!Claims|Roles|Logins|Passkeys)";
 
     private const string AdminUsersEditIndexPattern = "/Admin/Users/Edit/(?!Claims|Roles|Logins|Passkeys)";
@@ -186,9 +184,6 @@ internal static partial class UrlPatterns
 
     [GeneratedRegex(AdminPersistedGrantsDetailsPattern)]
     internal static partial Regex AdminPersistedGrantsDetails();
-
-    [GeneratedRegex(AdminUsersDetailsPattern)]
-    internal static partial Regex AdminUsersDetails();
 
     [GeneratedRegex(AdminUsersDetailsIndexPattern)]
     internal static partial Regex AdminUsersDetailsIndex();

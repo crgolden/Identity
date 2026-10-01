@@ -14,11 +14,14 @@ Register-GateSteps @('Install dotnet-coverage', 'Restore local tools', 'node_mod
     'Begin Sonar analysis', 'S101 dictionary control',
     'Build with dotnet', 'jb inspectcode', 'Unit tests (Identity.Tests.Unit', 'Install SqlPackage',
     'Deploy E2E test database schema', 'Install Playwright browsers', 'E2E tests (Identity.Tests.E2E',
+    'Cucumber messages report (Identity.Tests.E2E', 'Playwright artifact temp folder (Identity.Tests.E2E',
+    'Integration tests (Identity.Tests.Integration',
     'End Sonar analysis', 'Fail on open Sonar issues', 'Run Stryker mutation tests')
 $repo = $PSScriptRoot
 $sarif = (Join-Path $gateOutput 'identity-inspect.sarif')
 $unitTrx = Join-Path $repo 'Identity.Tests.Unit\bin\Release\net10.0\TestResults\unit-tests.trx'
 $e2eTrx = Join-Path $repo 'Identity.Tests.E2E\bin\Release\net10.0\TestResults\e2e-tests.trx'
+$integrationTrx = Join-Path $repo 'Identity.Tests.Integration\bin\Release\net10.0\TestResults\integration-tests.trx'
 $testCatalog = 'IdentityTest'
 $sonarBranch = "branch-local-$($env:COMPUTERNAME.ToLowerInvariant())"
 $beginSonar = "Begin Sonar analysis (branch $sonarBranch)"
@@ -29,13 +32,21 @@ $s101 = 'S101 dictionary control (must FAIL without the dictionary)'
 $unit = 'Unit tests (Identity.Tests.Unit, Category=Unit)'
 $schema = "Deploy E2E test database schema ($testCatalog)"
 $e2e = 'E2E tests (Identity.Tests.E2E, Category=E2E)'
+$e2eOutput = Join-Path $repo 'Identity.Tests.E2E\bin\Release\net10.0'
+$e2eFloor = [int](Get-Content (Join-Path $repo 'Identity.Tests.E2E\e2e-settings.json') -Raw | ConvertFrom-Json).executedTestFloor
+$cucumberMessages = Join-Path $e2eOutput (Get-Content (Join-Path $repo 'Identity.Tests.E2E\reqnroll.json') -Raw | ConvertFrom-Json).formatters.message.outputFilePath
+$cucumberReport = 'Cucumber messages report (Identity.Tests.E2E, one testCaseFinished per floor scenario)'
+$playwrightSettings = (Get-Content (Join-Path $repo 'Identity\appsettings.Development.json') -Raw | ConvertFrom-Json).PlaywrightSettings
+$artifactTemp = [IO.Path]::Combine($e2eOutput, $playwrightSettings.TestResultsFolderName, $playwrightSettings.ArtifactsFolderName, $playwrightSettings.TempFolderName)
+$artifactTempStep = 'Playwright artifact temp folder (Identity.Tests.E2E, empty after a passing run)'
+$integration = 'Integration tests (Identity.Tests.Integration, Category=Integration)'
 $stryker = "Run Stryker mutation tests (dashboard version $sonarBranch)"
 $env:TZ = 'UTC'
 if ($env:TZ -ne 'UTC') { Write-Host 'GATE: FAILED (TZ pin)'; exit 1 }
 Set-Location $repo
 if ($Tests) {
     Invoke-SelectedTests $repo $TestProject $Tests {
-        if ($TestProject -eq 'Identity.Tests.E2E') {
+        if ($TestProject -in 'Identity.Tests.E2E', 'Identity.Tests.Integration') {
             sqllocaldb start MSSQLLocalDB | Out-Null
             $env:ASPNETCORE_ENVIRONMENT = 'Development'
             $env:SqlConnectionStringBuilder__InitialCatalog = $testCatalog
@@ -75,7 +86,7 @@ else {
     $sonarStartedAt = [DateTimeOffset]::UtcNow
     $env:JAVA_HOME = "$env:SystemDrive\sonar-scanner-8.0.1.6346-windows-x64\jre"
     $global:LASTEXITCODE = $null
-    dotnet-sonarscanner begin /k:"crgolden_Identity" /o:"crgolden" /d:sonar.token="$env:SONAR_TOKEN" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportsPaths="coverage.opencover.xml" /d:sonar.cs.vscoveragexml.reportsPaths="coverage-e2e.xml" /d:sonar.exclusions="**/bin/**,**/obj/**" /d:sonar.coverage.exclusions="**/Program.cs" /d:sonar.qualitygate.wait=true /d:sonar.scanner.skipJreProvisioning=true /d:sonar.branch.name="$sonarBranch"
+    dotnet-sonarscanner begin /k:"crgolden_Identity" /o:"crgolden" /d:sonar.token="$env:SONAR_TOKEN" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportsPaths="coverage.opencover.xml" /d:sonar.cs.vscoveragexml.reportsPaths="coverage-e2e.xml,coverage-integration.xml" /d:sonar.exclusions="**/bin/**,**/obj/**" /d:sonar.coverage.exclusions="**/Program.cs,**/gate.ps1" /d:sonar.qualitygate.wait=true /d:sonar.scanner.skipJreProvisioning=true /d:sonar.branch.name="$sonarBranch"
     $null = Test-Exit $beginSonar
 }
 
@@ -153,7 +164,10 @@ if (-not (Test-StepCarried $schema)) {
 Install-PlaywrightBrowsers 'Install Playwright browsers' { pwsh "$repo\Identity.Tests.E2E\bin\Release\net10.0\playwright.ps1" install --dry-run chromium } { pwsh "$repo\Identity.Tests.E2E\bin\Release\net10.0\playwright.ps1" install chromium }
 
 if (-not (Test-StepCarried $e2e)) {
+    if ($e2eFloor -le 0) { Stop-Gate $e2e 'Identity.Tests.E2E\e2e-settings.json carries no positive executedTestFloor' }
     if (Test-Path $e2eTrx) { Remove-Item $e2eTrx -Force }
+    if (Test-Path $cucumberMessages) { Remove-Item $cucumberMessages -Force }
+    if (Test-Path $artifactTemp) { Remove-Item $artifactTemp -Recurse -Force }
     sqllocaldb start MSSQLLocalDB | Out-Null
     $env:ASPNETCORE_ENVIRONMENT = 'Development'
     $env:SqlConnectionStringBuilder__InitialCatalog = $testCatalog
@@ -162,7 +176,27 @@ if (-not (Test-StepCarried $e2e)) {
     dotnet-coverage collect `
         "dotnet test --project Identity.Tests.E2E --no-build --configuration Release -- --filter-trait Category=E2E --stop-on-fail on --report-xunit-trx --report-xunit-trx-filename e2e-tests.trx --results-directory=Identity.Tests.E2E/bin/Release/net10.0/TestResults" `
         -f xml -o "coverage-e2e.xml" -s "coverage.settings.xml"
-    Test-Trx $e2e $e2eTrx $global:LASTEXITCODE 1
+    Test-Trx $e2e $e2eTrx $global:LASTEXITCODE $e2eFloor
+    if (-not (Test-Path $cucumberMessages)) { Stop-Gate $cucumberReport "missing: $cucumberMessages" }
+    $finishedCases = @(Select-String -LiteralPath $cucumberMessages -SimpleMatch '"testCaseFinished"').Count
+    if ($finishedCases -lt $e2eFloor) { Stop-Gate $cucumberReport "$finishedCases testCaseFinished messages, floor $e2eFloor" }
+    Write-Row $cucumberReport 'PASS' "$finishedCases testCaseFinished messages, floor $e2eFloor"
+    $leakedSessions = if (Test-Path $artifactTemp) { @(Get-ChildItem -LiteralPath $artifactTemp -Recurse -File).Count } else { 0 }
+    if ($leakedSessions -gt 0) { Stop-Gate $artifactTempStep "$leakedSessions file(s) left in $artifactTemp: artifacts were never finalized" }
+    Write-Row $artifactTempStep 'PASS' "no files left in $artifactTemp"
+}
+
+if (-not (Test-StepCarried $integration)) {
+    if (Test-Path $integrationTrx) { Remove-Item $integrationTrx -Force }
+    sqllocaldb start MSSQLLocalDB | Out-Null
+    $env:ASPNETCORE_ENVIRONMENT = 'Development'
+    $env:SqlConnectionStringBuilder__InitialCatalog = $testCatalog
+    $env:PasskeyOrigin = 'https://127.0.0.1'
+    $global:LASTEXITCODE = $null
+    dotnet-coverage collect `
+        "dotnet test --project Identity.Tests.Integration --no-build --configuration Release -- --filter-trait Category=Integration --stop-on-fail on --report-xunit-trx --report-xunit-trx-filename integration-tests.trx --results-directory=Identity.Tests.Integration/bin/Release/net10.0/TestResults" `
+        -f xml -o "coverage-integration.xml" -s "coverage.settings.xml"
+    Test-Trx $integration $integrationTrx $global:LASTEXITCODE 27
 }
 
 if (-not $sonarCarried) {
@@ -184,5 +218,5 @@ if (-not (Test-StepCarried $stryker)) {
     $null = Test-Exit $stryker
 }
 
-Write-Row 'dotnet publish / uploads / deploy' 'NOT RUN' 'delivery steps, not checks'
+Write-Row 'Publish E2E scenario results / Upload Cucumber report / dotnet publish / uploads / deploy' 'NOT RUN' 'delivery steps, not checks'
 Complete-Gate
