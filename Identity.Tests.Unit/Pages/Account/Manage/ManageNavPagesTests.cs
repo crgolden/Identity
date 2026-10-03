@@ -1299,9 +1299,9 @@ public class ManageNavPagesTests
 
     private static string FileNameFor(string page) => page + RazorViewEngine.ViewExtension;
 
-    private static string PathEndingIn(string page) => JoinPath('/', page);
+    private static string PathEndingIn(string page) => JoinPath(Path.AltDirectorySeparatorChar, page);
 
-    private static string WindowsPathEndingIn(string page) => JoinPath('\\', page);
+    private static string WindowsPathEndingIn(string page) => JoinPath(ManageNavPages.WindowsDirectorySeparator, page);
 
     private static string JoinPath(char separator, string page) =>
         string.Join(separator, Generated.NewPathSegment(), Generated.NewPathSegment(), FileNameFor(page));

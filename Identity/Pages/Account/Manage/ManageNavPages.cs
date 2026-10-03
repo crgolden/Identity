@@ -8,6 +8,8 @@ public static class ManageNavPages
 
     internal const string ActiveNavClass = "active";
 
+    internal const char WindowsDirectorySeparator = '\\';
+
     public static string Index => "Index";
 
     public static string Email => "Email";
@@ -32,7 +34,7 @@ public static class ManageNavPages
     {
         ThrowIfNull(viewContext);
 
-        var activePage = viewContext.ViewData[ActivePageViewDataKey] as string ?? Path.GetFileNameWithoutExtension(viewContext.ActionDescriptor.DisplayName);
+        var activePage = viewContext.ViewData[ActivePageViewDataKey] as string ?? Path.GetFileNameWithoutExtension(viewContext.ActionDescriptor.DisplayName?.Replace(WindowsDirectorySeparator, Path.AltDirectorySeparatorChar));
         return string.Equals(activePage, page, StringComparison.OrdinalIgnoreCase) ? ActiveNavClass : null;
     }
 }

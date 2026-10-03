@@ -123,7 +123,7 @@ else {
     $sonarStartedAt = [DateTimeOffset]::UtcNow
     $env:JAVA_HOME = "$env:SystemDrive\sonar-scanner-8.0.1.6346-windows-x64\jre"
     $global:LASTEXITCODE = $null
-    dotnet-sonarscanner begin /k:"crgolden_Identity" /o:"crgolden" /d:sonar.token="$env:SONAR_TOKEN" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportsPaths="coverage.opencover.xml" /d:sonar.cs.vscoveragexml.reportsPaths="coverage-e2e.xml,coverage-integration.xml" /d:sonar.exclusions="**/bin/**,**/obj/**" /d:sonar.coverage.exclusions="**/Program.cs,**/gate.ps1" /d:sonar.qualitygate.wait=true /d:sonar.scanner.skipJreProvisioning=true /d:sonar.branch.name="$sonarBranch"
+    dotnet-sonarscanner begin /k:"crgolden_Identity" /o:"crgolden" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportsPaths="coverage.opencover.xml" /d:sonar.cs.vscoveragexml.reportsPaths="coverage-e2e.xml,coverage-integration.xml" /d:sonar.exclusions="**/bin/**,**/obj/**" /d:sonar.coverage.exclusions="**/Program.cs,**/gate.ps1" /d:sonar.qualitygate.wait=true /d:sonar.scanner.skipJreProvisioning=true /d:sonar.branch.name="$sonarBranch"
     $null = Test-Exit $beginSonar
 }
 
@@ -150,7 +150,7 @@ if (-not (Test-StepCarried $unit)) {
         --skipautoprops --exclude-by-attribute GeneratedCodeAttribute --exclude-by-file "**/obj/**" `
         --exclude-by-file "**/Program.cs" --does-not-return-attribute DoesNotReturnAttribute `
         --include "[Identity]*" --exclude "[Identity]*Pages_*"
-    Test-Trx $unit $unitTrx $global:LASTEXITCODE 1
+    Test-Trx $unit $unitTrx $global:LASTEXITCODE -floor 1
 }
 
 if (-not (Test-StepCarried 'Install SqlPackage')) {
@@ -179,7 +179,7 @@ if (-not (Test-StepCarried $e2e)) {
     dotnet-coverage collect `
         "dotnet test --project Identity.Tests.E2E --no-build --configuration Release -- --filter-trait Category=E2E --stop-on-fail on --report-xunit-trx --report-xunit-trx-filename e2e-tests.trx --results-directory=Identity.Tests.E2E/bin/Release/net10.0/TestResults" `
         -f xml -o "coverage-e2e.xml" -s "coverage.settings.xml"
-    Test-Trx $e2e $e2eTrx $global:LASTEXITCODE $e2eFloor
+    Test-Trx $e2e $e2eTrx $global:LASTEXITCODE -floor $e2eFloor
     if (-not (Test-Path $cucumberMessages)) { Stop-Gate $cucumberReport "missing: $cucumberMessages" }
     $finishedCases = @(Select-String -LiteralPath $cucumberMessages -SimpleMatch '"testCaseFinished"').Count
     if ($finishedCases -lt $e2eFloor) { Stop-Gate $cucumberReport "$finishedCases testCaseFinished messages, floor $e2eFloor" }
@@ -200,12 +200,12 @@ if (-not (Test-StepCarried $integration)) {
     dotnet-coverage collect `
         "dotnet test --project Identity.Tests.Integration --no-build --configuration Release -- --filter-trait Category=Integration --stop-on-fail on --report-xunit-trx --report-xunit-trx-filename integration-tests.trx --results-directory=Identity.Tests.Integration/bin/Release/net10.0/TestResults" `
         -f xml -o "coverage-integration.xml" -s "coverage.settings.xml"
-    Test-Trx $integration $integrationTrx $global:LASTEXITCODE 27
+    Test-Trx $integration $integrationTrx $global:LASTEXITCODE -floor 27
 }
 
 if (-not $sonarCarried) {
     $global:LASTEXITCODE = $null
-    dotnet-sonarscanner end /d:sonar.token="$env:SONAR_TOKEN"
+    dotnet-sonarscanner end
     $null = Test-Exit $endSonar
     Test-SonarIssues $sonarIssues 'crgolden_Identity' $sonarBranch $sonarStartedAt
 }
