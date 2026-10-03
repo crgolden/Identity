@@ -11,10 +11,11 @@ if (-not (Test-Path -LiteralPath $gateCommon)) {
 $gateOutput = Join-Path ([IO.Path]::GetTempPath()) "crgolden-gates\$(Split-Path -Leaf $PSScriptRoot)"
 New-Item -ItemType Directory -Force -Path $gateOutput | Out-Null
 Register-GateSteps @('Install dotnet-coverage', 'Restore local tools', 'node_modules install markers', 'npm run lint',
-    'Begin Sonar analysis', 'S101 dictionary control',
+    'S101 dictionary control', 'Begin Sonar analysis',
     'Build with dotnet', 'jb inspectcode', 'Unit tests (Identity.Tests.Unit', 'Install SqlPackage',
     'Deploy E2E test database schema', 'Install Playwright browsers', 'E2E tests (Identity.Tests.E2E',
     'Cucumber messages report (Identity.Tests.E2E', 'Playwright artifact temp folder (Identity.Tests.E2E',
+    'Publish command reaches the CLI',
     'Integration tests (Identity.Tests.Integration',
     'End Sonar analysis', 'Fail on open Sonar issues', 'Run Stryker mutation tests')
 $repo = $PSScriptRoot
@@ -34,7 +35,9 @@ $schema = "Deploy E2E test database schema ($testCatalog)"
 $e2e = 'E2E tests (Identity.Tests.E2E, Category=E2E)'
 $e2eOutput = Join-Path $repo 'Identity.Tests.E2E\bin\Release\net10.0'
 $e2eFloor = [int](Get-Content (Join-Path $repo 'Identity.Tests.E2E\e2e-settings.json') -Raw | ConvertFrom-Json).executedTestFloor
-$cucumberMessages = Join-Path $e2eOutput (Get-Content (Join-Path $repo 'Identity.Tests.E2E\reqnroll.json') -Raw | ConvertFrom-Json).formatters.message.outputFilePath
+$cucumberMessagesRelative = Join-Path 'Identity.Tests.E2E\bin\Release\net10.0' (Get-Content (Join-Path $repo 'Identity.Tests.E2E\reqnroll.json') -Raw | ConvertFrom-Json).formatters.message.outputFilePath
+$cucumberMessages = Join-Path $repo $cucumberMessagesRelative
+$publishStep = 'Publish command reaches the CLI (the workflow line run without GITHUB_RUN_ID must fail on the run identity, not on usage)'
 $cucumberReport = 'Cucumber messages report (Identity.Tests.E2E, one testCaseFinished per floor scenario)'
 $playwrightSettings = (Get-Content (Join-Path $repo 'Identity\appsettings.Development.json') -Raw | ConvertFrom-Json).PlaywrightSettings
 $artifactTemp = [IO.Path]::Combine($e2eOutput, $playwrightSettings.TestResultsFolderName, $playwrightSettings.ArtifactsFolderName, $playwrightSettings.TempFolderName)
@@ -77,19 +80,6 @@ if (-not (Test-StepCarried 'npm run lint')) {
     $null = Test-Exit 'npm run lint'
 }
 
-$sonarCarried = Test-StepCarried $sonarIssues
-if ($sonarCarried) {
-    $null = Test-StepCarried $beginSonar
-    $null = Test-StepCarried $endSonar
-}
-else {
-    $sonarStartedAt = [DateTimeOffset]::UtcNow
-    $env:JAVA_HOME = "$env:SystemDrive\sonar-scanner-8.0.1.6346-windows-x64\jre"
-    $global:LASTEXITCODE = $null
-    dotnet-sonarscanner begin /k:"crgolden_Identity" /o:"crgolden" /d:sonar.token="$env:SONAR_TOKEN" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportsPaths="coverage.opencover.xml" /d:sonar.cs.vscoveragexml.reportsPaths="coverage-e2e.xml,coverage-integration.xml" /d:sonar.exclusions="**/bin/**,**/obj/**" /d:sonar.coverage.exclusions="**/Program.cs,**/gate.ps1" /d:sonar.qualitygate.wait=true /d:sonar.scanner.skipJreProvisioning=true /d:sonar.branch.name="$sonarBranch"
-    $null = Test-Exit $beginSonar
-}
-
 if (-not (Test-StepCarried $s101)) {
     $identityCsproj = Join-Path $repo 'Identity\Identity.csproj'
     $csprojBackup = Join-Path $gateOutput 'Identity.csproj.s101-control-backup'
@@ -122,6 +112,19 @@ if (-not (Test-StepCarried $s101)) {
         Stop-Gate $s101 "S101 named $($named.Count) of $($expectedNames.Count); the dictionary is not what silences it"
     }
     Write-Row $s101 'PASS' "S101 named all $($named.Count): $($named -join ', ')"
+}
+
+$sonarCarried = Test-StepCarried $sonarIssues
+if ($sonarCarried) {
+    $null = Test-StepCarried $beginSonar
+    $null = Test-StepCarried $endSonar
+}
+else {
+    $sonarStartedAt = [DateTimeOffset]::UtcNow
+    $env:JAVA_HOME = "$env:SystemDrive\sonar-scanner-8.0.1.6346-windows-x64\jre"
+    $global:LASTEXITCODE = $null
+    dotnet-sonarscanner begin /k:"crgolden_Identity" /o:"crgolden" /d:sonar.token="$env:SONAR_TOKEN" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportsPaths="coverage.opencover.xml" /d:sonar.cs.vscoveragexml.reportsPaths="coverage-e2e.xml,coverage-integration.xml" /d:sonar.exclusions="**/bin/**,**/obj/**" /d:sonar.coverage.exclusions="**/Program.cs,**/gate.ps1" /d:sonar.qualitygate.wait=true /d:sonar.scanner.skipJreProvisioning=true /d:sonar.branch.name="$sonarBranch"
+    $null = Test-Exit $beginSonar
 }
 
 if ($sonarCarried) { $null = Test-StepCarried $build }
@@ -182,8 +185,9 @@ if (-not (Test-StepCarried $e2e)) {
     if ($finishedCases -lt $e2eFloor) { Stop-Gate $cucumberReport "$finishedCases testCaseFinished messages, floor $e2eFloor" }
     Write-Row $cucumberReport 'PASS' "$finishedCases testCaseFinished messages, floor $e2eFloor"
     $leakedSessions = if (Test-Path $artifactTemp) { @(Get-ChildItem -LiteralPath $artifactTemp -Recurse -File).Count } else { 0 }
-    if ($leakedSessions -gt 0) { Stop-Gate $artifactTempStep "$leakedSessions file(s) left in $artifactTemp: artifacts were never finalized" }
+    if ($leakedSessions -gt 0) { Stop-Gate $artifactTempStep "$leakedSessions file(s) left in ${artifactTemp}: artifacts were never finalized" }
     Write-Row $artifactTempStep 'PASS' "no files left in $artifactTemp"
+    Test-PublishCommandLine $publishStep (Join-Path $repo '.github\workflows\main_crgolden-identity.yml') 'Identity' $repo $cucumberMessagesRelative
 }
 
 if (-not (Test-StepCarried $integration)) {

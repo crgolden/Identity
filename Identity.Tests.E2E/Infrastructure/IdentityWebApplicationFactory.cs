@@ -26,6 +26,7 @@ public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Progra
 
     private IHost? _kestrelHost;
     private string? _serverAddress;
+    private string? _catalogRefusal;
 
     public EmailCaptureSender EmailCapture { get; } = new();
 
@@ -35,7 +36,16 @@ public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Progra
 
     protected override IHost CreateHost(IHostBuilder builder)
     {
-        var testHost = builder.Build();
+        IHost testHost;
+        try
+        {
+            testHost = builder.Build();
+        }
+        catch (InvalidOperationException entryPointExited) when (_catalogRefusal is not null)
+        {
+            throw new InvalidOperationException(_catalogRefusal, entryPointExited);
+        }
+
         builder.ConfigureWebHost(b => b.UseKestrel(o => o.Listen(IPAddress.Loopback, 0, lo => lo.UseHttps())));
         _kestrelHost = builder.Build();
         _kestrelHost.Start();
@@ -63,8 +73,10 @@ public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Progra
             var testCatalogSuffix = E2ESettings.Read(context.Configuration).TestCatalogSuffix;
             if (catalog is null || !catalog.EndsWith(testCatalogSuffix, StringComparison.Ordinal))
             {
-                throw new InvalidOperationException(
+                var refusal = new InvalidOperationException(
                     $"The E2E tier writes to the catalog it is given, so it refuses '{catalog}': the catalog must end in '{testCatalogSuffix}'.");
+                _catalogRefusal = refusal.Message;
+                throw refusal;
             }
 
             services.Configure<HostOptions>(opts =>

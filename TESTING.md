@@ -83,7 +83,13 @@ inflates an unfiltered total, so **the E2E tier alone is the count to compare** 
 `Identity.Tests.E2E/e2e-settings.json`, and **27** Integration tests. The gate and CI's "Assert E2E executed at least
 its floor" step read that one file, and both also require one `testCaseFinished` per floor scenario in the Cucumber
 messages report, whose path both derive from `reqnroll.json`. A run that executes fewer fails, and a floor changes
-only in the same edit that deliberately adds or removes a scenario or test. The deployed site's account journeys are the synthetic walker's; see
+only in the same edit that deliberately adds or removes a scenario or test.
+
+**The gate's S101 dictionary control runs before `Begin Sonar analysis`, never inside the Sonar window.** It
+proves `CustomDictionary.xml` is what silences S101 on the `CAPTCHA` type names by building `Identity.csproj`
+without its `AdditionalFiles` include, and the SonarScanner collects the analysis of every build between
+`begin` and `end`: inside the window, that deliberately broken build uploads four S101 issues to the local
+Sonar branch and fails `Fail on open Sonar issues`. The deployed site's account journeys are the synthetic walker's; see
 [Synthetic walker](#synthetic-walker).
 
 ### Single Test (by method name)

@@ -95,36 +95,6 @@ public sealed class PlaywrightArtifactRecorder
         Finalize(testId, failed, path => WriteFailureMetadata(path, scenario, teardownError));
     }
 
-    private static void Finalize(string testId, bool failed, Action<string> writeFailureMetadata)
-    {
-        if (!PendingArtifacts.TryRemove(testId, out var artifacts))
-        {
-            return;
-        }
-
-        foreach (var artifact in artifacts)
-        {
-            var tempParent = Path.GetDirectoryName(artifact.TempDirectory);
-            if (!failed)
-            {
-                DeleteDirectory(artifact.TempDirectory);
-                DeleteDirectoryIfEmpty(tempParent);
-                continue;
-            }
-
-            Directory.CreateDirectory(artifact.FinalDirectory);
-            var targetDirectory = Path.Combine(artifact.FinalDirectory, artifact.ContextId.ToString("N"));
-            if (Directory.Exists(targetDirectory))
-            {
-                DeleteDirectory(targetDirectory);
-            }
-
-            Directory.Move(artifact.TempDirectory, targetDirectory);
-            DeleteDirectoryIfEmpty(tempParent);
-            writeFailureMetadata(Path.Combine(targetDirectory, artifact.FailureFileName));
-        }
-    }
-
     public void Attach(IPage page)
     {
         ArgumentNullException.ThrowIfNull(page);
@@ -199,6 +169,36 @@ public sealed class PlaywrightArtifactRecorder
         var pendingArtifactId = Guid.NewGuid();
         PendingArtifacts.GetOrAdd(_testId, _ => new ConcurrentBag<PendingArtifact>()).Add(
             new PendingArtifact(_tempDirectory, _finalDirectory, pendingArtifactId, _settings.FailureFileName));
+    }
+
+    private static void Finalize(string testId, bool failed, Action<string> writeFailureMetadata)
+    {
+        if (!PendingArtifacts.TryRemove(testId, out var artifacts))
+        {
+            return;
+        }
+
+        foreach (var artifact in artifacts)
+        {
+            var tempParent = Path.GetDirectoryName(artifact.TempDirectory);
+            if (!failed)
+            {
+                DeleteDirectory(artifact.TempDirectory);
+                DeleteDirectoryIfEmpty(tempParent);
+                continue;
+            }
+
+            Directory.CreateDirectory(artifact.FinalDirectory);
+            var targetDirectory = Path.Combine(artifact.FinalDirectory, artifact.ContextId.ToString("N"));
+            if (Directory.Exists(targetDirectory))
+            {
+                DeleteDirectory(targetDirectory);
+            }
+
+            Directory.Move(artifact.TempDirectory, targetDirectory);
+            DeleteDirectoryIfEmpty(tempParent);
+            writeFailureMetadata(Path.Combine(targetDirectory, artifact.FailureFileName));
+        }
     }
 
     private static void WriteFailureMetadata(string path, TestResultState? state)
