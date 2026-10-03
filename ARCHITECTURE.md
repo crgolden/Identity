@@ -551,7 +551,9 @@ UseSerilogRequestLogging
 
 Defined in `.github/workflows/main_crgolden-identity.yml`. Triggers: push to `main`, pull request events, and manual dispatch. There is no schedule; the only scheduled workflow is the synthetic walker below.
 
-### Build job (`windows-latest`)
+Every job runs on `ubuntu-latest` with `pwsh` as the default shell. A browser on a Windows Server runner pays for `playwright install --with-deps` adding the Server-Media-Foundation feature on every run, which Ubuntu does not need.
+
+### Build job (`ubuntu-latest`)
 
 1. Set up Java 21 (SonarCloud scanner), .NET 10, restore NuGet cache.
 2. Begin SonarCloud scan.
@@ -565,7 +567,7 @@ Defined in `.github/workflows/main_crgolden-identity.yml`. Triggers: push to `ma
 
 Steps 5, 6 and the SonarCloud steps are skipped for Dependabot (`if: github.actor != 'dependabot[bot]'`), so a dependency bump is verified by unit tests alone. The publish and artifact-upload steps carry no such condition — but they follow the test steps, so a failing test skips them and the whole deploy job with them.
 
-### Deploy job (`windows-latest`, after build)
+### Deploy job (`ubuntu-latest`, after build)
 
 1. Azure OIDC login.
 2. Deploy `.dacpac` to production SQL Server via `SqlPackage`.
@@ -573,11 +575,11 @@ Steps 5, 6 and the SonarCloud steps are skipped for Dependabot (`if: github.acto
 
 The database is always deployed before the application to ensure schema readiness on startup.
 
-### Synthetic walker (`windows-latest`, scheduled — separate workflow)
+### Synthetic walker (`ubuntu-latest`, scheduled, separate workflow)
 
 `synthetic.yml` builds `Identity.Tests.E2E` and runs the `Category=Walker` suite against the deployed site (`WALKER_BASE_URL` → `WalkerBaseUrl`), signing in by passkey as a member account and then as an admin, then uploads the TRX and Playwright artifacts. It replaced the post-deploy smoke job and is never a merge gate. It runs twice daily on `schedule`, plus `workflow_dispatch` with optional seed and step-budget inputs, under `concurrency: synthetic-walker`.
 
-### Mutation job (`windows-latest`)
+### Mutation job (`ubuntu-latest`)
 
 Builds the solution and runs Stryker.NET (`stryker-config.json`), uploading the report as the `stryker-report` artifact. It runs on every push and on pull requests from this repository; only a fork's pull request skips it.
 

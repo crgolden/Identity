@@ -17,9 +17,13 @@ concurrency:
   group: synthetic-walker
   cancel-in-progress: false
 
+defaults:
+  run:
+    shell: pwsh
+
 jobs:
   walk:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     permissions:
       contents: read
 
@@ -47,11 +51,11 @@ jobs:
         id: cache-playwright
         uses: actions/cache/restore@v5
         with:
-          path: ~\AppData\Local\ms-playwright
+          path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
 
       - name: Install Playwright browsers
-        run: pwsh "${{ github.workspace }}\Identity.Tests.E2E\bin\Release\net10.0\playwright.ps1" install --with-deps chromium
+        run: pwsh "${{ github.workspace }}/Identity.Tests.E2E/bin/Release/net10.0/playwright.ps1" install --with-deps chromium
 
       - name: Resolve seed
         id: seed
@@ -99,18 +103,18 @@ jobs:
           WalkerSettings__DefaultStepBudget: ${{ vars.WALKER_DEFAULT_STEP_BUDGET }}
           WalkerSettings__MaxStepBudget: ${{ vars.WALKER_MAX_STEP_BUDGET }}
         run: |
-          $resultsDir = "${{ github.workspace }}\Identity.Tests.E2E\bin\Release\net10.0\${{ vars.PLAYWRIGHT_TEST_RESULTS_FOLDER_NAME }}"
+          $resultsDir = "${{ github.workspace }}/Identity.Tests.E2E/bin/Release/net10.0/${{ vars.PLAYWRIGHT_TEST_RESULTS_FOLDER_NAME }}"
           New-Item -ItemType Directory -Force -Path $resultsDir | Out-Null
-          & "${{ github.workspace }}\Identity.Tests.E2E\bin\Release\net10.0\Identity.Tests.E2E.exe" `
+          & "${{ github.workspace }}/Identity.Tests.E2E/bin/Release/net10.0/Identity.Tests.E2E" `
             -trait "Category=Walker" `
-            -trx "$resultsDir\walker.trx"
+            -trx "$resultsDir/walker.trx"
 
       - name: Assert the walk actually ran
         if: always()
         env:
           SYNTHETIC_SEED: ${{ steps.seed.outputs.value }}
         run: |
-          $trx = "${{ github.workspace }}\Identity.Tests.E2E\bin\Release\net10.0\${{ vars.PLAYWRIGHT_TEST_RESULTS_FOLDER_NAME }}\walker.trx"
+          $trx = "${{ github.workspace }}/Identity.Tests.E2E/bin/Release/net10.0/${{ vars.PLAYWRIGHT_TEST_RESULTS_FOLDER_NAME }}/walker.trx"
           if (-not (Test-Path $trx)) {
             Write-Output "::error::No walker.trx was produced — the walk did not run."
             exit 1

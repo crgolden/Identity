@@ -1714,7 +1714,7 @@ Stryker.NET is configured in `stryker-config.json` with `mutation-level: Advance
 
 The full scope is both the slowest *and* the highest-scoring, because the page models it adds are well covered by unit tests.
 
-Those times are from a developer machine. The GitHub `windows-latest` runner is markedly faster: run `32413591090` executed the same 1,871 mutants to the same `Killed: 1462 / Survived: 409 / Timeout: 0 / Errors: 0` and the same 70.56 % in **21 m 34 s**. Budget roughly 25 minutes for the CI job, not 70.
+Those times are from a developer machine. The CI `Mutation testing` job is markedly faster; budget it from that job's own latest duration, not from this table.
 
 Do **not** narrow this by reintroducing a blanket `!Pages/**`: under dotnet-stryker 4.14.0 page-model mutants could not compile (`Failed to load analyzer 'Microsoft.CodeAnalysis.Razor.Compiler': ReferencesNewerCompiler`) and silently hung — 1,869 mutants queued, **1 h 36 m** elapsed, and only 244 ever reaching a verdict, with 1,604 of the 1,625 unfinished in `Pages/`. It looked like a scope problem and was a tool problem. 4.16.0 runs the same scope with zero errors and zero timeouts. That is why the pin matters.
 
