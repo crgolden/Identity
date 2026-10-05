@@ -8,12 +8,9 @@ public sealed class E2ESettings
 {
     private E2ESettings(IConfiguration section)
     {
-        TestCatalogSuffix = section.GetRequired<string>(nameof(TestCatalogSuffix));
         IndependentlyPinnedAdminCardCount = int.Parse(
             section.GetRequired<string>(nameof(IndependentlyPinnedAdminCardCount)), CultureInfo.InvariantCulture);
     }
-
-    public string TestCatalogSuffix { get; }
 
     public int IndependentlyPinnedAdminCardCount { get; }
 

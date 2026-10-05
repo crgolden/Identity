@@ -1,4 +1,4 @@
-param([string]$Goal, [string]$Tests, [string]$TestProject)
+param([string]$Goal, [string[]]$Steps, [string]$Tests, [string]$TestProject)
 
 $ErrorActionPreference = 'Continue'
 $gateCommon = Join-Path $PSScriptRoot '..\Tools\Gates\GateCommon.ps1'
@@ -18,13 +18,38 @@ Register-GateSteps @('Install dotnet-coverage', 'Restore local tools', 'node_mod
     'Publish command reaches the CLI',
     'Integration tests (Identity.Tests.Integration',
     'End Sonar analysis', 'Fail on open Sonar issues', 'Run Stryker mutation tests')
+Register-StepInputs @{
+    'Install dotnet-coverage'                             = @('*')
+    'Restore local tools'                                 = @('dotnet-tools.json')
+    'node_modules install markers'                        = @('*')
+    'npm run lint'                                        = @('*')
+    'S101 dictionary control'                             = @('*')
+    'Begin Sonar analysis'                                = @('*')
+    'Build with dotnet'                                   = @('*')
+    'jb inspectcode'                                      = @('*')
+    'Unit tests (Identity.Tests.Unit'                     = @('*')
+    'Install SqlPackage'                                  = @('*')
+    'Deploy E2E test database schema'                     = @('*')
+    'Install Playwright browsers'                         = @('*')
+    'E2E tests (Identity.Tests.E2E'                       = @('*')
+    'Cucumber messages report (Identity.Tests.E2E'        = @('*')
+    'Playwright artifact temp folder (Identity.Tests.E2E' = @('*')
+    'Publish command reaches the CLI'                     = @('*')
+    'Integration tests (Identity.Tests.Integration'       = @('*')
+    'End Sonar analysis'                                  = @('*')
+    'Fail on open Sonar issues'                           = @('*')
+    'Run Stryker mutation tests'                          = @('*')
+}
 $repo = $PSScriptRoot
 $sarif = (Join-Path $gateOutput 'identity-inspect.sarif')
 $unitTrx = Join-Path $repo 'Identity.Tests.Unit\bin\Release\net10.0\TestResults\unit-tests.trx'
 $e2eTrx = Join-Path $repo 'Identity.Tests.E2E\bin\Release\net10.0\TestResults\e2e-tests.trx'
 $integrationTrx = Join-Path $repo 'Identity.Tests.Integration\bin\Release\net10.0\TestResults\integration-tests.trx'
-$testCatalog = 'IdentityTest'
-$sonarBranch = "branch-local-$($env:COMPUTERNAME.ToLowerInvariant())"
+$testCatalog = $env:SqlConnectionStringBuilder__InitialCatalog ?? 'IdentityTest'
+$dataSource = $env:SqlConnectionStringBuilder__DataSource ?? '(localdb)\MSSQLLocalDB'
+$sqlAuthentication = if ($env:SqlConnectionStringBuilder__UserID) { "User ID=$env:SqlConnectionStringBuilder__UserID;Password=$env:SqlConnectionStringBuilder__Password;Encrypt=True;TrustServerCertificate=False" } else { 'Integrated Security=True;TrustServerCertificate=True' }
+function Start-LocalDbWhenTargeted { if (-not $env:SqlConnectionStringBuilder__DataSource) { sqllocaldb start MSSQLLocalDB | Out-Null } }
+$sonarBranch = Get-SonarBranchName
 $beginSonar = "Begin Sonar analysis (branch $sonarBranch)"
 $build = 'Build with dotnet (Release, RestoreLockedMode)'
 $endSonar = 'End Sonar analysis (quality gate waited)'
@@ -50,7 +75,7 @@ Set-Location $repo
 if ($Tests) {
     Invoke-SelectedTests $repo $TestProject $Tests {
         if ($TestProject -in 'Identity.Tests.E2E', 'Identity.Tests.Integration') {
-            sqllocaldb start MSSQLLocalDB | Out-Null
+            Start-LocalDbWhenTargeted
             $env:ASPNETCORE_ENVIRONMENT = 'Development'
             $env:SqlConnectionStringBuilder__InitialCatalog = $testCatalog
             $env:PasskeyOrigin = 'https://127.0.0.1'
@@ -59,6 +84,7 @@ if ($Tests) {
     }
 }
 Initialize-GateState 'Identity' $repo
+Assert-RequestedSteps $Steps
 Invoke-CatalogSteps
 
 if (-not (Test-StepCarried 'Install dotnet-coverage')) {
@@ -158,9 +184,9 @@ if (-not (Test-StepCarried 'Install SqlPackage')) {
     else { Stop-Gate 'Install SqlPackage' 'not on PATH' }
 }
 if (-not (Test-StepCarried $schema)) {
-    sqllocaldb start MSSQLLocalDB | Out-Null
+    Start-LocalDbWhenTargeted
     $global:LASTEXITCODE = $null
-    sqlpackage /Action:Publish /SourceFile:Identity.Data/bin/Release/Identity.Data.dacpac /TargetConnectionString:"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=$testCatalog;Integrated Security=True;TrustServerCertificate=True"
+    sqlpackage /Action:Publish /SourceFile:Identity.Data/bin/Release/Identity.Data.dacpac /TargetConnectionString:"Data Source=$dataSource;Initial Catalog=$testCatalog;$sqlAuthentication"
     $null = Test-Exit $schema
 }
 
@@ -171,7 +197,7 @@ if (-not (Test-StepCarried $e2e)) {
     if (Test-Path $e2eTrx) { Remove-Item $e2eTrx -Force }
     if (Test-Path $cucumberMessages) { Remove-Item $cucumberMessages -Force }
     if (Test-Path $artifactTemp) { Remove-Item $artifactTemp -Recurse -Force }
-    sqllocaldb start MSSQLLocalDB | Out-Null
+    Start-LocalDbWhenTargeted
     $env:ASPNETCORE_ENVIRONMENT = 'Development'
     $env:SqlConnectionStringBuilder__InitialCatalog = $testCatalog
     $env:PasskeyOrigin = 'https://127.0.0.1'
@@ -192,7 +218,7 @@ if (-not (Test-StepCarried $e2e)) {
 
 if (-not (Test-StepCarried $integration)) {
     if (Test-Path $integrationTrx) { Remove-Item $integrationTrx -Force }
-    sqllocaldb start MSSQLLocalDB | Out-Null
+    Start-LocalDbWhenTargeted
     $env:ASPNETCORE_ENVIRONMENT = 'Development'
     $env:SqlConnectionStringBuilder__InitialCatalog = $testCatalog
     $env:PasskeyOrigin = 'https://127.0.0.1'
@@ -212,13 +238,19 @@ if (-not $sonarCarried) {
 
 if (-not (Test-StepCarried $stryker)) {
     if ([string]::IsNullOrWhiteSpace($env:STRYKER_DASHBOARD_API_KEY)) { Stop-Gate $stryker 'STRYKER_DASHBOARD_API_KEY is not in the environment' }
+    $strykerConfig = (Get-Content (Join-Path $repo 'stryker-config.json') -Raw | ConvertFrom-Json).'stryker-config'
+    $strykerReporters = @($strykerConfig.reporters | Where-Object { $_ -ne 'dashboard' } | ForEach-Object { '--reporter', $_ })
+    $strykerOutputDir = Join-Path $repo 'Identity\StrykerOutput\gate'
+    if (Test-Path -LiteralPath $strykerOutputDir) { Remove-Item -LiteralPath $strykerOutputDir -Recurse -Force }
     Push-Location (Join-Path $repo 'Identity')
     $global:LASTEXITCODE = $null
-    dotnet stryker --config-file ../stryker-config.json --version $sonarBranch | Tee-Object -Variable strykerOutput
+    dotnet stryker --config-file ../stryker-config.json --version $sonarBranch --output $strykerOutputDir @strykerReporters
     $strykerExit = $global:LASTEXITCODE
     Pop-Location
-    if ($strykerOutput -match 'Failed to upload report to the dashboard') { Stop-Gate $stryker 'the report did not reach the dashboard' }
-    $global:LASTEXITCODE = $strykerExit
+    if ($null -eq $strykerExit) { Stop-Gate $stryker 'command never ran' }
+    if ($strykerExit -ne 0) { Stop-Gate $stryker "exit $strykerExit" }
+    $global:LASTEXITCODE = $null
+    node (Join-Path $PSScriptRoot '..\Tools\Gates\upload-stryker-report.mjs') (Join-Path $strykerOutputDir 'reports\mutation-report.json') $strykerConfig.'project-info'.name $sonarBranch
     $null = Test-Exit $stryker
 }
 

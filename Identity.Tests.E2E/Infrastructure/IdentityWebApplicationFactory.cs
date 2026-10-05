@@ -70,11 +70,10 @@ public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Progra
         builder.ConfigureServices((context, services) =>
         {
             var catalog = context.Configuration[$"{nameof(SqlConnectionStringBuilder)}:{nameof(SqlConnectionStringBuilder.InitialCatalog)}"];
-            var testCatalogSuffix = E2ESettings.Read(context.Configuration).TestCatalogSuffix;
-            if (catalog is null || !catalog.EndsWith(testCatalogSuffix, StringComparison.Ordinal))
+            if (!TestDatabaseContract.IsDisposableCatalog(catalog))
             {
                 var refusal = new InvalidOperationException(
-                    $"The E2E tier writes to the catalog it is given, so it refuses '{catalog}': the catalog must end in '{testCatalogSuffix}'.");
+                    $"The E2E tier writes to the catalog it is given, so it refuses '{catalog}': the catalog must end in '{TestDatabaseContractConstants.TestCatalogSuffix}' or '{TestDatabaseContractConstants.TriageCatalogSuffix}'.");
                 _catalogRefusal = refusal.Message;
                 throw refusal;
             }

@@ -32,6 +32,8 @@
     <Compile Include="..\Identity.Tests.E2E\Infrastructure\OidcStandardConstants.cs" Link="Host\OidcStandardConstants.cs" />
     <Compile Include="..\Identity.Tests.E2E\Infrastructure\RecordingCommandInterceptor.cs" Link="Host\RecordingCommandInterceptor.cs" />
     <Compile Include="..\Identity.Tests.E2E\Infrastructure\ServiceBusConstants.cs" Link="Host\ServiceBusConstants.cs" />
+    <Compile Include="..\Identity.Tests.E2E\Infrastructure\TestDatabaseContract.cs" Link="Host\TestDatabaseContract.cs" />
+    <Compile Include="..\Identity.Tests.E2E\Infrastructure\TestDatabaseContractConstants.cs" Link="Host\TestDatabaseContractConstants.cs" />
     <Compile Include="..\Identity.Tests.E2E\Infrastructure\TestServiceBusClient.cs" Link="Host\TestServiceBusClient.cs" />
     <Compile Include="..\Identity.Tests.E2E\Infrastructure\TestServiceBusClientFactory.cs" Link="Host\TestServiceBusClientFactory.cs" />
     <Compile Include="..\Identity.Tests.Integration\Oidc\OidcDiscoveryConstants.cs" Link="Host\OidcDiscoveryConstants.cs" />

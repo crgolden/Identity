@@ -292,7 +292,7 @@ public abstract class IdentityHostFixture : IAsyncLifetime
     {
         await using var scope = Factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        if (!db.Database.GetDbConnection().Database.EndsWith(Settings.TestCatalogSuffix, StringComparison.Ordinal))
+        if (!TestDatabaseContract.IsDisposableCatalog(db.Database.GetDbConnection().Database))
         {
             return;
         }

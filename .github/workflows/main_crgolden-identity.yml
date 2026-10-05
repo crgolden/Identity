@@ -262,7 +262,6 @@ jobs:
           PlaywrightSettings__RecordedVideoWidth: ${{ vars.PLAYWRIGHT_RECORDED_VIDEO_WIDTH }}
           PlaywrightSettings__RecordedVideoHeight: ${{ vars.PLAYWRIGHT_RECORDED_VIDEO_HEIGHT }}
           PlaywrightSettings__MaxArtifactNameLength: ${{ vars.PLAYWRIGHT_MAX_ARTIFACT_NAME_LENGTH }}
-          E2ESettings__TestCatalogSuffix: ${{ vars.E2E_TEST_CATALOG_SUFFIX }}
           E2ESettings__IndependentlyPinnedAdminCardCount: ${{ vars.E2E_INDEPENDENTLY_PINNED_ADMIN_CARD_COUNT }}
         run: |
           dotnet-coverage collect `
@@ -335,7 +334,6 @@ jobs:
           SqlConnectionStringBuilder__Password: ${{ secrets.DB_PASSWORD }}
           ServiceBusConnectionString: ${{ secrets.SERVICE_BUS_CONNECTION_STRING }}
           PasskeyOrigin: https://127.0.0.1
-          E2ESettings__TestCatalogSuffix: ${{ vars.E2E_TEST_CATALOG_SUFFIX }}
           E2ESettings__IndependentlyPinnedAdminCardCount: ${{ vars.E2E_INDEPENDENTLY_PINNED_ADMIN_CARD_COUNT }}
         run: |
           dotnet-coverage collect `
@@ -394,7 +392,6 @@ jobs:
           SqlConnectionStringBuilder__Password: ${{ secrets.DB_PASSWORD }}
           ServiceBusConnectionString: ${{ secrets.SERVICE_BUS_CONNECTION_STRING }}
           PasskeyOrigin: https://127.0.0.1
-          E2ESettings__TestCatalogSuffix: ${{ vars.E2E_TEST_CATALOG_SUFFIX }}
           E2ESettings__IndependentlyPinnedAdminCardCount: ${{ vars.E2E_INDEPENDENTLY_PINNED_ADMIN_CARD_COUNT }}
           LoadSettings__RequestScale: ${{ inputs.loadRequestScale || vars.LOAD_REQUEST_SCALE }}
           LoadSettings__MaxRequests: ${{ vars.LOAD_MAX_REQUESTS }}
