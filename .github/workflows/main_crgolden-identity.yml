@@ -146,6 +146,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Audit dependencies (fails on high or critical)
+        run: npm run audit
+
       - name: Begin Sonar analysis
         if: github.actor != 'dependabot[bot]'
         env:

@@ -10,7 +10,7 @@ if (-not (Test-Path -LiteralPath $gateCommon)) {
 . (Join-Path $PSScriptRoot '..\Tools\Gates\SelectedTests.ps1')
 $gateOutput = Join-Path ([IO.Path]::GetTempPath()) "crgolden-gates\$(Split-Path -Leaf $PSScriptRoot)"
 New-Item -ItemType Directory -Force -Path $gateOutput | Out-Null
-Register-GateSteps @('Install dotnet-coverage', 'Restore local tools', 'node_modules install markers', 'npm run lint',
+Register-GateSteps @('Install dotnet-coverage', 'Restore local tools', 'node_modules install markers', 'npm run lint', 'npm run audit',
     'S101 dictionary control', 'Begin Sonar analysis',
     'Build with dotnet', 'jb inspectcode', 'Unit tests (Identity.Tests.Unit', 'Install SqlPackage',
     'Deploy E2E test database schema', 'Install Playwright browsers', 'E2E tests (Identity.Tests.E2E',
@@ -23,6 +23,7 @@ Register-StepInputs @{
     'Restore local tools'                                 = @('dotnet-tools.json')
     'node_modules install markers'                        = @('*')
     'npm run lint'                                        = @('*')
+    'npm run audit'                                       = @('package.json', 'package-lock.json')
     'S101 dictionary control'                             = @('*')
     'Begin Sonar analysis'                                = @('*')
     'Build with dotnet'                                   = @('*')
@@ -40,14 +41,28 @@ Register-StepInputs @{
     'Fail on open Sonar issues'                           = @('*')
     'Run Stryker mutation tests'                          = @('*')
 }
+Register-VolatileSteps @('npm run audit')
 $repo = $PSScriptRoot
 $sarif = (Join-Path $gateOutput 'identity-inspect.sarif')
 $unitTrx = Join-Path $repo 'Identity.Tests.Unit\bin\Release\net10.0\TestResults\unit-tests.trx'
 $e2eTrx = Join-Path $repo 'Identity.Tests.E2E\bin\Release\net10.0\TestResults\e2e-tests.trx'
 $integrationTrx = Join-Path $repo 'Identity.Tests.Integration\bin\Release\net10.0\TestResults\integration-tests.trx'
 $testCatalog = $env:SqlConnectionStringBuilder__InitialCatalog ?? 'IdentityTest'
-$dataSource = $env:SqlConnectionStringBuilder__DataSource ?? '(localdb)\MSSQLLocalDB'
-$sqlAuthentication = if ($env:SqlConnectionStringBuilder__UserID) { "User ID=$env:SqlConnectionStringBuilder__UserID;Password=$env:SqlConnectionStringBuilder__Password;Encrypt=True;TrustServerCertificate=False" } else { 'Integrated Security=True;TrustServerCertificate=True' }
+$developmentSql = (Get-Content -Raw (Join-Path $repo 'Identity\appsettings.Development.json') | ConvertFrom-Json).SqlConnectionStringBuilder
+$dataSource = $env:SqlConnectionStringBuilder__DataSource ?? $developmentSql.DataSource
+$targetConnection = [Data.Common.DbConnectionStringBuilder]::new()
+$targetConnection['Data Source'] = $dataSource
+$targetConnection['Initial Catalog'] = $testCatalog
+if ($env:SqlConnectionStringBuilder__UserID) {
+    $targetConnection['User ID'] = $env:SqlConnectionStringBuilder__UserID
+    $targetConnection['Password'] = $env:SqlConnectionStringBuilder__Password
+    $targetConnection['Encrypt'] = 'True'
+    $targetConnection['TrustServerCertificate'] = 'False'
+}
+else {
+    $targetConnection['Integrated Security'] = [string]$developmentSql.IntegratedSecurity
+    $targetConnection['TrustServerCertificate'] = 'True'
+}
 function Start-LocalDbWhenTargeted { if (-not $env:SqlConnectionStringBuilder__DataSource) { sqllocaldb start MSSQLLocalDB | Out-Null } }
 $sonarBranch = Get-SonarBranchName
 $beginSonar = "Begin Sonar analysis (branch $sonarBranch)"
@@ -98,12 +113,18 @@ $null = Test-Exit 'Restore local tools (dotnet tool restore)'
 $installed = (Test-Path (Join-Path $repo 'node_modules\.package-lock.json')) -and
     (Test-Path (Join-Path $repo 'node_modules\.bin\eslint.cmd'))
 if (-not $installed) { Stop-Gate 'node_modules install markers' 'incomplete install; run npm ci deliberately first' }
-Write-Row 'node_modules install markers' 'PASS' '.package-lock.json, eslint.cmd present'
+Assert-NodeInstallCurrent $repo
+Write-Row 'node_modules install markers' 'PASS' 'eslint.cmd present; every package matches package-lock.json'
 
 if (-not (Test-StepCarried 'npm run lint')) {
     $global:LASTEXITCODE = $null
     npm run lint
     $null = Test-Exit 'npm run lint'
+}
+if (-not (Test-StepCarried 'npm run audit')) {
+    $global:LASTEXITCODE = $null
+    npm run audit
+    $null = Test-Exit 'npm run audit'
 }
 
 if (-not (Test-StepCarried $s101)) {
@@ -186,7 +207,7 @@ if (-not (Test-StepCarried 'Install SqlPackage')) {
 if (-not (Test-StepCarried $schema)) {
     Start-LocalDbWhenTargeted
     $global:LASTEXITCODE = $null
-    sqlpackage /Action:Publish /SourceFile:Identity.Data/bin/Release/Identity.Data.dacpac /TargetConnectionString:"Data Source=$dataSource;Initial Catalog=$testCatalog;$sqlAuthentication"
+    sqlpackage /Action:Publish /SourceFile:Identity.Data/bin/Release/Identity.Data.dacpac /TargetConnectionString:"$($targetConnection.ConnectionString)"
     $null = Test-Exit $schema
 }
 
