@@ -1453,6 +1453,10 @@ flowchart TD
 | GET /Error: null, empty or whitespace error ID skips the interaction service | `Pages/ErrorTests.cs` | `OnGetAsync_NullOrEmptyErrorIdWithCurrentActivity_UsesActivityIdAndSkipsInteractionService`, `OnGetAsync_NullOrEmptyErrorIdWithNoCurrentActivity_UsesTraceIdentifierAndSkipsInteractionService`, `OnGetAsync_WhitespaceErrorIdWithCurrentActivity_UsesActivityIdAndSkipsInteractionService`, `OnGetAsync_WhitespaceErrorIdWithNoCurrentActivity_UsesTraceIdentifierAndSkipsInteractionService` |
 | GET /Error: with error ID calls the interaction service | `Pages/ErrorTests.cs` | `OnGetAsync_ErrorIdWithCurrentActivity_CallsInteractionServiceAndUsesActivityId`, `OnGetAsync_ErrorIdWithNoCurrentActivity_CallsInteractionServiceAndUsesTraceIdentifier`, `OnGetAsync_OverlongErrorId_CallsInteractionServiceAndUsesActivityId`, `OnGetAsync_ControlAndSymbolErrorId_CallsInteractionServiceAndUsesActivityId` |
 | GET /Error: OIDC error activity | `Pages/ErrorTests.cs` | `OnGetAsync_ValidErrorId_StartsOidcActivity` |
+| GET /Error: plain-words explanation chosen by error code | `Pages/ErrorTests.cs` | `OnGetAsync_ErrorMatchingAnExplanation_SetsThatExplanation`, `OnGetAsync_ErrorMatchingNoExplanation_LeavesExplanationNull` |
+| GET /Error: reference is the failed request's trace | `Pages/ErrorTests.cs` | `OnGetAsync_ErrorMessageWithActivityId_ShowsTheFailingRequestsActivityId` |
+| GET /Error: "Continue to {client}" link | `Pages/ErrorTests.cs` | `OnGetAsync_ErrorMessageWithoutClientId_NeverQueriesTheClientStore`, `OnGetAsync_EnabledClientWithClientUri_LinksToTheClientUri`, `OnGetAsync_EnabledClientWithoutClientUri_LinksToItsRedirectOrigin`, `OnGetAsync_ClientRedirectingToTwoOrigins_HasNoClientLink`, `OnGetAsync_DisabledClient_HasNoClientLink`, `OnGetAsync_UnknownClient_HasNoClientLink` |
+| GET /connect/authorize/callback with an unknown sign-in request: the error page links back to the client | `Identity.Tests.Integration/ErrorPageTests.cs` | `AuthorizeCallback_UnknownSignInRequest_ErrorPageOffersToContinueToTheClient` |
 | GET /Error: ShowRequestId property | `Pages/ErrorTests.cs` | `ShowRequestId_NullEmptyOrLineBreaksOnly_IsFalse`, `ShowRequestId_SpacesOnly_IsFalse`, `ShowRequestId_NullCharacterOnly_IsTrue`, `ShowRequestId_RequestId_IsTrue`, `ShowRequestId_OverlongValue_IsTrue`, `ShowRequestId_PunctuatedValue_IsTrue` |
 
 ### Home page ids
@@ -1633,7 +1637,7 @@ quadrantChart
 | `/Health` | ❌ | — | ❌ | Infrastructure endpoint |
 | `/` | ❌ | — | ✅ | E2E only (`Home/Home.feature`). The anonymous/signed-in branch lives in the view, so `Index` has no seam a unit test can reach — the ❌ is a property of the design, not a gap someone forgot |
 | `/Privacy` | 🔵 | — | ❌ | Constructor only |
-| `/Error` | ✅ | — | ❌ | |
+| `/Error` | ✅ | — | ❌ | Integration: `ErrorPageTests` drives a dead sign-in request through the authorize callback |
 | `/Account/Manage/Consent` | ✅ | ✅ | ✅ | Allow, Deny, no-scopes E2E flows |
 | `/Account/Manage/Grants` | ✅ | ✅ | ✅ | Page loads for authenticated user |
 | `/Account/Manage/Device` | ✅ | ✅ | ❌ | |

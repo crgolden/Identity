@@ -11,6 +11,7 @@ using Identity.Avatar;
 using Identity.CAPTCHA;
 using Identity.Extensions;
 using Identity.Logging;
+using Identity.Pages;
 using Identity.Pages.Account;
 using Identity.Pages.Account.Manage;
 using Identity.Pages.Admin;
@@ -47,6 +48,7 @@ try
     var recaptchaVerifyEndpoint = builder.Configuration.GetRequired<Uri>("RecaptchaVerifyEndpoint");
     var recaptchaScriptEndpoint = builder.Configuration.GetRequired<Uri>("RecaptchaScriptEndpoint");
     var accountEmailSettings = AccountEmailSettings.Read(builder.Configuration);
+    var errorExplanations = builder.Configuration.GetRequiredSection("ErrorExplanations").Get<ErrorExplanation[]>() ?? throw new InvalidOperationException("Invalid 'ErrorExplanations' section.");
     var adminSections = builder.Configuration.GetRequiredSection("AdminSections").Get<AdminSection[]>() ?? throw new InvalidOperationException("Invalid 'AdminSections' section.");
     var manageSections = builder.Configuration.GetRequiredSection("ManageSections").Get<ManageSection[]>() ?? throw new InvalidOperationException("Invalid 'ManageSections' section.");
     var consentOptions = builder.Configuration.GetRequiredSection(nameof(ConsentOptions)).Get<ConsentOptions>() ?? throw new InvalidOperationException($"Invalid '{nameof(ConsentOptions)}' section.");
@@ -219,6 +221,7 @@ try
             recaptchaOptions.ScriptEndpoint = recaptchaScriptEndpoint;
         })
         .AddSingleton(accountEmailSettings)
+        .AddSingleton(Options.Create<IReadOnlyList<ErrorExplanation>>(errorExplanations))
         .AddSingleton(Options.Create<IReadOnlyList<AdminSection>>(adminSections))
         .AddSingleton(Options.Create<IReadOnlyList<ManageSection>>(manageSections))
         .AddSingleton(Options.Create(consentOptions))

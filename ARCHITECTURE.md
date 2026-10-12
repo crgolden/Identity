@@ -36,7 +36,7 @@ Pages here are informational or handle system-level errors. They carry no user c
 |---|---|
 | `/` | Home / landing page |
 | `/Privacy` | Privacy policy |
-| `/Error` | Error display (also the IdentityServer `ErrorUrl`) |
+| `/Error` | Error display (also the IdentityServer `ErrorUrl`). For a protocol error it explains the error code in plain words from the `ErrorExplanations` list in `appsettings.json` and offers "Continue to {client}" when the failed request names an enabled client: the client's `ClientUri`, else the origin of its redirect URIs when they all share one origin. A user who signed in on a stale tab therefore lands on "Your sign-in request expired" with one click back into the application, already signed in. The reference shown is the failed request's trace (`ErrorMessage.ActivityId`), not the error page's own. |
 
 ### Tier 2 — `/Account`: unauthenticated account flows
 

@@ -3,10 +3,12 @@ namespace Identity.Tests.Unit.Pages;
 using System.Diagnostics;
 using Duende.IdentityServer.Models;
 using Duende.IdentityServer.Services;
+using Duende.IdentityServer.Stores;
 using Identity.Pages;
 using Identity.Tests.Unit.Infrastructure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Options;
 using Moq;
 
 [Collection(UnitCollection.Name)]
@@ -33,11 +35,182 @@ public sealed class ErrorTests : IDisposable
         var mockInteraction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
 
         // Act
-        var model = new Error(mockInteraction.Object, _harness.Telemetry);
+        var model = new Error(mockInteraction.Object, new Mock<IClientStore>(MockBehavior.Strict).Object, NoExplanations(), _harness.Telemetry);
 
         // Assert
         Assert.Null(model.RequestId);
         Assert.False(model.ShowRequestId);
+        Assert.Null(model.Explanation);
+        Assert.Null(model.ClientName);
+        Assert.Null(model.ClientHomeUri);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_ErrorMatchingAnExplanation_SetsThatExplanation()
+    {
+        // Arrange
+        var otherExplanation = NewExplanation();
+        var matchingExplanation = NewExplanation();
+        var errorMessage = new ErrorMessage { Error = matchingExplanation.Error };
+        var (model, errorId) = BuildModelForErrorMessage(errorMessage, new Mock<IClientStore>(MockBehavior.Strict), otherExplanation, matchingExplanation);
+
+        // Act
+        await model.OnGetAsync(errorId);
+
+        // Assert
+        Assert.Same(matchingExplanation, model.Explanation);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_ErrorMatchingNoExplanation_LeavesExplanationNull()
+    {
+        // Arrange
+        var unmatchedError = Generated.NewToken();
+        var errorMessage = new ErrorMessage { Error = unmatchedError };
+        var (model, errorId) = BuildModelForErrorMessage(errorMessage, new Mock<IClientStore>(MockBehavior.Strict), NewExplanation());
+
+        // Act
+        await model.OnGetAsync(errorId);
+
+        // Assert
+        Assert.Null(model.Explanation);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_ErrorMessageWithActivityId_ShowsTheFailingRequestsActivityId()
+    {
+        // Arrange
+        var failingRequestActivityId = Generated.NewRequestId();
+        var errorMessage = new ErrorMessage { Error = Generated.NewToken(), ActivityId = failingRequestActivityId };
+        var (model, errorId) = BuildModelForErrorMessage(errorMessage, new Mock<IClientStore>(MockBehavior.Strict));
+
+        // Act
+        await model.OnGetAsync(errorId);
+
+        // Assert
+        Assert.Equal(failingRequestActivityId, model.RequestId);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_ErrorMessageWithoutClientId_NeverQueriesTheClientStore()
+    {
+        // Arrange
+        var errorMessage = new ErrorMessage { Error = Generated.NewToken() };
+        var mockClientStore = new Mock<IClientStore>(MockBehavior.Strict);
+        var (model, errorId) = BuildModelForErrorMessage(errorMessage, mockClientStore);
+
+        // Act
+        await model.OnGetAsync(errorId);
+
+        // Assert
+        mockClientStore.Verify(s => s.FindClientByIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        Assert.Null(model.ClientHomeUri);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_EnabledClientWithClientUri_LinksToTheClientUri()
+    {
+        // Arrange
+        var clientUri = Generated.NewHttpsUri(Generated.NewExternalHost());
+        var clientName = Generated.NewClientName();
+        var client = new Client
+        {
+            ClientId = Generated.NewClientIdentifier(),
+            ClientName = clientName,
+            ClientUri = clientUri.ToString(),
+            RedirectUris = { $"{Generated.NewOrigin()}/{Generated.NewToken()}" },
+        };
+        var (model, errorId) = BuildModelForClient(client);
+
+        // Act
+        await model.OnGetAsync(errorId);
+
+        // Assert
+        Assert.Equal(clientUri, model.ClientHomeUri);
+        Assert.Equal(clientName, model.ClientName);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_EnabledClientWithoutClientUri_LinksToItsRedirectOrigin()
+    {
+        // Arrange
+        var redirectOrigin = Generated.NewOrigin();
+        var client = new Client
+        {
+            ClientId = Generated.NewClientIdentifier(),
+            RedirectUris = { $"{redirectOrigin}/{Generated.NewToken()}" },
+        };
+        var (model, errorId) = BuildModelForClient(client);
+
+        // Act
+        await model.OnGetAsync(errorId);
+
+        // Assert
+        Assert.Equal(new Uri(redirectOrigin), model.ClientHomeUri);
+        Assert.Null(model.ClientName);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_ClientRedirectingToTwoOrigins_HasNoClientLink()
+    {
+        // Arrange
+        var client = new Client
+        {
+            ClientId = Generated.NewClientIdentifier(),
+            RedirectUris =
+            {
+                $"{Generated.NewOrigin()}/{Generated.NewToken()}",
+                $"{Generated.NewOrigin()}/{Generated.NewToken()}",
+            },
+        };
+        var (model, errorId) = BuildModelForClient(client);
+
+        // Act
+        await model.OnGetAsync(errorId);
+
+        // Assert
+        Assert.Null(model.ClientHomeUri);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_DisabledClient_HasNoClientLink()
+    {
+        // Arrange
+        var client = new Client
+        {
+            ClientId = Generated.NewClientIdentifier(),
+            ClientName = Generated.NewClientName(),
+            Enabled = false,
+            RedirectUris = { $"{Generated.NewOrigin()}/{Generated.NewToken()}" },
+        };
+        var (model, errorId) = BuildModelForClient(client);
+
+        // Act
+        await model.OnGetAsync(errorId);
+
+        // Assert
+        Assert.Null(model.ClientHomeUri);
+        Assert.Null(model.ClientName);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_UnknownClient_HasNoClientLink()
+    {
+        // Arrange
+        var unknownClientId = Generated.NewClientIdentifier();
+        var errorMessage = new ErrorMessage { Error = Generated.NewToken(), ClientId = unknownClientId };
+        var mockClientStore = new Mock<IClientStore>(MockBehavior.Strict);
+        mockClientStore
+            .Setup(s => s.FindClientByIdAsync(unknownClientId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Client?)null);
+        var (model, errorId) = BuildModelForErrorMessage(errorMessage, mockClientStore);
+
+        // Act
+        await model.OnGetAsync(errorId);
+
+        // Assert
+        Assert.Null(model.ClientHomeUri);
+        Assert.Null(model.ClientName);
     }
 
     [Fact]
@@ -277,7 +450,7 @@ public sealed class ErrorTests : IDisposable
             .Setup(s => s.GetErrorContextAsync(oidcErrorId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(errorMessage);
 
-        var model = new Error(mockInteraction.Object, _harness.Telemetry)
+        var model = new Error(mockInteraction.Object, new Mock<IClientStore>(MockBehavior.Strict).Object, NoExplanations(), _harness.Telemetry)
         {
             PageContext = new PageContext { HttpContext = new DefaultHttpContext() }
         };
@@ -311,8 +484,14 @@ public sealed class ErrorTests : IDisposable
         return mockInteraction;
     }
 
+    private static IOptions<IReadOnlyList<ErrorExplanation>> NoExplanations() =>
+        Options.Create<IReadOnlyList<ErrorExplanation>>([]);
+
+    private static ErrorExplanation NewExplanation() =>
+        new(Generated.NewToken(), Generated.NewDisplayName(), Generated.NewDisplayName());
+
     private Error BuildModelWithRequestId(string? requestId) =>
-        new(new Mock<IIdentityServerInteractionService>(MockBehavior.Strict).Object, _harness.Telemetry)
+        new(new Mock<IIdentityServerInteractionService>(MockBehavior.Strict).Object, new Mock<IClientStore>(MockBehavior.Strict).Object, NoExplanations(), _harness.Telemetry)
         {
             RequestId = requestId,
         };
@@ -322,11 +501,43 @@ public sealed class ErrorTests : IDisposable
     {
         var traceIdentifier = $"trace-{Guid.NewGuid():N}";
         var httpContext = new DefaultHttpContext { TraceIdentifier = traceIdentifier };
-        var model = new Error(mockInteraction.Object, _harness.Telemetry)
+        var model = new Error(mockInteraction.Object, new Mock<IClientStore>(MockBehavior.Strict).Object, NoExplanations(), _harness.Telemetry)
         {
             PageContext = new PageContext { HttpContext = httpContext }
         };
         return (model, traceIdentifier);
+    }
+
+    private (Error Model, string ErrorId) BuildModelForErrorMessage(
+        ErrorMessage errorMessage,
+        Mock<IClientStore> mockClientStore,
+        params ErrorExplanation[] explanations)
+    {
+        var errorId = $"error-{Guid.NewGuid():N}";
+        var mockInteraction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
+        mockInteraction
+            .Setup(s => s.GetErrorContextAsync(errorId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(errorMessage);
+        var model = new Error(
+            mockInteraction.Object,
+            mockClientStore.Object,
+            Options.Create<IReadOnlyList<ErrorExplanation>>(explanations),
+            _harness.Telemetry)
+        {
+            PageContext = new PageContext { HttpContext = new DefaultHttpContext() }
+        };
+        Activity.Current = null;
+        return (model, errorId);
+    }
+
+    private (Error Model, string ErrorId) BuildModelForClient(Client client)
+    {
+        var errorMessage = new ErrorMessage { Error = Generated.NewToken(), ClientId = client.ClientId };
+        var mockClientStore = new Mock<IClientStore>(MockBehavior.Strict);
+        mockClientStore
+            .Setup(s => s.FindClientByIdAsync(client.ClientId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(client);
+        return BuildModelForErrorMessage(errorMessage, mockClientStore);
     }
 
     private sealed class CurrentActivityScope : IDisposable

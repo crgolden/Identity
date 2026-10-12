@@ -27,6 +27,12 @@ internal static class OidcStandardConstants
 
     internal const string RedirectUriParameter = OidcConstants.AuthorizeRequest.RedirectUri;
 
+    internal const string RequestUriParameter = OidcConstants.AuthorizeRequest.RequestUri;
+
+    internal const string PushedAuthorizationRequestUriPrefix = IdentityServerConstants.PushedAuthorizationRequestUri;
+
+    internal const string AuthorizeCallbackPath = "/" + IdentityServerConstants.ProtocolRoutePaths.AuthorizeCallback;
+
     internal const string ResponseTypeParameter = OidcConstants.AuthorizeRequest.ResponseType;
 
     internal const string ScopeParameter = OidcConstants.AuthorizeRequest.Scope;

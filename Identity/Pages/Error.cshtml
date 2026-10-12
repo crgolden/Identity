@@ -1,15 +1,26 @@
-﻿@page
+@page
 @model Error
 @{
-    ViewData["Title"] = "Error";
+    ViewData["Title"] = Model.Explanation?.Heading ?? "Error";
 }
 
-<h1 class="text-danger">Error.</h1>
-<h2 class="text-danger">An error occurred while processing your request.</h2>
+<header>
+    <h1 id="error-heading" class="@(Model.Explanation is null ? "text-danger" : null)">@(Model.Explanation?.Heading ?? "Something went wrong")</h1>
+    <p id="error-explanation" class="lead">@(Model.Explanation?.Explanation ?? "An error occurred while processing your request. Please try again.")</p>
+</header>
+
+<div class="d-flex flex-wrap gap-2 my-4">
+    @if (Model.ClientHomeUri is not null)
+    {
+        <a id="@Error.ContinueToClientLinkId" class="btn btn-primary" href="@Model.ClientHomeUri">Continue to @(Model.ClientName ?? "the application")</a>
+    }
+    <a id="error-home" class="btn btn-outline-secondary" asp-page="/Index">Go to the home page</a>
+</div>
 
 @if (Model.ShowRequestId)
 {
-    <p>
-        <strong>Request ID:</strong> <code>@Model.RequestId</code>
+    <p class="text-body-secondary small">
+        If this keeps happening, include this reference when you report it:
+        <code id="error-request-id">@Model.RequestId</code>
     </p>
 }
