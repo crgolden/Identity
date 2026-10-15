@@ -1,4 +1,4 @@
-param([string]$Goal, [string[]]$Steps, [string]$Tests, [string]$TestProject)
+param([string]$Goal, [string]$Tests, [string]$TestProject)
 
 $ErrorActionPreference = 'Continue'
 $gateCommon = Join-Path $PSScriptRoot '..\Tools\Gates\GateCommon.ps1'
@@ -99,7 +99,7 @@ if ($Tests) {
     }
 }
 Initialize-GateState 'Identity' $repo
-Assert-RequestedSteps $Steps
+Resolve-OwedSteps
 Invoke-CatalogSteps
 
 if (-not (Test-StepCarried 'Install dotnet-coverage')) {
