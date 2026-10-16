@@ -33,7 +33,20 @@ public sealed class ConsentTests : IDisposable
     private static readonly IOptions<ConsentOptions> OfflineAccessEnabled =
         Options.Create(new ConsentOptions(true, Generated.NewDisplayName(), Generated.NewDescription()));
 
+    private static readonly IOptions<ConsentOptions> OfflineAccessDisabled =
+        Options.Create(new ConsentOptions(false, Generated.NewDisplayName(), Generated.NewDescription()));
+
     private readonly TelemetryHarness _harness = new();
+
+    [Fact]
+    public void InputModel_New_HasNoScopesConsented()
+    {
+        // Act
+        var input = new global::Identity.Pages.Account.Manage.Consent.InputModel();
+
+        // Assert
+        Assert.Empty(input.ScopesConsented);
+    }
 
     [Fact]
     public void Constructor_ValidDependencies_CreatesPageModel()
@@ -188,6 +201,7 @@ public sealed class ConsentTests : IDisposable
 
         // Assert
         Assert.Equal(PageRoutes.Error, Assert.IsType<RedirectToPageResult>(result).PageName);
+        Assert.True(model.ModelState.IsValid);
     }
 
     [Fact]
@@ -210,6 +224,109 @@ public sealed class ConsentTests : IDisposable
         Assert.Equal(AuthorizeReturnUrl, Assert.IsType<RedirectResult>(result).Url);
         events.Verify(e => e.RaiseAsync(It.IsAny<ConsentDeniedEvent>(), It.IsAny<CancellationToken>()), Times.Once);
         interaction.Verify(x => x.GrantConsentAsync(request, It.IsAny<ConsentResponse>(), It.IsAny<CancellationToken>(), SignedInSubjectId), Times.Once);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_ButtonNo_GrantsAnAccessDeniedResponse()
+    {
+        // Arrange
+        var request = BuildRequest();
+        var granted = new List<ConsentResponse>();
+        var interaction = InteractionRecordingGrants(request, granted);
+        var model = Create(interaction.Object, AcceptingEvents());
+        model.Input = new global::Identity.Pages.Account.Manage.Consent.InputModel { Button = global::Identity.Pages.Account.Manage.Consent.DenyButtonValue, ReturnUrl = AuthorizeReturnUrl };
+        var denials = new List<long>();
+        using var deniedListener = _harness.ListenTo(global::Identity.Telemetry.Metrics.ConsentDeniedCounterName, (value, _) => denials.Add(value));
+
+        // Act
+        await model.OnPostAsync();
+
+        // Assert
+        Assert.Equal(InteractionError.AccessDenied, Assert.Single(granted).Error);
+        Assert.Single(denials);
+        var span = Assert.Single(_harness.StoppedActivities, a => string.Equals(a.OperationName, global::Identity.Pages.Account.Manage.Consent.DenyActivityName, StringComparison.Ordinal));
+        Assert.Equal(ExistingClientId, span.GetTagItem(global::Identity.Telemetry.Metrics.ClientIdTagName));
+    }
+
+    [Fact]
+    public async Task OnPostAsync_ButtonYes_OfflineAccessDisabled_DropsOfflineAccessFromTheGrant()
+    {
+        // Arrange
+        var request = BuildRequest();
+        var granted = new List<ConsentResponse>();
+        var interaction = InteractionRecordingGrants(request, granted);
+        var model = Create(interaction.Object, AcceptingEvents(), OfflineAccessDisabled);
+        model.Input = new global::Identity.Pages.Account.Manage.Consent.InputModel
+        {
+            Button = global::Identity.Pages.Account.Manage.Consent.GrantButtonValue,
+            ScopesConsented = [IdentityServerConstants.StandardScopes.OpenId, IdentityServerConstants.StandardScopes.OfflineAccess],
+            ReturnUrl = AuthorizeReturnUrl,
+        };
+
+        // Act
+        await model.OnPostAsync();
+
+        // Assert
+        Assert.Equal(new[] { IdentityServerConstants.StandardScopes.OpenId }, Assert.Single(granted).ScopesValuesConsented);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_ButtonYes_OfflineAccessEnabled_KeepsOfflineAccessInTheGrant()
+    {
+        // Arrange
+        var request = BuildRequest();
+        var granted = new List<ConsentResponse>();
+        var interaction = InteractionRecordingGrants(request, granted);
+        var model = Create(interaction.Object, AcceptingEvents());
+        model.Input = new global::Identity.Pages.Account.Manage.Consent.InputModel
+        {
+            Button = global::Identity.Pages.Account.Manage.Consent.GrantButtonValue,
+            ScopesConsented = [IdentityServerConstants.StandardScopes.OpenId, IdentityServerConstants.StandardScopes.OfflineAccess],
+            ReturnUrl = AuthorizeReturnUrl,
+        };
+
+        // Act
+        await model.OnPostAsync();
+
+        // Assert
+        Assert.Equal(new[] { IdentityServerConstants.StandardScopes.OpenId, IdentityServerConstants.StandardScopes.OfflineAccess }, Assert.Single(granted).ScopesValuesConsented);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_ButtonYes_GrantCarriesTheRememberChoiceAndDescription()
+    {
+        // Arrange
+        var request = BuildRequest();
+        var granted = new List<ConsentResponse>();
+        var interaction = InteractionRecordingGrants(request, granted);
+        var model = Create(interaction.Object, AcceptingEvents());
+        var consentDescription = Generated.NewDescription();
+        model.Input = new global::Identity.Pages.Account.Manage.Consent.InputModel
+        {
+            Button = global::Identity.Pages.Account.Manage.Consent.GrantButtonValue,
+            ScopesConsented = [IdentityServerConstants.StandardScopes.OpenId],
+            RememberConsent = true,
+            Description = consentDescription,
+            ReturnUrl = AuthorizeReturnUrl,
+        };
+        var grants = new List<long>();
+        var denials = new List<long>();
+        using var grantedListener = _harness.ListenTo(global::Identity.Telemetry.Metrics.ConsentGrantedCounterName, (value, _) => grants.Add(value));
+        using var deniedListener = _harness.ListenTo(global::Identity.Telemetry.Metrics.ConsentDeniedCounterName, (value, _) => denials.Add(value));
+
+        // Act
+        await model.OnPostAsync();
+
+        // Assert
+        var grant = Assert.Single(granted);
+        Assert.True(grant.RememberConsent);
+        Assert.Equal(consentDescription, grant.Description);
+        var span = Assert.Single(_harness.StoppedActivities, a => string.Equals(a.OperationName, global::Identity.Pages.Account.Manage.Consent.GrantActivityName, StringComparison.Ordinal));
+        Assert.Equal(ExistingClientId, span.GetTagItem(global::Identity.Telemetry.Metrics.ClientIdTagName));
+        Assert.Equal(Assert.IsType<IEnumerable<string>>(grant.ScopesValuesConsented, exactMatch: false).Count(), Assert.IsType<int>(span.GetTagItem(global::Identity.Telemetry.Metrics.ScopeCountTagName)));
+        Assert.True(Assert.IsType<bool>(span.GetTagItem(global::Identity.Telemetry.Metrics.RememberTagName)));
+        Assert.Single(grants);
+        Assert.Single(denials);
     }
 
     [Fact]
@@ -338,11 +455,30 @@ public sealed class ConsentTests : IDisposable
         return request;
     }
 
+    private static Mock<IIdentityServerInteractionService> InteractionRecordingGrants(AuthorizationRequest request, List<ConsentResponse> granted)
+    {
+        var interaction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
+        interaction.Setup(x => x.GetAuthorizationContextAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(request);
+        interaction
+            .Setup(x => x.GrantConsentAsync(request, It.IsAny<ConsentResponse>(), It.IsAny<CancellationToken>(), SignedInSubjectId))
+            .Callback<AuthorizationRequest, ConsentResponse, CancellationToken, string>((_, response, _, _) => granted.Add(response))
+            .Returns(Task.CompletedTask);
+        return interaction;
+    }
+
+    private static IEventService AcceptingEvents()
+    {
+        var events = new Mock<IEventService>(MockBehavior.Strict);
+        events.Setup(e => e.RaiseAsync(It.IsAny<Event>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        return events.Object;
+    }
+
     private global::Identity.Pages.Account.Manage.Consent Create(
         IIdentityServerInteractionService interaction,
-        IEventService? events = null)
+        IEventService? events = null,
+        IOptions<ConsentOptions>? consentOptions = null)
     {
-        var model = new global::Identity.Pages.Account.Manage.Consent(interaction, events ?? Mock.Of<IEventService>(), OfflineAccessEnabled, _harness.Telemetry);
+        var model = new global::Identity.Pages.Account.Manage.Consent(interaction, events ?? Mock.Of<IEventService>(), consentOptions ?? OfflineAccessEnabled, _harness.Telemetry);
         var principal = new ClaimsPrincipal(new ClaimsIdentity([new Claim(JwtClaimTypes.Subject, SignedInSubjectId)], AuthenticationType));
         model.PageContext = new PageContext
         {

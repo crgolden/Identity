@@ -7,12 +7,12 @@ public static class ConfigurationExtensions
         public T GetRequired<T>(string key)
             where T : notnull
         {
-            if (configuration[key] is null)
+            if (!IsNullOrWhiteSpace(configuration[key]) && configuration.GetValue<T?>(key) is { } value)
             {
-                throw new InvalidOperationException($"Invalid '{key}'.");
+                return value;
             }
 
-            return configuration.GetValue<T?>(key) ?? throw new InvalidOperationException($"Invalid '{key}'.");
+            throw new InvalidOperationException($"Invalid '{key}'.");
         }
 
         public string GetRequiredText(string key)

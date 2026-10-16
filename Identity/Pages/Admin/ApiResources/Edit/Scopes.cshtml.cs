@@ -41,7 +41,7 @@ public class Scopes : EditableResourcesBase<int, ApiResourceScope>
 
         resource.Scopes.RemoveAll(s => !Resources.Any(p => p.Id == s.Id));
 
-        foreach (var posted in Resources.Where(p => p.Id > 0))
+        foreach (var posted in Resources)
         {
             var existing = resource.Scopes.FirstOrDefault(s => s.Id == posted.Id);
             if (existing is not null)

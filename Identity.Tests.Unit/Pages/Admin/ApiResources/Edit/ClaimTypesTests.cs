@@ -110,6 +110,56 @@ public class ClaimTypesTests
     }
 
     [Fact]
+    public async Task OnPostAsync_ExistingClaimTypePosted_UpdatesItsTypeAndSaves()
+    {
+        // Arrange
+        var existing = new ApiResourceClaim { Id = ExistingEntityId, Type = ExistingClaimType, ApiResourceId = ExistingEntityId };
+        var resource = new ApiResource { Id = ExistingEntityId, Name = Generated.NewApiResourceName(), UserClaims = [existing] };
+        var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
+        ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
+        var model = new ClaimTypes(ctx.Object) { Resources = [new ApiResourceClaim { Id = ExistingEntityId, Type = PostedClaimType }] };
+
+        // Act
+        await model.OnPostAsync(ExistingEntityId);
+
+        // Assert
+        var onlyUserClaim = Assert.Single(resource.UserClaims);
+        Assert.Same(existing, onlyUserClaim);
+        Assert.Equal(PostedClaimType, onlyUserClaim.Type);
+        ctx.Verify(c => c.SaveChangesAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_PostedClaimTypeMatchingNothingPersisted_ChangesNothing()
+    {
+        // Arrange
+        var existing = new ApiResourceClaim { Id = ExistingEntityId, Type = ExistingClaimType, ApiResourceId = ExistingEntityId };
+        var resource = new ApiResource { Id = ExistingEntityId, Name = Generated.NewApiResourceName(), UserClaims = [existing] };
+        var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
+        ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
+        var model = new ClaimTypes(ctx.Object)
+        {
+            Resources =
+            [
+                new ApiResourceClaim { Id = ExistingEntityId, Type = ExistingClaimType },
+                new ApiResourceClaim { Id = MissingEntityId, Type = PostedClaimType },
+            ]
+        };
+
+        // Act
+        await model.OnPostAsync(ExistingEntityId);
+
+        // Assert
+        var onlyUserClaim = Assert.Single(resource.UserClaims);
+        Assert.Same(existing, onlyUserClaim);
+        Assert.Equal(ExistingClaimType, onlyUserClaim.Type);
+    }
+
+    [Fact]
     public async Task OnPostAddRowAsync_AddsBlankRow_WhenFound()
     {
         // Arrange

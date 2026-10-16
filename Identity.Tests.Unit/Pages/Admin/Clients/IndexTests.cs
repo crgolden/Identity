@@ -25,6 +25,19 @@ public class IndexTests
     }
 
     [Fact]
+    public void Constructor_StartsWithNoClients()
+    {
+        // Arrange
+        var ctx = new Mock<IConfigurationDbContext>();
+
+        // Act
+        var model = new Index(ctx.Object);
+
+        // Assert
+        Assert.Empty(model.Clients);
+    }
+
+    [Fact]
     public async Task OnGetAsync_ReturnsClientsOrderedByClientId()
     {
         // Arrange

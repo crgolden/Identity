@@ -1699,12 +1699,13 @@ Every figure is a required key of the `LoadSettings` configuration section, read
 
 ## 20. Mutation Testing (Stryker)
 
-Stryker.NET is configured in `stryker-config.json` with `mutation-level: Advanced`. It mutates the whole `Identity` project, minus two exclusions:
+Stryker.NET is configured in `stryker-config.json` with `mutation-level: Advanced`. It mutates the whole `Identity` project, minus these exclusions:
 
 | Excluded | Why |
 |---|---|
 | `obj/**/*.cs` | Build-generated sources; mutating generated code measures the generator, not this codebase |
 | `Program.cs` | Top-level startup wiring, already excluded from coverage via `sonar.coverage.exclusions` |
+| `SingleQueryClientStore.cs` | Its behavior is the SQL shape of one query (one command for a client and every collection), which only a real SQL Server shows; `SingleQueryClientStoreTests` (Integration) pins it, and a unit test over a fake provider could not fail |
 **Nothing is excluded for being slow.** This is a shared authentication server that is deployed rarely, so a long mutation run costs far less than a defect reaching production. `Pages/Admin/` in particular is the configuration surface of the authorization server: redirect URI and post-logout redirect URI allow-lists, CORS origins, grant types, scopes, and client secrets. A mutant surviving there is the shape of an open redirect or a token-leak path, which makes it the highest-value code in the repo to mutate, not the most skippable.
 **Pin the Stryker version: the score moves with it.** `dotnet-stryker` is pinned in the repo's `dotnet-tools.json`, so the CI `mutation` job (`dotnet tool restore`) and the local gate run the same release. Two releases score identical code and config differently, so an unpinned install lets the gate's number move on someone else's release schedule, with no commit to blame. Bump the pin deliberately and re-derive the thresholds in the same change.
 
@@ -1734,7 +1735,7 @@ Only the unit tests run under Stryker, because `test-projects` names `Identity.T
 
 **Never add a `test-case-filter`.** Every test in that project is `Category=Unit`, so a filter selects nothing more, and under dotnet-stryker 5.0.0's MTP runner a filter is what strands a static-initializer mutant: its every-test run is aggregated against a filtered count that can never match the discovered total, the mutant stays `Pending`, and the dashboard refuses a report holding one (400, "Submitting pending reports to the completed reports endpoint is not allowed").
 
-**Thresholds:** high=75, low=65, break=60 (CI fails if mutation score < 60). Read the current score from the Stryker dashboard, never from this file.
+**Thresholds are 100 (high, low and break).** Every mutant is killed by a unit test, recorded as equivalent with `// Stryker disable once <Mutator> : <reason>` on the line above the statement it covers, or excluded in `mutate` with its reason in the table above. A surviving or uncovered mutant fails the gate and CI.
 
 **Do not reintroduce a filename allowlist in `mutate`; add an exclusion with a stated reason instead.** An allowlisted file that moves or is renamed drops out silently: Stryker mutates a smaller set, still reports a score, and the run stays green while covering less.
 

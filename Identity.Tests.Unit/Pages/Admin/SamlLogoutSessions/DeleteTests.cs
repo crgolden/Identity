@@ -67,6 +67,7 @@ public class DeleteTests
 
         // Assert
         ctx.Verify(c => c.SamlLogoutSessions.Remove(session), Times.Once);
+        ctx.Verify(c => c.SaveChangesAsync(), Times.Once);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal(PageRoutes.SiblingIndex, redirect.PageName);
     }

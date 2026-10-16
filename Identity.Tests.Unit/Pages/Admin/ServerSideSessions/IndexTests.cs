@@ -29,6 +29,19 @@ public class IndexTests
     }
 
     [Fact]
+    public void Constructor_StartsWithNoServerSideSessions()
+    {
+        // Arrange
+        var ctx = new Mock<IPersistedGrantDbContext>();
+
+        // Act
+        var model = new Index(ctx.Object);
+
+        // Assert
+        Assert.Empty(model.ServerSideSessions);
+    }
+
+    [Fact]
     public async Task OnGetAsync_ReturnsSorted()
     {
         // Arrange

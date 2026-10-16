@@ -68,8 +68,30 @@ public class IndexTests
 
         // Assert
         Assert.Equal(updatedUserName, user.UserName);
+        um.Verify(m => m.UpdateAsync(user), Times.Once);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal(Index.DetailsPageName, redirect.PageName);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_ReturnsPageWithoutUpdating_WhenModelInvalid()
+    {
+        // Arrange
+        var existingUserName = Generated.NewUserName();
+        var user = new IdentityUser<Guid> { UserName = existingUserName };
+        var um = MockHelpers.MockUserManager();
+        um.Setup(m => m.FindByIdAsync(ExistingUserId)).ReturnsAsync(user);
+        um.Setup(m => m.UpdateAsync(user)).ReturnsAsync(IdentityResult.Success);
+        var model = new Index(um.Object) { AppUser = new IdentityUser<Guid> { UserName = Generated.NewUserName() } };
+        model.ModelState.AddModelError(nameof(IdentityUser<Guid>.UserName), Generated.NewValidationMessage());
+
+        // Act
+        var result = await model.OnPostAsync(ExistingUserId);
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        Assert.Equal(existingUserName, user.UserName);
+        um.Verify(m => m.UpdateAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
     }
 
     [Fact]

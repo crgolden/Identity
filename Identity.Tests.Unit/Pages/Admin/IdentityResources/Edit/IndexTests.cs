@@ -68,8 +68,29 @@ public class IndexTests
 
         // Assert
         Assert.Equal(UpdatedResourceName, resource.Name);
+        ctx.Verify(c => c.SaveChangesAsync(), Times.Once);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal(Index.DetailsPageName, redirect.PageName);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_ReturnsPageWithoutSaving_WhenModelInvalid()
+    {
+        // Arrange
+        var resource = new IdentityResource { Id = ExistingEntityId, Name = IdentityServerConstants.StandardScopes.OpenId };
+        var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
+        var model = new Index(ctx.Object) { Resource = new IdentityResource { Name = UpdatedResourceName } };
+        model.ModelState.AddModelError(nameof(IdentityResource.Name), Generated.NewValidationMessage());
+
+        // Act
+        var result = await model.OnPostAsync(ExistingEntityId);
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        Assert.Equal(IdentityServerConstants.StandardScopes.OpenId, resource.Name);
+        ctx.Verify(c => c.SaveChangesAsync(), Times.Never);
     }
 
     [Fact]

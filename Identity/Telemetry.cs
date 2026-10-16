@@ -28,6 +28,8 @@ public sealed class Telemetry : IDisposable
         _passkeySignInCounter = meter.CreateCounter<long>(Metrics.PasskeySignInCounterName, description: descriptions.PasskeySignInDescription);
     }
 
+    internal ActivitySource ActivitySource => _activitySource;
+
     public Activity? StartActivity(string name) =>
         _activitySource.StartActivity(name, ActivityKind.Internal, parentContext: default);
 
@@ -95,6 +97,8 @@ public sealed class Telemetry : IDisposable
         internal const string ScopeCountTagName = "scope_count";
 
         internal const string SucceededTagName = "succeeded";
+
+        internal const string EmailConfirmationSentTagName = "email_confirmation_sent";
 
         internal const string SyntheticTagName = "synthetic";
 

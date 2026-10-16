@@ -50,4 +50,17 @@ public class ScopesTests
         // Assert
         Assert.IsType<NotFoundResult>(result);
     }
+
+    [Fact]
+    public void Constructor_StartsWithNoResources()
+    {
+        // Arrange
+        var ctx = new Mock<IConfigurationDbContext>();
+
+        // Act
+        var model = new Scopes(ctx.Object);
+
+        // Assert
+        Assert.Empty(model.Resources);
+    }
 }

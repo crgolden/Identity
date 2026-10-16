@@ -377,6 +377,57 @@ public class EmailTests
         senderMock.Verify(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
+    [Fact]
+    public async Task OnPostChangeEmailAsync_NewEmailDiffers_LinksToTheConfirmEmailChangePage()
+    {
+        // Arrange
+        var newEmail = Generated.NewEmailAddress();
+        var userManagerMock = UserManagerFor(Generated.NewEmailAddress());
+        userManagerMock.Setup(u => u.GenerateChangeEmailTokenAsync(It.IsAny<IdentityUser<Guid>>(), newEmail)).ReturnsAsync(Generated.NewEmailConfirmationToken());
+        var routedPages = new List<string>();
+        var model = Create(userManagerMock, CreateSenderFactory(), EmailTestDoubles.UrlHelperRecordingPages(routedPages, callbackResolves: true));
+        model.Input = new Email.InputModel { NewEmail = newEmail };
+
+        // Act
+        await model.OnPostChangeEmailAsync();
+
+        // Assert
+        Assert.Equal(PageRoutes.ConfirmEmailChange, Assert.Single(routedPages));
+    }
+
+    [Fact]
+    public async Task OnPostSendVerificationEmailAsync_LinksToTheConfirmEmailPage()
+    {
+        // Arrange
+        var userManagerMock = UserManagerFor(Generated.NewEmailAddress());
+        userManagerMock.Setup(u => u.GenerateEmailConfirmationTokenAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync(Generated.NewEmailConfirmationToken());
+        var routedPages = new List<string>();
+        var model = Create(userManagerMock, CreateSenderFactory(), EmailTestDoubles.UrlHelperRecordingPages(routedPages, callbackResolves: true));
+
+        // Act
+        await model.OnPostSendVerificationEmailAsync();
+
+        // Assert
+        Assert.Equal(PageRoutes.ConfirmEmail, Assert.Single(routedPages));
+    }
+
+    [Fact]
+    public async Task OnPostSendVerificationEmailAsync_InvalidModelState_RepopulatesTheCurrentEmail()
+    {
+        // Arrange
+        var currentEmail = Generated.NewEmailAddress();
+        var userManagerMock = UserManagerFor(currentEmail);
+        var model = Create(userManagerMock, CreateSenderFactory(), UrlHelperReturning(Generated.NewCallbackAddress()));
+        model.ModelState.AddModelError(Generated.NewModelStateKey(), Generated.NewValidationMessage());
+
+        // Act
+        await model.OnPostSendVerificationEmailAsync();
+
+        // Assert
+        Assert.Equal(currentEmail, model.CurrentEmail);
+        Assert.Equal(currentEmail, model.Input.NewEmail);
+    }
+
     private static Mock<UserManager<IdentityUser<Guid>>> UserManagerFor(string currentEmail)
     {
         var userManagerMock = MockHelpers.MockUserManager();

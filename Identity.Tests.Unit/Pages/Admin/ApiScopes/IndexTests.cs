@@ -29,6 +29,19 @@ public class IndexTests
     }
 
     [Fact]
+    public void Constructor_StartsWithNoApiScopes()
+    {
+        // Arrange
+        var ctx = new Mock<IConfigurationDbContext>();
+
+        // Act
+        var model = new Index(ctx.Object);
+
+        // Assert
+        Assert.Empty(model.ApiScopes);
+    }
+
+    [Fact]
     public async Task OnGetAsync_ReturnsSortedByName()
     {
         // Arrange

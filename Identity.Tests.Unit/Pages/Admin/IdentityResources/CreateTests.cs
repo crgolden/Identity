@@ -34,12 +34,15 @@ public class CreateTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityResources.Add(It.IsAny<IdentityResource>()));
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
-        var model = new Create(ctx.Object) { Resource = new IdentityResource { Name = IdentityServerConstants.StandardScopes.OpenId } };
+        var resource = new IdentityResource { Name = IdentityServerConstants.StandardScopes.OpenId };
+        var model = new Create(ctx.Object) { Resource = resource };
 
         // Act
         var result = await model.OnPostAsync();
 
         // Assert
+        ctx.Verify(c => c.IdentityResources.Add(resource), Times.Once);
+        ctx.Verify(c => c.SaveChangesAsync(), Times.Once);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal(PageRoutes.SiblingDetailsIndex, redirect.PageName);
     }

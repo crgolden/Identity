@@ -29,6 +29,19 @@ public class IndexTests
     }
 
     [Fact]
+    public void Constructor_StartsWithNoUsers()
+    {
+        // Arrange
+        var um = MockHelpers.MockUserManager();
+
+        // Act
+        var model = new Index(um.Object);
+
+        // Assert
+        Assert.Empty(model.Users);
+    }
+
+    [Fact]
     public async Task OnGetAsync_ReturnsSortedByUsername()
     {
         // Arrange

@@ -64,7 +64,8 @@ public class DeleteTests
         var result = await model.OnPostAsync(ExistingEntityId);
 
         // Assert
-        ctx.Verify(c => c.Clients.Remove(It.IsAny<Client>()), Times.Once);
+        ctx.Verify(c => c.Clients.Remove(client), Times.Once);
+        ctx.Verify(c => c.SaveChangesAsync(), Times.Once);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal(PageRoutes.SiblingIndex, redirect.PageName);
     }

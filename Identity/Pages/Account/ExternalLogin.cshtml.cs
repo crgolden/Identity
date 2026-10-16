@@ -96,9 +96,7 @@ public class ExternalLogin : PageModel
             return RedirectToPage(PageRoutes.SiblingLockout);
         }
 
-        var externalEmail = info.Principal.HasClaim(c => string.Equals(c.Type, ClaimTypes.Email, StringComparison.Ordinal))
-            ? info.Principal.FindFirstValue(ClaimTypes.Email)
-            : null;
+        var externalEmail = info.Principal.FindFirstValue(ClaimTypes.Email);
         if (IsNullOrWhiteSpace(externalEmail))
         {
             ReturnUrl = returnUrl;
@@ -109,8 +107,7 @@ public class ExternalLogin : PageModel
         var existingUser = await _userManager.FindByEmailAsync(externalEmail);
         if (existingUser is not null)
         {
-            ErrorMessage = $"An account already exists for {externalEmail}. " +
-                $"Log in with that account, then link your {info.ProviderDisplayName} account from the External Logins page.";
+            ErrorMessage = AccountAlreadyExistsMessage(externalEmail, info.ProviderDisplayName);
             ErrorCode = AccountAlreadyExistsErrorCode;
             return RedirectToPage(LoginPageName, new { ReturnUrl = returnUrl });
         }
@@ -155,8 +152,7 @@ public class ExternalLogin : PageModel
             var existingUser = await _userManager.FindByEmailAsync(Input.Email);
             if (existingUser is not null)
             {
-                ErrorMessage = $"An account already exists for {Input.Email}. " +
-                    $"Log in with that account, then link your {info.ProviderDisplayName} account from the External Logins page.";
+                ErrorMessage = AccountAlreadyExistsMessage(Input.Email, info.ProviderDisplayName);
                 ErrorCode = AccountAlreadyExistsErrorCode;
                 return RedirectToPage(LoginPageName, new { ReturnUrl = returnUrl });
             }
@@ -185,6 +181,10 @@ public class ExternalLogin : PageModel
         return Page();
     }
 
+    internal static string AccountAlreadyExistsMessage(string email, string? providerDisplayName) =>
+        $"An account already exists for {email}. " +
+        $"Log in with that account, then link your {providerDisplayName} account from the External Logins page.";
+
     private async Task<IActionResult?> CompleteExternalRegistrationAsync(
         IdentityUser<Guid> user,
         ExternalLoginInfo info,
@@ -206,7 +206,7 @@ public class ExternalLogin : PageModel
             var bytes = UTF8.GetBytes(code);
             code = Base64UrlEncode(bytes);
             var callbackUrl = Url.Page(
-                "/Account/ConfirmEmail",
+                PageRoutes.ConfirmEmail,
                 pageHandler: null,
                 values: new { userId, code },
                 protocol: Request.Scheme);

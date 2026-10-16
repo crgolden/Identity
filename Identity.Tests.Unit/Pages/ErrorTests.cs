@@ -465,6 +465,27 @@ public sealed class ErrorTests : IDisposable
         Assert.NotNull(oidcErrorActivity.Captured);
         Assert.Equal(oidcError, oidcErrorActivity.Captured.GetTagItem(Error.OidcErrorTagName));
         Assert.Equal(oidcErrorId, oidcErrorActivity.Captured.GetTagItem(Error.OidcErrorIdTagName));
+        Assert.Equal(errorMessage.ErrorDescription, oidcErrorActivity.Captured.GetTagItem(Error.OidcErrorDescriptionTagName));
+    }
+
+    [Fact]
+    public async Task OnGetAsync_ClientWithAWebAndANativeRedirect_LinksToTheWebOriginOnly()
+    {
+        // Arrange
+        var redirectOrigin = Generated.NewOrigin();
+        var nativeRedirect = new UriBuilder(Generated.NewSchemeName(), Generated.NewExternalHost()).Uri.AbsoluteUri;
+        var client = new Client
+        {
+            ClientId = Generated.NewClientIdentifier(),
+            RedirectUris = { $"{redirectOrigin}/{Generated.NewToken()}", nativeRedirect },
+        };
+        var (model, errorId) = BuildModelForClient(client);
+
+        // Act
+        await model.OnGetAsync(errorId);
+
+        // Assert
+        Assert.Equal(new Uri(redirectOrigin), model.ClientHomeUri);
     }
 
     public void Dispose() => _harness.Dispose();

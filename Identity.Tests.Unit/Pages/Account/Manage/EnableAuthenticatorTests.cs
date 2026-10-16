@@ -204,6 +204,177 @@ public class EnableAuthenticatorTests
         Assert.Equal(UserMessages.UnableToLoadUser(expectedId), notFound.Value);
     }
 
+    [Fact]
+    public async Task OnPostAsync_ValidModelStateWithBlankCode_ReRendersWithoutVerifying()
+    {
+        // Arrange
+        var userManagerMock = MockUserManagerForVerifiedAuthenticator(Generated.NewRecoveryCodeCount(), [Generated.NewRecoveryCode()]);
+        var model = new EnableAuthenticator(userManagerMock.Object, UrlEncoder.Default)
+        {
+            Input = new EnableAuthenticator.InputModel { Code = Generated.NewBlank() }
+        };
+
+        // Act
+        var result = await model.OnPostAsync();
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        Assert.NotNull(model.SharedKey);
+        userManagerMock.Verify(um => um.VerifyTwoFactorTokenAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_InvalidModelState_ReloadsTheSharedKeyAndUri()
+    {
+        // Arrange
+        var userManagerMock = MockUserManagerForVerifiedAuthenticator(Generated.NewRecoveryCodeCount(), [Generated.NewRecoveryCode()]);
+        var model = new EnableAuthenticator(userManagerMock.Object, UrlEncoder.Default);
+        model.ModelState.AddModelError(Generated.NewModelStateKey(), Generated.NewValidationMessage());
+
+        // Act
+        await model.OnPostAsync();
+
+        // Assert
+        Assert.NotNull(model.SharedKey);
+        Assert.NotNull(model.AuthenticatorUri);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_InvalidVerificationCode_ReloadsTheSharedKeyAndUri()
+    {
+        // Arrange
+        var userManagerMock = MockUserManagerForVerifiedAuthenticator(Generated.NewRecoveryCodeCount(), [Generated.NewRecoveryCode()]);
+        userManagerMock.Setup(um => um.VerifyTwoFactorTokenAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(false);
+        var model = new EnableAuthenticator(userManagerMock.Object, UrlEncoder.Default)
+        {
+            Input = new EnableAuthenticator.InputModel { Code = BuildVerificationCode() }
+        };
+
+        // Act
+        await model.OnPostAsync();
+
+        // Assert
+        Assert.NotNull(model.SharedKey);
+        Assert.NotNull(model.AuthenticatorUri);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_StoredKey_ShowsItLowercasedInSeparatedGroups()
+    {
+        // Arrange
+        var storedKey = Generated.NewAuthenticatorKey();
+        var userManagerMock = MockUserManagerWithKeyAndEmail(storedKey, Generated.NewEmailAddress());
+        var model = CreateSignedInModel(userManagerMock.Object);
+
+        // Act
+        await model.OnGetAsync();
+
+        // Assert
+        var groups = Assert.IsType<string>(model.SharedKey).Split(EnableAuthenticator.SharedKeyGroupSeparator);
+        Assert.Equal(storedKey.ToLowerInvariant(), string.Concat(groups));
+        Assert.All(groups, g => Assert.Equal(EnableAuthenticator.SharedKeyGroupLength, g.Length));
+    }
+
+    [Fact]
+    public async Task OnGetAsync_StoredKeyAndEmail_BuildsAUriCarryingTheKeyAndTheEncodedEmail()
+    {
+        // Arrange
+        var storedKey = Generated.NewAuthenticatorKey();
+        var email = Generated.NewEmailAddress();
+        var userManagerMock = MockUserManagerWithKeyAndEmail(storedKey, email);
+        var model = CreateSignedInModel(userManagerMock.Object);
+
+        // Act
+        await model.OnGetAsync();
+
+        // Assert
+        Assert.NotNull(model.AuthenticatorUri);
+        Assert.Contains(storedKey, model.AuthenticatorUri, StringComparison.Ordinal);
+        Assert.Contains(UrlEncoder.Default.Encode(email), model.AuthenticatorUri, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_NoEmail_ShowsTheKeyWithoutAUri()
+    {
+        // Arrange
+        var userManagerMock = MockUserManagerWithKeyAndEmail(Generated.NewAuthenticatorKey(), null);
+        var model = CreateSignedInModel(userManagerMock.Object);
+
+        // Act
+        await model.OnGetAsync();
+
+        // Assert
+        Assert.NotNull(model.SharedKey);
+        Assert.Null(model.AuthenticatorUri);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_NoStoredKey_ResetsAndShowsTheNewKey()
+    {
+        // Arrange
+        var newKey = Generated.NewAuthenticatorKey();
+        var userManagerMock = MockUserManagerWithKeyAndEmail(newKey, Generated.NewEmailAddress());
+        userManagerMock.SetupSequence(um => um.GetAuthenticatorKeyAsync(It.IsAny<IdentityUser<Guid>>()))
+            .ReturnsAsync((string?)null)
+            .ReturnsAsync(newKey);
+        var model = CreateSignedInModel(userManagerMock.Object);
+
+        // Act
+        await model.OnGetAsync();
+
+        // Assert
+        userManagerMock.Verify(um => um.ResetAuthenticatorKeyAsync(It.IsAny<IdentityUser<Guid>>()), Times.Once);
+        Assert.Contains(newKey, model.AuthenticatorUri, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_StoredKey_DoesNotReset()
+    {
+        // Arrange
+        var userManagerMock = MockUserManagerWithKeyAndEmail(Generated.NewAuthenticatorKey(), Generated.NewEmailAddress());
+        var model = CreateSignedInModel(userManagerMock.Object);
+
+        // Act
+        await model.OnGetAsync();
+
+        // Assert
+        userManagerMock.Verify(um => um.ResetAuthenticatorKeyAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_NoKeyEvenAfterReset_ShowsNothing()
+    {
+        // Arrange
+        var userManagerMock = MockUserManagerWithKeyAndEmail(null, Generated.NewEmailAddress());
+        var model = CreateSignedInModel(userManagerMock.Object);
+
+        // Act
+        var result = await model.OnGetAsync();
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        Assert.Null(model.SharedKey);
+        Assert.Null(model.AuthenticatorUri);
+    }
+
+    private static Mock<UserManager<IdentityUser<Guid>>> MockUserManagerWithKeyAndEmail(string? storedKey, string? email)
+    {
+        var userManagerMock = MockHelpers.MockUserManager();
+        userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(new IdentityUser<Guid> { Id = Generated.NewUserId() });
+        userManagerMock.Setup(um => um.GetAuthenticatorKeyAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync(storedKey);
+        userManagerMock.Setup(um => um.GetEmailAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync(email);
+        userManagerMock.Setup(um => um.ResetAuthenticatorKeyAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync(IdentityResult.Success);
+        return userManagerMock;
+    }
+
+    private static EnableAuthenticator CreateSignedInModel(UserManager<IdentityUser<Guid>> userManager)
+    {
+        var model = new EnableAuthenticator(userManager, UrlEncoder.Default);
+        model.PageContext = new PageContext { HttpContext = new DefaultHttpContext() };
+        return model;
+    }
+
     private static string BuildVerificationCode() => Generated.NewVerificationCode();
 
     private static Mock<UserManager<IdentityUser<Guid>>> MockUserManagerForVerifiedAuthenticator(

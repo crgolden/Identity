@@ -39,7 +39,7 @@ public class ClaimTypes : EditableResourcesBase<int, ApiScopeClaim>
 
         scope.UserClaims.RemoveAll(c => !Resources.Any(p => p.Id == c.Id));
 
-        foreach (var posted in Resources.Where(p => p.Id > 0))
+        foreach (var posted in Resources)
         {
             var existing = scope.UserClaims.FirstOrDefault(c => c.Id == posted.Id);
             if (existing is not null)

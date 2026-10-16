@@ -120,6 +120,50 @@ public class AvatarProfileServiceTests
             Times.Never);
     }
 
+    [Fact]
+    public async Task GetProfileDataAsync_EmailAndADifferentUserName_ComputesFromTheEmail()
+    {
+        // Arrange
+        var computed = new UriBuilder(Uri.UriSchemeHttps, Generated.NewExternalHost()).Uri;
+        var emailAddress = Generated.NewEmailAddress();
+        var user = new IdentityUser<Guid> { Id = Generated.NewUserId(), Email = emailAddress, UserName = Generated.NewUserName() };
+        var context = ProfileContextFor(user);
+        var avatarService = new Mock<IAvatarService>(MockBehavior.Strict);
+        avatarService.Setup(x => x.GetAvatarUrlAsync(emailAddress, It.IsAny<CancellationToken>())).ReturnsAsync(computed);
+        var service = ServiceFor(user, avatarService.Object, storedClaims: []);
+
+        // Act
+        await service.GetProfileDataAsync(context, TestContext.Current.CancellationToken);
+
+        // Assert
+        var picture = Assert.Single(
+            context.IssuedClaims,
+            x => string.Equals(x.Type, AvatarProfileService.PictureClaimType, StringComparison.Ordinal));
+        Assert.Equal(computed.AbsoluteUri, picture.Value);
+    }
+
+    [Fact]
+    public async Task GetProfileDataAsync_NoEmail_ComputesFromTheUserName()
+    {
+        // Arrange
+        var computed = new UriBuilder(Uri.UriSchemeHttps, Generated.NewExternalHost()).Uri;
+        var userName = Generated.NewUserName();
+        var user = new IdentityUser<Guid> { Id = Generated.NewUserId(), UserName = userName };
+        var context = ProfileContextFor(user);
+        var avatarService = new Mock<IAvatarService>(MockBehavior.Strict);
+        avatarService.Setup(x => x.GetAvatarUrlAsync(userName, It.IsAny<CancellationToken>())).ReturnsAsync(computed);
+        var service = ServiceFor(user, avatarService.Object, storedClaims: []);
+
+        // Act
+        await service.GetProfileDataAsync(context, TestContext.Current.CancellationToken);
+
+        // Assert
+        var picture = Assert.Single(
+            context.IssuedClaims,
+            x => string.Equals(x.Type, AvatarProfileService.PictureClaimType, StringComparison.Ordinal));
+        Assert.Equal(computed.AbsoluteUri, picture.Value);
+    }
+
     private static ProfileDataRequestContext ProfileContextFor(IdentityUser<Guid> user)
         => ProfileContextFor(user, [AvatarProfileService.PictureClaimType, EmailClaimType]);
 

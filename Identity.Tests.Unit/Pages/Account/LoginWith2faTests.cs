@@ -261,6 +261,80 @@ public class LoginWith2faTests
         // Assert
         Assert.IsType<PageResult>(result);
         Assert.False(model.ModelState.IsValid);
+        Assert.Contains(model.ModelState.Values.SelectMany(v => v.Errors), e => string.Equals(e.ErrorMessage, LoginWith2fa.InvalidAuthenticatorCodeMessage, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task OnPostAsync_Succeeded_RedirectsToTheRequestedLocalReturnUrl()
+    {
+        // Arrange
+        var returnUrl = Generated.NewLocalPath();
+        var signInManagerMock = SignInManagerFor(Microsoft.AspNetCore.Identity.SignInResult.Success);
+        var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
+        urlHelperMock.Setup(u => u.IsLocalUrl(returnUrl)).Returns(true);
+        var model = new LoginWith2fa(signInManagerMock.Object)
+        {
+            Input = new LoginWith2fa.InputModel { TwoFactorCode = Generated.NewVerificationCode() },
+            Url = urlHelperMock.Object,
+        };
+
+        // Act
+        var result = await model.OnPostAsync(false, returnUrl);
+
+        // Assert
+        Assert.Equal(returnUrl, Assert.IsType<LocalRedirectResult>(result).Url);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_Succeeded_NonLocalReturnUrl_RedirectsToTheContentRoot()
+    {
+        // Arrange
+        var returnUrl = Generated.NewOrigin();
+        var signInManagerMock = SignInManagerFor(Microsoft.AspNetCore.Identity.SignInResult.Success);
+        var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
+        urlHelperMock.Setup(u => u.IsLocalUrl(returnUrl)).Returns(false);
+        var model = new LoginWith2fa(signInManagerMock.Object)
+        {
+            Input = new LoginWith2fa.InputModel { TwoFactorCode = Generated.NewVerificationCode() },
+            Url = urlHelperMock.Object,
+        };
+
+        // Act
+        var result = await model.OnPostAsync(false, returnUrl);
+
+        // Assert
+        Assert.Equal(PageRoutes.ContentRoot, Assert.IsType<LocalRedirectResult>(result).Url);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_CodeWithSeparators_SignsInWithTheBareCodeAndTheRememberChoices()
+    {
+        // Arrange
+        var bareCode = Generated.NewVerificationCode();
+        var signInManagerMock = SignInManagerFor(Microsoft.AspNetCore.Identity.SignInResult.Failed);
+        var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
+        urlHelperMock.Setup(u => u.Content(PageRoutes.ContentRoot)).Returns(Generated.NewLocalPath());
+        var model = new LoginWith2fa(signInManagerMock.Object)
+        {
+            Input = new LoginWith2fa.InputModel { TwoFactorCode = Generated.WithFormattingSeparators(bareCode), RememberMachine = true },
+            Url = urlHelperMock.Object,
+        };
+
+        // Act
+        await model.OnPostAsync(true);
+
+        // Assert
+        signInManagerMock.Verify(s => s.TwoFactorAuthenticatorSignInAsync(bareCode, true, true), Times.Once);
+    }
+
+    private static Mock<SignInManager<IdentityUser<Guid>>> SignInManagerFor(Microsoft.AspNetCore.Identity.SignInResult result)
+    {
+        var signInManagerMock = CreateSignInManagerMock();
+        signInManagerMock.Setup(s => s.GetTwoFactorAuthenticationUserAsync()).ReturnsAsync(new IdentityUser<Guid> { Id = Generated.NewUserId() });
+        signInManagerMock
+            .Setup(s => s.TwoFactorAuthenticatorSignInAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>()))
+            .ReturnsAsync(result);
+        return signInManagerMock;
     }
 
     private static Mock<SignInManager<IdentityUser<Guid>>> CreateSignInManagerMock()

@@ -77,6 +77,7 @@ public class SecretsTests
         Assert.Equal(PostedDescription, onlySecret.Description);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal(Secrets.DetailsPageName, redirect.PageName);
+        ctx.Verify(c => c.SaveChangesAsync(), Times.Once);
     }
 
     [Fact]
@@ -112,6 +113,36 @@ public class SecretsTests
 
         // Assert
         Assert.Empty(resource.Secrets);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_ExistingSecretPosted_UpdatesItsEditableFieldsAndKeepsItsValue()
+    {
+        // Arrange
+        var storedValue = Generated.NewSecretValue();
+        var existing = new ApiResourceSecret { Id = ExistingEntityId, Description = ExistingDescription, Value = storedValue, ApiResourceId = ExistingEntityId };
+        var resource = new ApiResource { Id = ExistingEntityId, Name = Generated.NewApiResourceName(), Secrets = [existing] };
+        var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
+        ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
+        var postedType = Generated.NewTokenOtherThan(IdentityServerConstants.SecretTypes.SharedSecret);
+        var postedExpiration = Generated.NewUtcTimestamp().UtcDateTime;
+        var model = new Secrets(ctx.Object)
+        {
+            Resources = [new ApiResourceSecret { Id = ExistingEntityId, Description = PostedDescription, Value = PostedSecretValue, Type = postedType, Expiration = postedExpiration }]
+        };
+
+        // Act
+        await model.OnPostAsync(ExistingEntityId);
+
+        // Assert
+        var onlySecret = Assert.Single(resource.Secrets);
+        Assert.Same(existing, onlySecret);
+        Assert.Equal(PostedDescription, onlySecret.Description);
+        Assert.Equal(postedType, onlySecret.Type);
+        Assert.Equal(postedExpiration, onlySecret.Expiration);
+        Assert.Equal(storedValue, onlySecret.Value);
     }
 
     [Fact]

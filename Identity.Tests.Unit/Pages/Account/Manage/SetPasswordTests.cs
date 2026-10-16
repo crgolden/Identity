@@ -91,6 +91,25 @@ public class SetPasswordTests
     }
 
     [Fact]
+    public async Task OnPostAsync_ValidModelWithBlankPassword_ReturnsPageWithoutLoadingTheUser()
+    {
+        // Arrange
+        var userManagerMock = MockHelpers.MockUserManager();
+        var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
+        var pageModel = new SetPassword(userManagerMock.Object, signInManagerMock.Object)
+        {
+            Input = new SetPassword.InputModel { NewPassword = Generated.NewBlank() }
+        };
+
+        // Act
+        var result = await pageModel.OnPostAsync();
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        userManagerMock.Verify(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>()), Times.Never);
+    }
+
+    [Fact]
     public async Task OnPostAsync_UserNotFound_ReturnsNotFoundWithMessage()
     {
         // Arrange

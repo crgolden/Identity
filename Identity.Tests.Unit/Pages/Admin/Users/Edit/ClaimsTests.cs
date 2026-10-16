@@ -133,6 +133,44 @@ public class ClaimsTests
     }
 
     [Fact]
+    public async Task OnPostAsync_RowWithTypeButBlankValue_SavesNothing()
+    {
+        // Arrange
+        var user = new IdentityUser<Guid> { UserName = Generated.NewUserName() };
+        var um = MockHelpers.MockUserManager();
+        um.Setup(m => m.FindByIdAsync(ExistingUserId)).ReturnsAsync(user);
+        um.Setup(m => m.GetClaimsAsync(user)).ReturnsAsync([]);
+        um.Setup(m => m.RemoveClaimsAsync(user, It.IsAny<IEnumerable<Claim>>())).ReturnsAsync(IdentityResult.Success);
+        um.Setup(m => m.AddClaimsAsync(user, It.IsAny<IEnumerable<Claim>>())).ReturnsAsync(IdentityResult.Success);
+        var model = new Claims(um.Object) { Resources = [new Claims.ClaimInputModel { Type = ClaimType, Value = Generated.NewWhitespaceValue() }] };
+
+        // Act
+        await model.OnPostAsync(ExistingUserId);
+
+        // Assert
+        um.Verify(m => m.AddClaimsAsync(user, It.IsAny<IEnumerable<Claim>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_RowWithValueButBlankType_SavesNothing()
+    {
+        // Arrange
+        var user = new IdentityUser<Guid> { UserName = Generated.NewUserName() };
+        var um = MockHelpers.MockUserManager();
+        um.Setup(m => m.FindByIdAsync(ExistingUserId)).ReturnsAsync(user);
+        um.Setup(m => m.GetClaimsAsync(user)).ReturnsAsync([]);
+        um.Setup(m => m.RemoveClaimsAsync(user, It.IsAny<IEnumerable<Claim>>())).ReturnsAsync(IdentityResult.Success);
+        um.Setup(m => m.AddClaimsAsync(user, It.IsAny<IEnumerable<Claim>>())).ReturnsAsync(IdentityResult.Success);
+        var model = new Claims(um.Object) { Resources = [new Claims.ClaimInputModel { Type = Generated.NewWhitespaceValue(), Value = ClaimValue }] };
+
+        // Act
+        await model.OnPostAsync(ExistingUserId);
+
+        // Assert
+        um.Verify(m => m.AddClaimsAsync(user, It.IsAny<IEnumerable<Claim>>()), Times.Never);
+    }
+
+    [Fact]
     public async Task OnPostAsync_ReturnsNotFound_WhenMissing()
     {
         // Arrange

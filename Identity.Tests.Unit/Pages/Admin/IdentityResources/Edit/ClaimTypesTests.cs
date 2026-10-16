@@ -112,6 +112,58 @@ public class ClaimTypesTests
     }
 
     [Fact]
+    public async Task OnPostAsync_ExistingClaimTypePosted_UpdatesItsTypeAndSaves()
+    {
+        // Arrange
+        var existing = new IdentityResourceClaim { Id = ExistingEntityId, Type = ClaimType, IdentityResourceId = ExistingEntityId };
+        var resource = new IdentityResource { Id = ExistingEntityId, Name = IdentityServerConstants.StandardScopes.OpenId, UserClaims = [existing] };
+        var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
+        ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
+        var postedClaimType = Generated.NewClaimType();
+        var model = new ClaimTypes(ctx.Object) { Resources = [new IdentityResourceClaim { Id = ExistingEntityId, Type = postedClaimType }] };
+
+        // Act
+        await model.OnPostAsync(ExistingEntityId);
+
+        // Assert
+        var onlyUserClaim = Assert.Single(resource.UserClaims);
+        Assert.Same(existing, onlyUserClaim);
+        Assert.Equal(postedClaimType, onlyUserClaim.Type);
+        ctx.Verify(c => c.SaveChangesAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_PostedClaimTypeMatchingNothingPersisted_ChangesNothing()
+    {
+        // Arrange
+        var existing = new IdentityResourceClaim { Id = ExistingEntityId, Type = ClaimType, IdentityResourceId = ExistingEntityId };
+        var resource = new IdentityResource { Id = ExistingEntityId, Name = IdentityServerConstants.StandardScopes.OpenId, UserClaims = [existing] };
+        var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
+        ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
+        var unmatchedClaimType = Generated.NewClaimType();
+        var model = new ClaimTypes(ctx.Object)
+        {
+            Resources =
+            [
+                new IdentityResourceClaim { Id = ExistingEntityId, Type = ClaimType },
+                new IdentityResourceClaim { Id = MissingEntityId, Type = unmatchedClaimType },
+            ]
+        };
+
+        // Act
+        await model.OnPostAsync(ExistingEntityId);
+
+        // Assert
+        var onlyUserClaim = Assert.Single(resource.UserClaims);
+        Assert.Same(existing, onlyUserClaim);
+        Assert.Equal(ClaimType, onlyUserClaim.Type);
+    }
+
+    [Fact]
     public async Task OnPostAddRowAsync_AddsBlankRow_WhenFound()
     {
         // Arrange

@@ -34,7 +34,7 @@ public class ForgotPassword : AccountEmailPageBase
         var input = UTF8.GetBytes(code);
         code = Base64UrlEncode(input);
         var callbackUrl = Url.Page(
-            "/Account/ResetPassword",
+            PageRoutes.ResetPassword,
             pageHandler: null,
             values: new { code, email = Input.Email },
             protocol: Request.Scheme);

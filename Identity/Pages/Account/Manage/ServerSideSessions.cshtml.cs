@@ -12,6 +12,8 @@ public class ServerSideSessions : PageModel
 {
     internal const string ServerSideSessionsPagePath = "/Account/Manage/ServerSideSessions";
 
+    internal const string RequestPriorResultsValue = "true";
+
     private readonly ISessionManagementService? _sessionManagement;
 
     public ServerSideSessions(ISessionManagementService? sessionManagement = null)
@@ -47,7 +49,7 @@ public class ServerSideSessions : PageModel
                 new SessionQuery
                 {
                     ResultsToken = Token,
-                    RequestPriorResults = string.Equals(Prev, "true", StringComparison.Ordinal),
+                    RequestPriorResults = string.Equals(Prev, RequestPriorResultsValue, StringComparison.Ordinal),
                     DisplayName = DisplayNameFilter,
                     SessionId = SessionIdFilter,
                     SubjectId = SubjectIdFilter,

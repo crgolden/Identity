@@ -58,4 +58,41 @@ public class IndexTests
         Assert.Equal(data.Length, model.PersistedGrants.Count);
         Assert.Equal(FirstSubjectAlphabetically, model.PersistedGrants[0].SubjectId);
     }
+
+    [Fact]
+    public async Task OnGetAsync_SameSubject_OrdersByClientId()
+    {
+        // Arrange
+        var sharedSubjectId = Generated.NewSubjectId();
+        var firstClientId = Generated.NewFirstAlphabeticalName();
+        var lastClientId = Generated.NewLastAlphabeticalName();
+        var data = new[]
+        {
+            new PersistedGrant { Key = Generated.NewRequestId(), SubjectId = sharedSubjectId, ClientId = lastClientId },
+            new PersistedGrant { Key = Generated.NewRequestId(), SubjectId = sharedSubjectId, ClientId = firstClientId },
+        };
+        var mockSet = MockDbSetHelper.BuildMockDbSet(data);
+        var ctx = new Mock<IPersistedGrantDbContext>();
+        ctx.Setup(c => c.PersistedGrants).Returns(mockSet.Object);
+        var model = new Index(ctx.Object);
+
+        // Act
+        await model.OnGetAsync();
+
+        // Assert
+        Assert.Equal(new[] { firstClientId, lastClientId }, model.PersistedGrants.Select(g => g.ClientId));
+    }
+
+    [Fact]
+    public void Constructor_StartsWithNoPersistedGrants()
+    {
+        // Arrange
+        var ctx = new Mock<IPersistedGrantDbContext>();
+
+        // Act
+        var model = new Index(ctx.Object);
+
+        // Assert
+        Assert.Empty(model.PersistedGrants);
+    }
 }

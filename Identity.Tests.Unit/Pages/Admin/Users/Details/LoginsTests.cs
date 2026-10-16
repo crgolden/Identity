@@ -53,4 +53,17 @@ public class LoginsTests
         // Assert
         Assert.IsType<NotFoundResult>(result);
     }
+
+    [Fact]
+    public void Constructor_StartsWithNoResources()
+    {
+        // Arrange
+        var um = MockHelpers.MockUserManager();
+
+        // Act
+        var model = new Logins(um.Object);
+
+        // Assert
+        Assert.Empty(model.Resources);
+    }
 }

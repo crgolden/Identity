@@ -108,17 +108,75 @@ public class SecretsTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
+        var postedType = Generated.NewTokenOtherThan(IdentityServerConstants.SecretTypes.SharedSecret);
+        var postedExpiration = Generated.NewUtcTimestamp().UtcDateTime;
         var model = new Secrets(ctx.Object)
         {
-            Resources = [new ClientSecret { Id = ExistingEntityId, Type = IdentityServerConstants.SecretTypes.SharedSecret, Description = PostedDescription }],
+            Resources = [new ClientSecret { Id = ExistingEntityId, Type = postedType, Description = PostedDescription, Expiration = postedExpiration, Value = PostedSecretValue }],
         };
 
         // Act
         await model.OnPostAsync(ExistingEntityId);
 
         // Assert
+        var onlySecret = Assert.Single(client.ClientSecrets);
+        Assert.Same(existing, onlySecret);
         Assert.Equal(PostedDescription, existing.Description);
+        Assert.Equal(postedType, existing.Type);
+        Assert.Equal(postedExpiration, existing.Expiration);
         Assert.Equal(ExistingSecretValue, existing.Value);
+        ctx.Verify(c => c.SaveChangesAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_PostedSecretMatchingNothingPersisted_ChangesNothing()
+    {
+        // Arrange
+        var existing = new ClientSecret { Id = ExistingEntityId, Value = ExistingSecretValue, Type = IdentityServerConstants.SecretTypes.SharedSecret, Description = ExistingDescription, ClientId = ExistingEntityId };
+        var client = new Client { Id = ExistingEntityId, ClientId = Generated.NewClientIdentifier(), ClientSecrets = [existing] };
+        var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.Clients).Returns(mockSet.Object);
+        ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
+        var model = new Secrets(ctx.Object)
+        {
+            Resources =
+            [
+                new ClientSecret { Id = ExistingEntityId, Type = IdentityServerConstants.SecretTypes.SharedSecret, Description = ExistingDescription },
+                new ClientSecret { Id = MissingEntityId, Type = IdentityServerConstants.SecretTypes.SharedSecret, Description = PostedDescription, Value = PostedSecretValue },
+            ],
+        };
+
+        // Act
+        await model.OnPostAsync(ExistingEntityId);
+
+        // Assert
+        var onlySecret = Assert.Single(client.ClientSecrets);
+        Assert.Same(existing, onlySecret);
+        Assert.Equal(ExistingDescription, onlySecret.Description);
+        Assert.Equal(ExistingSecretValue, onlySecret.Value);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_ReturnsPageWithoutSaving_WhenModelInvalid()
+    {
+        // Arrange
+        var existing = new ClientSecret { Id = ExistingEntityId, Value = ExistingSecretValue, Type = IdentityServerConstants.SecretTypes.SharedSecret, ClientId = ExistingEntityId };
+        var client = new Client { Id = ExistingEntityId, ClientId = Generated.NewClientIdentifier(), ClientSecrets = [existing] };
+        var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.Clients).Returns(mockSet.Object);
+        ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
+        var model = new Secrets(ctx.Object) { Resources = [] };
+        model.ModelState.AddModelError(nameof(ClientSecret.Value), Generated.NewValidationMessage());
+
+        // Act
+        var result = await model.OnPostAsync(ExistingEntityId);
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        Assert.Same(existing, Assert.Single(client.ClientSecrets));
+        ctx.Verify(c => c.SaveChangesAsync(), Times.Never);
     }
 
     [Fact]

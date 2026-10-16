@@ -29,6 +29,19 @@ public class IndexTests
     }
 
     [Fact]
+    public void Constructor_StartsWithNoIdentityProviders()
+    {
+        // Arrange
+        var ctx = new Mock<IConfigurationDbContext>();
+
+        // Act
+        var model = new Index(ctx.Object);
+
+        // Assert
+        Assert.Empty(model.IdentityProviders);
+    }
+
+    [Fact]
     public async Task OnGetAsync_ReturnsSortedByScheme()
     {
         // Arrange

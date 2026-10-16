@@ -170,6 +170,20 @@ public class LogoutTests
         signInManager.Verify(s => s.SignOutAsync(), Times.Once);
     }
 
+    [Fact]
+    public async Task OnGetAsync_PrincipalWithNoIdentity_DoesNotShowThePrompt()
+    {
+        // Arrange
+        var model = BuildModel();
+        model.PageContext = new PageContext { HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal() } };
+
+        // Act
+        await model.OnGetAsync();
+
+        // Assert
+        Assert.False(model.ShowLogoutPrompt);
+    }
+
     private static Logout BuildModel(IIdentityServerInteractionService? interactionService = null)
     {
         var userManager = MockHelpers.MockUserManager();

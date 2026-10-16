@@ -1,5 +1,7 @@
 namespace Identity.Tests.Unit.Infrastructure;
 
+using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -7,6 +9,8 @@ using Microsoft.Extensions.Options;
 internal sealed class TelemetryHarness : IDisposable
 {
     private readonly ServiceProvider _services;
+    private readonly ActivityListener _activityListener;
+    private readonly ConcurrentQueue<Activity> _stoppedActivities = new();
 
     internal TelemetryHarness()
     {
@@ -14,7 +18,16 @@ internal sealed class TelemetryHarness : IDisposable
         MeterFactory = _services.GetRequiredService<IMeterFactory>();
         Descriptions = TestValues.NewTelemetryOptions();
         Telemetry = new Telemetry(MeterFactory, Options.Create(Descriptions));
+        _activityListener = new ActivityListener
+        {
+            ShouldListenTo = source => ReferenceEquals(source, Telemetry.ActivitySource),
+            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+            ActivityStopped = _stoppedActivities.Enqueue,
+        };
+        ActivitySource.AddActivityListener(_activityListener);
     }
+
+    internal IReadOnlyCollection<Activity> StoppedActivities => _stoppedActivities;
 
     internal IMeterFactory MeterFactory { get; }
 
@@ -24,6 +37,7 @@ internal sealed class TelemetryHarness : IDisposable
 
     public void Dispose()
     {
+        _activityListener.Dispose();
         Telemetry.Dispose();
         _services.Dispose();
     }

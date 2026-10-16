@@ -61,6 +61,122 @@ public class ConsentPageModelBaseTests
     }
 
     [Fact]
+    public void CreateScopeViewModel_RequiredIdentityResourceNotChecked_IsCheckedAnyway()
+    {
+        // Arrange
+        var identity = new IdentityResource(Generated.NewApiScopeName(), [Generated.NewClaimType()]) { Required = true };
+
+        // Act
+        var vm = TestableBase.CallCreateScopeViewModel(identity, false);
+
+        // Assert
+        Assert.True(vm.Checked);
+    }
+
+    [Fact]
+    public void CreateScopeViewModel_OptionalIdentityResourceNotChecked_StaysUnchecked()
+    {
+        // Arrange
+        var identity = new IdentityResource(Generated.NewApiScopeName(), [Generated.NewClaimType()]) { Required = false };
+
+        // Act
+        var vm = TestableBase.CallCreateScopeViewModel(identity, false);
+
+        // Assert
+        Assert.False(vm.Checked);
+    }
+
+    [Fact]
+    public void CreateScopeViewModel_OptionalIdentityResourceChecked_IsChecked()
+    {
+        // Arrange
+        var identity = new IdentityResource(Generated.NewApiScopeName(), [Generated.NewClaimType()]) { Required = false };
+
+        // Act
+        var vm = TestableBase.CallCreateScopeViewModel(identity, true);
+
+        // Assert
+        Assert.True(vm.Checked);
+    }
+
+    [Fact]
+    public void CreateScopeViewModel_IdentityResourceWithoutDisplayName_ShowsItsName()
+    {
+        // Arrange
+        var identityName = Generated.NewApiScopeName();
+        var identity = new IdentityResource(identityName, [Generated.NewClaimType()]) { DisplayName = null };
+
+        // Act
+        var vm = TestableBase.CallCreateScopeViewModel(identity, false);
+
+        // Assert
+        Assert.Equal(identityName, vm.DisplayName);
+    }
+
+    [Fact]
+    public void CreateScopeViewModel_IdentityResourceWithDisplayName_ShowsTheDisplayName()
+    {
+        // Arrange
+        var identityDisplayName = Generated.NewDisplayName();
+        var identity = new IdentityResource(Generated.NewApiScopeName(), identityDisplayName, [Generated.NewClaimType()]);
+
+        // Act
+        var vm = TestableBase.CallCreateScopeViewModel(identity, false);
+
+        // Assert
+        Assert.Equal(identityDisplayName, vm.DisplayName);
+    }
+
+    [Fact]
+    public void CreateScopeViewModel_RequiredApiScopeNotChecked_IsCheckedAnyway()
+    {
+        // Arrange
+        var scopeName = Generated.NewApiScopeName();
+        var apiScope = new ApiScope(scopeName, Generated.NewDisplayName()) { Required = true };
+
+        // Act
+        var vm = TestableBase.CallCreateScopeViewModel(new ParsedScopeValue(scopeName), apiScope, false);
+
+        // Assert
+        Assert.True(vm.Checked);
+    }
+
+    [Fact]
+    public void CreateScopeViewModel_ApiScopeWithoutDisplayName_ShowsItsName()
+    {
+        // Arrange
+        var scopeName = Generated.NewApiScopeName();
+        var apiScope = new ApiScope(scopeName) { DisplayName = null };
+
+        // Act
+        var vm = TestableBase.CallCreateScopeViewModel(new ParsedScopeValue(scopeName), apiScope, false);
+
+        // Assert
+        Assert.Equal(scopeName, vm.DisplayName);
+    }
+
+    [Fact]
+    public void ViewModel_New_HasNoScopes()
+    {
+        // Act
+        var view = new ConsentPageModelBase.ViewModel();
+
+        // Assert
+        Assert.Empty(view.IdentityScopes);
+        Assert.Empty(view.ApiScopes);
+    }
+
+    [Fact]
+    public void ScopeViewModel_New_HasNoResources()
+    {
+        // Act
+        var scope = new ConsentPageModelBase.ScopeViewModel { Value = Generated.NewApiScopeName(), DisplayName = Generated.NewDisplayName() };
+
+        // Assert
+        Assert.Empty(scope.Resources);
+    }
+
+    [Fact]
     public void CreateOfflineAccessScope_ReturnsCorrectViewModel()
     {
         // Arrange
@@ -104,6 +220,9 @@ public class ConsentPageModelBaseTests
             ApiScope apiScope,
             bool check) =>
             CreateScopeViewModel(parsedScopeValue, apiScope, check);
+
+        public static ScopeViewModel CallCreateScopeViewModel(IdentityResource identity, bool check) =>
+            CreateScopeViewModel(identity, check);
 
         public ScopeViewModel CallCreateOfflineAccessScope(bool check) =>
             CreateOfflineAccessScope(check);

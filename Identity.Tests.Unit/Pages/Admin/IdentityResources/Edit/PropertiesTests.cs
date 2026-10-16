@@ -114,6 +114,62 @@ public class PropertiesTests
     }
 
     [Fact]
+    public async Task OnPostAsync_ExistingPropertyPosted_UpdatesItsKeyAndValueAndSaves()
+    {
+        // Arrange
+        var existing = new IdentityResourceProperty { Id = ExistingEntityId, Key = PropertyKey, Value = PropertyValue, IdentityResourceId = ExistingEntityId };
+        var resource = new IdentityResource { Id = ExistingEntityId, Name = IdentityServerConstants.StandardScopes.OpenId, Properties = [existing] };
+        var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
+        ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
+        var postedKey = Generated.NewPropertyKey();
+        var postedValue = Generated.NewPropertyValue();
+        var model = new Properties(ctx.Object) { Resources = [new IdentityResourceProperty { Id = ExistingEntityId, Key = postedKey, Value = postedValue }] };
+
+        // Act
+        await model.OnPostAsync(ExistingEntityId);
+
+        // Assert
+        var onlyProperty = Assert.Single(resource.Properties);
+        Assert.Same(existing, onlyProperty);
+        Assert.Equal(postedKey, onlyProperty.Key);
+        Assert.Equal(postedValue, onlyProperty.Value);
+        ctx.Verify(c => c.SaveChangesAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_PostedPropertyMatchingNothingPersisted_ChangesNothing()
+    {
+        // Arrange
+        var existing = new IdentityResourceProperty { Id = ExistingEntityId, Key = PropertyKey, Value = PropertyValue, IdentityResourceId = ExistingEntityId };
+        var resource = new IdentityResource { Id = ExistingEntityId, Name = IdentityServerConstants.StandardScopes.OpenId, Properties = [existing] };
+        var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
+        ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
+        var unmatchedKey = Generated.NewPropertyKey();
+        var unmatchedValue = Generated.NewPropertyValue();
+        var model = new Properties(ctx.Object)
+        {
+            Resources =
+            [
+                new IdentityResourceProperty { Id = ExistingEntityId, Key = PropertyKey, Value = PropertyValue },
+                new IdentityResourceProperty { Id = MissingEntityId, Key = unmatchedKey, Value = unmatchedValue },
+            ]
+        };
+
+        // Act
+        await model.OnPostAsync(ExistingEntityId);
+
+        // Assert
+        var onlyProperty = Assert.Single(resource.Properties);
+        Assert.Same(existing, onlyProperty);
+        Assert.Equal(PropertyKey, onlyProperty.Key);
+        Assert.Equal(PropertyValue, onlyProperty.Value);
+    }
+
+    [Fact]
     public async Task OnPostAddRowAsync_AddsBlankRow_WhenFound()
     {
         // Arrange

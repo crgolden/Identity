@@ -129,6 +129,119 @@ public class PasskeySubmitTagHelperTests
         Assert.DoesNotContain(PasskeySubmitTagHelper.RequestTokenValueAttributeName, html, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task ProcessAsync_EveryValuePresent_RendersTheExactButtonAndElement()
+    {
+        // Arrange
+        var httpContext = new DefaultHttpContext();
+        var httpAccessorMock = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
+        httpAccessorMock.Setup(a => a.HttpContext).Returns(httpContext);
+        var requestToken = Generated.NewSessionKey();
+        var headerName = Generated.NewPropertyKey();
+        var antiforgeryMock = new Mock<IAntiforgery>(MockBehavior.Strict);
+        antiforgeryMock
+            .Setup(a => a.GetTokens(httpContext))
+            .Returns(new AntiforgeryTokenSet(requestToken, Generated.NewSessionKey(), Generated.NewPropertyKey(), headerName));
+        var operationName = Generated.NewApiResourceName();
+        var emailName = Generated.NewAttributeName();
+        var helper = new PasskeySubmitTagHelper(httpAccessorMock.Object, antiforgeryMock.Object)
+        {
+            Operation = 0,
+            Name = operationName,
+            EmailName = emailName,
+            Autofill = false
+        };
+        var passThroughName = Generated.NewAttributeName();
+        var passThroughValue = Generated.NewAttributeValue();
+        var attributes = new TagHelperAttributeList
+            {
+                new TagHelperAttribute(PasskeySubmitTagHelper.OperationAttributeName, Generated.NewAttributeValue()),
+                new TagHelperAttribute(PasskeySubmitTagHelper.NameAttributeName, Generated.NewAttributeValue()),
+                new TagHelperAttribute(PasskeySubmitTagHelper.EmailNameAttributeName, Generated.NewAttributeValue()),
+                new TagHelperAttribute(PasskeySubmitTagHelper.AutofillAttributeName, Generated.NewAttributeValue()),
+                new TagHelperAttribute(passThroughName, passThroughValue)
+            };
+        var buttonLabel = Generated.NewButtonLabel();
+        var childContent = new DefaultTagHelperContent();
+        childContent.SetContent(buttonLabel);
+        var output = new TagHelperOutput(
+            PasskeySubmitTagHelper.TagName,
+            attributes,
+            (_, _) => Task.FromResult<TagHelperContent>(childContent));
+        var uniqueId = Guid.NewGuid().ToString();
+        var context = new TagHelperContext([], new Dictionary<object, object>(), uniqueId);
+        var expected =
+            $"{PasskeySubmitTagHelper.ButtonOpeningTag}{passThroughName}=\"{passThroughValue}\" >{buttonLabel}{PasskeySubmitTagHelper.ButtonClosingTag}{Environment.NewLine}"
+            + $"<{PasskeySubmitTagHelper.TagName} "
+            + $"{PasskeySubmitTagHelper.OperationAttributeName}=\"{helper.Operation}\" "
+            + $"{PasskeySubmitTagHelper.NameAttributeName}=\"{operationName}\" "
+            + $"{PasskeySubmitTagHelper.EmailNameAttributeName}=\"{emailName}\" "
+            + $"{PasskeySubmitTagHelper.RequestTokenNameAttributeName}=\"{headerName}\" "
+            + $"{PasskeySubmitTagHelper.RequestTokenValueAttributeName}=\"{requestToken}\" "
+            + $"{PasskeySubmitTagHelper.AutofillAttributeName}=\"{PasskeySubmitTagHelper.AutofillOff}\" "
+            + $"></{PasskeySubmitTagHelper.TagName}>";
+
+        // Act
+        await helper.ProcessAsync(context, output);
+
+        // Assert
+        Assert.Equal(expected, output.Content.GetContent(NullHtmlEncoder.Default));
+    }
+
+    [Fact]
+    public async Task ProcessAsync_BlankButtonContent_RendersAnEmptyButton()
+    {
+        // Arrange
+        var httpContext = new DefaultHttpContext();
+        var httpAccessorMock = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
+        httpAccessorMock.Setup(a => a.HttpContext).Returns(httpContext);
+        var antiforgeryMock = new Mock<IAntiforgery>(MockBehavior.Strict);
+        antiforgeryMock
+            .Setup(a => a.GetTokens(httpContext))
+            .Returns(new AntiforgeryTokenSet(null, Generated.NewSessionKey(), Generated.NewPropertyKey(), null));
+        var helper = new PasskeySubmitTagHelper(httpAccessorMock.Object, antiforgeryMock.Object);
+        var childContent = new DefaultTagHelperContent();
+        childContent.SetContent(Generated.NewBlank());
+        var output = new TagHelperOutput(
+            PasskeySubmitTagHelper.TagName,
+            [],
+            (_, _) => Task.FromResult<TagHelperContent>(childContent));
+        var uniqueId = Guid.NewGuid().ToString();
+        var context = new TagHelperContext([], new Dictionary<object, object>(), uniqueId);
+
+        // Act
+        await helper.ProcessAsync(context, output);
+
+        // Assert
+        Assert.StartsWith(
+            $"{PasskeySubmitTagHelper.ButtonOpeningTag}>{PasskeySubmitTagHelper.ButtonClosingTag}",
+            output.Content.GetContent(NullHtmlEncoder.Default),
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_NoHttpContext_LeavesTheOutputUntouched()
+    {
+        // Arrange
+        var httpAccessorMock = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
+        httpAccessorMock.Setup(a => a.HttpContext).Returns((HttpContext?)null);
+        var helper = new PasskeySubmitTagHelper(httpAccessorMock.Object, new Mock<IAntiforgery>(MockBehavior.Strict).Object);
+        var passThroughName = Generated.NewAttributeName();
+        var output = new TagHelperOutput(
+            PasskeySubmitTagHelper.TagName,
+            [new TagHelperAttribute(passThroughName, Generated.NewAttributeValue())],
+            (_, _) => Task.FromResult<TagHelperContent>(new DefaultTagHelperContent()));
+        var uniqueId = Guid.NewGuid().ToString();
+        var context = new TagHelperContext([], new Dictionary<object, object>(), uniqueId);
+
+        // Act
+        await helper.ProcessAsync(context, output);
+
+        // Assert
+        Assert.Equal(PasskeySubmitTagHelper.TagName, output.TagName);
+        Assert.Equal(passThroughName, Assert.Single(output.Attributes).Name);
+    }
+
     [Theory]
     [InlineData(true, PasskeySubmitTagHelper.AutofillOn)]
     [InlineData(false, PasskeySubmitTagHelper.AutofillOff)]

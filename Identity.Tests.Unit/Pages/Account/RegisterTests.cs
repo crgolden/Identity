@@ -21,6 +21,10 @@ public sealed class RegisterTests : IDisposable
 {
     private readonly TelemetryHarness _harness = new();
 
+    private readonly AccountEmailSettings _emailSettings = TestValues.NewAccountEmailSettings();
+
+    private readonly List<string> _routedPages = [];
+
     public static TheoryData<int> NoneOrOneExternalSchemeCounts() => new() { 0, 1 };
 
     public static TheoryData<string?> NullReturnUrls() => new()
@@ -218,6 +222,20 @@ public sealed class RegisterTests : IDisposable
     }
 
     [Fact]
+    public async Task OnPostAsync_CreateSucceeds_StoresTheTypedEmailAsUserNameAndEmail()
+    {
+        // Arrange
+        var (model, userManagerMock, _, _) = BuildRegisterFixture(requireConfirmedAccount: false);
+
+        // Act
+        await model.OnPostAsync(Generated.NewLocalPath());
+
+        // Assert
+        userManagerMock.Verify(u => u.SetUserNameAsync(It.IsAny<IdentityUser<Guid>>(), model.Input.Email), Times.Once);
+        userManagerMock.Verify(u => u.SetEmailAsync(It.IsAny<IdentityUser<Guid>>(), model.Input.Email), Times.Once);
+    }
+
+    [Fact]
     public async Task OnPostAsync_CreateSucceedsWithANonLocalReturnUrl_RedirectsToTheContentRoot()
     {
         // Arrange
@@ -266,6 +284,127 @@ public sealed class RegisterTests : IDisposable
         Assert.IsType<PageResult>(result);
         Assert.False(model.ModelState.IsValid);
         Assert.True(model.ModelState.ContainsKey(string.Empty));
+        Assert.Contains(model.ModelState.Values.SelectMany(v => v.Errors), e => string.Equals(e.ErrorMessage, Login.CaptchaFailedMessage, StringComparison.Ordinal));
+        userManagerMock.Verify(u => u.CreateAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_CreateSucceeds_SendsTheConfirmationToTheNewAddressFromTheConfiguredSender()
+    {
+        // Arrange
+        var (model, _, _, senderMock) = BuildRegisterFixture(requireConfirmedAccount: true);
+        var sent = new List<ServiceBusMessage>();
+        senderMock.Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
+            .Callback<ServiceBusMessage, CancellationToken>((message, _) => sent.Add(message))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        await model.OnPostAsync(Generated.NewLocalPath());
+
+        // Assert
+        var message = Assert.Single(sent);
+        Assert.Equal(model.Input.Email, message.To);
+        Assert.Equal(_emailSettings.Sender, message.ReplyTo);
+        Assert.Equal(UserMessages.ConfirmEmailSubject, message.Subject);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_CreateSucceeds_BuildsTheCallbackForTheConfirmEmailPage()
+    {
+        // Arrange
+        var (model, _, _, _) = BuildRegisterFixture(requireConfirmedAccount: true);
+
+        // Act
+        await model.OnPostAsync(Generated.NewLocalPath());
+
+        // Assert
+        Assert.Equal(PageRoutes.ConfirmEmail, Assert.Single(_routedPages));
+    }
+
+    [Fact]
+    public async Task OnPostAsync_CreateSucceeds_TagsTheRegisterSpanSucceededAndSent()
+    {
+        // Arrange
+        var (model, _, _, _) = BuildRegisterFixture(requireConfirmedAccount: true);
+
+        // Act
+        await model.OnPostAsync(Generated.NewLocalPath());
+
+        // Assert
+        var span = Assert.Single(_harness.StoppedActivities, a => string.Equals(a.OperationName, Register.RegisterActivityName, StringComparison.Ordinal));
+        Assert.True(Assert.IsType<bool>(span.GetTagItem(Telemetry.Metrics.SucceededTagName)));
+        Assert.True(Assert.IsType<bool>(span.GetTagItem(Telemetry.Metrics.EmailConfirmationSentTagName)));
+    }
+
+    [Fact]
+    public async Task OnPostAsync_NoCallbackUrl_SendsNoEmailAndTagsItUnsent()
+    {
+        // Arrange
+        var (model, _, _, senderMock) = BuildRegisterFixture(requireConfirmedAccount: true, callbackResolves: false);
+
+        // Act
+        await model.OnPostAsync(Generated.NewLocalPath());
+
+        // Assert
+        senderMock.Verify(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()), Times.Never);
+        var span = Assert.Single(_harness.StoppedActivities, a => string.Equals(a.OperationName, Register.RegisterActivityName, StringComparison.Ordinal));
+        Assert.False(Assert.IsType<bool>(span.GetTagItem(Telemetry.Metrics.EmailConfirmationSentTagName)));
+    }
+
+    [Fact]
+    public async Task OnPostAsync_CreateFails_ReRendersWithEveryErrorAndTagsTheSpanFailed()
+    {
+        // Arrange
+        var (model, userManagerMock, signInManagerMock, _) = BuildRegisterFixture(requireConfirmedAccount: false);
+        var firstError = Generated.NewFailureReason();
+        var secondError = Generated.NewFailureReason();
+        userManagerMock
+            .Setup(u => u.CreateAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>()))
+            .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = firstError }, new IdentityError { Description = secondError }));
+
+        // Act
+        var result = await model.OnPostAsync(Generated.NewLocalPath());
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        var messages = model.ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
+        Assert.Equal(new[] { firstError, secondError }, messages);
+        signInManagerMock.Verify(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<bool>(), It.IsAny<string>()), Times.Never);
+        var span = Assert.Single(_harness.StoppedActivities, a => string.Equals(a.OperationName, Register.RegisterActivityName, StringComparison.Ordinal));
+        Assert.False(Assert.IsType<bool>(span.GetTagItem(Telemetry.Metrics.SucceededTagName)));
+    }
+
+    [Fact]
+    public async Task OnPostAsync_BlankEmail_ReturnsPageWithoutVerifyingOrCreating()
+    {
+        // Arrange
+        var captchaMock = CreateRecaptchaServiceMock();
+        var (model, userManagerMock, _, _) = BuildRegisterFixture(requireConfirmedAccount: false, captchaMock);
+        model.Input = new Register.InputModel { Email = Generated.NewBlank(), Password = Generated.NewPassword() };
+
+        // Act
+        var result = await model.OnPostAsync(Generated.NewLocalPath());
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        captchaMock.Verify(c => c.VerifyAsync(It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
+        userManagerMock.Verify(u => u.CreateAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_BlankPassword_ReturnsPageWithoutVerifyingOrCreating()
+    {
+        // Arrange
+        var captchaMock = CreateRecaptchaServiceMock();
+        var (model, userManagerMock, _, _) = BuildRegisterFixture(requireConfirmedAccount: false, captchaMock);
+        model.Input = new Register.InputModel { Email = Generated.NewEmailAddress(), Password = Generated.NewBlank() };
+
+        // Act
+        var result = await model.OnPostAsync(Generated.NewLocalPath());
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        captchaMock.Verify(c => c.VerifyAsync(It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
         userManagerMock.Verify(u => u.CreateAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>()), Times.Never);
     }
 
@@ -342,7 +481,7 @@ public sealed class RegisterTests : IDisposable
         Register Model,
         Mock<UserManager<IdentityUser<Guid>>> UserManagerMock,
         Mock<SignInManager<IdentityUser<Guid>>> SignInManagerMock,
-        Mock<ServiceBusSender> SenderMock) BuildRegisterFixture(bool requireConfirmedAccount)
+        Mock<ServiceBusSender> SenderMock) BuildRegisterFixture(bool requireConfirmedAccount, Mock<ICAPTCHAService>? captchaMock = null, bool callbackResolves = true)
     {
         var identityOptions = new IdentityOptions();
         identityOptions.SignIn.RequireConfirmedAccount = requireConfirmedAccount;
@@ -379,8 +518,8 @@ public sealed class RegisterTests : IDisposable
             userManagerMock.Object,
             signInManagerMock.Object,
             senderFactory,
-            CreateRecaptchaServiceMock().Object,
-            TestValues.NewAccountEmailSettings(),
+            (captchaMock ?? CreateRecaptchaServiceMock()).Object,
+            _emailSettings,
             _harness.Telemetry);
 
         var ctx = new DefaultHttpContext();
@@ -392,7 +531,9 @@ public sealed class RegisterTests : IDisposable
         urlHelperMock.SetupGet(u => u.ActionContext).Returns(
             new ActionContext(new DefaultHttpContext(), urlRouteData, new ActionDescriptor()));
 
-        urlHelperMock.Setup(u => u.RouteUrl(It.IsAny<UrlRouteContext>())).Returns(Generated.NewCallbackAddress());
+        urlHelperMock.Setup(u => u.RouteUrl(It.IsAny<UrlRouteContext>()))
+            .Callback<UrlRouteContext>(context => RoutedPages.Record(context, _routedPages))
+            .Returns(callbackResolves ? Generated.NewCallbackAddress() : null);
         urlHelperMock.Setup(u => u.Content(PageRoutes.ContentRoot)).Returns(Generated.NewLocalPath());
         urlHelperMock.Setup(u => u.IsLocalUrl(It.IsAny<string?>())).Returns<string?>(u => u is not null && u.StartsWith('/'));
         model.Url = urlHelperMock.Object;

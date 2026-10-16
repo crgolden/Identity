@@ -14,6 +14,12 @@ internal static class PageRoutes
 
     internal const string ResendEmailConfirmation = "/Account/ResendEmailConfirmation";
 
+    internal const string ConfirmEmail = "/Account/ConfirmEmail";
+
+    internal const string ConfirmEmailChange = "/Account/ConfirmEmailChange";
+
+    internal const string ResetPassword = "/Account/ResetPassword";
+
     internal const string Logout = "/Account/Logout";
 
     internal const string Lockout = "/Account/Lockout";

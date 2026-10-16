@@ -61,6 +61,17 @@ public sealed class GrantsTests : IDisposable
     }
 
     [Fact]
+    public void GrantViewModel_New_HasNoGrantNames()
+    {
+        // Act
+        var grant = new Grants.GrantViewModel { ClientId = GrantedClientId, ClientName = ExistingClientName };
+
+        // Assert
+        Assert.Empty(grant.IdentityGrantNames);
+        Assert.Empty(grant.ApiGrantNames);
+    }
+
+    [Fact]
     public async Task OnPostAsync_RevokesGrant_RedirectsToPage()
     {
         // Arrange
@@ -246,6 +257,39 @@ public sealed class GrantsTests : IDisposable
 
         // Assert
         Assert.Equal(RevokedClientId, revokedClientId);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_RaisesTheRevokedEventCountsItAndTagsTheSpan()
+    {
+        // Arrange
+        var raised = new List<GrantsRevokedEvent>();
+        var mockInteraction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
+        mockInteraction.Setup(x => x.RevokeUserConsentAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        var mockEvents = new Mock<IEventService>(MockBehavior.Strict);
+        mockEvents
+            .Setup(x => x.RaiseAsync(It.IsAny<GrantsRevokedEvent>(), It.IsAny<CancellationToken>()))
+            .Callback<Event, CancellationToken>((evt, _) => raised.Add(Assert.IsType<GrantsRevokedEvent>(evt)))
+            .Returns(Task.CompletedTask);
+        var httpContext = new DefaultHttpContext
+        {
+            User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(JwtClaimTypes.Subject, SignedInSubjectId)], AuthenticationType))
+        };
+        var model = Create(mockInteraction.Object, new Mock<IClientStore>(MockBehavior.Strict).Object, new Mock<IResourceStore>(MockBehavior.Strict).Object, mockEvents.Object, httpContext);
+        model.ClientId = RevokedClientId;
+        var counted = new List<long>();
+        using var listener = _harness.ListenTo(global::Identity.Telemetry.Metrics.GrantsRevokedCounterName, (value, _) => counted.Add(value));
+
+        // Act
+        await model.OnPostAsync();
+
+        // Assert
+        var revoked = Assert.Single(raised);
+        Assert.Equal(SignedInSubjectId, revoked.SubjectId);
+        Assert.Equal(RevokedClientId, revoked.ClientId);
+        Assert.Single(counted);
+        var span = Assert.Single(_harness.StoppedActivities, a => string.Equals(a.OperationName, Grants.RevokeActivityName, StringComparison.Ordinal));
+        Assert.Equal(RevokedClientId, span.GetTagItem(global::Identity.Telemetry.Metrics.ClientIdTagName));
     }
 
     public void Dispose() => _harness.Dispose();

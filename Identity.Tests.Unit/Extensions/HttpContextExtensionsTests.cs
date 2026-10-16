@@ -79,9 +79,12 @@ public sealed class HttpContextExtensionsTests : IDisposable
         // Assert
         Assert.NotNull(activity);
         Assert.Equal(ActivityStatusCode.Error, activity.Status);
-        Assert.Contains(
+        var exceptionEvent = Assert.Single(
             activity.Events,
             e => string.Equals(e.Name, Telemetry.Metrics.ExceptionEventName, StringComparison.Ordinal));
+        var tags = exceptionEvent.Tags.ToDictionary(t => t.Key, t => t.Value, StringComparer.Ordinal);
+        Assert.Equal(typeof(InvalidOperationException).FullName, tags[Telemetry.Metrics.ExceptionTypeTagName]);
+        Assert.Equal(ex.Message, tags[Telemetry.Metrics.ExceptionMessageTagName]);
     }
 
     [Fact]

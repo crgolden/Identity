@@ -110,6 +110,69 @@ public class ScopesTests
     }
 
     [Fact]
+    public async Task OnPostAsync_ExistingScopePosted_UpdatesItsScopeAndSaves()
+    {
+        // Arrange
+        var existing = new ApiResourceScope { Id = ExistingEntityId, Scope = ExistingScopeName, ApiResourceId = ExistingEntityId };
+        var resource = new ApiResource { Id = ExistingEntityId, Name = Generated.NewApiResourceName(), Scopes = [existing] };
+        var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
+        ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
+        var model = new Scopes(ctx.Object) { Resources = [new ApiResourceScope { Id = ExistingEntityId, Scope = PostedScopeName }] };
+
+        // Act
+        await model.OnPostAsync(ExistingEntityId);
+
+        // Assert
+        var onlyScope = Assert.Single(resource.Scopes);
+        Assert.Same(existing, onlyScope);
+        Assert.Equal(PostedScopeName, onlyScope.Scope);
+        ctx.Verify(c => c.SaveChangesAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_PostedScopeMatchingNothingPersisted_ChangesNothing()
+    {
+        // Arrange
+        var existing = new ApiResourceScope { Id = ExistingEntityId, Scope = ExistingScopeName, ApiResourceId = ExistingEntityId };
+        var resource = new ApiResource { Id = ExistingEntityId, Name = Generated.NewApiResourceName(), Scopes = [existing] };
+        var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
+        ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
+        var model = new Scopes(ctx.Object)
+        {
+            Resources =
+            [
+                new ApiResourceScope { Id = ExistingEntityId, Scope = ExistingScopeName },
+                new ApiResourceScope { Id = MissingEntityId, Scope = PostedScopeName },
+            ]
+        };
+
+        // Act
+        await model.OnPostAsync(ExistingEntityId);
+
+        // Assert
+        var onlyScope = Assert.Single(resource.Scopes);
+        Assert.Same(existing, onlyScope);
+        Assert.Equal(ExistingScopeName, onlyScope.Scope);
+    }
+
+    [Fact]
+    public void Constructor_StartsWithNoResources()
+    {
+        // Arrange
+        var ctx = new Mock<IConfigurationDbContext>();
+
+        // Act
+        var model = new Scopes(ctx.Object);
+
+        // Assert
+        Assert.Empty(model.Resources);
+    }
+
+    [Fact]
     public async Task OnPostAddRowAsync_AddsBlankRow_WhenFound()
     {
         // Arrange
@@ -159,6 +222,45 @@ public class ScopesTests
         // Assert
         Assert.IsType<PageResult>(result);
         Assert.Empty(model.Resources);
+    }
+
+    [Fact]
+    public async Task OnPostRemoveRowAsync_NegativeIndex_LeavesRowsUnchanged()
+    {
+        // Arrange
+        var resource = new ApiResource { Id = ExistingEntityId, Name = Generated.NewApiResourceName() };
+        var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
+        var row = new ApiResourceScope { Id = ExistingEntityId, Scope = ExistingScopeName };
+        var model = new Scopes(ctx.Object) { Resources = [row] };
+
+        // Act
+        var result = await model.OnPostRemoveRowAsync(ExistingEntityId, -1);
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        Assert.Same(row, Assert.Single(model.Resources));
+    }
+
+    [Fact]
+    public async Task OnPostRemoveRowAsync_IndexEqualToRowCount_LeavesRowsUnchanged()
+    {
+        // Arrange
+        var resource = new ApiResource { Id = ExistingEntityId, Name = Generated.NewApiResourceName() };
+        var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
+        var row = new ApiResourceScope { Id = ExistingEntityId, Scope = ExistingScopeName };
+        var model = new Scopes(ctx.Object) { Resources = [row] };
+        var rowCount = model.Resources.Count;
+
+        // Act
+        var result = await model.OnPostRemoveRowAsync(ExistingEntityId, rowCount);
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        Assert.Same(row, Assert.Single(model.Resources));
     }
 
     [Fact]

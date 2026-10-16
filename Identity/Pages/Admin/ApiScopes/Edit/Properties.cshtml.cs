@@ -39,7 +39,7 @@ public class Properties : EditableResourcesBase<int, ApiScopeProperty>
 
         scope.Properties.RemoveAll(p => !Resources.Any(posted => posted.Id == p.Id));
 
-        foreach (var posted in Resources.Where(p => p.Id > 0))
+        foreach (var posted in Resources)
         {
             var existing = scope.Properties.FirstOrDefault(p => p.Id == posted.Id);
             if (existing is not null)

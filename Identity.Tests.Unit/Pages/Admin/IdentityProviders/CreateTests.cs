@@ -35,12 +35,15 @@ public class CreateTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.IdentityProviders.Add(It.IsAny<IdentityProvider>()));
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
-        var model = new Create(ctx.Object) { IdentityProvider = new IdentityProvider { Scheme = SchemeName } };
+        var provider = new IdentityProvider { Scheme = SchemeName };
+        var model = new Create(ctx.Object) { IdentityProvider = provider };
 
         // Act
         var result = await model.OnPostAsync();
 
         // Assert
+        ctx.Verify(c => c.IdentityProviders.Add(provider), Times.Once);
+        ctx.Verify(c => c.SaveChangesAsync(), Times.Once);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal(PageRoutes.SiblingDetails, redirect.PageName);
     }

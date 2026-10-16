@@ -57,6 +57,41 @@ public class CreateTests
     }
 
     [Fact]
+    public async Task OnPostAsync_ModelInvalidWithRoleName_ReturnsPageWithoutCreatingTheRole()
+    {
+        // Arrange
+        var rm = MockHelpers.MockRoleManager();
+        rm.Setup(m => m.CreateAsync(It.IsAny<IdentityRole<Guid>>())).ReturnsAsync(IdentityResult.Success);
+        var model = new Create(rm.Object) { RoleName = RoleName };
+        model.ModelState.AddModelError(nameof(Create.RoleName), Generated.NewValidationMessage());
+
+        // Act
+        var result = await model.OnPostAsync();
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        rm.Verify(m => m.CreateAsync(It.IsAny<IdentityRole<Guid>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_CreateFails_ReturnsPageWithEachErrorInModelState()
+    {
+        // Arrange
+        var errorDescription = Generated.NewValidationMessage();
+        var rm = MockHelpers.MockRoleManager();
+        rm.Setup(m => m.CreateAsync(It.IsAny<IdentityRole<Guid>>())).ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = errorDescription }));
+        var model = new Create(rm.Object) { RoleName = RoleName };
+
+        // Act
+        var result = await model.OnPostAsync();
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        var onlyError = Assert.Single(model.ModelState.Values.SelectMany(v => v.Errors));
+        Assert.Equal(errorDescription, onlyError.ErrorMessage);
+    }
+
+    [Fact]
     public async Task OnPostAsync_RoleNameIsBlank_ReturnsPageWithoutCreatingTheRole()
     {
         // Arrange

@@ -69,8 +69,29 @@ public class IndexTests
 
         // Assert
         Assert.Equal(UpdatedScopeName, scope.Name);
+        ctx.Verify(c => c.SaveChangesAsync(), Times.Once);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal(Index.DetailsPageName, redirect.PageName);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_ReturnsPageWithoutSaving_WhenModelInvalid()
+    {
+        // Arrange
+        var scope = new ApiScope { Id = ExistingEntityId, Name = ScopeName };
+        var mockSet = MockDbSetHelper.BuildMockDbSet([scope]);
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
+        var model = new Index(ctx.Object) { Scope = new ApiScope { Name = UpdatedScopeName } };
+        model.ModelState.AddModelError(nameof(ApiScope.Name), Generated.NewValidationMessage());
+
+        // Act
+        var result = await model.OnPostAsync(ExistingEntityId);
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        Assert.Equal(ScopeName, scope.Name);
+        ctx.Verify(c => c.SaveChangesAsync(), Times.Never);
     }
 
     [Fact]

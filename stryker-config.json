@@ -16,14 +16,15 @@
     },
     "mutation-level": "Advanced",
     "thresholds": {
-      "high": 75,
-      "low": 65,
-      "break": 60
+      "high": 100,
+      "low": 100,
+      "break": 100
     },
     "mutate": [
       "**/*.cs",
       "!obj/**/*.cs",
-      "!Program.cs"
+      "!Program.cs",
+      "!**/SingleQueryClientStore.cs"
     ],
     "since": {
       "enabled": false

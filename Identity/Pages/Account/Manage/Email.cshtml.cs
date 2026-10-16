@@ -95,7 +95,7 @@ public class Email : PageModel
             var input = UTF8.GetBytes(code);
             code = Base64UrlEncode(input);
             var callbackUrl = Url.Page(
-                "/Account/ConfirmEmailChange",
+                PageRoutes.ConfirmEmailChange,
                 pageHandler: null,
                 values: new { userId, email = Input.NewEmail, code },
                 protocol: Request.Scheme);
@@ -152,7 +152,7 @@ public class Email : PageModel
         var input = UTF8.GetBytes(code);
         code = Base64UrlEncode(input);
         var callbackUrl = Url.Page(
-            "/Account/ConfirmEmail",
+            PageRoutes.ConfirmEmail,
             pageHandler: null,
             values: new { userId, code },
             protocol: Request.Scheme);

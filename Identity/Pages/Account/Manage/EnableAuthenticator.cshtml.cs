@@ -13,6 +13,10 @@ public class EnableAuthenticator : PageModel
 {
     internal const int RecoveryCodeCount = 10;
 
+    internal const int SharedKeyGroupLength = 4;
+
+    internal const char SharedKeyGroupSeparator = ' ';
+
     internal const string CodeModelStateKey =
         "Input.Code";
 
@@ -105,13 +109,12 @@ public class EnableAuthenticator : PageModel
     {
         var result = new StringBuilder();
         var currentPosition = 0;
-        const int length = 4;
         ReadOnlySpan<char> value;
-        while (currentPosition + length < unformattedKey.Length)
+        while (currentPosition + SharedKeyGroupLength < unformattedKey.Length)
         {
-            value = unformattedKey.AsSpan(currentPosition, length);
-            result.Append(value).Append(' ');
-            currentPosition += length;
+            value = unformattedKey.AsSpan(currentPosition, SharedKeyGroupLength);
+            result.Append(value).Append(SharedKeyGroupSeparator);
+            currentPosition += SharedKeyGroupLength;
         }
 
         if (currentPosition >= unformattedKey.Length)

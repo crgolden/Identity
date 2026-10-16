@@ -232,6 +232,48 @@ public class EndpointRouteBuilderExtensionsTests
         }
     }
 
+    [Fact]
+    public async Task PasskeyCreationOptions_AntiforgeryRejected_Returns400WithoutLoadingTheUser()
+    {
+        // Arrange
+        var (userManagerMock, signInManagerMock, antiforgeryMock) = CreateMocks();
+        antiforgeryMock
+            .Setup(a => a.ValidateRequestAsync(It.IsAny<HttpContext>()))
+            .ThrowsAsync(new AntiforgeryValidationException(Generated.NewFailureReason()));
+        var (app, client) = await BuildTestAppAsync(userManagerMock, signInManagerMock, antiforgeryMock);
+        await using (app)
+        {
+            // Act
+            var response = await client.PostAsync(PasskeyEndpoints.CreationOptionsPath, null, TestContext.Current.CancellationToken);
+
+            // Assert
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            userManagerMock.Verify(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>()), Times.Never);
+            signInManagerMock.Verify(s => s.MakePasskeyCreationOptionsAsync(It.IsAny<PasskeyUserEntity>()), Times.Never);
+        }
+    }
+
+    [Fact]
+    public async Task PasskeyRequestOptions_AntiforgeryRejected_Returns400WithoutMakingOptions()
+    {
+        // Arrange
+        var (userManagerMock, signInManagerMock, antiforgeryMock) = CreateMocks();
+        antiforgeryMock
+            .Setup(a => a.ValidateRequestAsync(It.IsAny<HttpContext>()))
+            .ThrowsAsync(new AntiforgeryValidationException(Generated.NewFailureReason()));
+        var (app, client) = await BuildTestAppAsync(userManagerMock, signInManagerMock, antiforgeryMock);
+        await using (app)
+        {
+            // Act
+            var response = await client.PostAsync(UserNameQuery(SignedInUserName), null, TestContext.Current.CancellationToken);
+
+            // Assert
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            userManagerMock.Verify(u => u.FindByNameAsync(It.IsAny<string>()), Times.Never);
+            signInManagerMock.Verify(s => s.MakePasskeyRequestOptionsAsync(It.IsAny<IdentityUser<Guid>?>()), Times.Never);
+        }
+    }
+
     private static string UserNameQuery(string userName) =>
         PasskeyEndpoints.RequestOptionsPath + '?' + PasskeyEndpoints.UserNameQueryKey + '=' + userName;
 

@@ -44,7 +44,9 @@ public class ClaimsTests
         // Assert
         Assert.IsType<PageResult>(result);
         Assert.Equal(RoleName, model.RoleName);
-        Assert.Single(model.Resources);
+        var onlyResource = Assert.Single(model.Resources);
+        Assert.Equal(ClaimType, onlyResource.Type);
+        Assert.Equal(ClaimValue, onlyResource.Value);
     }
 
     [Fact]
@@ -131,6 +133,42 @@ public class ClaimsTests
         // Assert
         rm.Verify(m => m.AddClaimAsync(role, It.IsAny<Claim>()), Times.Never);
         Assert.IsType<RedirectToPageResult>(result);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_RowWithTypeButBlankValue_SavesNothing()
+    {
+        // Arrange
+        var role = new IdentityRole<Guid>(RoleName);
+        var rm = MockHelpers.MockRoleManager();
+        rm.Setup(m => m.FindByIdAsync(role.Id.ToString())).ReturnsAsync(role);
+        rm.Setup(m => m.GetClaimsAsync(role)).ReturnsAsync([]);
+        rm.Setup(m => m.AddClaimAsync(role, It.IsAny<Claim>())).ReturnsAsync(IdentityResult.Success);
+        var model = new Claims(rm.Object) { Resources = [new Claims.ClaimInputModel { Type = PostedClaimType, Value = Generated.NewWhitespaceValue() }] };
+
+        // Act
+        await model.OnPostAsync(role.Id.ToString());
+
+        // Assert
+        rm.Verify(m => m.AddClaimAsync(role, It.IsAny<Claim>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_RowWithValueButBlankType_SavesNothing()
+    {
+        // Arrange
+        var role = new IdentityRole<Guid>(RoleName);
+        var rm = MockHelpers.MockRoleManager();
+        rm.Setup(m => m.FindByIdAsync(role.Id.ToString())).ReturnsAsync(role);
+        rm.Setup(m => m.GetClaimsAsync(role)).ReturnsAsync([]);
+        rm.Setup(m => m.AddClaimAsync(role, It.IsAny<Claim>())).ReturnsAsync(IdentityResult.Success);
+        var model = new Claims(rm.Object) { Resources = [new Claims.ClaimInputModel { Type = Generated.NewWhitespaceValue(), Value = PostedClaimValue }] };
+
+        // Act
+        await model.OnPostAsync(role.Id.ToString());
+
+        // Assert
+        rm.Verify(m => m.AddClaimAsync(role, It.IsAny<Claim>()), Times.Never);
     }
 
     [Fact]

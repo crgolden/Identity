@@ -36,6 +36,40 @@ public class IndexTests
     }
 
     [Fact]
+    public async Task OnGetAsync_CoordinateLifetimeUnset_ShowsFalse()
+    {
+        // Arrange
+        var client = new Client { Id = ExistingEntityId, ClientId = Generated.NewClientIdentifier(), CoordinateLifetimeWithUserSession = null };
+        var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.Clients).Returns(mockSet.Object);
+        var model = new Index(ctx.Object);
+
+        // Act
+        await model.OnGetAsync(ExistingEntityId);
+
+        // Assert
+        Assert.False(model.CoordinateLifetimeWithUserSession);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_CoordinateLifetimeSet_ShowsTrue()
+    {
+        // Arrange
+        var client = new Client { Id = ExistingEntityId, ClientId = Generated.NewClientIdentifier(), CoordinateLifetimeWithUserSession = true };
+        var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.Clients).Returns(mockSet.Object);
+        var model = new Index(ctx.Object);
+
+        // Act
+        await model.OnGetAsync(ExistingEntityId);
+
+        // Assert
+        Assert.True(model.CoordinateLifetimeWithUserSession);
+    }
+
+    [Fact]
     public async Task OnGetAsync_ReturnsNotFound_WhenMissing()
     {
         // Arrange
@@ -82,6 +116,7 @@ public class IndexTests
 
         // Assert
         Assert.Equal(ExistingClientId, client.ClientId);
+        ctx.Verify(c => c.SaveChangesAsync(), Times.Once);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal(Index.DetailsPageName, redirect.PageName);
     }

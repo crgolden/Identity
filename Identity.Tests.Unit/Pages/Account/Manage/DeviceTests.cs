@@ -33,7 +33,20 @@ public sealed class DeviceTests : IDisposable
     private static readonly IOptions<ConsentOptions> OfflineAccessEnabled =
         Options.Create(new ConsentOptions(true, Generated.NewDisplayName(), Generated.NewDescription()));
 
+    private static readonly IOptions<ConsentOptions> OfflineAccessDisabled =
+        Options.Create(new ConsentOptions(false, Generated.NewDisplayName(), Generated.NewDescription()));
+
     private readonly TelemetryHarness _harness = new();
+
+    [Fact]
+    public void InputModel_New_HasNoScopesConsented()
+    {
+        // Act
+        var input = new Device.InputModel();
+
+        // Assert
+        Assert.Empty(input.ScopesConsented);
+    }
 
     [Fact]
     public void Constructor_ValidDependencies_CreatesPageModel()
@@ -196,6 +209,7 @@ public sealed class DeviceTests : IDisposable
 
         // Assert
         Assert.Equal(PageRoutes.Error, Assert.IsType<RedirectToPageResult>(result).PageName);
+        Assert.True(model.ModelState.IsValid);
     }
 
     [Fact]
@@ -219,6 +233,73 @@ public sealed class DeviceTests : IDisposable
         Assert.Equal(Device.DeviceSuccessPagePath, Assert.IsType<RedirectToPageResult>(result).PageName);
         events.Verify(e => e.RaiseAsync(It.IsAny<ConsentDeniedEvent>(), It.IsAny<CancellationToken>()), Times.Once);
         interaction.Verify(x => x.HandleRequestAsync(KnownUserCode, It.IsAny<ConsentResponse>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_ButtonNo_HandlesTheRequestWithAnAccessDeniedResponse()
+    {
+        // Arrange
+        var handled = new List<ConsentResponse>();
+        var interaction = InteractionRecordingResponses(handled);
+        var model = Create(interaction.Object, AcceptingEvents());
+        model.Input = new Device.InputModel { Button = global::Identity.Pages.Account.Manage.Consent.DenyButtonValue, UserCode = KnownUserCode };
+        var denials = new List<long>();
+        using var deniedListener = _harness.ListenTo(global::Identity.Telemetry.Metrics.ConsentDeniedCounterName, (value, _) => denials.Add(value));
+
+        // Act
+        await model.OnPostAsync();
+
+        // Assert
+        Assert.Equal(InteractionError.AccessDenied, Assert.Single(handled).Error);
+        Assert.Single(denials);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_ButtonYes_OfflineAccessDisabled_DropsOfflineAccessFromTheResponse()
+    {
+        // Arrange
+        var handled = new List<ConsentResponse>();
+        var interaction = InteractionRecordingResponses(handled);
+        var model = Create(interaction.Object, AcceptingEvents(), OfflineAccessDisabled);
+        model.Input = new Device.InputModel
+        {
+            Button = global::Identity.Pages.Account.Manage.Consent.GrantButtonValue,
+            ScopesConsented = [IdentityServerConstants.StandardScopes.OpenId, IdentityServerConstants.StandardScopes.OfflineAccess],
+            UserCode = KnownUserCode,
+        };
+
+        // Act
+        await model.OnPostAsync();
+
+        // Assert
+        Assert.Equal(new[] { IdentityServerConstants.StandardScopes.OpenId }, Assert.Single(handled).ScopesValuesConsented);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_ButtonYes_OfflineAccessEnabled_KeepsOfflineAccessInTheResponse()
+    {
+        // Arrange
+        var handled = new List<ConsentResponse>();
+        var interaction = InteractionRecordingResponses(handled);
+        var model = Create(interaction.Object, AcceptingEvents());
+        model.Input = new Device.InputModel
+        {
+            Button = global::Identity.Pages.Account.Manage.Consent.GrantButtonValue,
+            ScopesConsented = [IdentityServerConstants.StandardScopes.OpenId, IdentityServerConstants.StandardScopes.OfflineAccess],
+            UserCode = KnownUserCode,
+        };
+        var grants = new List<long>();
+        var denials = new List<long>();
+        using var grantedListener = _harness.ListenTo(global::Identity.Telemetry.Metrics.ConsentGrantedCounterName, (value, _) => grants.Add(value));
+        using var deniedListener = _harness.ListenTo(global::Identity.Telemetry.Metrics.ConsentDeniedCounterName, (value, _) => denials.Add(value));
+
+        // Act
+        await model.OnPostAsync();
+
+        // Assert
+        Assert.Equal(new[] { IdentityServerConstants.StandardScopes.OpenId, IdentityServerConstants.StandardScopes.OfflineAccess }, Assert.Single(handled).ScopesValuesConsented);
+        Assert.Single(grants);
+        Assert.Single(denials);
     }
 
     [Fact]
@@ -329,11 +410,30 @@ public sealed class DeviceTests : IDisposable
         };
     }
 
+    private static Mock<IDeviceFlowInteractionService> InteractionRecordingResponses(List<ConsentResponse> handled)
+    {
+        var interaction = new Mock<IDeviceFlowInteractionService>(MockBehavior.Strict);
+        interaction.Setup(x => x.GetAuthorizationContextAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(BuildRequest());
+        interaction
+            .Setup(x => x.HandleRequestAsync(KnownUserCode, It.IsAny<ConsentResponse>(), It.IsAny<CancellationToken>()))
+            .Callback<string, ConsentResponse, CancellationToken>((_, response, _) => handled.Add(response))
+            .ReturnsAsync(new DeviceFlowInteractionResult());
+        return interaction;
+    }
+
+    private static IEventService AcceptingEvents()
+    {
+        var events = new Mock<IEventService>(MockBehavior.Strict);
+        events.Setup(e => e.RaiseAsync(It.IsAny<Event>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        return events.Object;
+    }
+
     private Device Create(
         IDeviceFlowInteractionService interaction,
-        IEventService? events = null)
+        IEventService? events = null,
+        IOptions<ConsentOptions>? consentOptions = null)
     {
-        var model = new Device(interaction, events ?? Mock.Of<IEventService>(), OfflineAccessEnabled, _harness.Telemetry);
+        var model = new Device(interaction, events ?? Mock.Of<IEventService>(), consentOptions ?? OfflineAccessEnabled, _harness.Telemetry);
         var principal = new ClaimsPrincipal(new ClaimsIdentity([new Claim(JwtClaimTypes.Subject, SignedInSubjectId)], AuthenticationType));
         model.PageContext = new PageContext
         {

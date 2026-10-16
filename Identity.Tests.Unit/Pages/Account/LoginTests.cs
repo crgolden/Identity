@@ -81,6 +81,39 @@ public sealed class LoginTests : IDisposable
     }
 
     [Fact]
+    public async Task OnGetAsync_SignsOutOfTheExternalScheme()
+    {
+        // Arrange
+        var authServiceMock = CreateSignOutAcceptingAuthService();
+        var model = CreateModelWithContext(authServiceMock, CreateRecaptchaServiceMock());
+
+        // Act
+        await model.OnGetAsync();
+
+        // Assert
+        authServiceMock.Verify(a => a.SignOutAsync(It.IsAny<HttpContext>(), IdentityConstants.ExternalScheme, It.IsAny<AuthenticationProperties?>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_ExposesTheCaptchaSiteKeyAndScriptEndpoint()
+    {
+        // Arrange
+        var captchaMock = CreateRecaptchaServiceMock();
+        var siteKey = Generated.NewRecaptchaSiteKey();
+        var scriptEndpoint = Generated.NewProviderBaseAddress();
+        captchaMock.Setup(s => s.SiteKey).Returns(siteKey);
+        captchaMock.Setup(s => s.ScriptEndpoint).Returns(scriptEndpoint);
+        var model = CreateModelWithContext(CreateSignOutAcceptingAuthService(), captchaMock);
+
+        // Act
+        await model.OnGetAsync();
+
+        // Assert
+        Assert.Equal(siteKey, model.RecaptchaSiteKey);
+        Assert.Equal(scriptEndpoint, model.RecaptchaScriptEndpoint);
+    }
+
+    [Fact]
     public async Task OnGetAsync_ExternalSchemesAvailable_PopulatesExternalLogins()
     {
         // Arrange
@@ -418,7 +451,132 @@ public sealed class LoginTests : IDisposable
         signInManagerMock.Verify(s => s.PasswordSignInAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>()), Times.Never);
     }
 
+    [Fact]
+    public async Task OnPostAsync_PasswordSignIn_Succeeded_RedirectsToTheRequestedLocalReturnUrl()
+    {
+        // Arrange
+        var signInManagerMock = SignInManagerWithPasswordResult(Microsoft.AspNetCore.Identity.SignInResult.Success);
+        var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
+        urlHelperMock.Setup(u => u.IsLocalUrl(RequestedReturnUrl)).Returns(true);
+        var model = CreatePostModel(signInManagerMock, urlHelperMock, PasswordInput());
+
+        // Act
+        var result = await model.OnPostAsync(RequestedReturnUrl);
+
+        // Assert
+        Assert.Equal(RequestedReturnUrl, Assert.IsType<LocalRedirectResult>(result).Url);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_PasswordSignIn_Succeeded_NonLocalReturnUrl_RedirectsToTheContentRoot()
+    {
+        // Arrange
+        var nonLocalReturnUrl = Generated.NewOrigin();
+        var signInManagerMock = SignInManagerWithPasswordResult(Microsoft.AspNetCore.Identity.SignInResult.Success);
+        var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
+        urlHelperMock.Setup(u => u.IsLocalUrl(nonLocalReturnUrl)).Returns(false);
+        var model = CreatePostModel(signInManagerMock, urlHelperMock, PasswordInput());
+
+        // Act
+        var result = await model.OnPostAsync(nonLocalReturnUrl);
+
+        // Assert
+        Assert.Equal(PageRoutes.ContentRoot, Assert.IsType<LocalRedirectResult>(result).Url);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_PasswordSignIn_TagsTheSpanWithLockoutAndTwoFactor()
+    {
+        // Arrange
+        var signInManagerMock = SignInManagerWithPasswordResult(Microsoft.AspNetCore.Identity.SignInResult.LockedOut);
+        var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
+        urlHelperMock.Setup(u => u.Content(PageRoutes.ContentRoot)).Returns(ContentRootUrl);
+        var model = CreatePostModel(signInManagerMock, urlHelperMock, PasswordInput());
+
+        // Act
+        await model.OnPostAsync();
+
+        // Assert
+        var span = Assert.Single(_harness.StoppedActivities, a => string.Equals(a.OperationName, Login.PasswordActivityName, StringComparison.Ordinal));
+        Assert.True(Assert.IsType<bool>(span.GetTagItem(Login.LockedOutTagName)));
+        Assert.False(Assert.IsType<bool>(span.GetTagItem(Login.RequiresTwoFactorTagName)));
+    }
+
+    [Fact]
+    public async Task OnPostAsync_PasswordSignIn_RequiresTwoFactor_TagsTheSpan()
+    {
+        // Arrange
+        var signInManagerMock = SignInManagerWithPasswordResult(Microsoft.AspNetCore.Identity.SignInResult.TwoFactorRequired);
+        var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
+        urlHelperMock.Setup(u => u.Content(PageRoutes.ContentRoot)).Returns(ContentRootUrl);
+        var model = CreatePostModel(signInManagerMock, urlHelperMock, PasswordInput());
+
+        // Act
+        await model.OnPostAsync();
+
+        // Assert
+        var span = Assert.Single(_harness.StoppedActivities, a => string.Equals(a.OperationName, Login.PasswordActivityName, StringComparison.Ordinal));
+        Assert.True(Assert.IsType<bool>(span.GetTagItem(Login.RequiresTwoFactorTagName)));
+        Assert.False(Assert.IsType<bool>(span.GetTagItem(Login.LockedOutTagName)));
+    }
+
+    [Fact]
+    public async Task OnPostAsync_PasskeySignIn_ClearsTheFormErrorsOfTheUnusedPasswordFields()
+    {
+        // Arrange
+        var signInManagerMock = CreateSignInManagerMock();
+        signInManagerMock.Setup(s => s.PasskeySignInAsync(PasskeyCredentialJson)).ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Failed);
+        var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
+        urlHelperMock.Setup(u => u.Content(PageRoutes.ContentRoot)).Returns(ContentRootUrl);
+        var model = CreatePostModel(signInManagerMock, urlHelperMock, PasskeyInput());
+        var staleKey = Generated.NewModelStateKey();
+        model.ModelState.AddModelError(staleKey, Generated.NewValidationMessage());
+
+        // Act
+        await model.OnPostAsync();
+
+        // Assert
+        Assert.False(model.ModelState.ContainsKey(staleKey));
+    }
+
+    [Fact]
+    public async Task OnPostAsync_PasskeySignIn_TagsTheSpanAndCountsTheAttempt()
+    {
+        // Arrange
+        var signInManagerMock = CreateSignInManagerMock();
+        signInManagerMock.Setup(s => s.PasskeySignInAsync(PasskeyCredentialJson)).ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Success);
+        var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
+        urlHelperMock.Setup(u => u.Content(PageRoutes.ContentRoot)).Returns(ContentRootUrl);
+        urlHelperMock.Setup(u => u.IsLocalUrl(ContentRootUrl)).Returns(true);
+        var model = CreatePostModel(signInManagerMock, urlHelperMock, PasskeyInput());
+        var measurements = new List<long>();
+        using var listener = _harness.ListenTo(Telemetry.Metrics.PasskeySignInCounterName, (value, _) => measurements.Add(value));
+
+        // Act
+        await model.OnPostAsync();
+
+        // Assert
+        var span = Assert.Single(_harness.StoppedActivities, a => string.Equals(a.OperationName, Login.PasskeyActivityName, StringComparison.Ordinal));
+        Assert.True(Assert.IsType<bool>(span.GetTagItem(Telemetry.Metrics.SucceededTagName)));
+        Assert.Single(measurements);
+    }
+
     public void Dispose() => _harness.Dispose();
+
+    private static Login.InputModel PasswordInput() =>
+        new() { Email = Generated.NewEmailAddress(), Password = Generated.NewPassword() };
+
+    private static Login.InputModel PasskeyInput() =>
+        new() { Passkey = new Identity.Pages.Account.Manage.PasskeyInputModel { CredentialJson = PasskeyCredentialJson } };
+
+    private static Mock<SignInManager<IdentityUser<Guid>>> SignInManagerWithPasswordResult(Microsoft.AspNetCore.Identity.SignInResult result)
+    {
+        var signInManagerMock = CreateSignInManagerMock();
+        signInManagerMock
+            .Setup(s => s.PasswordSignInAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>()))
+            .ReturnsAsync(result);
+        return signInManagerMock;
+    }
 
     private static Mock<SignInManager<IdentityUser<Guid>>> CreateSignInManagerMock()
     {
@@ -443,7 +601,30 @@ public sealed class LoginTests : IDisposable
         return mock;
     }
 
-    private Login CreateModelWithContext(params AuthenticationScheme[] schemes)
+    private static Mock<IAuthenticationService> CreateSignOutAcceptingAuthService()
+    {
+        var authServiceMock = new Mock<IAuthenticationService>(MockBehavior.Strict);
+        authServiceMock
+            .Setup(a => a.SignOutAsync(It.IsAny<HttpContext>(), It.IsAny<string>(), It.IsAny<AuthenticationProperties?>()))
+            .Returns(Task.CompletedTask);
+        return authServiceMock;
+    }
+
+    private Login CreatePostModel(Mock<SignInManager<IdentityUser<Guid>>> signInManagerMock, Mock<IUrlHelper> urlHelperMock, Login.InputModel input) =>
+        new(signInManagerMock.Object, CreateRecaptchaServiceMock().Object, _harness.Telemetry)
+        {
+            Url = urlHelperMock.Object,
+            PageContext = new PageContext(new ActionContext(new DefaultHttpContext(), new RouteData(), new PageActionDescriptor())),
+            Input = input,
+        };
+
+    private Login CreateModelWithContext(params AuthenticationScheme[] schemes) =>
+        CreateModelWithContext(CreateSignOutAcceptingAuthService(), CreateRecaptchaServiceMock(), schemes);
+
+    private Login CreateModelWithContext(
+        Mock<IAuthenticationService> authServiceMock,
+        Mock<ICAPTCHAService> captchaMock,
+        params AuthenticationScheme[] schemes)
     {
         var userManagerMock = MockHelpers.MockUserManager();
         var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
@@ -451,17 +632,12 @@ public sealed class LoginTests : IDisposable
             .Setup(s => s.GetExternalAuthenticationSchemesAsync())
             .ReturnsAsync(schemes);
 
-        var authServiceMock = new Mock<IAuthenticationService>(MockBehavior.Strict);
-        authServiceMock
-            .Setup(a => a.SignOutAsync(It.IsAny<HttpContext>(), It.IsAny<string>(), It.IsAny<AuthenticationProperties?>()))
-            .Returns(Task.CompletedTask);
-
         var serviceProvider = new ServiceCollection()
             .AddSingleton(authServiceMock.Object)
             .BuildServiceProvider();
 
         var httpContext = new DefaultHttpContext { RequestServices = serviceProvider };
-        var model = new Login(signInManagerMock.Object, CreateRecaptchaServiceMock().Object, _harness.Telemetry);
+        var model = new Login(signInManagerMock.Object, captchaMock.Object, _harness.Telemetry);
         model.PageContext = new PageContext(new ActionContext(httpContext, new RouteData(), new PageActionDescriptor()));
 
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);

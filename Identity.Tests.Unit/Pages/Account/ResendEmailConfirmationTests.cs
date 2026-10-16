@@ -75,6 +75,65 @@ public class ResendEmailConfirmationTests
         senderMock.Verify(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
+    [Fact]
+    public async Task OnPostAsync_KnownUser_SendsTheConfirmationLinkToTheAddress()
+    {
+        // Arrange
+        var email = Generated.NewEmailAddress();
+        var settings = TestValues.NewAccountEmailSettings();
+        var sent = new List<ServiceBusMessage>();
+        var routedPages = new List<string>();
+        var model = KnownUserModel(email, settings, sent, routedPages, callbackResolves: true);
+
+        // Act
+        await model.OnPostAsync();
+
+        // Assert
+        Assert.Equal(PageRoutes.ConfirmEmail, Assert.Single(routedPages));
+        var message = Assert.Single(sent);
+        Assert.Equal(email, message.To);
+        Assert.Equal(settings.Sender, message.ReplyTo);
+        Assert.Equal(UserMessages.ConfirmEmailSubject, message.Subject);
+        Assert.Contains(model.ModelState.Values.SelectMany(v => v.Errors), e => string.Equals(e.ErrorMessage, ResendEmailConfirmation.VerificationEmailSentMessage, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task OnPostAsync_KnownUserButNoCallback_SendsNothingAndReportsTheSameMessage()
+    {
+        // Arrange
+        var sent = new List<ServiceBusMessage>();
+        var model = KnownUserModel(Generated.NewEmailAddress(), TestValues.NewAccountEmailSettings(), sent, [], callbackResolves: false);
+
+        // Act
+        await model.OnPostAsync();
+
+        // Assert
+        Assert.Empty(sent);
+        Assert.Contains(model.ModelState.Values.SelectMany(v => v.Errors), e => string.Equals(e.ErrorMessage, ResendEmailConfirmation.VerificationEmailSentMessage, StringComparison.Ordinal));
+    }
+
+    private static ResendEmailConfirmation KnownUserModel(
+        string email,
+        AccountEmailSettings settings,
+        List<ServiceBusMessage> sent,
+        List<string> routedPages,
+        bool callbackResolves)
+    {
+        var user = new IdentityUser<Guid> { Id = Generated.NewUserId(), Email = email };
+        var mockUserManager = MockHelpers.MockUserManager();
+        mockUserManager.Setup(m => m.FindByEmailAsync(email)).ReturnsAsync(user);
+        mockUserManager.Setup(m => m.GetUserIdAsync(user)).ReturnsAsync(user.Id.ToString());
+        mockUserManager.Setup(m => m.GenerateEmailConfirmationTokenAsync(user)).ReturnsAsync(Generated.NewEmailConfirmationToken());
+        var model = new ResendEmailConfirmation(mockUserManager.Object, EmailTestDoubles.ServiceBusCapturing(sent), settings)
+        {
+            PageContext = new PageContext { HttpContext = new DefaultHttpContext() },
+            Url = EmailTestDoubles.UrlHelperRecordingPages(routedPages, callbackResolves),
+            Input = new AccountEmailPageBase.InputModel { Email = email },
+        };
+        model.PageContext.HttpContext.Request.Scheme = Uri.UriSchemeHttps;
+        return model;
+    }
+
     private static (IAzureClientFactory<ServiceBusClient> Factory, Mock<ServiceBusSender> SenderMock) CreateSenderFactoryWithMock()
     {
         var senderMock = new Mock<ServiceBusSender>(MockBehavior.Strict);

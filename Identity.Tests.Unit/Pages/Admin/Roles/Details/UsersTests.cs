@@ -48,4 +48,18 @@ public class UsersTests
         // Assert
         Assert.IsType<NotFoundResult>(result);
     }
+
+    [Fact]
+    public void Constructor_StartsWithNoUsers()
+    {
+        // Arrange
+        var rm = MockHelpers.MockRoleManager();
+        var um = MockHelpers.MockUserManager();
+
+        // Act
+        var model = new Users(rm.Object, um.Object);
+
+        // Assert
+        Assert.Empty(model.Users);
+    }
 }

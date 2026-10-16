@@ -66,8 +66,29 @@ public class IndexTests
 
         // Assert
         Assert.Equal(UpdatedRoleName, role.Name);
+        rm.Verify(m => m.UpdateAsync(role), Times.Once);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal(Index.DetailsPageName, redirect.PageName);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_ReturnsPageWithoutUpdating_WhenModelInvalid()
+    {
+        // Arrange
+        var role = new IdentityRole<Guid>(PriorRoleName);
+        var rm = MockHelpers.MockRoleManager();
+        rm.Setup(m => m.FindByIdAsync(role.Id.ToString())).ReturnsAsync(role);
+        rm.Setup(m => m.UpdateAsync(role)).ReturnsAsync(IdentityResult.Success);
+        var model = new Index(rm.Object) { AppRole = new IdentityRole<Guid> { Name = UpdatedRoleName } };
+        model.ModelState.AddModelError(nameof(IdentityRole<Guid>.Name), Generated.NewValidationMessage());
+
+        // Act
+        var result = await model.OnPostAsync(role.Id.ToString());
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        Assert.Equal(PriorRoleName, role.Name);
+        rm.Verify(m => m.UpdateAsync(It.IsAny<IdentityRole<Guid>>()), Times.Never);
     }
 
     [Fact]

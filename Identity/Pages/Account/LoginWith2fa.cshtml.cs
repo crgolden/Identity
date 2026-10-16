@@ -71,7 +71,7 @@ public class LoginWith2fa : PageModel
             return RedirectToPage(PageRoutes.SiblingLockout);
         }
 
-        ModelState.AddModelError(Empty, "Invalid authenticator code.");
+        ModelState.AddModelError(Empty, InvalidAuthenticatorCodeMessage);
         return Page();
     }
 

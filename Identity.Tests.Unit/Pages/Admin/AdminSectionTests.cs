@@ -22,4 +22,39 @@ public class AdminSectionTests
         Assert.Equal(constructedAtMovedPage.CardId, moved.CardId);
         Assert.Equal(constructedAtMovedPage.Path, moved.Path);
     }
+
+    [Fact]
+    public void CardId_IsThePrefixPlusTheLowercasedFolderOfThePage()
+    {
+        // Arrange
+        var area = Generated.NewPathSegment();
+        var folder = Generated.NewPageName();
+        var uppercaseFolder = folder.ToUpperInvariant();
+        var leaf = Generated.NewPathSegment();
+        var expectedCardId = $"{AdminSection.CardIdPrefix}{folder}";
+        var section = new AdminSection(Generated.NewDisplayName(), Generated.NewDisplayName(), $"/{area}/{uppercaseFolder}/{leaf}");
+
+        // Act
+        var cardId = section.CardId;
+
+        // Assert
+        Assert.Equal(expectedCardId, cardId);
+    }
+
+    [Fact]
+    public void Path_IsThePageWithoutItsLastSegment()
+    {
+        // Arrange
+        var area = Generated.NewPathSegment();
+        var folder = Generated.NewPageName();
+        var leaf = Generated.NewPathSegment();
+        var expectedPath = $"/{area}/{folder}";
+        var section = new AdminSection(Generated.NewDisplayName(), Generated.NewDisplayName(), $"{expectedPath}/{leaf}");
+
+        // Act
+        var path = section.Path;
+
+        // Assert
+        Assert.Equal(expectedPath, path);
+    }
 }

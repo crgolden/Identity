@@ -98,6 +98,65 @@ public class ForgotPasswordTests
         userManagerMock.Verify();
     }
 
+    [Fact]
+    public async Task OnPostAsync_ConfirmedEmail_SendsTheResetLinkToThatAddress()
+    {
+        // Arrange
+        var confirmedEmail = Generated.NewEmailAddress();
+        var settings = TestValues.NewAccountEmailSettings();
+        var sent = new List<ServiceBusMessage>();
+        var routedPages = new List<string>();
+        var model = ConfirmedUserModel(confirmedEmail, settings, sent, routedPages, callbackResolves: true);
+
+        // Act
+        var result = await model.OnPostAsync();
+
+        // Assert
+        Assert.Equal(PageRoutes.SiblingForgotPasswordConfirmation, Assert.IsType<RedirectToPageResult>(result).PageName);
+        Assert.Equal(PageRoutes.ResetPassword, Assert.Single(routedPages));
+        var message = Assert.Single(sent);
+        Assert.Equal(confirmedEmail, message.To);
+        Assert.Equal(settings.Sender, message.ReplyTo);
+        Assert.Equal(UserMessages.ResetPasswordSubject, message.Subject);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_ConfirmedEmailButNoCallback_SendsNothingAndStillConfirms()
+    {
+        // Arrange
+        var sent = new List<ServiceBusMessage>();
+        var model = ConfirmedUserModel(Generated.NewEmailAddress(), TestValues.NewAccountEmailSettings(), sent, [], callbackResolves: false);
+
+        // Act
+        var result = await model.OnPostAsync();
+
+        // Assert
+        Assert.Equal(PageRoutes.SiblingForgotPasswordConfirmation, Assert.IsType<RedirectToPageResult>(result).PageName);
+        Assert.Empty(sent);
+    }
+
+    private static ForgotPassword ConfirmedUserModel(
+        string email,
+        AccountEmailSettings settings,
+        List<ServiceBusMessage> sent,
+        List<string> routedPages,
+        bool callbackResolves)
+    {
+        var user = new IdentityUser<Guid> { Id = Generated.NewUserId(), Email = email };
+        var userManagerMock = MockHelpers.MockUserManager();
+        userManagerMock.Setup(um => um.FindByEmailAsync(email)).ReturnsAsync(user);
+        userManagerMock.Setup(um => um.IsEmailConfirmedAsync(user)).ReturnsAsync(true);
+        userManagerMock.Setup(um => um.GeneratePasswordResetTokenAsync(user)).ReturnsAsync(Generated.NewEmailConfirmationToken());
+        var model = new ForgotPassword(userManagerMock.Object, EmailTestDoubles.ServiceBusCapturing(sent), settings)
+        {
+            PageContext = new PageContext { HttpContext = new DefaultHttpContext() },
+            Url = EmailTestDoubles.UrlHelperRecordingPages(routedPages, callbackResolves),
+            Input = new AccountEmailPageBase.InputModel { Email = email },
+        };
+        model.PageContext.HttpContext.Request.Scheme = Uri.UriSchemeHttps;
+        return model;
+    }
+
     private static void AssertRedirectedToConfirmationWithoutEmail(
         IActionResult result,
         Mock<ServiceBusSender> senderMock)

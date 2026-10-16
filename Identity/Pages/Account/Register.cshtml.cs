@@ -15,6 +15,8 @@ public class Register : PageModel
 {
     internal const string RegisterConfirmationPageName = "RegisterConfirmation";
 
+    internal const string RegisterActivityName = "identity.register";
+
     private readonly SignInManager<IdentityUser<Guid>> _signInManager;
     private readonly UserManager<IdentityUser<Guid>> _userManager;
     private readonly ServiceBusClient _serviceBusClient;
@@ -69,24 +71,24 @@ public class Register : PageModel
         var verdict = await _captchaService.VerifyAsync(Input.RecaptchaToken, HttpContext.RequestAborted);
         if (!verdict.Passed)
         {
-            ModelState.AddModelError(Empty, "Request could not be verified.");
+            ModelState.AddModelError(Empty, Login.CaptchaFailedMessage);
             return Page();
         }
 
         var user = new IdentityUser<Guid>();
         await _userManager.SetUserNameAsync(user, Input.Email);
         await _userManager.SetEmailAsync(user, Input.Email);
-        using var activity = _telemetry.StartActivity("identity.register");
+        using var activity = _telemetry.StartActivity(RegisterActivityName);
         var result = await _userManager.CreateAsync(user, Input.Password);
         if (result.Succeeded)
         {
-            activity?.SetTag("succeeded", true);
+            activity?.SetTag(Telemetry.Metrics.SucceededTagName, true);
             var userId = await _userManager.GetUserIdAsync(user);
             var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
             var input = UTF8.GetBytes(code);
             code = Base64UrlEncode(input);
             var callbackUrl = Url.Page(
-                "/Account/ConfirmEmail",
+                PageRoutes.ConfirmEmail,
                 pageHandler: null,
                 values: new { userId, code, returnUrl },
                 protocol: Request.Scheme);
@@ -105,7 +107,7 @@ public class Register : PageModel
                 await emailSender.SendMessageAsync(sbMessage, HttpContext.RequestAborted);
             }
 
-            activity?.SetTag("email_confirmation_sent", emailConfirmationSent);
+            activity?.SetTag(Telemetry.Metrics.EmailConfirmationSentTagName, emailConfirmationSent);
 
             if (_userManager.Options.SignIn.RequireConfirmedAccount)
             {
@@ -116,7 +118,7 @@ public class Register : PageModel
             return Url.IsLocalUrl(returnUrl) ? LocalRedirect(returnUrl) : LocalRedirect(PageRoutes.ContentRoot);
         }
 
-        activity?.SetTag("succeeded", false);
+        activity?.SetTag(Telemetry.Metrics.SucceededTagName, false);
         foreach (var error in result.Errors)
         {
             ModelState.AddModelError(Empty, error.Description);

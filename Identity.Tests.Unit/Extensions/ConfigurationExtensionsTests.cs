@@ -91,6 +91,66 @@ public sealed class ConfigurationExtensionsTests
         Assert.Contains(absentKey, exception.Message, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void GetRequired_ThrowsNamingTheKeyWhenTheValueIsBlank()
+    {
+        // Arrange
+        var blankKey = Generated.NewPathSegment();
+        var configuration = ConfigurationWith(blankKey, Generated.NewBlank());
+
+        // Act
+        var exception = Assert.Throws<InvalidOperationException>(
+            () => configuration.GetRequired<Uri>(blankKey));
+
+        // Assert
+        Assert.Contains(blankKey, exception.Message, StringComparison.Ordinal);
+        Assert.Null(exception.InnerException);
+    }
+
+    [Fact]
+    public void GetRequiredText_ReturnsThePresentValue()
+    {
+        // Arrange
+        var key = Generated.NewPathSegment();
+        var value = Generated.NewDisplayName();
+        var configuration = ConfigurationWith(key, value);
+
+        // Act
+        var result = configuration.GetRequiredText(key);
+
+        // Assert
+        Assert.Equal(value, result);
+    }
+
+    [Fact]
+    public void GetRequiredText_BlankValue_ThrowsNamingTheKey()
+    {
+        // Arrange
+        var key = Generated.NewPathSegment();
+        var configuration = ConfigurationWith(key, Generated.NewBlank());
+
+        // Act
+        var exception = Assert.Throws<InvalidOperationException>(() => configuration.GetRequiredText(key));
+
+        // Assert
+        Assert.Contains(key, exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void GetRequiredText_BlankValueInASection_ThrowsNamingTheFullPath()
+    {
+        // Arrange
+        var sectionName = Generated.NewPathSegment();
+        var key = Generated.NewPathSegment();
+        var configuration = ConfigurationWith(ConfigurationPath.Combine(sectionName, key), Generated.NewBlank());
+
+        // Act
+        var exception = Assert.Throws<InvalidOperationException>(() => configuration.GetSection(sectionName).GetRequiredText(key));
+
+        // Assert
+        Assert.Contains(ConfigurationPath.Combine(sectionName, key), exception.Message, StringComparison.Ordinal);
+    }
+
     private static IConfiguration ConfigurationWith(string key, string value)
     {
         return new ConfigurationBuilder()

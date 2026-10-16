@@ -78,10 +78,10 @@ public abstract class EditableClientResourcesBase<TResource> : EditableResources
 
     private void MergePostedResources(List<TResource> stored, int clientId)
     {
-        var postedIds = Resources.Where(r => IdOf(r) > 0).Select(IdOf).ToHashSet();
+        var postedIds = Resources.Select(IdOf).ToHashSet();
         stored.RemoveAll(r => !postedIds.Contains(IdOf(r)));
 
-        foreach (var posted in Resources.Where(r => IdOf(r) > 0))
+        foreach (var posted in Resources)
         {
             var existing = stored.Find(r => IdOf(r) == IdOf(posted));
             if (existing is not null)

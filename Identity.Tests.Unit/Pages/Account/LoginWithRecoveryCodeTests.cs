@@ -179,6 +179,29 @@ public class LoginWithRecoveryCodeTests
     }
 
     [Fact]
+    public async Task OnPostAsync_Succeeded_RedirectsToTheRequestedLocalReturnUrl()
+    {
+        // Arrange
+        var returnUrl = Generated.NewLocalPath();
+        var signInManagerMock = CreateSignInManagerMock();
+        signInManagerMock.Setup(s => s.GetTwoFactorAuthenticationUserAsync()).ReturnsAsync(new IdentityUser<Guid>());
+        signInManagerMock.Setup(s => s.TwoFactorRecoveryCodeSignInAsync(KnownRecoveryCode)).ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Success);
+        var mockUrl = new Mock<IUrlHelper>(MockBehavior.Strict);
+        mockUrl.Setup(u => u.IsLocalUrl(returnUrl)).Returns(true);
+        var model = new LoginWithRecoveryCode(signInManagerMock.Object)
+        {
+            Input = new LoginWithRecoveryCode.InputModel { RecoveryCode = KnownRecoveryCode },
+            Url = mockUrl.Object,
+        };
+
+        // Act
+        var result = await model.OnPostAsync(returnUrl);
+
+        // Assert
+        Assert.Equal(returnUrl, Assert.IsType<LocalRedirectResult>(result).Url);
+    }
+
+    [Fact]
     public async Task OnPostAsync_LockedOut_RedirectsToLockoutPage()
     {
         // Arrange

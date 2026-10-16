@@ -262,6 +262,7 @@ public sealed class PasskeysTests : IDisposable
         Assert.Equal(
             string.Format(CultureInfo.InvariantCulture, Passkeys.AttestationFailedMessageFormat, AttestationFailure),
             model.StatusMessage);
+        Assert.False(RegisterSpanSucceeded());
     }
 
     [Fact]
@@ -282,6 +283,7 @@ public sealed class PasskeysTests : IDisposable
         // Assert
         Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal(Passkeys.PasskeyNotAddedMessage, model.StatusMessage);
+        Assert.False(RegisterSpanSucceeded());
     }
 
     [Fact]
@@ -303,6 +305,7 @@ public sealed class PasskeysTests : IDisposable
         Assert.Equal(PageRoutes.SiblingRenamePasskey, redirect.PageName);
         Assert.Equal(ValidCredentialId, redirect.RouteValues?[RenamePasskey.IdRouteValueName]);
         Assert.Equal(Passkeys.PasskeyAddedMessage, model.StatusMessage);
+        Assert.True(RegisterSpanSucceeded());
     }
 
     public void Dispose() => _harness.Dispose();
@@ -343,5 +346,11 @@ public sealed class PasskeysTests : IDisposable
             PageContext = MockHelpers.PageContext(),
         };
         return (userManager, signInManager, model);
+    }
+
+    private bool RegisterSpanSucceeded()
+    {
+        var span = Assert.Single(_harness.StoppedActivities, a => string.Equals(a.OperationName, Passkeys.RegisterActivityName, StringComparison.Ordinal));
+        return Assert.IsType<bool>(span.GetTagItem(Telemetry.Metrics.SucceededTagName));
     }
 }

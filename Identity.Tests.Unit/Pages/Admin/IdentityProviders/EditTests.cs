@@ -71,8 +71,29 @@ public class EditTests
 
         // Assert
         Assert.Equal(UpdatedSchemeName, provider.Scheme);
+        ctx.Verify(c => c.SaveChangesAsync(), Times.Once);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal(PageRoutes.SiblingDetails, redirect.PageName);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_ReturnsPageWithoutSaving_WhenModelInvalid()
+    {
+        // Arrange
+        var provider = new IdentityProvider { Id = ExistingEntityId, Scheme = SchemeName };
+        var mockSet = MockDbSetHelper.BuildMockDbSet([provider]);
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.IdentityProviders).Returns(mockSet.Object);
+        var model = new Edit(ctx.Object) { IdentityProvider = new IdentityProvider { Scheme = UpdatedSchemeName } };
+        model.ModelState.AddModelError(nameof(IdentityProvider.Scheme), Generated.NewValidationMessage());
+
+        // Act
+        var result = await model.OnPostAsync(ExistingEntityId);
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        Assert.Equal(SchemeName, provider.Scheme);
+        ctx.Verify(c => c.SaveChangesAsync(), Times.Never);
     }
 
     [Fact]

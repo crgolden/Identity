@@ -191,6 +191,7 @@ public class AvatarEndpointsTests
         // Assert
         Assert.IsType<NotFound>(result);
         Assert.False(httpContext.Response.Headers.ContainsKey(HeaderNames.CacheControl));
+        userManager.Verify(x => x.GetClaimsAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
     }
 
     [Fact]
@@ -242,6 +243,52 @@ public class AvatarEndpointsTests
         // Assert
         Assert.IsType<RedirectHttpResult>(result);
         Assert.Equal(AvatarEndpoints.RedirectCacheControl, httpContext.Response.Headers.CacheControl.ToString());
+    }
+
+    [Fact]
+    public async Task GetAvatarAsync_EmailAndADifferentUserName_ComputesFromTheEmail()
+    {
+        // Arrange
+        var computed = new UriBuilder(Uri.UriSchemeHttps, Generated.NewExternalHost()).Uri;
+        var emailAddress = Generated.NewEmailAddress();
+        var user = new IdentityUser<Guid> { Id = Generated.NewUserId(), Email = emailAddress, UserName = Generated.NewUserName() };
+        var avatarService = new Mock<IAvatarService>(MockBehavior.Strict);
+        avatarService.Setup(x => x.GetAvatarUrlAsync(emailAddress, It.IsAny<CancellationToken>())).ReturnsAsync(computed);
+        var userManager = UserManagerFor(user, []);
+
+        // Act
+        var result = await AvatarEndpoints.GetAvatarAsync(
+            user.Id.ToString(),
+            new DefaultHttpContext(),
+            userManager.Object,
+            avatarService.Object,
+            TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(computed.AbsoluteUri, Assert.IsType<RedirectHttpResult>(result).Url);
+    }
+
+    [Fact]
+    public async Task GetAvatarAsync_NoEmail_ComputesFromTheUserName()
+    {
+        // Arrange
+        var computed = new UriBuilder(Uri.UriSchemeHttps, Generated.NewExternalHost()).Uri;
+        var userName = Generated.NewUserName();
+        var user = new IdentityUser<Guid> { Id = Generated.NewUserId(), UserName = userName };
+        var avatarService = new Mock<IAvatarService>(MockBehavior.Strict);
+        avatarService.Setup(x => x.GetAvatarUrlAsync(userName, It.IsAny<CancellationToken>())).ReturnsAsync(computed);
+        var userManager = UserManagerFor(user, []);
+
+        // Act
+        var result = await AvatarEndpoints.GetAvatarAsync(
+            user.Id.ToString(),
+            new DefaultHttpContext(),
+            userManager.Object,
+            avatarService.Object,
+            TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(computed.AbsoluteUri, Assert.IsType<RedirectHttpResult>(result).Url);
     }
 
     private static IdentityUser<Guid> UserWithEmail(string emailAddress)

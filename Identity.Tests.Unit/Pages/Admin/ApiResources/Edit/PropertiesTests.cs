@@ -118,6 +118,58 @@ public class PropertiesTests
     }
 
     [Fact]
+    public async Task OnPostAsync_ExistingPropertyPosted_UpdatesItsKeyAndValueAndSaves()
+    {
+        // Arrange
+        var existing = new ApiResourceProperty { Id = ExistingEntityId, Key = ExistingKey, Value = ExistingValue, ApiResourceId = ExistingEntityId };
+        var resource = new ApiResource { Id = ExistingEntityId, Name = Generated.NewApiResourceName(), Properties = [existing] };
+        var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
+        ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
+        var model = new Properties(ctx.Object) { Resources = [new ApiResourceProperty { Id = ExistingEntityId, Key = PostedKey, Value = PostedValue }] };
+
+        // Act
+        await model.OnPostAsync(ExistingEntityId);
+
+        // Assert
+        var onlyProperty = Assert.Single(resource.Properties);
+        Assert.Same(existing, onlyProperty);
+        Assert.Equal(PostedKey, onlyProperty.Key);
+        Assert.Equal(PostedValue, onlyProperty.Value);
+        ctx.Verify(c => c.SaveChangesAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_PostedPropertyMatchingNothingPersisted_ChangesNothing()
+    {
+        // Arrange
+        var existing = new ApiResourceProperty { Id = ExistingEntityId, Key = ExistingKey, Value = ExistingValue, ApiResourceId = ExistingEntityId };
+        var resource = new ApiResource { Id = ExistingEntityId, Name = Generated.NewApiResourceName(), Properties = [existing] };
+        var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
+        ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
+        var model = new Properties(ctx.Object)
+        {
+            Resources =
+            [
+                new ApiResourceProperty { Id = ExistingEntityId, Key = ExistingKey, Value = ExistingValue },
+                new ApiResourceProperty { Id = MissingEntityId, Key = PostedKey, Value = PostedValue },
+            ]
+        };
+
+        // Act
+        await model.OnPostAsync(ExistingEntityId);
+
+        // Assert
+        var onlyProperty = Assert.Single(resource.Properties);
+        Assert.Same(existing, onlyProperty);
+        Assert.Equal(ExistingKey, onlyProperty.Key);
+        Assert.Equal(ExistingValue, onlyProperty.Value);
+    }
+
+    [Fact]
     public async Task OnPostAddRowAsync_AddsBlankRow_WhenFound()
     {
         // Arrange

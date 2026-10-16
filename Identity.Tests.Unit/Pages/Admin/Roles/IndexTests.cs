@@ -27,6 +27,19 @@ public class IndexTests
     }
 
     [Fact]
+    public void Constructor_StartsWithNoRoles()
+    {
+        // Arrange
+        var rm = MockHelpers.MockRoleManager();
+
+        // Act
+        var model = new Index(rm.Object);
+
+        // Assert
+        Assert.Empty(model.Roles);
+    }
+
+    [Fact]
     public async Task OnGetAsync_ReturnsSortedByName()
     {
         // Arrange

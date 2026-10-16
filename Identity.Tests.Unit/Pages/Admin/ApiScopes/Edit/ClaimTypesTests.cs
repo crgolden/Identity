@@ -111,6 +111,58 @@ public class ClaimTypesTests
     }
 
     [Fact]
+    public async Task OnPostAsync_ExistingClaimTypePosted_UpdatesItsTypeAndSaves()
+    {
+        // Arrange
+        var existing = new ApiScopeClaim { Id = ExistingEntityId, Type = ClaimType, ScopeId = ExistingEntityId };
+        var scope = new ApiScope { Id = ExistingEntityId, Name = Generated.NewApiResourceName(), UserClaims = [existing] };
+        var mockSet = MockDbSetHelper.BuildMockDbSet([scope]);
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
+        ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
+        var postedClaimType = Generated.NewClaimType();
+        var model = new ClaimTypes(ctx.Object) { Resources = [new ApiScopeClaim { Id = ExistingEntityId, Type = postedClaimType }] };
+
+        // Act
+        await model.OnPostAsync(ExistingEntityId);
+
+        // Assert
+        var onlyUserClaim = Assert.Single(scope.UserClaims);
+        Assert.Same(existing, onlyUserClaim);
+        Assert.Equal(postedClaimType, onlyUserClaim.Type);
+        ctx.Verify(c => c.SaveChangesAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task OnPostAsync_PostedClaimTypeMatchingNothingPersisted_ChangesNothing()
+    {
+        // Arrange
+        var existing = new ApiScopeClaim { Id = ExistingEntityId, Type = ClaimType, ScopeId = ExistingEntityId };
+        var scope = new ApiScope { Id = ExistingEntityId, Name = Generated.NewApiResourceName(), UserClaims = [existing] };
+        var mockSet = MockDbSetHelper.BuildMockDbSet([scope]);
+        var ctx = new Mock<IConfigurationDbContext>();
+        ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
+        ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
+        var unmatchedClaimType = Generated.NewClaimType();
+        var model = new ClaimTypes(ctx.Object)
+        {
+            Resources =
+            [
+                new ApiScopeClaim { Id = ExistingEntityId, Type = ClaimType },
+                new ApiScopeClaim { Id = MissingEntityId, Type = unmatchedClaimType },
+            ]
+        };
+
+        // Act
+        await model.OnPostAsync(ExistingEntityId);
+
+        // Assert
+        var onlyUserClaim = Assert.Single(scope.UserClaims);
+        Assert.Same(existing, onlyUserClaim);
+        Assert.Equal(ClaimType, onlyUserClaim.Type);
+    }
+
+    [Fact]
     public async Task OnPostAddRowAsync_AddsBlankRow_WhenFound()
     {
         // Arrange

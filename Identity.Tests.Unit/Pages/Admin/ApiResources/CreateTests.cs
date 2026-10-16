@@ -33,12 +33,15 @@ public class CreateTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.ApiResources.Add(It.IsAny<ApiResource>()));
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
-        var model = new Create(ctx.Object) { Resource = new ApiResource { Name = Generated.NewApiResourceName() } };
+        var resource = new ApiResource { Name = Generated.NewApiResourceName() };
+        var model = new Create(ctx.Object) { Resource = resource };
 
         // Act
         var result = await model.OnPostAsync();
 
         // Assert
+        ctx.Verify(c => c.ApiResources.Add(resource), Times.Once);
+        ctx.Verify(c => c.SaveChangesAsync(), Times.Once);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal(PageRoutes.SiblingDetailsIndex, redirect.PageName);
     }

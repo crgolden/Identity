@@ -1,5 +1,6 @@
 namespace Identity.Pages.Account.Manage;
 
+using System.Globalization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -10,6 +11,12 @@ using static Microsoft.Net.Http.Headers.HeaderNames;
 
 public class DownloadPersonalData : PageModel
 {
+    internal const string ExternalLoginKeyNameFormat = "{0} external login provider key";
+
+    internal const string AuthenticatorKeyName = "Authenticator Key";
+
+    internal const string AttachmentDisposition = "attachment; filename=PersonalData.json";
+
     private readonly UserManager<IdentityUser<Guid>> _userManager;
 
     public DownloadPersonalData(UserManager<IdentityUser<Guid>> userManager)
@@ -38,11 +45,11 @@ public class DownloadPersonalData : PageModel
         var userLoginInfos = await _userManager.GetLoginsAsync(user);
         foreach (var userLoginInfo in userLoginInfos)
         {
-            personalData.Add($"{userLoginInfo.LoginProvider} external login provider key", userLoginInfo.ProviderKey);
+            personalData.Add(Format(CultureInfo.InvariantCulture, ExternalLoginKeyNameFormat, userLoginInfo.LoginProvider), userLoginInfo.ProviderKey);
         }
 
-        personalData.Add("Authenticator Key", await _userManager.GetAuthenticatorKeyAsync(user));
-        Response.Headers.TryAdd(ContentDisposition, "attachment; filename=PersonalData.json");
+        personalData.Add(AuthenticatorKeyName, await _userManager.GetAuthenticatorKeyAsync(user));
+        Response.Headers.TryAdd(ContentDisposition, AttachmentDisposition);
         var fileContents = SerializeToUtf8Bytes(personalData);
         return new FileContentResult(fileContents, Json);
     }

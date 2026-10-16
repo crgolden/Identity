@@ -86,7 +86,7 @@ public class ExternalLoginsTests
     public async Task OnGetLinkLoginCallbackAsync_AddLoginSucceeds_RedirectsWithAddedStatusMessage()
     {
         // Arrange
-        var model = BuildModelForLinkLoginCallback(IdentityResult.Success);
+        var (model, _, _, _) = BuildModelForLinkLoginCallback(IdentityResult.Success);
 
         // Act
         var actionResult = await model.OnGetLinkLoginCallbackAsync();
@@ -97,11 +97,29 @@ public class ExternalLoginsTests
     }
 
     [Fact]
+    public async Task OnGetLinkLoginCallbackAsync_AddLoginSucceeds_CopiesTheExternalClaimsAndSignsOutOfTheExternalScheme()
+    {
+        // Arrange
+        var (model, userManagerMock, authServiceMock, externalClaim) = BuildModelForLinkLoginCallback(IdentityResult.Success);
+
+        // Act
+        await model.OnGetLinkLoginCallbackAsync();
+
+        // Assert
+        userManagerMock.Verify(
+            u => u.AddClaimsAsync(
+                It.IsAny<IdentityUser<Guid>>(),
+                It.Is<IEnumerable<Claim>>(claims => claims.Any(c => string.Equals(c.Type, externalClaim.Type, StringComparison.Ordinal) && string.Equals(c.Value, externalClaim.Value, StringComparison.Ordinal)))),
+            Times.Once);
+        authServiceMock.Verify(a => a.SignOutAsync(It.IsAny<HttpContext>(), IdentityConstants.ExternalScheme, It.IsAny<AuthenticationProperties>()), Times.Once);
+    }
+
+    [Fact]
     public async Task OnGetLinkLoginCallbackAsync_AddLoginFails_RedirectsWithNotAddedStatusMessage()
     {
         // Arrange
         var addLoginFailure = IdentityResult.Failed(new IdentityError { Description = Generated.NewFailureReason() });
-        var model = BuildModelForLinkLoginCallback(addLoginFailure);
+        var (model, _, _, _) = BuildModelForLinkLoginCallback(addLoginFailure);
 
         // Act
         var actionResult = await model.OnGetLinkLoginCallbackAsync();
@@ -325,6 +343,96 @@ public class ExternalLoginsTests
         AssertChallengedAndSignedOut(result, linking, punctuatedProvider);
     }
 
+    [Fact]
+    public async Task OnGetAsync_UserNotFound_ReturnsNotFound()
+    {
+        // Arrange
+        var expectedUserId = Generated.NewUserId().ToString();
+        var userManagerMock = MockHelpers.MockUserManager();
+        userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync((IdentityUser<Guid>?)null);
+        userManagerMock.Setup(um => um.GetUserId(It.IsAny<ClaimsPrincipal>())).Returns(expectedUserId);
+        var model = new ExternalLogins(userManagerMock.Object, MockHelpers.MockSignInManager(userManagerMock.Object).Object, Mock.Of<IUserStore<IdentityUser<Guid>>>());
+        model.PageContext = new PageContext { HttpContext = new DefaultHttpContext() };
+
+        // Act
+        var result = await model.OnGetAsync();
+
+        // Assert
+        Assert.Equal(UserMessages.UnableToLoadUser(expectedUserId), Assert.IsType<NotFoundObjectResult>(result).Value);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_OnlyLoginAndNoPassword_HidesTheRemoveButton()
+    {
+        // Arrange
+        var model = BuildModelForGet(passwordHash: null, linkedLogins: [NewLogin()], schemes: []);
+
+        // Act
+        await model.OnGetAsync();
+
+        // Assert
+        Assert.False(model.ShowRemoveButton);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_OnlyLoginAndAPassword_ShowsTheRemoveButton()
+    {
+        // Arrange
+        var model = BuildModelForGet(passwordHash: Generated.NewPasswordHash(), linkedLogins: [NewLogin()], schemes: []);
+
+        // Act
+        await model.OnGetAsync();
+
+        // Assert
+        Assert.True(model.ShowRemoveButton);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_TwoLoginsAndNoPassword_ShowsTheRemoveButton()
+    {
+        // Arrange
+        var model = BuildModelForGet(passwordHash: null, linkedLogins: [NewLogin(), NewLogin()], schemes: []);
+
+        // Act
+        await model.OnGetAsync();
+
+        // Assert
+        Assert.True(model.ShowRemoveButton);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_StoreWithoutPasswords_TreatsTheOnlyLoginAsIrremovable()
+    {
+        // Arrange
+        var model = BuildModelForGet(passwordHash: null, linkedLogins: [NewLogin()], schemes: [], passwordStore: false);
+
+        // Act
+        await model.OnGetAsync();
+
+        // Assert
+        Assert.False(model.ShowRemoveButton);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_OffersOnlyTheProvidersNotYetLinked()
+    {
+        // Arrange
+        var linked = NewLogin();
+        var unlinkedScheme = Generated.NewSchemeName();
+        var model = BuildModelForGet(
+            passwordHash: null,
+            linkedLogins: [linked],
+            schemes: [NewScheme(linked.LoginProvider), NewScheme(unlinkedScheme)]);
+
+        // Act
+        var result = await model.OnGetAsync();
+
+        // Assert
+        Assert.IsType<PageResult>(result);
+        Assert.Equal(linked, Assert.Single(model.CurrentLogins));
+        Assert.Equal(unlinkedScheme, Assert.Single(model.OtherLogins).Name);
+    }
+
     private static LinkLoginArrangement BuildModelForLinkLogin(string provider)
     {
         var mockUserStoreForUserManager = new Mock<IUserStore<IdentityUser<Guid>>>().Object;
@@ -426,6 +534,38 @@ public class ExternalLoginsTests
         linking.UserManagerMock.Verify(u => u.GetUserId(linking.HttpContext.User), Times.Once);
     }
 
+    private static UserLoginInfo NewLogin() =>
+        new(Generated.NewSchemeName(), Generated.NewProviderKey(), Generated.NewDisplayName());
+
+    private static AuthenticationScheme NewScheme(string name) =>
+        new(name, Generated.NewDisplayName(), typeof(IAuthenticationHandler));
+
+    private static ExternalLogins BuildModelForGet(
+        string? passwordHash,
+        List<UserLoginInfo> linkedLogins,
+        AuthenticationScheme[] schemes,
+        bool passwordStore = true)
+    {
+        var user = new IdentityUser<Guid> { Id = Generated.NewUserId() };
+        var userStoreMock = new Mock<IUserStore<IdentityUser<Guid>>>();
+        if (passwordStore)
+        {
+            userStoreMock.As<IUserPasswordStore<IdentityUser<Guid>>>()
+                .Setup(s => s.GetPasswordHashAsync(user, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(passwordHash);
+        }
+
+        var userManagerMock = MockHelpers.MockUserManager();
+        userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
+        userManagerMock.Setup(um => um.GetLoginsAsync(user)).ReturnsAsync(linkedLogins);
+        var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
+        signInManagerMock.Setup(s => s.GetExternalAuthenticationSchemesAsync()).ReturnsAsync(schemes);
+
+        var model = new ExternalLogins(userManagerMock.Object, signInManagerMock.Object, userStoreMock.Object);
+        model.PageContext = new PageContext { HttpContext = new DefaultHttpContext() };
+        return model;
+    }
+
     private static IdentityResult RemoveLoginFailure() =>
         IdentityResult.Failed(new IdentityError { Description = Generated.NewFailureReason() });
 
@@ -475,7 +615,7 @@ public class ExternalLoginsTests
         };
     }
 
-    private static ExternalLogins BuildModelForLinkLoginCallback(IdentityResult addLoginResult)
+    private static (ExternalLogins Model, Mock<UserManager<IdentityUser<Guid>>> UserManagerMock, Mock<IAuthenticationService> AuthServiceMock, Claim ExternalClaim) BuildModelForLinkLoginCallback(IdentityResult addLoginResult)
     {
         var linkingUser = new IdentityUser<Guid> { Id = Generated.NewUserId() };
         var linkingUserId = linkingUser.Id.ToString();
@@ -494,7 +634,8 @@ public class ExternalLoginsTests
 
         var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
 
-        var externalPrincipal = new ClaimsPrincipal(new ClaimsIdentity());
+        var externalClaim = new Claim(Generated.NewClaimType(), Generated.NewClaimValue());
+        var externalPrincipal = new ClaimsPrincipal(new ClaimsIdentity([externalClaim]));
         var externalLoginInfo = new ExternalLoginInfo(
             externalPrincipal,
             loginProvider,
@@ -521,7 +662,7 @@ public class ExternalLoginsTests
         {
             HttpContext = new DefaultHttpContext { RequestServices = services.Object }
         };
-        return model;
+        return (model, userManagerMock, mockAuthService, externalClaim);
     }
 
     private sealed class LinkLoginArrangement

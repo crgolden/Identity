@@ -49,12 +49,15 @@ public class CreateTests
         var ctx = new Mock<IConfigurationDbContext>();
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
-        var model = new Create(ctx.Object) { Client = new Client { ClientId = Generated.NewClientIdentifier() } };
+        var client = new Client { ClientId = Generated.NewClientIdentifier() };
+        var model = new Create(ctx.Object) { Client = client };
 
         // Act
         var result = await model.OnPostAsync();
 
         // Assert
+        mockSet.Verify(s => s.Add(client), Times.Once);
+        ctx.Verify(c => c.SaveChangesAsync(), Times.Once);
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal(PageRoutes.SiblingDetailsIndex, redirect.PageName);
     }
