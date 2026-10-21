@@ -285,11 +285,11 @@ EF Core migrations are not used. The `Identity.Data/` SQL Server Database Projec
 
 ### Client/resource *rows* are configuration data, not schema — and they drift
 
-Clients, API scopes and identity resources live in `Clients`, `ApiScopes` and `IdentityResources`, seeded
-by `Tools/Identity/*.sql` and thereafter edited through the admin UI. Those scripts use their own
-independent incremental numbering, so **the live ids have drifted from the seed files** — adding a row
-means inserting it and reading back the generated id, never copying one. Adding `curator.roles` to LocalDB
-produced id `5004` where the seed script says `6`.
+Clients, API scopes and identity resources live in `Clients`, `ApiScopes` and `IdentityResources`, added by
+SQL or through the admin UI. Their ids are identity columns, so the same row carries a different id in each
+environment: **write a configuration-store edit as a join on `Name`/`Type`, never on an `Id`**, and read an
+inserted id back rather than assuming it. `Program.cs` calls `AddConfigurationStore` with no
+`AddConfigurationStoreCache`, so such a change is live on the next request with no restart.
 
 ### A claim only reaches a browser if it is on an *identity* resource
 
@@ -297,32 +297,17 @@ produced id `5004` where the seed script says `6`.
 and userinfo**. A BFF builds its client-visible session from the latter two, so an access-token-only claim
 is invisible to the browser no matter how correct the authorization is.
 
-That is why `curator.admin` — present in `ApiScopes.sql` but on no identity resource — was invisible to
-Librarian's browser, which made it fetch `GET /me` per page load just to colour its own nav.
+**Prefer the access token over a new identity resource.** Adding a scope to a client's authorize request is a
+one-way door: if a client deploys requesting a scope the provider has not granted it, **sign-in fails for every
+user**, so the grant has to land in every environment first. A BFF that needs an API-scope claim in the browser
+can instead decode the access token it already holds at its callback and copy an allowlist of claims into its
+session, with no change here and no new scope.
 
-**The fix was *not* a new identity resource, and that matters.** Giving the claim its own resource was
-implemented and then reverted, because adding a scope to a client's authorize request is a one-way door:
-if the app deploys requesting a scope the live client has not been granted, **sign-in fails for every
-user** — and the grant has to land in LocalDB *and* production first. Instead the BFF decodes the access
-token it already holds at `/bff/callback` and copies a short allowlist of claims into the session
-(`Librarian/src/bff/routes.ts`, `accessTokenClaims`). No Identity change, no new scope, no login risk.
-
-Reach for a dedicated identity resource only when a claim genuinely must ride the ID token — and even
-then, **never hang it off `profile`**, which every client requests, so a claim placed there is handed to
-all of them. That was the `churches.mod` defect, **fixed 2026-08-22**:
-the Churches BFF now reads it from the access token, and the `profile` attachment was deleted from
-LocalDB, production, and `Tools/Identity/IdentityResources.sql`. `profile` carries only its fourteen
-standard OIDC claims again, and `churches.mod` survives as an `ApiScopeClaim` on the `directory` scope
-that only Churches requests. Server-side enforcement is unaffected either way: Curator authorizes
-`require_admin` from the access token, and anything the browser reads is a UI affordance.
-
-**Two operational facts that fix cost real time, worth having before the next one.** The live
-`IdentityResourceClaims`/`ApiScopes` ids have drifted from `Tools/Identity/*.sql` *and differ between
-environments* — that row was `Id 3005` locally and `Id 21` in production, and the `directory` scope is
-`Id 3` in the seed but `Id 5` in production — so **write configuration-store edits as joins on
-`Name`/`Type`, never on a seeded `Id`.** And `Program.cs` calls `AddConfigurationStore` with no
-`AddConfigurationStoreCache`, so such a change is live immediately with no restart; verify that line
-still holds before assuming the same next time.
+Reach for a dedicated identity resource only when a claim genuinely must ride the ID token, and even then
+**never hang it off `profile`**, which every client requests, so a claim placed there is handed to all of them.
+`profile` carries only its fourteen standard OIDC claims. Server-side enforcement does not depend
+on any of this: a resource server authorizes from the access token, and anything a browser reads is a UI
+affordance.
 
 ---
 

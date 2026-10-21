@@ -2,11 +2,11 @@
 
 Maps every application path to the tests that cover it.
 
-For running tests (`dotnet test` from the repo root — never the workspace root) and `ASPNETCORE_ENVIRONMENT` discipline, see the workspace-level [TESTING.md](../AGENTS/TESTING.md).
+Run `dotnet test` from the repo root, naming the project. Set `ASPNETCORE_ENVIRONMENT` explicitly for the hosted tiers (`Development` locally, `CI` in CI); the app reads its Azure-only settings under `Production` alone.
 
 ---
 
-Unit test coding standards (MockBehavior.Strict, argument verification, SetupSequence, no control-flow in tests, etc.) are in the workspace-level [Unit Test Standards](../AGENTS/TESTING.md#unit-test-standards).
+Unit tests use `MockBehavior.Strict` mocks, verify the arguments a mock received, use `SetupSequence` for successive calls, and carry no control flow (no `if`, loop or `try` in a test body).
 
 ---
 
@@ -153,11 +153,11 @@ entirely unless `WalkerBaseUrl` is set. It runs on the schedule in `.github/work
 `Microsoft.Playwright` 1.62 exposes the same virtual-authenticator API (`IBrowserContext.Credentials`) as the
 Node build, so a small engine here was cheaper than adding npm, a GitHub Packages token and a second browser
 install to a .NET repo. `WalkerRng` is the same mulberry32 as the shared engine and `Walker.WalkAsync` the same
-weighted-availability loop; that duplication is deliberate and recorded in `Tools/Identity/AGENTS.md`.
+weighted-availability loop, so a change to the walk's rules lands in both.
 
 **Login is by passkey and nothing is bypassed.** The passkey branch in `Login.cshtml.cs` is evaluated *before*
-the CAPTCHA, so the walker exercises a first-class production auth path. Accounts, the credential model and the
-enrollment runbook live in `Tools/Identity/AGENTS.md` (private repo).
+the CAPTCHA, so the walker exercises a first-class production auth path. Enroll a passkey for each walker account
+and store the virtual authenticator's credential in the secrets above.
 
 Replay a failed walk with the seed from the job summary:
 
@@ -412,7 +412,7 @@ flowchart TD
 
 ### Login Tests
 
-**The two lockout tests read `IdentityOptions.Lockout.MaxFailedAccessAttempts` out of the running app; do not put the number back.** The "Repeated wrong passwords lock the account" step in `SignIn/SignInSteps.cs` and `Identity.Tests.Integration/Security/ConcurrentLockoutTests` resolve `IOptions<IdentityOptions>` from `fixture.Factory.Services`, which is the same options instance the app signs in against, so raising or lowering the policy moves both tests with it; a restated literal (ASP.NET Identity's default of 5) would keep asserting the old threshold while still passing. `ConcurrentLockoutTests` overshoots it by a generated multiple rather than by a second hardcoded count. This is [CODE-STYLE.md](../AGENTS/CODE-STYLE.md) rule 11's "a policy threshold the SUT owns moves to a production constant the SUT reads", not a cosmetic rename.
+**The two lockout tests read `IdentityOptions.Lockout.MaxFailedAccessAttempts` out of the running app; do not put the number back.** The "Repeated wrong passwords lock the account" step in `SignIn/SignInSteps.cs` and `Identity.Tests.Integration/Security/ConcurrentLockoutTests` resolve `IOptions<IdentityOptions>` from `fixture.Factory.Services`, which is the same options instance the app signs in against, so raising or lowering the policy moves both tests with it; a restated literal (ASP.NET Identity's default of 5) would keep asserting the old threshold while still passing. `ConcurrentLockoutTests` overshoots it by a generated multiple rather than by a second hardcoded count. A policy threshold the app owns is read from the app, never restated in a test.
 
 | Path | File | Test Method |
 |---|---|---|
@@ -1363,8 +1363,8 @@ because `GetRequired<T>` delegates to `GetValue<T?>`, whose non-`string` convers
 there is no Identity-authored startup extension to test. `Program.cs` needs `using Identity.Extensions;`
 only for `GetRequired`.
 
-**`Program.cs`'s configuration-failure paths have no tests**, by the operator's decision
-([Identity.md](../AGENTS/REPOS/Identity.md) § `/avatar/{sub}`): a missing `CorsPolicy` section, Data
+**`Program.cs`'s configuration-failure paths have no tests**, by decision, because testing them would need a
+fixture that boots the Production branch in the repo that owns authentication: a missing `CorsPolicy` section, Data
 Protection blob URI or key identifier, `ElasticsearchNode` or `SqlConnectionStringBuilder` section each
 throws at startup.
 
@@ -1541,7 +1541,7 @@ Custom `Identity` meter counters (`Telemetry.cs`) are verified with `MeterListen
 **E2E and Integration test helpers:**
 - `Infrastructure/TestClientHelper.cs` — seeds a minimal OIDC client (`RequireConsent=true`, `authorization_code` grant, `openid` scope) and identity resources into `ApplicationDbContext` for the consent and issued-grant scenarios
 - `Infrastructure/IdentityHostFixture.cs` owns the `IdentityWebApplicationFactory` and provides `CreateConfirmedUserAsync()`, which creates a confirmed user **directly via `UserManager` (no browser flow)**. Use it in any test that needs a pre-existing authenticated user but does not test the registration UI; it is orders of magnitude faster than the browser-based registration flow. Always call `fixture.CreateConfirmedUserAsync()` rather than writing a local helper.
-- `Infrastructure/PlaywrightFixture.cs` adds the Playwright browser and `NewPageAsync()`, which creates a new browser context + page configured with `BaseAddress`; it sets no timeout of its own ([CODE-STYLE.md](../AGENTS/CODE-STYLE.md) rule 17)
+- `Infrastructure/PlaywrightFixture.cs` adds the Playwright browser and `NewPageAsync()`, which creates a new browser context + page configured with `BaseAddress`; it sets no timeout of its own
 - `Identity.Tests.Integration/Infrastructure/AccountSession.cs` gives an Integration test an `HttpClient` against the host, signed in through the real login form when the test needs a session
 
 ---
@@ -1709,19 +1709,7 @@ Stryker.NET is configured in `stryker-config.json` with `mutation-level: Advance
 **Nothing is excluded for being slow.** This is a shared authentication server that is deployed rarely, so a long mutation run costs far less than a defect reaching production. `Pages/Admin/` in particular is the configuration surface of the authorization server: redirect URI and post-logout redirect URI allow-lists, CORS origins, grant types, scopes, and client secrets. A mutant surviving there is the shape of an open redirect or a token-leak path, which makes it the highest-value code in the repo to mutate, not the most skippable.
 **Pin the Stryker version: the score moves with it.** `dotnet-stryker` is pinned in the repo's `dotnet-tools.json`, so the CI `mutation` job (`dotnet tool restore`) and the local gate run the same release. Two releases score identical code and config differently, so an unpinned install lets the gate's number move on someone else's release schedule, with no commit to blame. Bump the pin deliberately and re-derive the thresholds in the same change.
 
-**What the scope costs, measured 2026-08-20 under 4.16.0.** Narrowing is possible but has been rejected deliberately; the numbers are recorded so the trade is not re-litigated from guesswork:
-
-| Scope | Mutants tested | Time | Score |
-|---|---|---|---|
-| All of `Pages/` excluded | 92 | 4 m 19 s | 63.25 % |
-| Only `Pages/Admin/` excluded | 825 | 21 m 58 s | 65.33 % |
-| **Nothing excluded but the three above (current)** | **1,871** | **1 h 11 m** | **70.56 %** |
-
-The full scope is both the slowest *and* the highest-scoring, because the page models it adds are well covered by unit tests.
-
-Those times are from a developer machine. The CI `Mutation testing` job is markedly faster; budget it from that job's own latest duration, not from this table.
-
-Do **not** narrow this by reintroducing a blanket `!Pages/**`: under dotnet-stryker 4.14.0 page-model mutants could not compile (`Failed to load analyzer 'Microsoft.CodeAnalysis.Razor.Compiler': ReferencesNewerCompiler`) and silently hung — 1,869 mutants queued, **1 h 36 m** elapsed, and only 244 ever reaching a verdict, with 1,604 of the 1,625 unfinished in `Pages/`. It looked like a scope problem and was a tool problem. 4.16.0 runs the same scope with zero errors and zero timeouts. That is why the pin matters.
+**Narrowing the scope trades away the highest-value mutants, so it stays whole.** Excluding `Pages/` cuts the run to a fraction of its time and lowers the score, because the page models are well covered by unit tests. Budget the CI `mutation` job from its own latest duration. Do **not** narrow it with a blanket `!Pages/**`: a mutant that fails to compile there (for example a Razor compiler analyzer the pinned Stryker cannot load) shows as a hang rather than an error, which is another reason the version is pinned.
 
 **Leave `additional-timeout` unset.** Its unit is milliseconds and Stryker's default is 3000; each mutant's budget is `(initialTestRunTime + coveringTestsTime) * timeout-ratio + additional-timeout`. The MTP runner force-kills and restarts its test server after every timeout, and a cold server's first run needs that headroom, so a value written as if it were seconds (30) turns one slow start into a cascade in which unrelated mutants on both runners time out together and a failing mutant is scored `Timeout`, which counts as detected.
 
@@ -1729,7 +1717,7 @@ Do **not** narrow this by reintroducing a blanket `!Pages/**`: under dotnet-stry
 
 **An upload failure fails the run.** The dashboard client logs `Failed to upload report to the dashboard` and still exits 0, so the CI step matches that line and fails on it; without the match, a report that never arrives looks like a green run.
 
-**The local gate uploads through Node, not through Stryker's dashboard reporter.** `dashboard.stryker-mutator.io` accepts TLS 1.3 only, and .NET's `HttpClient` on Windows negotiates through Schannel, which on Windows Server 2019 has no TLS 1.3, so the reporter's upload cannot succeed on the server that runs triage gates. `gate.ps1` therefore passes the config file's reporters minus `dashboard` on the command line (Stryker applies the command line after the config file, and a repeated `--reporter` replaces the file's list rather than adding to it), writes to a fixed `StrykerOutput\gate` folder it clears first, and hands `reports\mutation-report.json` to `Tools/Gates/upload-stryker-report.mjs`. That script `PUT`s the report to the dashboard's `/api/reports/<project>/<version>` with the `X-Api-Key` header and exits non-zero on any non-2xx answer, so a refused upload (401, 413, the 400 for a `Pending` mutant) fails the gate with the dashboard's own message. CI keeps the reporter, since its Ubuntu runner negotiates TLS 1.3.
+**The dashboard accepts TLS 1.3 only.** .NET's `HttpClient` on Windows negotiates through Schannel, which has no TLS 1.3 on Windows Server 2019, so Stryker's dashboard reporter cannot upload from there. To run Stryker on such a machine, pass the config file's reporters minus `dashboard` on the command line (Stryker applies the command line after the config file, and a repeated `--reporter` replaces the file's list rather than adding to it) and upload `reports/mutation-report.json` yourself with a `PUT` to the dashboard's `/api/reports/<project>/<version>` carrying the `X-Api-Key` header, failing on any non-2xx answer. CI keeps the reporter, since its Ubuntu runner negotiates TLS 1.3.
 
 Only the unit tests run under Stryker, because `test-projects` names `Identity.Tests.Unit` alone, so a mutant in code reachable solely through E2E will survive. That is a real signal about unit coverage, not a configuration flaw.
 
@@ -1747,7 +1735,7 @@ dotnet tool restore
 dotnet stryker --config-file stryker-config.json
 ```
 
-The CI `mutation` job runs on every push, on manual dispatch, and on pull requests raised from branches in this repository; fork PRs are skipped because they cannot read `STRYKER_DASHBOARD_API_KEY` and the `dashboard` reporter would fail. It runs in parallel with `build` and is not a deploy dependency, so a score dip turns the commit red without blocking the release. Reports are uploaded as the `stryker-report` artifact (HTML + JSON). The `Run Stryker mutation tests` step sets `working-directory: Identity`, so Stryker writes `StrykerOutput/` under `Identity/`, not the repo root, so the `Upload Stryker report` step's `path:` must read `Identity/StrykerOutput/**/*`. A repo-root-relative `StrykerOutput/**/*` matches nothing and uploads nothing without failing the job, the same working-directory mismatch as the E2E `--results-directory` trap in [the workspace-level TESTING.md](../AGENTS/TESTING.md).
+The CI `mutation` job runs on every push, on manual dispatch, and on pull requests raised from branches in this repository; fork PRs are skipped because they cannot read `STRYKER_DASHBOARD_API_KEY` and the `dashboard` reporter would fail. It runs in parallel with `build` and is not a deploy dependency, so a score dip turns the commit red without blocking the release. Reports are uploaded as the `stryker-report` artifact (HTML + JSON). The `Run Stryker mutation tests` step sets `working-directory: Identity`, so Stryker writes `StrykerOutput/` under `Identity/`, not the repo root, so the `Upload Stryker report` step's `path:` must read `Identity/StrykerOutput/**/*`. A repo-root-relative `StrykerOutput/**/*` matches nothing and uploads nothing without failing the job, the same working-directory mismatch as an E2E `--results-directory` that is relative to the wrong folder.
 
 The `mutation` job does **not** depend on (`needs:`) the `build` job, and does not build first: Stryker builds `Identity.Tests.Unit.csproj` itself, in Debug, during its initial test run, so a prior Release build is discarded work and `needs: build` would buy nothing.
 
@@ -1761,13 +1749,13 @@ All pages under `Identity/Pages/Admin/` are unit-tested. E2E journeys (`Category
 
 `Identity.Tests.Integration/AccessTests.cs`'s unauthenticated-redirect assertions (`Admin_Unauthenticated_Redirects_To_Login`, `Manage_Unauthenticated_Redirects_To_Login`) compare the absolute path of the response's `Location` for exact equality against `PageRoutes.Login`, not with `Contains`: a substring check would also pass if the challenge ever landed on `/Identity/Account/Login` (the ASP.NET Core Identity scaffolded UI's own login route), silently masking a `.AddDefaultUI()` regression instead of catching it (see [ARCHITECTURE.md](ARCHITECTURE.md) for why `.AddDefaultUI()` must stay out of the `AddIdentity<...>()` chain).
 
-The scenario "An administrator opens a client's settings for editing" exists because "A client's details offer editing and deleting" only checks that the Edit *button* is visible on the Details page — it never navigates into Edit itself. That gap let a real regression through: `Client.CoordinateLifetimeWithUserSession` is `bool?` on the Duende entity, and `asp-for` cannot bind a checkbox `<input>` directly to a nullable `bool`, so the Edit page 500'd on every request until a dedicated test actually rendered it.
+The scenario "An administrator opens a client's settings for editing" exists because "A client's details offer editing and deleting" only checks that the Edit *button* is visible on the Details page and never renders Edit itself. Only rendering the page catches a binding that fails at request time, such as `asp-for` on a checkbox bound to a nullable `bool` (`Client.CoordinateLifetimeWithUserSession` is `bool?` on the Duende entity), which answers 500 on every request.
 
 Secrets (on Clients and API Resources) are write-only once stored — the Edit form never redisplays a previously saved `Value`. The Secrets rows of the add-an-entry outlines assert the `Description`/`Type` that Details *does* echo back, never the raw `Value`.
 
 ### ID convention
 
-The fleet-wide rule (why positional/class selectors are banned, how loop indices are used, and the one model-bound-input exception) now lives in the workspace-level [AGENTS/TESTING.md](../AGENTS/TESTING.md#e2e-selector-strategy-select-by-id-never-by-position) so every Playwright repo sees it, not just this one. What follows is Identity's own admin-page id table, which that rule points back to:
+Select by `id`, never by position or CSS class; an element rendered in a loop takes the loop index in its id. This is the admin-page id table:
 
 | Element | `id` |
 |---|---|
@@ -1853,7 +1841,7 @@ Each retained folder contains:
 
 CI uploads the retained failure artifacts as `identity-playwright-artifacts`, separately from the existing `test-results` TRX artifact.
 
-GitHub Actions artifacts are the only reporting destination; nothing mirrors TRX outcomes to Azure DevOps or Azure Monitor ([RETIRED/AZURE_DEVOPS.md](../AGENTS/RETIRED/AZURE_DEVOPS.md)).
+GitHub Actions artifacts are the only reporting destination.
 
 One workflow decision that is not obvious from reading the YAML:
 
@@ -1885,7 +1873,7 @@ Do not run Git commands when implementing or verifying Playwright reporting chan
 
 ## Local SonarCloud analysis
 
-Generate coverage first, then run from `Identity/`. Unit coverage is OpenCover (branch-bearing, via `coverlet.console`; see the workspace `TESTING.md` for the command); E2E and Integration coverage stay VS Coverage XML. SonarCloud unions every report.
+Generate coverage first, then run from `Identity/`. Unit coverage is OpenCover (branch-bearing, via `coverlet.console`, as the workflow's unit-test step runs it); E2E and Integration coverage stay VS Coverage XML. SonarCloud unions every report.
 
 ```powershell
 $env:SONAR_TOKEN = "<token>"
@@ -1908,4 +1896,4 @@ Required coverage files: `coverage.opencover.xml` (unit, OpenCover), `coverage-e
 
 ### When to build a truth table
 
-The coverage **score is read from SonarCloud, never hand-maintained** here. Build a per-method table in [../AGENTS/COVERAGE/Identity.md](../AGENTS/COVERAGE/Identity.md) only when SonarCloud flags a method with **cognitive complexity > 15 AND uncovered conditions > 0**: the table is escalation for the gnarly few, not a per-class deliverable. See [../AGENTS/COVERAGE/METHOD.md](../AGENTS/COVERAGE/METHOD.md) (the unit, the three laws, the one legend, and MC/DC row derivation).
+The coverage **score is read from SonarCloud, never hand-maintained** here. Build a per-method truth table (one row per combination of the method's conditions, each mapped to the test that exercises it) only when SonarCloud flags a method with **cognitive complexity > 15 AND uncovered conditions > 0**: the table is escalation for the few complex methods, not a per-class deliverable.
