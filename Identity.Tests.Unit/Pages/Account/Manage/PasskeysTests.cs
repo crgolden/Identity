@@ -168,14 +168,16 @@ public sealed class PasskeysTests : IDisposable
         var user = MockHelpers.TestUser();
         userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
         userManager.Setup(m => m.RemovePasskeyAsync(user, It.IsAny<byte[]>())).ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = Generated.NewFailureReason() }));
-        userManager.Setup(m => m.GetUserIdAsync(user)).ReturnsAsync(Generated.NewUserId().ToString());
+        var userId = Generated.NewUserId().ToString();
+        userManager.Setup(m => m.GetUserIdAsync(user)).ReturnsAsync(userId);
         model.Input = new Passkeys.InputModel { CredentialId = ValidCredentialId, Action = Passkeys.DeleteAction };
 
         // Act
         var exception = await Record.ExceptionAsync(() => model.OnPostUpdatePasskeyAsync());
 
         // Assert
-        Assert.IsType<InvalidOperationException>(exception);
+        var invalid = Assert.IsType<InvalidOperationException>(exception);
+        Assert.Contains(userId, invalid.Message, StringComparison.Ordinal);
     }
 
     [Fact]

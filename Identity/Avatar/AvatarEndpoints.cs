@@ -10,6 +10,7 @@ public static class AvatarEndpoints
     internal const string RateLimiterPolicyName = "avatar";
     internal const string RoutePattern = "/avatar/{sub}";
     internal const string RedirectCacheControl = "public, max-age=300";
+    internal const string EndpointName = "Avatar";
 
     public static IEndpointRouteBuilder MapAvatarEndpoint(this IEndpointRouteBuilder endpoints)
     {
@@ -17,7 +18,7 @@ public static class AvatarEndpoints
             .MapGet(RoutePattern, GetAvatarAsync)
             .AllowAnonymous()
             .RequireRateLimiting(RateLimiterPolicyName)
-            .WithName("Avatar");
+            .WithName(EndpointName);
 
         return endpoints;
     }

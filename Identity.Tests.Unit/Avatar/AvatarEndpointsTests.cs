@@ -3,9 +3,12 @@ namespace Identity.Tests.Unit.Avatar;
 using System.Security.Claims;
 using Identity.Avatar;
 using Identity.Tests.Unit.Infrastructure;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Net.Http.Headers;
 using Moq;
 
@@ -13,6 +16,24 @@ using Moq;
 [Trait("Category", "Unit")]
 public class AvatarEndpointsTests
 {
+    [Fact]
+    public async Task MapAvatarEndpoint_MapsTheNamedAvatarRoute()
+    {
+        // Arrange
+        var builder = WebApplication.CreateSlimBuilder();
+        builder.Services.AddSingleton(MockHelpers.MockUserManager().Object);
+        builder.Services.AddSingleton(new Mock<IAvatarService>().Object);
+        await using var app = builder.Build();
+
+        // Act
+        app.MapAvatarEndpoint();
+
+        // Assert
+        var endpoint = Assert.IsType<RouteEndpoint>(Assert.Single(((IEndpointRouteBuilder)app).DataSources.SelectMany(source => source.Endpoints)));
+        Assert.Equal(AvatarEndpoints.RoutePattern, endpoint.RoutePattern.RawText);
+        Assert.Equal(AvatarEndpoints.EndpointName, endpoint.Metadata.GetMetadata<IEndpointNameMetadata>()?.EndpointName);
+    }
+
     [Fact]
     public async Task GetAvatarAsync_RedirectsToAStoredHttpsPictureClaim()
     {

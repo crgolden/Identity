@@ -163,14 +163,16 @@ public sealed class RenamePasskeyTests
         userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(user);
         userManager.Setup(m => m.GetPasskeyAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<byte[]>())).ReturnsAsync(BuildPasskey(ExistingPasskeyName));
         userManager.Setup(m => m.AddOrUpdatePasskeyAsync(user, It.IsAny<UserPasskeyInfo>())).ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = Generated.NewFailureReason() }));
-        userManager.Setup(m => m.GetUserIdAsync(user)).ReturnsAsync(Generated.NewUserId().ToString());
+        var userId = Generated.NewUserId().ToString();
+        userManager.Setup(m => m.GetUserIdAsync(user)).ReturnsAsync(userId);
         model.Input = new RenamePasskey.InputModel { CredentialId = ValidCredentialId, Name = Generated.NewApiResourceName() };
 
         // Act
         var exception = await Record.ExceptionAsync(() => model.OnPostAsync());
 
         // Assert
-        Assert.IsType<InvalidOperationException>(exception);
+        var invalid = Assert.IsType<InvalidOperationException>(exception);
+        Assert.Contains(userId, invalid.Message, StringComparison.Ordinal);
     }
 
     [Fact]

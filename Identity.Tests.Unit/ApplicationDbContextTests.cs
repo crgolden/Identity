@@ -145,6 +145,7 @@ public class ApplicationDbContextTests
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseSqlServer()
             .UseApplicationServiceProvider(applicationServices)
+            .EnableServiceProviderCaching(false)
             .Options;
         return new ApplicationDbContext(options);
     }

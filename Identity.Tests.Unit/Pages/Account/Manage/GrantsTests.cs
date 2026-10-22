@@ -61,6 +61,16 @@ public sealed class GrantsTests : IDisposable
     }
 
     [Fact]
+    public void ViewModel_New_HasNoGrants()
+    {
+        // Act
+        var view = new Grants.ViewModel();
+
+        // Assert
+        Assert.Empty(view.Grants);
+    }
+
+    [Fact]
     public void GrantViewModel_New_HasNoGrantNames()
     {
         // Act

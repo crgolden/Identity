@@ -251,6 +251,8 @@ public sealed class ExternalLoginTests
         var redirect = Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal(ExternalLogin.LoginPageName, redirect.PageName);
         Assert.Equal(ExternalLogin.AccountAlreadyExistsMessage(externalEmail, ExternalProviderDisplayName), harness.Model.ErrorMessage);
+        Assert.Contains(externalEmail, harness.Model.ErrorMessage, StringComparison.Ordinal);
+        Assert.Contains(ExternalProviderDisplayName, harness.Model.ErrorMessage, StringComparison.Ordinal);
         Assert.Equal(ExternalLogin.AccountAlreadyExistsErrorCode, harness.Model.ErrorCode);
         harness.UserMgr.Verify(m => m.CreateAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
     }
@@ -609,7 +611,7 @@ public sealed class ExternalLoginTests
         return (factory.Object, sender);
     }
 
-    private static (ExternalLogin Model, Mock<SignInManager<IdentityUser<Guid>>> SignIn, Mock<UserManager<IdentityUser<Guid>>> UserMgr, Mock<ServiceBusSender> Sender, Mock<IUrlHelper> Url, Mock<IUserEmailStore<IdentityUser<Guid>>> EmailStore, global::Identity.Pages.Account.AccountEmailSettings EmailSettings) Create(bool requireConfirmedAccount = false)
+    private static (ExternalLogin Model, Mock<SignInManager<IdentityUser<Guid>>> SignIn, Mock<UserManager<IdentityUser<Guid>>> UserMgr, Mock<ServiceBusSender> Sender, Mock<IUrlHelper> Url, Mock<IUserEmailStore<IdentityUser<Guid>>> EmailStore, AccountEmailSettings EmailSettings) Create(bool requireConfirmedAccount = false)
     {
         var emailStore = new Mock<IUserEmailStore<IdentityUser<Guid>>>();
         emailStore.Setup(s => s.SetUserNameAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string?>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);

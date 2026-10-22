@@ -21,7 +21,7 @@ internal sealed class TelemetryHarness : IDisposable
         _activityListener = new ActivityListener
         {
             ShouldListenTo = source => ReferenceEquals(source, Telemetry.ActivitySource),
-            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+            Sample = (ref _) => ActivitySamplingResult.AllDataAndRecorded,
             ActivityStopped = _stoppedActivities.Enqueue,
         };
         ActivitySource.AddActivityListener(_activityListener);

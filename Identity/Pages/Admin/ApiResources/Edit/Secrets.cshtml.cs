@@ -79,5 +79,5 @@ public class Secrets : EditableResourcesBase<int, ApiResourceSecret>
         return true;
     }
 
-    protected override ApiResourceSecret NewResource() => new ApiResourceSecret { Type = "SharedSecret" };
+    protected override ApiResourceSecret NewResource() => new ApiResourceSecret();
 }

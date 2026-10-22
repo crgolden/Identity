@@ -94,9 +94,7 @@ public class PasskeySubmitTagHelper : TagHelper
         await htmlWriter.WriteAsync($"</{TagName}>");
         output.TagName = null;
         output.Attributes.Clear();
-        output.Content.Clear();
         output.Content.SetHtmlContent(htmlWriter.ToString());
-        await base.ProcessAsync(context, output);
     }
 
     private static async Task WriteAttributeAsync(TextWriter writer, string name, string? value)

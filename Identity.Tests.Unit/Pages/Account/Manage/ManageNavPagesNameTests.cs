@@ -14,7 +14,7 @@ public class ManageNavPagesNameTests
         var page = ManageNavPages.Grants;
 
         // Assert
-        Assert.Equal(nameof(global::Identity.Pages.Account.Manage.Grants), page);
+        Assert.Equal(nameof(Grants), page);
     }
 
     [Fact]
@@ -24,7 +24,7 @@ public class ManageNavPagesNameTests
         var page = ManageNavPages.Passkeys;
 
         // Assert
-        Assert.Equal(nameof(global::Identity.Pages.Account.Manage.Passkeys), page);
+        Assert.Equal(nameof(Passkeys), page);
     }
 
     [Fact]
@@ -34,6 +34,6 @@ public class ManageNavPagesNameTests
         var page = ManageNavPages.ExternalLogins;
 
         // Assert
-        Assert.Equal(nameof(global::Identity.Pages.Account.Manage.ExternalLogins), page);
+        Assert.Equal(nameof(ExternalLogins), page);
     }
 }

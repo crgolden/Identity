@@ -433,6 +433,25 @@ public class ExternalLoginsTests
         Assert.Equal(unlinkedScheme, Assert.Single(model.OtherLogins).Name);
     }
 
+    [Fact]
+    public async Task OnGetAsync_TwoLinkedProviders_OffersNeitherOfThem()
+    {
+        // Arrange
+        var first = NewLogin();
+        var second = NewLogin();
+        var unlinkedScheme = Generated.NewSchemeName();
+        var model = BuildModelForGet(
+            passwordHash: null,
+            linkedLogins: [first, second],
+            schemes: [NewScheme(first.LoginProvider), NewScheme(second.LoginProvider), NewScheme(unlinkedScheme)]);
+
+        // Act
+        await model.OnGetAsync();
+
+        // Assert
+        Assert.Equal(unlinkedScheme, Assert.Single(model.OtherLogins).Name);
+    }
+
     private static LinkLoginArrangement BuildModelForLinkLogin(string provider)
     {
         var mockUserStoreForUserManager = new Mock<IUserStore<IdentityUser<Guid>>>().Object;

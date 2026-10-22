@@ -35,5 +35,5 @@ public class Secrets : EditableClientResourcesBase<ClientSecret>
         ClientId = clientId,
     };
 
-    protected override ClientSecret NewResource() => new ClientSecret { Type = "SharedSecret" };
+    protected override ClientSecret NewResource() => new ClientSecret();
 }

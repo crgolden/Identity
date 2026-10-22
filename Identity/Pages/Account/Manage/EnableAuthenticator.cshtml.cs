@@ -17,6 +17,8 @@ public class EnableAuthenticator : PageModel
 
     internal const char SharedKeyGroupSeparator = ' ';
 
+    internal const string AuthenticatorIssuer = "crgolden";
+
     internal const string CodeModelStateKey =
         "Input.Code";
 
@@ -117,11 +119,6 @@ public class EnableAuthenticator : PageModel
             currentPosition += SharedKeyGroupLength;
         }
 
-        if (currentPosition >= unformattedKey.Length)
-        {
-            return result.ToString().ToLowerInvariant();
-        }
-
         value = unformattedKey.AsSpan(currentPosition);
         result.Append(value);
         return result.ToString().ToLowerInvariant();
@@ -156,7 +153,7 @@ public class EnableAuthenticator : PageModel
         return Format(
             CultureInfo.InvariantCulture,
             AuthenticatorUriFormat,
-            _urlEncoder.Encode("crgolden"),
+            _urlEncoder.Encode(AuthenticatorIssuer),
             _urlEncoder.Encode(email),
             unformattedKey);
     }
