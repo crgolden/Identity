@@ -147,6 +147,8 @@ jobs:
         run: npm run lint
 
       - name: Audit dependencies (fails on high or critical)
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.PACKAGES_READ_TOKEN }}
         run: npm run audit
 
       - name: Begin Sonar analysis
@@ -351,7 +353,8 @@ jobs:
           PGUSER: ${{ vars.TEST_RESULTS_PGUSER }}
           PGSSLMODE: ${{ vars.TEST_RESULTS_PGSSLMODE }}
           PGPASSWORD: ${{ secrets.TEST_RESULTS_PGPASSWORD }}
-        run: npx --no -- publish-bdd-results --app ${{ vars.TEST_RESULTS_APP }} ${{ steps.cucumber-report.outputs.messages }}
+          NODE_AUTH_TOKEN: ${{ secrets.PACKAGES_READ_TOKEN }}
+        run: npx --yes --package @crgolden/modules@0.18.0 -- publish-bdd-results --app ${{ vars.TEST_RESULTS_APP }} ${{ steps.cucumber-report.outputs.messages }}
 
       - name: Upload Cucumber report
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1

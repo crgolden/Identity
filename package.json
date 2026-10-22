@@ -3,10 +3,9 @@
   "private": true,
   "scripts": {
     "lint": "eslint Identity/wwwroot/js",
-    "audit": "check-npm-audit"
+    "audit": "npx --yes --package @crgolden/modules@0.18.0 check-npm-audit"
   },
   "devDependencies": {
-    "@crgolden/modules": "0.18.0",
     "eslint": "10.8.1",
     "eslint-plugin-import-x": "4.17.1",
     "eslint-plugin-sonarjs": "4.2.2",
