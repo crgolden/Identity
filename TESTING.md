@@ -102,7 +102,10 @@ Sonar branch and fails `Fail on open Sonar issues`. The deployed site's account 
 
 ---
 
-**Test types (four physical projects, one layer each)**
+## Test tiers
+
+Four test projects, one layer each:
+
 - **`Identity.Tests.Unit`** — xUnit page-model / service / API tests (`Category=Unit`); includes property-based (`PropertyBased/`) sub-folder. No Playwright/`Microsoft.AspNetCore.Mvc.Testing` dependency.
 - **`Identity.Tests.E2E`**: browser journeys written as Gherkin features (`Category=E2E`), one folder per slice: `SignIn/`, `Registration/`, `PasswordReset/`, `AccountManagement/`, `TwoFactor/`, `PasskeySignIn/`, `GoogleSignIn/`, `ApplicationConsent/`, `Home/`, `AdminArea/`, `AdminClients/`, `AdminResources/`, `AdminProviders/`, `AdminPeople/`, `AdminGrants/`. Every test here is a journey; a test that drives an endpoint or a service belongs in `Identity.Tests.Integration`.
 - **`Identity.Tests.Integration`**: xunit tests over `HttpClient` and the host's services (`Category=Integration`), with no browser: OIDC discovery (`Oidc/`), `GrantsTests`, `ServerSideSessionsTests`, `PasskeyTests`, `AccessTests` (unauthenticated and non-admin redirects), `SingleQueryClientStoreTests`, `IdentityWebApplicationFactoryTests`, and `Security/` (`AntiforgeryTests`, `ConcurrentLockoutTests`, `PasskeyRequestOptionsTests`). `Infrastructure/AccountSession` signs a client in by posting the login form with its antiforgery token and never follows a redirect, so a test asserts the `Location` path itself.
@@ -165,6 +168,17 @@ Replay a failed walk with the seed from the job summary:
 $env:SYNTHETIC_SEED = '<seed>'; $env:WalkerBaseUrl = 'https://crgolden-identity.azurewebsites.net'
 .\Identity.Tests.E2E\bin\Debug\net10.0\Identity.Tests.E2E.exe -trait "Category=Walker" -showLiveOutput
 ```
+
+---
+
+## CI pipeline
+
+`.github/workflows/main_crgolden-identity.yml` runs, on every push and pull request: the npm lint and audit, the
+build with warnings as errors, `jb inspectcode`, the unit tier under `coverlet`, the `.dacpac` to the E2E database,
+the E2E tier with its floor check, the integration tier, and SonarCloud with a check that fails on any open issue.
+The load tier runs on `workflow_dispatch` only, the mutation job on every push and same-repository pull request, and
+the synthetic walker on its own schedule (`synthetic.yml`). The full step list, and which steps Dependabot skips:
+[ARCHITECTURE.md § CI/CD Pipeline](ARCHITECTURE.md#cicd-pipeline).
 
 ---
 
@@ -1873,22 +1887,24 @@ Do not run Git commands when implementing or verifying Playwright reporting chan
 
 ## Local SonarCloud analysis
 
-Generate coverage first, then run from `Identity/`. Unit coverage is OpenCover (branch-bearing, via `coverlet.console`, as the workflow's unit-test step runs it); E2E and Integration coverage stay VS Coverage XML. SonarCloud unions every report.
+C# is analyzed only through the MSBuild scanner, `dotnet-sonarscanner` (`dotnet tool install --global dotnet-sonarscanner`): the standalone `sonar-scanner` CLI indexes C# files but publishes no issues, replacing the project's analysis with an empty one. Run from `Identity/`, in this order: `begin`, the build, the three coverage runs, `end`. `end` needs a Java 17 or later runtime in `JAVA_HOME`, process scope only; the `jre` folder of a SonarScanner CLI install is one. Unit coverage is OpenCover (branch-bearing, via `coverlet.console`, as the workflow's unit-test step runs it); E2E and Integration coverage stay VS Coverage XML, produced by the workflow's E2E and Integration steps run locally. SonarCloud unions every report.
 
 ```powershell
 $env:SONAR_TOKEN = "<token>"
-& "$env:SystemDrive\sonar-scanner-8.0.1.6346-windows-x64\bin\sonar-scanner.bat" `
-  "-Dsonar.projectKey=crgolden_Identity" `
-  "-Dsonar.organization=crgolden" `
-  "-Dsonar.sources=Identity" `
-  "-Dsonar.tests=Identity.Tests.Unit,Identity.Tests.E2E,Identity.Tests.Integration,Identity.Tests.Load" `
-  "-Dsonar.exclusions=**/bin/**,**/obj/**" `
-  "-Dsonar.coverage.exclusions=**/Program.cs,**/gate.ps1" `
-  "-Dsonar.cs.opencover.reportsPaths=coverage.opencover.xml" `
-  "-Dsonar.cs.vscoveragexml.reportsPaths=coverage-e2e.xml,coverage-integration.xml"
+$env:JAVA_HOME = "<a Java 17+ runtime>"
+dotnet-sonarscanner begin /k:"crgolden_Identity" /o:"crgolden" /d:sonar.token="$env:SONAR_TOKEN" `
+  /d:sonar.host.url="https://sonarcloud.io" `
+  /d:sonar.cs.opencover.reportsPaths="coverage.opencover.xml" `
+  /d:sonar.cs.vscoveragexml.reportsPaths="coverage-e2e.xml,coverage-integration.xml" `
+  /d:sonar.exclusions="**/bin/**,**/obj/**" `
+  /d:sonar.coverage.exclusions="**/Program.cs,**/gate.ps1" `
+  /d:sonar.qualitygate.wait=true /d:sonar.scanner.skipJreProvisioning=true
+dotnet build --no-incremental --configuration Release
+# the workflow's unit, E2E and Integration coverage steps: coverage.opencover.xml, coverage-e2e.xml, coverage-integration.xml
+dotnet-sonarscanner end /d:sonar.token="$env:SONAR_TOKEN"
 ```
 
-The exclusion arguments must stay byte-for-byte identical to the ones
+The `begin` arguments must stay byte-for-byte identical to the ones
 `.github/workflows/main_crgolden-identity.yml` passes to `dotnet-sonarscanner begin`: they are the same
 policy written twice, and a copy that drifts measures a different codebase from the one CI reports.
 

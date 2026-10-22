@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Options;
 using Moq;
 
 [Collection(UnitCollection.Name)]
@@ -15,6 +16,8 @@ using Moq;
 public class EnableAuthenticatorTests
 {
     private static readonly string AuthenticatorKey = Generated.NewAuthenticatorKey();
+
+    private static readonly IOptions<AuthenticatorOptions> IssuerOptions = Options.Create(new AuthenticatorOptions(Generated.NewDisplayName()));
 
     [Fact]
     public void Constructor_NullDependency_ExpectedBehavior()
@@ -25,7 +28,7 @@ public class EnableAuthenticatorTests
         var userManager = MockHelpers.MockUserManager().Object;
 
         // Act
-        var model = new EnableAuthenticator(userManager, urlEncoderMock.Object);
+        var model = new EnableAuthenticator(userManager, urlEncoderMock.Object, IssuerOptions);
 
         // Assert
         Assert.NotNull(model);
@@ -44,7 +47,7 @@ public class EnableAuthenticatorTests
         userManagerMock.Setup(um => um.GetUserId(It.IsAny<ClaimsPrincipal>()))
             .Returns(expectedId);
 
-        var model = new EnableAuthenticator(userManagerMock.Object, urlEncoder);
+        var model = new EnableAuthenticator(userManagerMock.Object, urlEncoder, IssuerOptions);
 
         // Act
         var result = await model.OnPostAsync();
@@ -71,7 +74,7 @@ public class EnableAuthenticatorTests
         userManagerMock.Setup(um => um.ResetAuthenticatorKeyAsync(It.IsAny<IdentityUser<Guid>>()))
             .ReturnsAsync(IdentityResult.Success);
 
-        var model = new EnableAuthenticator(userManagerMock.Object, urlEncoder);
+        var model = new EnableAuthenticator(userManagerMock.Object, urlEncoder, IssuerOptions);
         model.ModelState.AddModelError(Generated.NewModelStateKey(), Generated.NewValidationMessage());
 
         // Act
@@ -107,7 +110,7 @@ public class EnableAuthenticatorTests
                 It.Is<string>(s => s == stripped)))
             .ReturnsAsync(false);
 
-        var model = new EnableAuthenticator(userManagerMock.Object, urlEncoder)
+        var model = new EnableAuthenticator(userManagerMock.Object, urlEncoder, IssuerOptions)
         {
             Input = new EnableAuthenticator.InputModel { Code = rawCode }
         };
@@ -137,7 +140,7 @@ public class EnableAuthenticatorTests
             existingRecoveryCount: 0,
             freshlyGeneratedCodes);
 
-        var model = new EnableAuthenticator(userManagerMock.Object, UrlEncoder.Default)
+        var model = new EnableAuthenticator(userManagerMock.Object, UrlEncoder.Default, IssuerOptions)
         {
             Input = new EnableAuthenticator.InputModel { Code = BuildVerificationCode() }
         };
@@ -162,7 +165,7 @@ public class EnableAuthenticatorTests
             remainingRecoveryCount,
             [Generated.NewRecoveryCode()]);
 
-        var model = new EnableAuthenticator(userManagerMock.Object, UrlEncoder.Default)
+        var model = new EnableAuthenticator(userManagerMock.Object, UrlEncoder.Default, IssuerOptions)
         {
             Input = new EnableAuthenticator.InputModel { Code = BuildVerificationCode() }
         };
@@ -192,7 +195,7 @@ public class EnableAuthenticatorTests
 
         var urlEncoder = UrlEncoder.Default;
 
-        var pageModel = new EnableAuthenticator(userManagerMock.Object, urlEncoder);
+        var pageModel = new EnableAuthenticator(userManagerMock.Object, urlEncoder, IssuerOptions);
         var principal = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, expectedId)], Generated.NewSchemeName()));
         pageModel.PageContext = new PageContext { HttpContext = new DefaultHttpContext { User = principal } };
 
@@ -209,7 +212,7 @@ public class EnableAuthenticatorTests
     {
         // Arrange
         var userManagerMock = MockUserManagerForVerifiedAuthenticator(Generated.NewRecoveryCodeCount(), [Generated.NewRecoveryCode()]);
-        var model = new EnableAuthenticator(userManagerMock.Object, UrlEncoder.Default)
+        var model = new EnableAuthenticator(userManagerMock.Object, UrlEncoder.Default, IssuerOptions)
         {
             Input = new EnableAuthenticator.InputModel { Code = Generated.NewBlank() }
         };
@@ -228,7 +231,7 @@ public class EnableAuthenticatorTests
     {
         // Arrange
         var userManagerMock = MockUserManagerForVerifiedAuthenticator(Generated.NewRecoveryCodeCount(), [Generated.NewRecoveryCode()]);
-        var model = new EnableAuthenticator(userManagerMock.Object, UrlEncoder.Default);
+        var model = new EnableAuthenticator(userManagerMock.Object, UrlEncoder.Default, IssuerOptions);
         model.ModelState.AddModelError(Generated.NewModelStateKey(), Generated.NewValidationMessage());
 
         // Act
@@ -246,7 +249,7 @@ public class EnableAuthenticatorTests
         var userManagerMock = MockUserManagerForVerifiedAuthenticator(Generated.NewRecoveryCodeCount(), [Generated.NewRecoveryCode()]);
         userManagerMock.Setup(um => um.VerifyTwoFactorTokenAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(false);
-        var model = new EnableAuthenticator(userManagerMock.Object, UrlEncoder.Default)
+        var model = new EnableAuthenticator(userManagerMock.Object, UrlEncoder.Default, IssuerOptions)
         {
             Input = new EnableAuthenticator.InputModel { Code = BuildVerificationCode() }
         };
@@ -292,6 +295,20 @@ public class EnableAuthenticatorTests
         Assert.NotNull(model.AuthenticatorUri);
         Assert.Contains(storedKey, model.AuthenticatorUri, StringComparison.Ordinal);
         Assert.Contains(UrlEncoder.Default.Encode(email), model.AuthenticatorUri, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task OnGetAsync_StoredKeyAndEmail_NamesTheConfiguredIssuerInTheUri()
+    {
+        // Arrange
+        var userManagerMock = MockUserManagerWithKeyAndEmail(Generated.NewAuthenticatorKey(), Generated.NewEmailAddress());
+        var model = CreateSignedInModel(userManagerMock.Object);
+
+        // Act
+        await model.OnGetAsync();
+
+        // Assert
+        Assert.Contains(UrlEncoder.Default.Encode(IssuerOptions.Value.Issuer), model.AuthenticatorUri, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -370,7 +387,7 @@ public class EnableAuthenticatorTests
 
     private static EnableAuthenticator CreateSignedInModel(UserManager<IdentityUser<Guid>> userManager)
     {
-        var model = new EnableAuthenticator(userManager, UrlEncoder.Default);
+        var model = new EnableAuthenticator(userManager, UrlEncoder.Default, IssuerOptions);
         model.PageContext = new PageContext { HttpContext = new DefaultHttpContext() };
         return model;
     }

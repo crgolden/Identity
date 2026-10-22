@@ -3,10 +3,12 @@ namespace Identity.Tests.Unit.Avatar;
 using System.Security.Claims;
 using Identity.Avatar;
 using Identity.Tests.Unit.Infrastructure;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Net.Http.Headers;
@@ -17,7 +19,7 @@ using Moq;
 public class AvatarEndpointsTests
 {
     [Fact]
-    public async Task MapAvatarEndpoint_MapsTheNamedAvatarRoute()
+    public async Task MapAvatarEndpoint_MapsTheAnonymousRateLimitedNamedRoute()
     {
         // Arrange
         var builder = WebApplication.CreateSlimBuilder();
@@ -26,11 +28,14 @@ public class AvatarEndpointsTests
         await using var app = builder.Build();
 
         // Act
-        app.MapAvatarEndpoint();
+        var returned = app.MapAvatarEndpoint();
 
         // Assert
+        Assert.Same(app, returned);
         var endpoint = Assert.IsType<RouteEndpoint>(Assert.Single(((IEndpointRouteBuilder)app).DataSources.SelectMany(source => source.Endpoints)));
         Assert.Equal(AvatarEndpoints.RoutePattern, endpoint.RoutePattern.RawText);
+        Assert.NotNull(endpoint.Metadata.GetMetadata<IAllowAnonymous>());
+        Assert.Equal(AvatarEndpoints.RateLimiterPolicyName, endpoint.Metadata.GetMetadata<EnableRateLimitingAttribute>()?.PolicyName);
         Assert.Equal(AvatarEndpoints.EndpointName, endpoint.Metadata.GetMetadata<IEndpointNameMetadata>()?.EndpointName);
     }
 

@@ -7,6 +7,7 @@ using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Options;
 using static System.String;
 
 public class EnableAuthenticator : PageModel
@@ -16,8 +17,6 @@ public class EnableAuthenticator : PageModel
     internal const int SharedKeyGroupLength = 4;
 
     internal const char SharedKeyGroupSeparator = ' ';
-
-    internal const string AuthenticatorIssuer = "crgolden";
 
     internal const string CodeModelStateKey =
         "Input.Code";
@@ -35,13 +34,16 @@ public class EnableAuthenticator : PageModel
 
     private readonly UserManager<IdentityUser<Guid>> _userManager;
     private readonly UrlEncoder _urlEncoder;
+    private readonly string _issuer;
 
     public EnableAuthenticator(
         UserManager<IdentityUser<Guid>> userManager,
-        UrlEncoder urlEncoder)
+        UrlEncoder urlEncoder,
+        IOptions<AuthenticatorOptions> authenticatorOptions)
     {
         _userManager = userManager;
         _urlEncoder = urlEncoder;
+        _issuer = authenticatorOptions.Value.Issuer;
     }
 
     public string? SharedKey { get; set; }
@@ -153,7 +155,7 @@ public class EnableAuthenticator : PageModel
         return Format(
             CultureInfo.InvariantCulture,
             AuthenticatorUriFormat,
-            _urlEncoder.Encode(AuthenticatorIssuer),
+            _urlEncoder.Encode(_issuer),
             _urlEncoder.Encode(email),
             unformattedKey);
     }

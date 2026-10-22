@@ -51,6 +51,7 @@ try
     var errorExplanations = builder.Configuration.GetRequiredSection("ErrorExplanations").Get<ErrorExplanation[]>() ?? throw new InvalidOperationException("Invalid 'ErrorExplanations' section.");
     var adminSections = builder.Configuration.GetRequiredSection("AdminSections").Get<AdminSection[]>() ?? throw new InvalidOperationException("Invalid 'AdminSections' section.");
     var manageSections = builder.Configuration.GetRequiredSection("ManageSections").Get<ManageSection[]>() ?? throw new InvalidOperationException("Invalid 'ManageSections' section.");
+    var authenticatorOptions = builder.Configuration.GetRequiredSection(nameof(AuthenticatorOptions)).Get<AuthenticatorOptions>() ?? throw new InvalidOperationException($"Invalid '{nameof(AuthenticatorOptions)}' section.");
     var consentOptions = builder.Configuration.GetRequiredSection(nameof(ConsentOptions)).Get<ConsentOptions>() ?? throw new InvalidOperationException($"Invalid '{nameof(ConsentOptions)}' section.");
     var telemetryOptions = builder.Configuration.GetRequiredSection(nameof(TelemetryOptions)).Get<TelemetryOptions>() ?? throw new InvalidOperationException($"Invalid '{nameof(TelemetryOptions)}' section.");
 
@@ -224,6 +225,7 @@ try
         .AddSingleton(Options.Create<IReadOnlyList<ErrorExplanation>>(errorExplanations))
         .AddSingleton(Options.Create<IReadOnlyList<AdminSection>>(adminSections))
         .AddSingleton(Options.Create<IReadOnlyList<ManageSection>>(manageSections))
+        .AddSingleton(Options.Create(authenticatorOptions))
         .AddSingleton(Options.Create(consentOptions))
         .AddSingleton(Options.Create(telemetryOptions))
         .AddSingleton<Identity.Telemetry>()

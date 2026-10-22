@@ -31,6 +31,20 @@ public sealed class ExternalLoginTests
     private static readonly string ExternalReturnUrl = Generated.NewOrigin();
 
     [Fact]
+    public void AccountAlreadyExistsMessage_NamesTheEmailAndTheProvider()
+    {
+        // Arrange
+        var existingEmail = Generated.NewEmailAddress();
+
+        // Act
+        var message = ExternalLogin.AccountAlreadyExistsMessage(existingEmail, ExternalProviderDisplayName);
+
+        // Assert
+        Assert.Contains(existingEmail, message, StringComparison.Ordinal);
+        Assert.Contains(ExternalProviderDisplayName, message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void OnGet_RedirectsToLoginPage()
     {
         // Arrange

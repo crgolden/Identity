@@ -437,13 +437,13 @@ public class ExternalLoginsTests
     public async Task OnGetAsync_TwoLinkedProviders_OffersNeitherOfThem()
     {
         // Arrange
-        var first = NewLogin();
-        var second = NewLogin();
+        var firstLinked = NewLogin();
+        var secondLinked = NewLogin();
         var unlinkedScheme = Generated.NewSchemeName();
         var model = BuildModelForGet(
             passwordHash: null,
-            linkedLogins: [first, second],
-            schemes: [NewScheme(first.LoginProvider), NewScheme(second.LoginProvider), NewScheme(unlinkedScheme)]);
+            linkedLogins: [firstLinked, secondLinked],
+            schemes: [NewScheme(firstLinked.LoginProvider), NewScheme(secondLinked.LoginProvider), NewScheme(unlinkedScheme)]);
 
         // Act
         await model.OnGetAsync();

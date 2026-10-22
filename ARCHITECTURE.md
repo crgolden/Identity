@@ -1,6 +1,6 @@
 # Architecture
 
-## Purpose
+## Bird's-eye view
 
 This application is a standalone **OpenID Connect Identity Provider** (IdP). Client applications redirect users here to authenticate, and this app issues tokens that clients use to verify identity. It does not host any application logic beyond authentication and account management.
 
@@ -11,14 +11,33 @@ Built on:
 
 ---
 
-## Solution Structure
+## Codemap
 
-| Project | Type | Role |
-|---|---|---|
-| `Identity/` | ASP.NET Core 10 web app | The running application — Razor Pages, services, `Program.cs`, `ApplicationDbContext` |
-| `Identity.Data/` | SQL Server Database Project (SSDT) | Authoritative schema source; builds to a `.dacpac` for production deployment |
-| `Identity.Tests.Unit/` | xUnit v3 test project | Unit and property-based tests |
-| `Identity.Tests.E2E/` | xUnit v3 test project | E2E (Playwright/Chromium), load tests, and the synthetic walker |
+| Path | What it does |
+|---|---|
+| `Identity/` | The ASP.NET Core 10 web app: `Program.cs` (composition and the middleware pipeline), `ApplicationDbContext`, `SingleQueryClientStore`, `Telemetry` |
+| `Identity/Pages/Account/` | Sign-in, registration, password recovery, two-factor, passkeys, external login, and account management under `Manage/` |
+| `Identity/Pages/Admin/` | The admin UI over the IdentityServer configuration and operational stores, users and roles |
+| `Identity/Pages/` (root) | Home, error, privacy, redirect and CIBA pages, and the shared collection-page base classes |
+| `Identity/Avatar/`, `Identity/CAPTCHA/` | The `/avatar/{sub}` endpoint and Gravatar URL construction; reCAPTCHA verification |
+| `Identity/Extensions/`, `Identity/Logging/` | Configuration, middleware and endpoint extensions; the Duende license-notice log filter |
+| `Identity/wwwroot/` | Static assets: the vendored client libraries and this app's scripts |
+| `Identity.Data/` | SQL Server Database Project (SSDT): the authoritative schema, built to a `.dacpac` |
+| `Identity.Tests.Unit/` | Unit and property-based tests |
+| `Identity.Tests.E2E/` | Browser journeys as Gherkin features, the shared host fixture, and the synthetic walker |
+| `Identity.Tests.Integration/` | Endpoint and service tests over `HttpClient`, no browser |
+| `Identity.Tests.Load/` | Throughput and failure-rate tests, run on demand |
+
+## Invariants
+
+- **Every Razor Page requires authentication** unless it opts out with `[AllowAnonymous]`, and `.AddDefaultUI()` is never
+  called (see URL & Routing Conventions).
+- **`Program.cs` branches once, on `IsProduction()`**, and everything Azure- and telemetry-shaped lives inside it;
+  passkey origin validation and the `Events.Raise*` flags are registered outside it, in every environment.
+- **The schema comes from `Identity.Data/`, never from EF Core migrations**, and the database deploys before the app.
+- **A configuration-store row is addressed by name, never by `Id`**, because ids differ between environments.
+- **No view carries an inline script or style**, which is what keeps the Content Security Policy strict.
+- **reCAPTCHA fails closed and has no test-only branch**; scheduled walkers sign in by passkey instead.
 
 ---
 
@@ -311,7 +330,7 @@ affordance.
 
 ---
 
-## External Services
+## Boundaries
 
 | Service | Purpose | Registration |
 |---|---|---|
@@ -329,52 +348,35 @@ affordance.
 avatar *image* endpoint is public and unauthenticated — Gravatar documents it as usable straight from an
 `img` tag — so the URL is a pure function of the email address and there is nothing to look up.
 
-This replaced a round trip to the authenticated Profile API (`api.gravatar.com/v3`) whose only purpose was
-to read back a URL we can derive. Deleting it removed the NSwag `OpenApiReference` and its generated
-`IGravatar` client, the typed `HttpClient` registration, and the **`GravatarApiSecretKey` Key Vault
-secret** — which `Program.cs` read with `GetRequired`, so it was a hard startup dependency for a call the
-app no longer makes.
-
 Two consequences worth knowing before changing this:
 
 - **`d=identicon` means every user has an avatar.** Gravatar decides at image-fetch time: the real avatar
   when the address has one, a deterministic generated image when it does not. There is no
-  "this address has no Gravatar" case for a caller to branch on and no 404 path to handle. Previously a
-  404 from the Profile API meant no claim was written and the user had no avatar at all.
+  "this address has no Gravatar" case for a caller to branch on and no 404 path to handle.
 - **The hash input must be trimmed and lower-cased *before* hashing**, per Gravatar's documented
   algorithm. Registration stores `UserName` as the raw typed string, so without normalization a
   mixed-case or space-padded address hashes to a digest Gravatar has never seen and the user silently
   has no avatar. (The lower-casing applied to the resulting hex is a separate, unrelated step:
   `Convert.ToHexString` emits upper-case.)
 
-Gravatar publishes no stability, versioning or deprecation statement for this scheme, and it has already
-changed once (MD5 → SHA-256). The derivation is therefore confined to `GravatarService.HashIdentifier`
-and one URL template, so a future change moves one method.
+Gravatar publishes no stability, versioning or deprecation statement for this scheme. The derivation is
+therefore confined to `GravatarService.HashIdentifier` and one URL template, so a change moves one method.
 
 ### A stored `picture` claim only outranks the computed URL when it is *not* ours
 
 Precedence is "a stored `picture` claim wins", because that claim is how an external photo (Google's,
-via `AddMissingClaimsAsync`) reaches a token. That rule rests on an assumption which was **false for
-existing rows**: the deleted `PictureClaimWorker` also wrote `picture` claims, and its values were
-computed Gravatar URLs from the old Profile API — `https://0.gravatar.com/avatar/{hash}`, with **no
-`?s=2048` and no `?d=identicon`**.
+via `AddMissingClaimsAsync`) reaches a token. A stored claim can also hold a Gravatar URL in an older shape
+(`https://0.gravatar.com/avatar/{hash}`, with no `?s=2048` and no `?d=identicon`), and honoring it would
+deny that user the generated-identicon fallback, the 2048px size and the normalized hash.
 
-Found by running the real service against the real database rather than by any test: `GET /avatar/{sub}`
-for a seeded user 302'd to exactly that legacy URL. So for every user the worker had already touched,
-none of the improvements above applied — no generated-identicon fallback (so a user without a Gravatar
-account got nothing, the one case `d=identicon` exists to remove), no 2048px size, and a hash that may
-have been computed from an un-normalized address and therefore point at no avatar at all. The feature
-would have shipped looking correct and changing nothing for existing accounts.
-
-`IAvatarService.IsOwnComputedUrl` closes it: the provider recognizes its own URLs, and a stored claim
+`IAvatarService.IsOwnComputedUrl` handles it: the provider recognizes its own URLs, and a stored claim
 matching them is ignored and recomputed. It lives on the interface rather than in the two call sites
 because the shape of a computed URL is the provider's own knowledge, and both `AvatarProfileService` and
 `AvatarEndpoints` must apply the identical rule. `AvatarProfileService` additionally *removes* the stale
 claim before adding the fresh one — otherwise the token carries two `picture` claims rather than a
 replaced one.
 
-This is self-healing and needs no data migration; it also survives a stale deployment writing another
-legacy claim mid-rollout. Host matching is exact-or-subdomain (`gravatar.com`, `*.gravatar.com`), never
+This is self-healing and needs no data migration. Host matching is exact-or-subdomain (`gravatar.com`, `*.gravatar.com`), never
 `Contains` — `notgravatar.com` is a covered negative case, since a substring test would hand an attacker
 a way to have their URL silently discarded.
 
@@ -383,9 +385,8 @@ Duende's automatic key management persists rotated IdentityServer signing keys t
 lifetimes must match: a signing key written under one key ring is permanently undecryptable once that
 ring is gone. In production this holds by construction (both are durable — Azure Blob Storage + Key
 Vault). Non-production persists the key ring to a local, gitignored `.dataprotection-keys/` folder next
-to the app for the same reason — an ephemeral key ring here would silently orphan every signing key
-across a restart, which is what happened before this was fixed (accumulated `CryptographicException`s on
-startup, one per orphaned row).
+to the app for the same reason: an ephemeral key ring would orphan every signing key across a restart, which
+shows as one `CryptographicException` per orphaned row at startup.
 
 ### Azure credential strategy
 
@@ -395,18 +396,20 @@ No Azure credential is constructed outside Production. `DefaultAzureCredential` 
 
 ---
 
-## Observability
+## Cross-cutting concerns
 
-### Structured logging — Serilog
+### Observability
+
+#### Structured logging — Serilog
 
 - Bootstrap logger writes to console before the host is built.
 - After build, a full Serilog pipeline is configured:
   - **Production:** Elasticsearch sink to data stream `logs-app-Identity` (ECS format, basic auth, `BootstrapMethod.Failure` so a missing node does not crash startup) + OpenTelemetry sink.
   - **Non-production:** console sink only; Duende's `IdentityServer.Diagnostics.Summary` source filtered out.
 
-### Distributed tracing and metrics — OpenTelemetry → Grafana Alloy
+#### Distributed tracing and metrics — OpenTelemetry → Grafana Alloy
 
-`AddOtlpExporter()` (pointed at `AlloyEndpoint`) exports all signals — Azure Monitor/`UseAzureMonitor()` was removed. Additional sources subscribed:
+`AddOtlpExporter()` (pointed at `AlloyEndpoint`) exports all signals. Additional sources subscribed:
 
 **Meters:**
 - `Duende.IdentityServer` — built-in token issuance, introspection, secret validation
@@ -419,7 +422,7 @@ No Azure credential is constructed outside Production. `DefaultAzureCredential` 
 - HTTP client instrumentation
 - Console exporter in Development
 
-### Custom `Identity` meter
+#### Custom `Identity` meter
 
 Defined in `Telemetry.cs`, meter name `"Identity"`:
 
@@ -430,11 +433,9 @@ Defined in `Telemetry.cs`, meter name `"Identity"`:
 | `identity.grants.revoked` | `client_id` | `/Account/Manage/Grants` on revoke |
 | `identity.exceptions` | `exception.type` | Global exception handler (`HttpContextExtensions.HandleException`) |
 
----
+### Security
 
-## Security
-
-### Security headers
+#### Security headers
 
 `UseSecurityHeaders()` (`Extensions/ApplicationBuilderExtensions.cs`) is registered as the first middleware in `Program.cs`, so it covers every page. Headers are written from a `Response.OnStarting` callback and only when the response content type is `text/html`.
 
@@ -447,7 +448,7 @@ Defined in `Telemetry.cs`, meter name `"Identity"`:
 
 `X-Frame-Options` is `DENY` rather than `SAMEORIGIN` so it agrees with `frame-ancestors 'none'` instead of contradicting it.
 
-This was previously a per-page `[SecurityHeaders]` action filter carried by seven page models. Everything else — 160 pages, including `/Account/Login` — received no headers at all and was therefore framable, which is a clickjacking exposure on the credential-entry page of an identity provider. Applying the headers globally is what closed that.
+The headers are global rather than a per-page filter because any page left without them is framable, and on the credential-entry page of an identity provider that is a clickjacking exposure.
 
 **The `text/html` gate is load-bearing.** `X-Frame-Options: DENY` on `/connect/authorize` would break any client that renews tokens through a hidden iframe. Those responses are redirects rather than HTML, so they never receive the header. The `ContainsKey` guard on CSP serves the same purpose for Duende, which sets its own policy on some of its responses.
 
@@ -455,7 +456,7 @@ Every library is served from `wwwroot`, so no CDN hosts appear in `script-src` o
 
 **No inline scripts or inline styles remain in any view.** That is what allows the policy to stay strict without a nonce or `'unsafe-inline'`. Where a page needs server data in JavaScript it passes it through `data-` attributes — `Login` and `Register` carry the reCAPTCHA site key and action on the hidden token input, consumed by `wwwroot/js/recaptcha.js`; `Redirect` carries its target on `<body data-redirect-uri>`, consumed by `wwwroot/js/redirect.js`. Sizing that would otherwise want an inline `style` uses an HTML attribute instead (`height="32"` on client logos), since `style-src 'self'` blocks style attributes.
 
-### No import map
+#### No import map
 
 `_Layout.cshtml` deliberately does not carry a `<script type="importmap">` element. When present, the MVC tag helper fills it at render time with a fingerprint and integrity map covering every static asset — roughly half the HTML of a page like `/Account/Login`, inline and therefore never cached. Nothing consumes it: the app has no ES modules and no `type="module"` scripts.
 
@@ -463,55 +464,53 @@ Fingerprinted URLs for ordinary `<script src>` and `<link href>` come from the s
 
 Restore the element if ES modules are ever introduced — bare and relative module specifiers will not resolve to fingerprinted files without it.
 
-### Bot protection — reCAPTCHA v3
+#### Bot protection — reCAPTCHA v3
 
 `Login` and `Register` are the only pages that score requests. Both render the site key into the page, collect a token client-side, and pass it to `ICAPTCHAService.VerifyAsync` on POST, which returns a `CAPTCHAVerdict`. Scoring is unconditional — no email address skips verification. A score below `ScoreThreshold` (`0.5`, compile-time — deliberately not configuration-bound) fails the request with the generic message "Request could not be verified." — deliberately non-specific, so a bot cannot tell a low score apart from a bad password. The passkey login path never scores; it carries no password to stuff.
 
 The internal score lookup returns `0` — a guaranteed failure — whenever the token is blank, the secret key is unset, the verification call returns a non-success status, or Google reports `success: false`. Verification therefore fails closed: a misconfigured or unreachable reCAPTCHA blocks sign-in and registration rather than silently allowing everything through.
 
-**There is no test-only branch in this service, and that is the point.** `VerifyAsync(token, ct)` fetches a score and compares it to the threshold; that is the whole method. Two earlier designs were removed: an email-based exemption (a captcha-free credential-stuffing surface for any address in the settings, including the admin account), and the monitor-only enforcement that replaced it (an `X-Synthetic-Marker` header plus a `ReCAPTCHATestEmails` allowlist, which still meant production code existed to make tests pass, in the one service that owns authentication).
+**There is no test-only branch in this service, and that is the point.** `VerifyAsync(token, ct)` fetches a score and compares it to the threshold; that is the whole method. An email-based exemption would be a captcha-free credential-stuffing surface, and a marker header or test allowlist would be production code existing to make tests pass, in the one service that owns authentication.
 
-Scheduled synthetic traffic now signs in with a **passkey** instead. `Login.cshtml.cs` evaluates the passkey branch *before* the CAPTCHA call, so the walkers use a real production authentication path rather than an exemption — nothing is bypassed, and no configuration distinguishes them. The only trace they leave here is observational: `identity.login.passkey_signins` carries a `synthetic` tag derived from the `crgolden-synthetic/1.0` User-Agent suffix, which no authorization decision reads.
+Scheduled synthetic traffic signs in with a **passkey** instead. `Login.cshtml.cs` evaluates the passkey branch *before* the CAPTCHA call, so the walkers use a real production authentication path rather than an exemption — nothing is bypassed, and no configuration distinguishes them. The only trace they leave here is observational: `identity.login.passkey_signins` carries a `synthetic` tag derived from the `crgolden-synthetic/1.0` User-Agent suffix, which no authorization decision reads.
 
-One consequence worth stating: with the exemption gone, a Google outage or a bad site key blocks password sign-in for everyone. The passkey path is the escape hatch, which is why the admin account keeps a registered passkey.
+One consequence worth stating: a Google outage or a bad site key blocks password sign-in for everyone. The passkey path is the escape hatch, which is why the admin account keeps a registered passkey.
 
 The CSP's `script-src` includes `https://www.google.com https://www.gstatic.com` specifically so `Login` and `Register` can load reCAPTCHA; the frame it renders comes from `www.google.com` too, matched by `frame-src`.
 
-Both pages load `https://www.google.com/recaptcha/api.js?render=<site key>` eagerly (not deferred to form interaction) with the `async` attribute, so it never blocks HTML parsing. That script auto-renders Google's invisible-widget `<iframe>` as soon as it runs — `render=<site key>` requires this, there is no way to get the v3-style `execute(siteKey, { action })` call to work without it. That iframe is what `window.onload` waits on, and per MDN, `load` waits for iframes and for async scripts alike — the `async` attribute changes when/how the browser fetches and executes the script, not whether `load` waits for it. Confirmed by HAR against production on `Register`: `api.js` itself loads in well under a second, but the anchor iframe it spawns doesn't finish for another ~19–30+ seconds (matching the `anchor-ms=20000&execute-ms=30000` budget Google's own script requests), and `window.onload` (and anything gated on it, e.g. a favicon fetch) doesn't fire until that resolves — this is Google-side latency inherent to eager invisible-widget initialization, not a bug in this app. The page itself is styled and interactive within ~1 second regardless; nothing user-visible is blocked by the long tail. Trading eager-async for load-on-interaction was considered and rejected: it would move that same 19–30s cost to the moment a user starts filling the form instead, which is worse.
+Both pages load `https://www.google.com/recaptcha/api.js?render=<site key>` eagerly (not deferred to form interaction) with the `async` attribute, so it never blocks HTML parsing. That script auto-renders Google's invisible-widget `<iframe>` as soon as it runs — `render=<site key>` requires this, there is no way to get the v3-style `execute(siteKey, { action })` call to work without it. That iframe is what `window.onload` waits on, and per MDN, `load` waits for iframes and for async scripts alike — the `async` attribute changes when/how the browser fetches and executes the script, not whether `load` waits for it. The anchor iframe takes as long as the `anchor-ms=20000&execute-ms=30000` budget Google's own script requests, so `window.onload` (and anything gated on it, e.g. a favicon fetch) can fire tens of seconds after the page is styled and interactive; that is Google-side latency inherent to eager invisible-widget initialization, not a defect in this app. Loading the script on first interaction instead would move the same cost to the moment a user starts filling the form, which is worse.
 
-### Antiforgery
+#### Antiforgery
 
 Both passkey minimal API endpoints call `IAntiforgery.ValidateRequestAsync` before processing. The Razor Pages framework handles antiforgery validation for all form submissions automatically.
 
-### CORS
+#### CORS
 
 Allowed origins are read from the `CorsPolicy:Origins` configuration array (supplied via User Secrets or environment variables). Applied via `UseCors` in the middleware pipeline.
 
----
+### Dependency Injection & Middleware
 
-## Dependency Injection & Middleware
+#### Service registration order (`Program.cs`)
 
-### Service registration order (`Program.cs`)
+1. User Secrets (Development only); in production, Key Vault-referenced App Service settings are already resolved into
+   configuration before the app starts, so `Program.cs` makes no Key Vault secrets call
+2. OpenTelemetry (metrics + tracing) → Grafana Alloy (OTLP)
+3. Serilog
+4. SQL connection string configuration → `DbContextPool<ApplicationDbContext>`
+5. ASP.NET Identity (`IdentityUser<Guid>`, `IdentityRole<Guid>`) + EF stores
+6. IdentityServer (configuration store + operational store + ASP.NET Identity integration)
+7. Google OpenID Connect external authentication
+8. Azure Service Bus (`ServiceBusClient` + named `ServiceBusSender` "email")
+9. Avatar URL construction (`IAvatarService` → `GravatarService`) and the Duende `IProfileService` (`AvatarProfileService`) that issues the `picture` claim — no HTTP client, no API key
+10. Razor Pages
+11. CORS
+12. Health checks (DbContext check)
+13. Data Protection (Azure Blob + Key Vault)
+14. Problem Details (`AddProblemDetails`) — enables `IProblemDetailsService` used by the global exception handler
+15. Database developer page exception filter (Development only)
+16. Passkey origin validator — registered in **every** environment, from the required `PasskeyOrigin` setting
 
-1. User Secrets (Development only)
-2. Azure Key Vault secrets — fetched at startup (production only)
-3. OpenTelemetry (metrics + tracing) → Grafana Alloy (OTLP)
-4. Serilog
-5. SQL connection string configuration → `DbContextPool<ApplicationDbContext>`
-6. ASP.NET Identity (`IdentityUser<Guid>`, `IdentityRole<Guid>`) + EF stores
-7. IdentityServer (configuration store + operational store + ASP.NET Identity integration)
-8. Google OpenID Connect external authentication
-9. Azure Service Bus (`ServiceBusClient` + named `ServiceBusSender` "email")
-10. Avatar URL construction (`IAvatarService` → `GravatarService`) and the Duende `IProfileService` (`AvatarProfileService`) that issues the `picture` claim — no HTTP client, no API key
-11. Razor Pages
-12. CORS
-13. Health checks (DbContext check)
-14. Data Protection (Azure Blob + Key Vault)
-15. Problem Details (`AddProblemDetails`) — enables `IProblemDetailsService` used by the global exception handler
-16. Database developer page exception filter (Development only)
-17. Passkey origin validator — registered in **every** environment, from the required `PasskeyOrigin` setting
-
-### Middleware pipeline order
+#### Middleware pipeline order
 
 ```
 UseSerilogRequestLogging
@@ -540,19 +539,24 @@ Every job runs on `ubuntu-latest` with `pwsh` as the default shell. A browser on
 
 ### Build job (`ubuntu-latest`)
 
-1. Set up Java 21 (SonarCloud scanner), .NET 10, restore NuGet cache.
-2. Begin SonarCloud scan.
-3. `dotnet build --no-incremental --configuration Release` — builds all projects including the `.dacpac`.
-4. Run unit tests with `coverlet.console` (OpenCover); write `coverage.opencover.xml`.
-5. Deploy the `.dacpac` to the E2E test database with `SqlPackage`, using the SQL login in the workflow's secrets. The build job performs no Azure login.
-6. Run E2E tests (`ASPNETCORE_ENVIRONMENT=CI`); write `coverage-e2e.xml`.
-7. End SonarCloud scan (reads both coverage files).
-8. Publish web app (`-r win-x86 --self-contained false`).
-9. Upload artifacts: published app, `.dacpac`, test results.
+A first job regenerates `packages.lock.json` on a Dependabot pull request; the build job follows it.
 
-Steps 5, 6 and the SonarCloud steps are skipped for Dependabot (`if: github.actor != 'dependabot[bot]'`), so a dependency bump is verified by unit tests alone. The publish and artifact-upload steps carry no such condition — but they follow the test steps, so a failing test skips them and the whole deploy job with them.
+1. Set up Java 21 (SonarCloud scanner), .NET 10, Node.js; restore the NuGet cache and the local tools.
+2. `npm ci`, `npm run lint` (the `wwwroot/js` scripts) and `npm run audit` (fails on a high or critical advisory).
+3. Begin SonarCloud scan.
+4. `dotnet build --no-incremental --configuration Release /p:RestoreLockedMode=true -warnaserror` — builds all projects including the `.dacpac`.
+5. ReSharper `jb inspectcode`; any result fails the job.
+6. Run unit tests under `coverlet` (OpenCover); write `coverage.opencover.xml`.
+7. Deploy the `.dacpac` to the E2E test database with `SqlPackage`, using the SQL login in the workflow's secrets. The build job performs no Azure login.
+8. Run E2E tests (`ASPNETCORE_ENVIRONMENT=CI`) under `dotnet-coverage`; write `coverage-e2e.xml`; assert the run executed at least its floor; publish the scenario results.
+9. Run integration tests under `dotnet-coverage`; write `coverage-integration.xml`.
+10. On `workflow_dispatch` only, run the load tests.
+11. Publish web app (`-r win-x86 --self-contained false`) and upload it with the `.dacpac` and the test results.
+12. End SonarCloud scan (reads the three coverage files), then fail on any open Sonar issue.
 
-### Deploy job (`ubuntu-latest`, after build)
+The database, E2E, integration and SonarCloud steps are skipped for Dependabot (`if: github.actor != 'dependabot[bot]'`), so a dependency bump is verified by unit tests alone. The publish and artifact-upload steps carry no such condition, but they follow the test steps, so a failing test skips them and the whole deploy job with them.
+
+### Deploy job (`ubuntu-latest`, after build, on every event except a pull request)
 
 1. Azure OIDC login.
 2. Deploy `.dacpac` to production SQL Server via `SqlPackage`.
@@ -562,11 +566,11 @@ The database is always deployed before the application to ensure schema readines
 
 ### Synthetic walker (`ubuntu-latest`, scheduled, separate workflow)
 
-`synthetic.yml` builds `Identity.Tests.E2E` and runs the `Category=Walker` suite against the deployed site (`WALKER_BASE_URL` → `WalkerBaseUrl`), signing in by passkey as a member account and then as an admin, then uploads the TRX and Playwright artifacts. It replaced the post-deploy smoke job and is never a merge gate. It runs twice daily on `schedule`, plus `workflow_dispatch` with optional seed and step-budget inputs, under `concurrency: synthetic-walker`.
+`synthetic.yml` builds `Identity.Tests.E2E` and runs the `Category=Walker` suite against the deployed site (`WALKER_BASE_URL` → `WalkerBaseUrl`), signing in by passkey as a member account and then as an admin, then uploads the TRX and Playwright artifacts. It is never a merge gate. It runs twice daily on `schedule`, plus `workflow_dispatch` with optional seed and step-budget inputs, under `concurrency: synthetic-walker`.
 
 ### Mutation job (`ubuntu-latest`)
 
-Builds the solution and runs Stryker.NET (`stryker-config.json`), uploading the report as the `stryker-report` artifact. It runs on every push and on pull requests from this repository; only a fork's pull request skips it.
+Builds the solution and runs Stryker.NET (`stryker-config.json`), uploading the report as the `stryker-report` artifact. It runs on every push and on pull requests from this repository; a fork's pull request and a Dependabot run skip it.
 
 ### Environment differences
 

@@ -86,7 +86,7 @@ public class RenamePasskey : PageModel
         if (!result.Succeeded)
         {
             var userId = await _userManager.GetUserIdAsync(user);
-            throw new InvalidOperationException($"Unexpected error occurred removing passkey for user with ID '{userId}'.");
+            throw new InvalidOperationException($"Unexpected error occurred renaming passkey for user with ID '{userId}'.");
         }
 
         StatusMessage = PasskeyUpdatedMessage;

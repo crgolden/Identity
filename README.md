@@ -81,7 +81,7 @@ the app at startup.
 | `SqlConnectionStringBuilder` section (`DataSource`, `InitialCatalog`, and `UserID`/`Password` or `IntegratedSecurity`) | always | the database |
 | `PasskeyOrigin` | always | the origin passkey ceremonies must come from (scheme and host) |
 | `ServiceBusConnectionString` | outside Production | the email queue |
-| `CorsPolicy`, `ConsentOptions`, `TelemetryOptions`, `AdminSections`, `ManageSections`, `ErrorExplanations`, `RecaptchaVerifyEndpoint`, `RecaptchaScriptEndpoint` | always (in `appsettings.json`) | the app's configuration data |
+| `CorsPolicy`, `AccountEmailSettings`, `AuthenticatorOptions`, `ConsentOptions`, `TelemetryOptions`, `AdminSections`, `ManageSections`, `ErrorExplanations`, `RecaptchaVerifyEndpoint`, `RecaptchaScriptEndpoint` | always (in `appsettings.json`) | the app's configuration data |
 | `DefaultAzureCredentialOptions`, `ServiceBusNamespace`, `BlobUri`, `DataProtectionKeyIdentifier`, `ElasticsearchNode`, `ElasticsearchUsername`, `ElasticsearchPassword`, `AlloyEndpoint`, `WEBSITE_SITE_NAME` | Production only | managed identity, email, data protection, logs, traces and metrics |
 
 ```powershell
@@ -126,8 +126,11 @@ catalog name ends in `Test`, published from the dacpac; [TESTING.md](TESTING.md)
 
 ## Gate
 
-`gate.ps1` is the maintainers' gate. It loads a private toolkit from a folder beside this repo, so in a plain clone it
-stops at once. To gate your own change, run the checks CI runs, in this order, from the repo root (the hosted tiers
+`gate.ps1` is the maintainers' gate. It dot-sources the gate library script that the `GATE_LIBRARY` environment
+variable names, which defines the step functions `gate.ps1` calls and sits beside the `SelectedTests.ps1` and
+`upload-stryker-report.mjs` it also loads; unset, as in a plain clone, it stops at once with `GATE: FAILED` and records
+nothing. To gate with a library of your own, set `GATE_LIBRARY` to its path; it must define
+every function `gate.ps1` calls, since those functions decide whether each step ran and passed. To gate your own change without one, run the checks CI runs, in this order, from the repo root (the hosted tiers
 with `ASPNETCORE_ENVIRONMENT=CI` and the settings above pointing at a `*Test` database):
 
 ```powershell
