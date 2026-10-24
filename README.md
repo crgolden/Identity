@@ -183,4 +183,3 @@ schedule ([TESTING.md](TESTING.md#synthetic-walker)).
 | `STRYKER_DASHBOARD_API_KEY` (secret) | the mutation report |
 | `AZUREAPPSERVICE_CLIENTID_*`, `AZUREAPPSERVICE_TENANTID_*`, `AZUREAPPSERVICE_SUBSCRIPTIONID_*` | the deploy job |
 | `WALKER_*`, `PLAYWRIGHT_*` (variables); `PASSKEY_CREDENTIAL1`, `PASSKEY_CREDENTIAL3` (secrets) | the synthetic walker |
-| `CLAUDE_CODE_OAUTH_TOKEN` (secret) | the Claude Code review workflows |
