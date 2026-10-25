@@ -9,8 +9,11 @@ if (-not $gateCommon -or -not (Test-Path -LiteralPath $gateCommon -PathType Leaf
 . $gateCommon
 $gateLibraryFolder = Split-Path -Parent $gateCommon
 . (Join-Path $gateLibraryFolder 'SelectedTests.ps1')
-$gateOutput = Join-Path ([IO.Path]::GetTempPath()) "crgolden-gates\$(Split-Path -Leaf $PSScriptRoot)"
-New-Item -ItemType Directory -Force -Path $gateOutput | Out-Null
+$gateOutput = if (Get-Command Get-GateOutputDirectory -ErrorAction SilentlyContinue) {
+    Get-GateOutputDirectory (Split-Path -Leaf $PSScriptRoot)
+} else {
+    (New-Item -ItemType Directory -Force -Path (Join-Path ([IO.Path]::GetTempPath()) "claude\crgolden-gates\$(Split-Path -Leaf $PSScriptRoot)")).FullName
+}
 Register-GateSteps @('Install dotnet-coverage', 'Restore local tools', 'node_modules install markers', 'npm run lint', 'npm run audit',
     'S101 dictionary control', 'Begin Sonar analysis',
     'Build with dotnet', 'jb inspectcode', 'Unit tests (Identity.Tests.Unit', 'Install SqlPackage',
