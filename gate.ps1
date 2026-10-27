@@ -1,4 +1,4 @@
-param([string]$Goal, [string]$Tests, [string]$TestProject)
+param([string]$Goal, [string]$Tests, [string]$TestProject, [string]$Probe)
 
 $ErrorActionPreference = 'Continue'
 $gateCommon = $env:GATE_LIBRARY
@@ -102,7 +102,7 @@ if ($Tests) {
         }
     }
 }
-Initialize-GateState 'Identity' $repo
+Initialize-GateState 'Identity' $repo -Probe $Probe
 Resolve-OwedSteps
 Invoke-CatalogSteps
 
