@@ -158,17 +158,20 @@ jobs:
           SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY }}
           SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION }}
         run: |
-          ${{ runner.temp }}/scanner/dotnet-sonarscanner begin `
-            /k:"$env:SONAR_PROJECT_KEY" `
-            /o:"$env:SONAR_ORGANIZATION" `
-            /d:sonar.token="$env:SONAR_TOKEN" `
-            /d:sonar.host.url="https://sonarcloud.io" `
-            /d:sonar.cs.opencover.reportsPaths="coverage.opencover.xml" `
-            /d:sonar.cs.vscoveragexml.reportsPaths="coverage-e2e.xml,coverage-integration.xml" `
-            /d:sonar.exclusions="**/bin/**,**/obj/**" `
-            /d:sonar.coverage.exclusions="**/Program.cs,**/gate.ps1" `
-            /d:sonar.qualitygate.wait=true `
-            /d:sonar.scanner.skipJreProvisioning=true
+          $arguments = @(
+            'begin'
+            "/k:$env:SONAR_PROJECT_KEY"
+            "/o:$env:SONAR_ORGANIZATION"
+            "/d:sonar.token=$env:SONAR_TOKEN"
+            '/d:sonar.host.url=https://sonarcloud.io'
+            '/d:sonar.cs.opencover.reportsPaths=coverage.opencover.xml'
+            '/d:sonar.cs.vscoveragexml.reportsPaths=coverage-e2e.xml,coverage-integration.xml'
+            '/d:sonar.exclusions=**/bin/**,**/obj/**'
+            '/d:sonar.coverage.exclusions=**/Program.cs,**/gate.ps1'
+            '/d:sonar.qualitygate.wait=true'
+            '/d:sonar.scanner.skipJreProvisioning=true'
+          )
+          & "${{ runner.temp }}/scanner/dotnet-sonarscanner" @arguments
 
       - name: Build with dotnet
         env:
@@ -187,17 +190,20 @@ jobs:
 
       - name: Run unit tests with coverage
         run: |
-          dotnet coverlet Identity.Tests.Unit/bin/Release/net10.0 `
-            --target "dotnet" `
-            --targetargs "test --project Identity.Tests.Unit --no-build --configuration Release -- --filter-trait Category=Unit --stop-on-fail on --report-xunit-trx --report-xunit-trx-filename unit-tests.trx --results-directory=Identity.Tests.Unit/bin/Release/net10.0/TestResults" `
-            --format opencover --output "coverage.opencover.xml" `
-            --skipautoprops `
-            --exclude-by-attribute GeneratedCodeAttribute `
-            --exclude-by-file "**/obj/**" `
-            --exclude-by-file "**/Program.cs" `
-            --does-not-return-attribute DoesNotReturnAttribute `
-            --include "[Identity]*" `
-            --exclude "[Identity]*Pages_*"
+          $arguments = @(
+            'Identity.Tests.Unit/bin/Release/net10.0'
+            '--target', 'dotnet'
+            '--targetargs', 'test --project Identity.Tests.Unit --no-build --configuration Release -- --filter-trait Category=Unit --stop-on-fail on --report-xunit-trx --report-xunit-trx-filename unit-tests.trx --results-directory=Identity.Tests.Unit/bin/Release/net10.0/TestResults'
+            '--format', 'opencover', '--output', 'coverage.opencover.xml'
+            '--skipautoprops'
+            '--exclude-by-attribute', 'GeneratedCodeAttribute'
+            '--exclude-by-file', '**/obj/**'
+            '--exclude-by-file', '**/Program.cs'
+            '--does-not-return-attribute', 'DoesNotReturnAttribute'
+            '--include', '[Identity]*'
+            '--exclude', '[Identity]*Pages_*'
+          )
+          dotnet coverlet @arguments
 
       - name: Install SqlPackage
         if: github.actor != 'dependabot[bot]'
@@ -219,8 +225,11 @@ jobs:
         if: github.actor != 'dependabot[bot]'
         shell: pwsh
         run: |
-          $version = (Select-Xml -Path Identity.Tests.E2E/Identity.Tests.E2E.csproj `
-            -XPath '//PackageReference[@Include="Microsoft.Playwright"]/@Version').Node.Value
+          $versionQuery = @{
+            Path  = 'Identity.Tests.E2E/Identity.Tests.E2E.csproj'
+            XPath = '//PackageReference[@Include="Microsoft.Playwright"]/@Version'
+          }
+          $version = (Select-Xml @versionQuery).Node.Value
           echo "version=$version" >> $env:GITHUB_OUTPUT
 
       - name: Cache Playwright browsers
@@ -269,9 +278,12 @@ jobs:
           PlaywrightSettings__MaxArtifactNameLength: ${{ vars.PLAYWRIGHT_MAX_ARTIFACT_NAME_LENGTH }}
           E2ESettings__IndependentlyPinnedAdminCardCount: ${{ vars.E2E_INDEPENDENTLY_PINNED_ADMIN_CARD_COUNT }}
         run: |
-          dotnet-coverage collect `
-            "dotnet test --project Identity.Tests.E2E --no-build --configuration Release -- --filter-trait Category=E2E --stop-on-fail on --report-xunit-trx --report-xunit-trx-filename e2e-tests.trx --results-directory=Identity.Tests.E2E/bin/Release/net10.0/${{ vars.PLAYWRIGHT_TEST_RESULTS_FOLDER_NAME }}" `
-            -f xml -o "coverage-e2e.xml" -s "coverage.settings.xml"
+          $arguments = @(
+            'collect'
+            'dotnet test --project Identity.Tests.E2E --no-build --configuration Release -- --filter-trait Category=E2E --stop-on-fail on --report-xunit-trx --report-xunit-trx-filename e2e-tests.trx --results-directory=Identity.Tests.E2E/bin/Release/net10.0/${{ vars.PLAYWRIGHT_TEST_RESULTS_FOLDER_NAME }}'
+            '-f', 'xml', '-o', 'coverage-e2e.xml', '-s', 'coverage.settings.xml'
+          )
+          dotnet-coverage @arguments
 
       - name: Snapshot TCP state after an E2E failure
         if: ${{ !cancelled() && steps.e2e.outcome == 'failure' }}
@@ -341,9 +353,12 @@ jobs:
           PasskeyOrigin: https://127.0.0.1
           E2ESettings__IndependentlyPinnedAdminCardCount: ${{ vars.E2E_INDEPENDENTLY_PINNED_ADMIN_CARD_COUNT }}
         run: |
-          dotnet-coverage collect `
-            "dotnet test --project Identity.Tests.Integration --no-build --configuration Release -- --filter-trait Category=Integration --stop-on-fail on --report-xunit-trx --report-xunit-trx-filename integration-tests.trx --results-directory=Identity.Tests.Integration/bin/Release/net10.0/TestResults" `
-            -f xml -o "coverage-integration.xml" -s "coverage.settings.xml"
+          $arguments = @(
+            'collect'
+            'dotnet test --project Identity.Tests.Integration --no-build --configuration Release -- --filter-trait Category=Integration --stop-on-fail on --report-xunit-trx --report-xunit-trx-filename integration-tests.trx --results-directory=Identity.Tests.Integration/bin/Release/net10.0/TestResults'
+            '-f', 'xml', '-o', 'coverage-integration.xml', '-s', 'coverage.settings.xml'
+          )
+          dotnet-coverage @arguments
 
       - name: Publish E2E scenario results
         if: ${{ !cancelled() && steps.cucumber-report.outcome == 'success' }}

@@ -43,8 +43,11 @@ jobs:
       - name: Get Playwright version
         id: playwright-version
         run: |
-          $version = (Select-Xml -Path Identity.Tests.E2E/Identity.Tests.E2E.csproj `
-            -XPath "//PackageReference[@Include='Microsoft.Playwright']/@Version").Node.Value
+          $versionQuery = @{
+            Path  = 'Identity.Tests.E2E/Identity.Tests.E2E.csproj'
+            XPath = "//PackageReference[@Include='Microsoft.Playwright']/@Version"
+          }
+          $version = (Select-Xml @versionQuery).Node.Value
           "version=$version" >> $env:GITHUB_OUTPUT
 
       - name: Restore Playwright browsers cache
@@ -105,9 +108,8 @@ jobs:
         run: |
           $resultsDir = "${{ github.workspace }}/Identity.Tests.E2E/bin/Release/net10.0/${{ vars.PLAYWRIGHT_TEST_RESULTS_FOLDER_NAME }}"
           New-Item -ItemType Directory -Force -Path $resultsDir | Out-Null
-          & "${{ github.workspace }}/Identity.Tests.E2E/bin/Release/net10.0/Identity.Tests.E2E" `
-            -trait "Category=Walker" `
-            -trx "$resultsDir/walker.trx"
+          $arguments = @('-trait', 'Category=Walker', '-trx', "$resultsDir/walker.trx")
+          & "${{ github.workspace }}/Identity.Tests.E2E/bin/Release/net10.0/Identity.Tests.E2E" @arguments
 
       - name: Assert the walk actually ran
         if: always()
