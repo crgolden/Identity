@@ -1,4 +1,4 @@
-param([string]$Goal, [string]$Tests, [string]$TestProject, [string]$Probe, [string]$Only)
+param([string]$Goal, [string]$Tests, [string]$TestProject, [string]$Only)
 
 $ErrorActionPreference = 'Continue'
 $gateCommon = $env:GATE_LIBRARY
@@ -102,26 +102,19 @@ if ($Tests) {
         }
     }
 }
-$probeProjects = [ordered]@{
-    'Unit tests (Identity.Tests.Unit'               = 'Identity.Tests.Unit'
-    'E2E tests (Identity.Tests.E2E'                 = 'Identity.Tests.E2E'
-    'Integration tests (Identity.Tests.Integration' = 'Identity.Tests.Integration'
-}
-if ($Only -and -not $Probe) { Write-Host 'PROBE: FAILED (-Only names the one test a probe runs, so it needs -Probe)'; exit 1 }
-if ($Probe -and (-not $probeProjects.Contains($Probe.Trim()) -or [string]::IsNullOrWhiteSpace($Only) -or $Only.Contains(','))) {
-    Write-Host "PROBE: FAILED (a probe runs exactly one test: -Probe '<$($probeProjects.Keys -join ' | ')>' -Only '<fully qualified test method>')"
-    exit 1
-}
-$gateState = @{ Probe = $Probe }
-if ((Get-Command Initialize-GateState).Parameters.ContainsKey('Only')) { $gateState['Only'] = $Only }
-Initialize-GateState 'Identity' $repo @gateState
-Resolve-OwedSteps
-Invoke-CatalogSteps
-
-if ($Probe) {
-    $probeStep = $Probe.Trim()
-    $project = $probeProjects[$probeStep]
-    if ($project -ne 'Identity.Tests.Unit') {
+$probeProjects = @('Identity.Tests.Unit', 'Identity.Tests.E2E', 'Identity.Tests.Integration')
+if ($Only) {
+    $probeFile, $probeTest = $Only -split '::', 2
+    $probeFile = "$probeFile".Trim().Replace('\', '/')
+    $probeTest = "$probeTest".Trim()
+    $probeProject = $probeFile.Split('/')[0]
+    if (-not $probeTest -or $probeTest.Contains(',') -or $probeProject -notin $probeProjects -or
+            -not (Test-Path -LiteralPath (Join-Path $repo $probeFile) -PathType Leaf)) {
+        Write-Host "PROBE: FAILED (a probe runs exactly one test, named by the file it lives in: -Only '<a test file under $($probeProjects -join ' | ')>::<test method>')"
+        exit 1
+    }
+    $probeClass = if ($probeFile.EndsWith('.cs', [StringComparison]::OrdinalIgnoreCase)) { [IO.Path]::GetFileNameWithoutExtension($probeFile) } else { '*' }
+    if ($probeProject -ne $probeProjects[0]) {
         Start-LocalDbWhenTargeted
         $env:ASPNETCORE_ENVIRONMENT = 'Development'
         $env:SqlConnectionStringBuilder__InitialCatalog = $testCatalog
@@ -131,18 +124,23 @@ if ($Probe) {
     $probeResults = Join-Path $gateOutput 'probe-results'
     $probeTrx = Join-Path $probeResults 'probe.trx'
     if (Test-Path -LiteralPath $probeTrx) { Remove-Item -LiteralPath $probeTrx -Force }
+    Write-Host "PROBE: running one test, '$probeTest' of $probeClass in $probeProject; no gate record or verdict is written"
     $global:LASTEXITCODE = $null
-    dotnet test --project $project --no-build --configuration Release -- --filter-method $Only --report-xunit-trx --report-xunit-trx-filename probe.trx --results-directory=$probeResults
+    dotnet test --project $probeProject --no-build --configuration Release -- --filter-query "/*/*/$probeClass/$probeTest" --report-xunit-trx --report-xunit-trx-filename probe.trx --results-directory=$probeResults
     $probeExit = $global:LASTEXITCODE
-    if (-not (Test-Path -LiteralPath $probeTrx)) { Stop-Gate $probeStep "no TRX (exit $probeExit)" }
+    if (-not (Test-Path -LiteralPath $probeTrx)) { Write-Host "PROBE: FAILED (no TRX, exit $probeExit)"; exit 1 }
     [xml]$probeDoc = Get-Content -LiteralPath $probeTrx -Raw
     $counters = $probeDoc.TestRun.ResultSummary.Counters
     if ($probeExit -ne 0 -or [int]$counters.executed -ne 1 -or [int]$counters.failed -ne 0) {
-        Stop-Gate $probeStep "a probe runs one test, and '$Only' executed $($counters.executed), failed $($counters.failed) (exit $probeExit)"
+        Write-Host "PROBE: FAILED (a probe runs one test, and '$Only' executed $($counters.executed), failed $($counters.failed), exit $probeExit)"
+        exit 1
     }
-    Write-Row $probeStep 'PASS' "one test, '$Only', passed (the last build's binaries; a probe builds nothing)"
-    Complete-Gate
+    Write-Host "PROBE: PASSED for the one test named, against the last build's binaries; no verdict was saved"
+    exit 0
 }
+Initialize-GateState 'Identity' $repo
+Resolve-OwedSteps
+Invoke-CatalogSteps
 
 if (-not (Test-StepCarried 'Install dotnet-coverage')) {
     if (Get-Command dotnet-coverage -ErrorAction SilentlyContinue) { Write-Row 'Install dotnet-coverage' 'PASS' 'present on PATH' }
