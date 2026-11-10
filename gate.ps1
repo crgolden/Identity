@@ -138,6 +138,7 @@ if ($Only) {
     Write-Host "PROBE: PASSED for the one test named, against the last build's binaries; no verdict was saved"
     exit 0
 }
+exit (Invoke-Gate {
 Initialize-GateState 'Identity' $repo
 Resolve-OwedSteps
 Invoke-CatalogSteps
@@ -148,7 +149,7 @@ if (-not (Test-StepCarried 'Install dotnet-coverage')) {
 }
 $global:LASTEXITCODE = $null
 dotnet tool restore
-$null = Test-Exit 'Restore local tools (dotnet tool restore)'
+Assert-StepExit 'Restore local tools (dotnet tool restore)'
 
 $installed = (Test-Path (Join-Path $repo 'node_modules\.package-lock.json')) -and
     (Test-Path (Join-Path $repo 'node_modules\.bin\eslint.cmd'))
@@ -159,12 +160,12 @@ Write-Row 'node_modules install markers' 'PASS' 'eslint.cmd present; every packa
 if (-not (Test-StepCarried 'npm run lint')) {
     $global:LASTEXITCODE = $null
     npm run lint
-    $null = Test-Exit 'npm run lint'
+    Assert-StepExit 'npm run lint'
 }
 if (-not (Test-StepCarried 'npm run audit')) {
     $global:LASTEXITCODE = $null
     npm run audit
-    $null = Test-Exit 'npm run audit'
+    Assert-StepExit 'npm run audit'
 }
 
 if (-not (Test-StepCarried $s101)) {
@@ -211,14 +212,14 @@ else {
     $env:JAVA_HOME = Get-SonarScannerJavaHome $beginSonar
     $global:LASTEXITCODE = $null
     dotnet-sonarscanner begin /k:"crgolden_Identity" /o:"crgolden" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportsPaths="coverage.opencover.xml" /d:sonar.cs.vscoveragexml.reportsPaths="coverage-e2e.xml,coverage-integration.xml" /d:sonar.exclusions="**/bin/**,**/obj/**" /d:sonar.coverage.exclusions="**/Program.cs,**/gate.ps1" /d:sonar.qualitygate.wait=true /d:sonar.scanner.skipJreProvisioning=true /d:sonar.branch.name="$sonarBranch"
-    $null = Test-Exit $beginSonar
+    Assert-StepExit $beginSonar
 }
 
 if ($sonarCarried) { $null = Test-StepCarried $build }
 else {
     $global:LASTEXITCODE = $null
     dotnet build --no-incremental --configuration Release /p:RestoreLockedMode=true -warnaserror
-    $null = Test-Exit $build
+    Assert-StepExit $build
 }
 
 if (-not (Test-StepCarried 'jb inspectcode')) {
@@ -248,7 +249,7 @@ if (-not (Test-StepCarried $schema)) {
     Start-LocalDbWhenTargeted
     $global:LASTEXITCODE = $null
     sqlpackage /Action:Publish /SourceFile:Identity.Data/bin/Release/Identity.Data.dacpac /TargetConnectionString:"$($targetConnection.ConnectionString)"
-    $null = Test-Exit $schema
+    Assert-StepExit $schema
 }
 
 Install-PlaywrightBrowsers 'Install Playwright browsers' { pwsh "$repo\Identity.Tests.E2E\bin\Release\net10.0\playwright.ps1" install --dry-run chromium } { pwsh "$repo\Identity.Tests.E2E\bin\Release\net10.0\playwright.ps1" install chromium }
@@ -293,7 +294,7 @@ if (-not (Test-StepCarried $integration)) {
 if (-not $sonarCarried) {
     $global:LASTEXITCODE = $null
     dotnet-sonarscanner end
-    $null = Test-Exit $endSonar
+    Assert-StepExit $endSonar
     Test-SonarIssues $sonarIssues 'crgolden_Identity' $sonarBranch $sonarStartedAt
 }
 
@@ -312,8 +313,9 @@ if (-not (Test-StepCarried $stryker)) {
     if ($strykerExit -ne 0) { Stop-Gate $stryker "exit $strykerExit" }
     $global:LASTEXITCODE = $null
     node (Join-Path $gateLibraryFolder 'upload-stryker-report.mjs') (Join-Path $strykerOutputDir 'reports\mutation-report.json') $strykerConfig.'project-info'.name $sonarBranch
-    $null = Test-Exit $stryker
+    Assert-StepExit $stryker
 }
 
 Write-Row 'Publish E2E scenario results / Upload Cucumber report / dotnet publish / uploads / deploy' 'NOT RUN' 'delivery steps, not checks'
 Complete-Gate
+})
