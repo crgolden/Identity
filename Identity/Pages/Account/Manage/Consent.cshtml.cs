@@ -39,14 +39,14 @@ public class Consent : ConsentPageModelBase
     [BindProperty]
     public InputModel Input { get; set; } = new InputModel();
 
-    public async Task<IActionResult> OnGetAsync(string? returnUrl)
+    public async Task<IActionResult> OnGetAsync(Uri? returnUrl)
     {
         if (!await SetViewModelAsync(returnUrl, EveryScope))
         {
             return RedirectToPage(PageRoutes.Error);
         }
 
-        Input = new InputModel { ReturnUrl = UriValue.From(returnUrl) };
+        Input = new InputModel { ReturnUrl = returnUrl };
         return Page();
     }
 
@@ -131,7 +131,7 @@ public class Consent : ConsentPageModelBase
             return Redirect(Input.ReturnUrl.OriginalString);
         }
 
-        if (!await SetViewModelAsync(Input.ReturnUrl?.OriginalString, Input.ScopesConsented.Contains))
+        if (!await SetViewModelAsync(Input.ReturnUrl, Input.ScopesConsented.Contains))
         {
             return RedirectToPage(PageRoutes.Error);
         }
@@ -192,14 +192,14 @@ public class Consent : ConsentPageModelBase
         return vm;
     }
 
-    private async Task<bool> SetViewModelAsync(string? returnUrl, Func<string, bool> isConsented)
+    private async Task<bool> SetViewModelAsync(Uri? returnUrl, Func<string, bool> isConsented)
     {
-        if (IsNullOrWhiteSpace(returnUrl))
+        if (returnUrl is null)
         {
             return false;
         }
 
-        var request = await _interaction.GetAuthorizationContextAsync(returnUrl, HttpContext.RequestAborted);
+        var request = await _interaction.GetAuthorizationContextAsync(returnUrl.OriginalString, HttpContext.RequestAborted);
         if (request != null)
         {
             View = CreateConsentViewModel(request, isConsented);

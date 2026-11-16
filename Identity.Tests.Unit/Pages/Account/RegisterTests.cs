@@ -27,44 +27,24 @@ public sealed class RegisterTests : IDisposable
 
     public static TheoryData<int> NoneOrOneExternalSchemeCounts() => new() { 0, 1 };
 
-    public static TheoryData<string?> NullReturnUrls() => new()
-    {
-        (string?)null,
-    };
-
-    [Theory]
-    [MemberData(nameof(NullReturnUrls))]
-    public async Task OnGetAsync_NullReturnUrl_AssignsReturnUrlAndDoesNotThrow(string? returnUrl)
-    {
-        // Arrange
-        var model = BuildModelReturningSchemes([]);
-
-        // Act
-        var ex = await Record.ExceptionAsync(() => model.OnGetAsync(returnUrl));
-
-        // Assert
-        AssertReturnUrlAssignedWithoutExternalLogins(ex, model, returnUrl);
-    }
-
     [Fact]
-    public async Task OnGetAsync_WhitespaceReturnUrl_AssignsReturnUrlAndDoesNotThrow()
+    public async Task OnGetAsync_NullReturnUrl_AssignsReturnUrlAndDoesNotThrow()
     {
         // Arrange
-        var whitespaceReturnUrl = Generated.NewWhitespaceValue();
         var model = BuildModelReturningSchemes([]);
 
         // Act
-        var ex = await Record.ExceptionAsync(() => model.OnGetAsync(whitespaceReturnUrl));
+        var ex = await Record.ExceptionAsync(() => model.OnGetAsync());
 
         // Assert
-        AssertReturnUrlAssignedWithoutExternalLogins(ex, model, whitespaceReturnUrl);
+        AssertReturnUrlAssignedWithoutExternalLogins(ex, model, null);
     }
 
     [Fact]
     public async Task OnGetAsync_SingleCharacterReturnUrl_AssignsReturnUrlAndDoesNotThrow()
     {
         // Arrange
-        var singleCharacterReturnUrl = Generated.LowercaseToken(1);
+        var singleCharacterReturnUrl = new Uri(Generated.LowercaseToken(1), UriKind.Relative);
         var model = BuildModelReturningSchemes([]);
 
         // Act
@@ -78,7 +58,7 @@ public sealed class RegisterTests : IDisposable
     public async Task OnGetAsync_PunctuatedReturnUrl_AssignsReturnUrlAndDoesNotThrow()
     {
         // Arrange
-        var punctuatedReturnUrl = Generated.NewPunctuatedPageName();
+        var punctuatedReturnUrl = new Uri(Generated.NewPunctuatedPageName(), UriKind.Relative);
         var model = BuildModelReturningSchemes([]);
 
         // Act
@@ -92,7 +72,7 @@ public sealed class RegisterTests : IDisposable
     public async Task OnGetAsync_OverlongReturnUrl_AssignsReturnUrlAndDoesNotThrow()
     {
         // Arrange
-        var overlongReturnUrl = Generated.NewOverlongPageName();
+        var overlongReturnUrl = new Uri(Generated.NewOverlongPageName(), UriKind.Relative);
         var model = BuildModelReturningSchemes([]);
 
         // Act
@@ -109,13 +89,13 @@ public sealed class RegisterTests : IDisposable
         // Arrange
         var schemes = NewSchemes(schemeCount);
         var model = BuildModelReturningSchemes(schemes);
-        var returnUrl = Generated.NewLocalPath();
+        var returnUrl = GeneratedUri.NewLocalReturnUrl();
 
         // Act
         await model.OnGetAsync(returnUrl);
 
         // Assert
-        Assert.Equal(returnUrl, model.ReturnUrl?.OriginalString);
+        Assert.Equal(returnUrl, model.ReturnUrl);
         Assert.NotNull(model.ExternalLogins);
         Assert.Equal(schemes.Length, model.ExternalLogins.Count);
         var expectedNames = schemes.Select(s => s.Name).ToList();
@@ -130,13 +110,13 @@ public sealed class RegisterTests : IDisposable
         var severalSchemeCount = Random.Shared.Next(2, 6);
         var schemes = NewSchemes(severalSchemeCount);
         var model = BuildModelReturningSchemes(schemes);
-        var returnUrl = Generated.NewLocalPath();
+        var returnUrl = GeneratedUri.NewLocalReturnUrl();
 
         // Act
         await model.OnGetAsync(returnUrl);
 
         // Assert
-        Assert.Equal(returnUrl, model.ReturnUrl?.OriginalString);
+        Assert.Equal(returnUrl, model.ReturnUrl);
         Assert.NotNull(model.ExternalLogins);
         Assert.Equal(schemes.Length, model.ExternalLogins.Count);
         var expectedNames = schemes.Select(s => s.Name).ToList();
@@ -174,7 +154,7 @@ public sealed class RegisterTests : IDisposable
         model.ModelState.AddModelError(Generated.NewClaimType(), Generated.NewFailureReason());
 
         // Act
-        var result = await model.OnPostAsync(Generated.NewLocalPath());
+        var result = await model.OnPostAsync(GeneratedUri.NewLocalReturnUrl());
 
         // Assert
         Assert.IsType<PageResult>(result);
@@ -186,7 +166,7 @@ public sealed class RegisterTests : IDisposable
     public async Task OnPostAsync_CreateSucceedsAndConfirmationRequired_RedirectsToRegisterConfirmationWithoutSigningIn()
     {
         // Arrange
-        var returnUrl = Generated.NewLocalPath();
+        var returnUrl = GeneratedUri.NewLocalReturnUrl();
         var (model, userManagerMock, signInManagerMock, senderMock) = BuildRegisterFixture(requireConfirmedAccount: true);
 
         // Act
@@ -199,7 +179,7 @@ public sealed class RegisterTests : IDisposable
         Assert.Equal(Register.RegisterConfirmationPageName, redirect.PageName);
         Assert.NotNull(redirect.RouteValues);
         Assert.Equal(model.Input.Email, redirect.RouteValues[nameof(Register.InputModel.Email)]);
-        Assert.Equal(returnUrl, redirect.RouteValues[nameof(Register.ReturnUrl)]);
+        Assert.Equal(returnUrl.OriginalString, redirect.RouteValues[nameof(Register.ReturnUrl)]);
         signInManagerMock.Verify(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<bool>(), It.IsAny<string>()), Times.Never);
     }
 
@@ -207,7 +187,7 @@ public sealed class RegisterTests : IDisposable
     public async Task OnPostAsync_CreateSucceedsAndConfirmationNotRequired_SignsInAndRedirectsLocally()
     {
         // Arrange
-        var returnUrl = Generated.NewLocalPath();
+        var returnUrl = GeneratedUri.NewLocalReturnUrl();
         var (model, userManagerMock, signInManagerMock, senderMock) = BuildRegisterFixture(requireConfirmedAccount: false);
 
         // Act
@@ -217,7 +197,7 @@ public sealed class RegisterTests : IDisposable
         userManagerMock.Verify(u => u.CreateAsync(It.IsAny<IdentityUser<Guid>>(), It.Is<string>(p => p == model.Input.Password)), Times.Once);
         senderMock.Verify(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()), Times.Once);
         var local = Assert.IsType<LocalRedirectResult>(actionResult);
-        Assert.Equal(returnUrl, local.Url);
+        Assert.Equal(returnUrl.OriginalString, local.Url);
         signInManagerMock.Verify(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), false, null), Times.Once);
     }
 
@@ -228,7 +208,7 @@ public sealed class RegisterTests : IDisposable
         var (model, userManagerMock, _, _) = BuildRegisterFixture(requireConfirmedAccount: false);
 
         // Act
-        await model.OnPostAsync(Generated.NewLocalPath());
+        await model.OnPostAsync(GeneratedUri.NewLocalReturnUrl());
 
         // Assert
         userManagerMock.Verify(u => u.SetUserNameAsync(It.IsAny<IdentityUser<Guid>>(), model.Input.Email), Times.Once);
@@ -242,7 +222,7 @@ public sealed class RegisterTests : IDisposable
         var (model, _, _, _) = BuildRegisterFixture(requireConfirmedAccount: false);
 
         // Act
-        var actionResult = await model.OnPostAsync(Generated.NewOrigin());
+        var actionResult = await model.OnPostAsync(GeneratedUri.NewExternalReturnUrl());
 
         // Assert
         var local = Assert.IsType<LocalRedirectResult>(actionResult);
@@ -278,7 +258,7 @@ public sealed class RegisterTests : IDisposable
         model.Input = new Register.InputModel { Email = Generated.NewEmailAddress(), Password = Generated.NewPassword() };
 
         // Act
-        var result = await model.OnPostAsync(Generated.NewLocalPath());
+        var result = await model.OnPostAsync(GeneratedUri.NewLocalReturnUrl());
 
         // Assert
         Assert.IsType<PageResult>(result);
@@ -299,7 +279,7 @@ public sealed class RegisterTests : IDisposable
             .Returns(Task.CompletedTask);
 
         // Act
-        await model.OnPostAsync(Generated.NewLocalPath());
+        await model.OnPostAsync(GeneratedUri.NewLocalReturnUrl());
 
         // Assert
         var message = Assert.Single(sent);
@@ -315,7 +295,7 @@ public sealed class RegisterTests : IDisposable
         var (model, _, _, _) = BuildRegisterFixture(requireConfirmedAccount: true);
 
         // Act
-        await model.OnPostAsync(Generated.NewLocalPath());
+        await model.OnPostAsync(GeneratedUri.NewLocalReturnUrl());
 
         // Assert
         Assert.Equal(PageRoutes.ConfirmEmail, Assert.Single(_routedPages));
@@ -328,7 +308,7 @@ public sealed class RegisterTests : IDisposable
         var (model, _, _, _) = BuildRegisterFixture(requireConfirmedAccount: true);
 
         // Act
-        await model.OnPostAsync(Generated.NewLocalPath());
+        await model.OnPostAsync(GeneratedUri.NewLocalReturnUrl());
 
         // Assert
         var span = Assert.Single(_harness.StoppedActivities, a => string.Equals(a.OperationName, Register.RegisterActivityName, StringComparison.Ordinal));
@@ -343,7 +323,7 @@ public sealed class RegisterTests : IDisposable
         var (model, _, _, senderMock) = BuildRegisterFixture(requireConfirmedAccount: true, callbackResolves: false);
 
         // Act
-        await model.OnPostAsync(Generated.NewLocalPath());
+        await model.OnPostAsync(GeneratedUri.NewLocalReturnUrl());
 
         // Assert
         senderMock.Verify(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -363,7 +343,7 @@ public sealed class RegisterTests : IDisposable
             .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = firstError }, new IdentityError { Description = secondError }));
 
         // Act
-        var result = await model.OnPostAsync(Generated.NewLocalPath());
+        var result = await model.OnPostAsync(GeneratedUri.NewLocalReturnUrl());
 
         // Assert
         Assert.IsType<PageResult>(result);
@@ -383,7 +363,7 @@ public sealed class RegisterTests : IDisposable
         model.Input = new Register.InputModel { Email = Generated.NewBlank(), Password = Generated.NewPassword() };
 
         // Act
-        var result = await model.OnPostAsync(Generated.NewLocalPath());
+        var result = await model.OnPostAsync(GeneratedUri.NewLocalReturnUrl());
 
         // Assert
         Assert.IsType<PageResult>(result);
@@ -400,7 +380,7 @@ public sealed class RegisterTests : IDisposable
         model.Input = new Register.InputModel { Email = Generated.NewEmailAddress(), Password = Generated.NewBlank() };
 
         // Act
-        var result = await model.OnPostAsync(Generated.NewLocalPath());
+        var result = await model.OnPostAsync(GeneratedUri.NewLocalReturnUrl());
 
         // Assert
         Assert.IsType<PageResult>(result);
@@ -450,10 +430,10 @@ public sealed class RegisterTests : IDisposable
     private static AuthenticationScheme[] NewSchemes(int count) =>
         [.. Enumerable.Range(0, count).Select(_ => new AuthenticationScheme(Generated.NewSchemeName(), Generated.NewDisplayName(), typeof(DummyAuthHandler)))];
 
-    private static void AssertReturnUrlAssignedWithoutExternalLogins(Exception? ex, Register model, string? returnUrl)
+    private static void AssertReturnUrlAssignedWithoutExternalLogins(Exception? ex, Register model, Uri? returnUrl)
     {
         Assert.Null(ex);
-        Assert.Equal(returnUrl, model.ReturnUrl?.OriginalString);
+        Assert.Equal(returnUrl, model.ReturnUrl);
         Assert.NotNull(model.ExternalLogins);
         Assert.Empty(model.ExternalLogins);
     }

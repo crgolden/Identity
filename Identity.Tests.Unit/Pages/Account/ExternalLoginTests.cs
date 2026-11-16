@@ -26,9 +26,9 @@ public sealed class ExternalLoginTests
 
     private static readonly string ExternalProviderDisplayName = Generated.NewDisplayName();
 
-    private static readonly string LocalReturnUrl = Generated.NewLocalPath();
+    private static readonly Uri LocalReturnUrl = GeneratedUri.NewLocalReturnUrl();
 
-    private static readonly string ExternalReturnUrl = Generated.NewOrigin();
+    private static readonly Uri ExternalReturnUrl = GeneratedUri.NewExternalReturnUrl();
 
     [Fact]
     public void AccountAlreadyExistsMessage_NamesTheEmailAndTheProvider()
@@ -121,7 +121,7 @@ public sealed class ExternalLoginTests
 
         // Assert
         var redirect = Assert.IsType<LocalRedirectResult>(result);
-        Assert.Equal(LocalReturnUrl, redirect.Url);
+        Assert.Equal(LocalReturnUrl.OriginalString, redirect.Url);
     }
 
     [Fact]
@@ -174,7 +174,7 @@ public sealed class ExternalLoginTests
 
         // Assert
         var redirect = Assert.IsType<LocalRedirectResult>(result);
-        Assert.Equal(LocalReturnUrl, redirect.Url);
+        Assert.Equal(LocalReturnUrl.OriginalString, redirect.Url);
         harness.UserMgr.Verify(m => m.CreateAsync(It.IsAny<IdentityUser<Guid>>()), Times.Once);
         harness.UserMgr.Verify(m => m.AddLoginAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<ExternalLoginInfo>()), Times.Once);
         harness.SignIn.Verify(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), false, ExternalProvider), Times.Once);
@@ -221,7 +221,7 @@ public sealed class ExternalLoginTests
 
         // Assert
         var redirect = Assert.IsType<LocalRedirectResult>(result);
-        Assert.Equal(LocalReturnUrl, redirect.Url);
+        Assert.Equal(LocalReturnUrl.OriginalString, redirect.Url);
         harness.EmailStore.Verify(s => s.SetEmailConfirmedAsync(It.IsAny<IdentityUser<Guid>>(), true, It.IsAny<CancellationToken>()), Times.Once);
         harness.Sender.Verify(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()), Times.Never);
         harness.SignIn.Verify(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), false, ExternalProvider), Times.Once);
@@ -416,7 +416,7 @@ public sealed class ExternalLoginTests
         // Assert
         Assert.IsType<PageResult>(result);
         Assert.Equal(ExternalProviderDisplayName, harness.Model.ProviderDisplayName);
-        Assert.Equal(LocalReturnUrl, harness.Model.ReturnUrl?.OriginalString);
+        Assert.Equal(LocalReturnUrl, harness.Model.ReturnUrl);
         harness.UserMgr.Verify(m => m.CreateAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
     }
 
@@ -550,7 +550,7 @@ public sealed class ExternalLoginTests
 
         // Assert
         var redirect = Assert.IsType<LocalRedirectResult>(result);
-        Assert.Equal(LocalReturnUrl, redirect.Url);
+        Assert.Equal(LocalReturnUrl.OriginalString, redirect.Url);
         harness.SignIn.Verify(s => s.SignInAsync(It.IsAny<IdentityUser<Guid>>(), false, ExternalProvider), Times.Once);
     }
 

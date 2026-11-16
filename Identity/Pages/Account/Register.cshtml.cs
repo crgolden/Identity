@@ -51,17 +51,17 @@ public class Register : PageModel
 
     public IList<AuthenticationScheme> ExternalLogins { get; set; } = new List<AuthenticationScheme>();
 
-    public async Task OnGetAsync(string? returnUrl = null)
+    public async Task OnGetAsync(Uri? returnUrl = null)
     {
-        ReturnUrl = UriValue.From(returnUrl);
+        ReturnUrl = returnUrl;
         ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
         RecaptchaSiteKey = _captchaService.SiteKey;
         RecaptchaScriptEndpoint = _captchaService.ScriptEndpoint;
     }
 
-    public async Task<IActionResult> OnPostAsync(string? returnUrl = null)
+    public async Task<IActionResult> OnPostAsync(Uri? returnUrl = null)
     {
-        returnUrl ??= Url.Content(PageRoutes.ContentRoot);
+        var returnTo = returnUrl?.OriginalString ?? Url.Content(PageRoutes.ContentRoot);
         ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
         if (!ModelState.IsValid || IsNullOrWhiteSpace(Input.Email) || IsNullOrWhiteSpace(Input.Password))
         {
@@ -90,14 +90,14 @@ public class Register : PageModel
             var callbackUrl = Url.Page(
                 PageRoutes.ConfirmEmail,
                 pageHandler: null,
-                values: new { userId, code, returnUrl },
+                values: new { userId, code, returnUrl = returnTo },
                 protocol: Request.Scheme);
 
             var emailConfirmationSent = false;
             if (!IsNullOrWhiteSpace(callbackUrl))
             {
                 emailConfirmationSent = true;
-                var sbMessage = new ServiceBusMessage(_accountEmailSettings.ConfirmAccountHtml(callbackUrl))
+                var sbMessage = new ServiceBusMessage(_accountEmailSettings.ConfirmAccountHtml(new Uri(callbackUrl)))
                 {
                     ReplyTo = _accountEmailSettings.Sender,
                     Subject = UserMessages.ConfirmEmailSubject,
@@ -111,11 +111,11 @@ public class Register : PageModel
 
             if (_userManager.Options.SignIn.RequireConfirmedAccount)
             {
-                return RedirectToPage(RegisterConfirmationPageName, new { email = Input.Email, returnUrl });
+                return RedirectToPage(RegisterConfirmationPageName, new { email = Input.Email, returnUrl = returnTo });
             }
 
             await _signInManager.SignInAsync(user, isPersistent: false);
-            return Url.IsLocalUrl(returnUrl) ? LocalRedirect(returnUrl) : LocalRedirect(PageRoutes.ContentRoot);
+            return Url.IsLocalUrl(returnTo) ? LocalRedirect(returnTo) : LocalRedirect(PageRoutes.ContentRoot);
         }
 
         activity?.SetTag(Telemetry.Metrics.SucceededTagName, false);

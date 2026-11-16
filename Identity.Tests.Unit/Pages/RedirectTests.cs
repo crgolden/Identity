@@ -12,9 +12,9 @@ using Moq;
 [Trait("Category", "Unit")]
 public class RedirectTests
 {
-    private static readonly string ExternalUrl = Generated.NewOrigin();
+    private static readonly Uri ExternalUrl = new(Generated.NewOrigin(), UriKind.Absolute);
 
-    private static readonly string LocalPath = Generated.NewLocalPath();
+    private static readonly Uri LocalPath = new(Generated.NewLocalPath(), UriKind.Relative);
 
     [Fact]
     public void Constructor_NoParameters_DoesNotThrow()
@@ -33,7 +33,7 @@ public class RedirectTests
         // Arrange
         var mockUrlHelper = new Mock<IUrlHelper>(MockBehavior.Strict);
         mockUrlHelper
-            .Setup(x => x.IsLocalUrl(ExternalUrl))
+            .Setup(x => x.IsLocalUrl(ExternalUrl.OriginalString))
             .Returns(false);
 
         var model = Create();
@@ -53,7 +53,7 @@ public class RedirectTests
         // Arrange
         var mockUrlHelper = new Mock<IUrlHelper>(MockBehavior.Strict);
         mockUrlHelper
-            .Setup(x => x.IsLocalUrl(LocalPath))
+            .Setup(x => x.IsLocalUrl(LocalPath.OriginalString))
             .Returns(true);
 
         var model = Create();
@@ -64,7 +64,7 @@ public class RedirectTests
 
         // Assert
         Assert.IsType<PageResult>(result);
-        Assert.Equal(LocalPath, model.RedirectUri?.OriginalString);
+        Assert.Equal(LocalPath, model.RedirectUri);
     }
 
     private static Redirect Create()

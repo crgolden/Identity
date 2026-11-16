@@ -18,7 +18,7 @@ public class RegisterConfirmation : PageModel
 
     public string? Email { get; set; }
 
-    public async Task<IActionResult> OnGetAsync(string? email, string? returnUrl = null)
+    public async Task<IActionResult> OnGetAsync(string? email)
     {
         if (IsNullOrWhiteSpace(email))
         {

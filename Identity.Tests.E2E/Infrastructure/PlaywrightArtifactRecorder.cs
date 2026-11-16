@@ -110,39 +110,21 @@ public sealed class PlaywrightArtifactRecorder
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(page);
 
-        try
-        {
-            await page.ScreenshotAsync(new PageScreenshotOptions
+        await CaptureAsync(
+            nameof(IPage.ScreenshotAsync),
+            () => page.ScreenshotAsync(new PageScreenshotOptions
             {
                 Path = Path.Combine(_tempDirectory, _settings.ScreenshotFileName),
                 FullPage = true
-            }).ConfigureAwait(false);
-        }
-        catch (Exception ex) when (ex is PlaywrightException or TimeoutException)
-        {
-            AddEvent($"{nameof(IPage.ScreenshotAsync)} {ex.GetType().Name}: {ex.Message}");
-        }
-
-        try
-        {
-            await context.Tracing.StopAsync(new TracingStopOptions
+            })).ConfigureAwait(false);
+        await CaptureAsync(
+            nameof(ITracing.StopAsync),
+            () => context.Tracing.StopAsync(new TracingStopOptions
             {
                 Path = Path.Combine(_tempDirectory, _settings.TraceFileName)
-            }).ConfigureAwait(false);
-        }
-        catch (Exception ex) when (ex is PlaywrightException or TimeoutException)
-        {
-            AddEvent($"{nameof(ITracing.StopAsync)} {ex.GetType().Name}: {ex.Message}");
-        }
-
-        try
-        {
-            await context.DisposeAsync().ConfigureAwait(false);
-        }
-        catch (Exception ex) when (ex is PlaywrightException or TimeoutException)
-        {
-            AddEvent($"{nameof(IBrowserContext.DisposeAsync)} {ex.GetType().Name}: {ex.Message}");
-        }
+            })).ConfigureAwait(false);
+        await CaptureAsync(nameof(IBrowserContext.DisposeAsync), () => context.DisposeAsync().AsTask())
+            .ConfigureAwait(false);
 
         string[] recordedEvents;
         lock (_events)
@@ -255,6 +237,26 @@ public sealed class PlaywrightArtifactRecorder
         if (directory is not null && Directory.Exists(directory) && !Directory.EnumerateFileSystemEntries(directory).Any())
         {
             Directory.Delete(directory);
+        }
+    }
+
+    private async Task CaptureAsync(string step, Func<Task> capture)
+    {
+        try
+        {
+            await capture().ConfigureAwait(false);
+        }
+        catch (PlaywrightException ex)
+        {
+            AddEvent($"{step} {ex.GetType().Name}: {ex.Message}");
+        }
+        catch (TimeoutException ex)
+        {
+            AddEvent($"{step} {ex.GetType().Name}: {ex.Message}");
+        }
+        catch (IOException ex)
+        {
+            AddEvent($"{step} {ex.GetType().Name}: {ex.Message}");
         }
     }
 

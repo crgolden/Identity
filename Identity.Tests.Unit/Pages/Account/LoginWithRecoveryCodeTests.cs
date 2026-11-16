@@ -18,37 +18,17 @@ public class LoginWithRecoveryCodeTests
 
     private static readonly string UnknownRecoveryCode = Generated.NewRecoveryCode();
 
-    public static TheoryData<string?> NullReturnUrls() => new()
-    {
-        (string?)null,
-    };
-
-    [Theory]
-    [MemberData(nameof(NullReturnUrls))]
-    public async Task OnGetAsync_TwoFactorUserExists_SetsReturnUrlAndReturnsPage(string? returnUrl)
-    {
-        // Arrange
-        var model = BuildModelForTwoFactorUser();
-
-        // Act
-        var result = await model.OnGetAsync(returnUrl);
-
-        // Assert
-        AssertReturnsPageWithReturnUrl(result, model, returnUrl);
-    }
-
     [Fact]
-    public async Task OnGetAsync_TwoFactorUserExistsWithWhitespaceReturnUrl_SetsReturnUrlAndReturnsPage()
+    public async Task OnGetAsync_TwoFactorUserExistsWithNoReturnUrl_LeavesReturnUrlNullAndReturnsPage()
     {
         // Arrange
-        var whitespaceReturnUrl = Generated.NewWhitespaceValue();
         var model = BuildModelForTwoFactorUser();
 
         // Act
-        var result = await model.OnGetAsync(whitespaceReturnUrl);
+        var result = await model.OnGetAsync();
 
         // Assert
-        AssertReturnsPageWithReturnUrl(result, model, whitespaceReturnUrl);
+        AssertReturnsPageWithReturnUrl(result, model, null);
     }
 
     [Fact]
@@ -84,20 +64,6 @@ public class LoginWithRecoveryCodeTests
 
         // Assert
         AssertReturnsPageWithReturnUrl(result, model, nestedReturnUrlWithQuery);
-    }
-
-    [Fact]
-    public async Task OnGetAsync_TwoFactorUserExistsWithOverlongReturnUrl_SetsReturnUrlAndReturnsPage()
-    {
-        // Arrange
-        var overlongReturnUrl = Generated.NewOverlongValue();
-        var model = BuildModelForTwoFactorUser();
-
-        // Act
-        var result = await model.OnGetAsync(overlongReturnUrl);
-
-        // Assert
-        AssertReturnsPageWithReturnUrl(result, model, overlongReturnUrl);
     }
 
     [Fact]
@@ -182,12 +148,12 @@ public class LoginWithRecoveryCodeTests
     public async Task OnPostAsync_Succeeded_RedirectsToTheRequestedLocalReturnUrl()
     {
         // Arrange
-        var returnUrl = Generated.NewLocalPath();
+        var returnUrl = new Uri(Generated.NewLocalPath(), UriKind.Relative);
         var signInManagerMock = CreateSignInManagerMock();
         signInManagerMock.Setup(s => s.GetTwoFactorAuthenticationUserAsync()).ReturnsAsync(new IdentityUser<Guid>());
         signInManagerMock.Setup(s => s.TwoFactorRecoveryCodeSignInAsync(KnownRecoveryCode)).ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Success);
         var mockUrl = new Mock<IUrlHelper>(MockBehavior.Strict);
-        mockUrl.Setup(u => u.IsLocalUrl(returnUrl)).Returns(true);
+        mockUrl.Setup(u => u.IsLocalUrl(returnUrl.OriginalString)).Returns(true);
         var model = new LoginWithRecoveryCode(signInManagerMock.Object)
         {
             Input = new LoginWithRecoveryCode.InputModel { RecoveryCode = KnownRecoveryCode },
@@ -198,7 +164,7 @@ public class LoginWithRecoveryCodeTests
         var result = await model.OnPostAsync(returnUrl);
 
         // Assert
-        Assert.Equal(returnUrl, Assert.IsType<LocalRedirectResult>(result).Url);
+        Assert.Equal(returnUrl.OriginalString, Assert.IsType<LocalRedirectResult>(result).Url);
     }
 
     [Fact]
@@ -255,12 +221,12 @@ public class LoginWithRecoveryCodeTests
         return new LoginWithRecoveryCode(signInManagerMock.Object);
     }
 
-    private static string WithQuery(string path, string queryName, string queryValue) =>
-        path + QueryStringStart + queryName + QueryStringAssignment + queryValue;
+    private static Uri WithQuery(string path, string queryName, string queryValue) =>
+        new(path + QueryStringStart + queryName + QueryStringAssignment + queryValue, UriKind.Relative);
 
-    private static void AssertReturnsPageWithReturnUrl(IActionResult result, LoginWithRecoveryCode model, string? returnUrl)
+    private static void AssertReturnsPageWithReturnUrl(IActionResult result, LoginWithRecoveryCode model, Uri? returnUrl)
     {
         Assert.IsType<PageResult>(result);
-        Assert.Equal(returnUrl, model.ReturnUrl?.OriginalString);
+        Assert.Equal(returnUrl?.OriginalString, model.ReturnUrl?.OriginalString);
     }
 }

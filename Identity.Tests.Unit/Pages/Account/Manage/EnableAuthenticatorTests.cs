@@ -293,8 +293,8 @@ public class EnableAuthenticatorTests
 
         // Assert
         Assert.NotNull(model.AuthenticatorUri);
-        Assert.Contains(storedKey, model.AuthenticatorUri.OriginalString, StringComparison.Ordinal);
-        Assert.Contains(UrlEncoder.Default.Encode(email), model.AuthenticatorUri.OriginalString, StringComparison.Ordinal);
+        Assert.Contains(storedKey, model.AuthenticatorUri?.OriginalString, StringComparison.Ordinal);
+        Assert.Contains(UrlEncoder.Default.Encode(email), model.AuthenticatorUri?.OriginalString, StringComparison.Ordinal);
     }
 
     [Fact]

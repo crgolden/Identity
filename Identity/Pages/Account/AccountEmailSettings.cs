@@ -28,9 +28,15 @@ public sealed class AccountEmailSettings
             section.GetRequired<string>(nameof(ResetPasswordHtmlFormat)));
     }
 
-    public string ConfirmAccountHtml(string callbackUrl) =>
-        Format(CultureInfo.InvariantCulture, ConfirmAccountHtmlFormat, HtmlEncoder.Default.Encode(callbackUrl));
+    public string ConfirmAccountHtml(Uri callbackUrl)
+    {
+        ThrowIfNull(callbackUrl);
+        return Format(CultureInfo.InvariantCulture, ConfirmAccountHtmlFormat, HtmlEncoder.Default.Encode(callbackUrl.OriginalString));
+    }
 
-    public string ResetPasswordHtml(string callbackUrl) =>
-        Format(CultureInfo.InvariantCulture, ResetPasswordHtmlFormat, HtmlEncoder.Default.Encode(callbackUrl));
+    public string ResetPasswordHtml(Uri callbackUrl)
+    {
+        ThrowIfNull(callbackUrl);
+        return Format(CultureInfo.InvariantCulture, ResetPasswordHtmlFormat, HtmlEncoder.Default.Encode(callbackUrl.OriginalString));
+    }
 }

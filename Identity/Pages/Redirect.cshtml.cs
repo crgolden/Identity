@@ -9,14 +9,14 @@ public class Redirect : PageModel
 {
     public Uri? RedirectUri { get; set; }
 
-    public IActionResult OnGet(string? redirectUri)
+    public IActionResult OnGet(Uri? redirectUri)
     {
-        if (!Url.IsLocalUrl(redirectUri))
+        if (!Url.IsLocalUrl(redirectUri?.OriginalString))
         {
             return RedirectToPage(PageRoutes.Error);
         }
 
-        RedirectUri = UriValue.From(redirectUri);
+        RedirectUri = redirectUri;
         return Page();
     }
 }

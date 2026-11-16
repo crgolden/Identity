@@ -19,10 +19,6 @@ public sealed class IdentityWalkerTests : IClassFixture<IdentityWalkerFixture>
     [Fact]
     public async Task Walks_the_deployed_menus_as_a_member_then_as_an_admin()
     {
-        Assert.True(
-            IdentityWalkerFixture.IsConfigured,
-            "Synthetic walks target the deployed app only; set WalkerBaseUrl to run.");
-
         var settings = _fixture.Settings;
         var seed = ResolveSeed();
         var steps = ResolveStepBudget(settings);

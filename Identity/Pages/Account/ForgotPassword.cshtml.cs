@@ -41,7 +41,7 @@ public class ForgotPassword : AccountEmailPageBase
 
         if (!IsNullOrWhiteSpace(callbackUrl))
         {
-            await SendAccountEmailAsync(AccountEmailSettings.ResetPasswordHtml(callbackUrl), UserMessages.ResetPasswordSubject);
+            await SendAccountEmailAsync(AccountEmailSettings.ResetPasswordHtml(new Uri(callbackUrl)), UserMessages.ResetPasswordSubject);
         }
 
         return RedirectToPage(PageRoutes.SiblingForgotPasswordConfirmation);

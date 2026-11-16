@@ -13,18 +13,11 @@ public sealed class IdentityWalkerFixture : IAsyncLifetime
 
     public static string? WalkerBaseAddress => Environment.GetEnvironmentVariable("WalkerBaseUrl");
 
-    public static bool IsConfigured => !string.IsNullOrWhiteSpace(WalkerBaseAddress);
-
     public WalkerSettings Settings =>
         _settings ?? throw new InvalidOperationException("Walker settings are not available until InitializeAsync has run.");
 
     public async ValueTask InitializeAsync()
     {
-        if (!IsConfigured)
-        {
-            return;
-        }
-
         var configuration = new ConfigurationBuilder().AddEnvironmentVariables().Build();
         _playwrightSettings = PlaywrightSettings.Read(configuration);
         _settings = WalkerSettings.Read(configuration);

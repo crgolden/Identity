@@ -104,7 +104,7 @@ public class Email : PageModel
                 throw new InvalidOperationException(UserMessages.UnableToBuildConfirmationLink(userId));
             }
 
-            var sbMessage = new ServiceBusMessage(_accountEmailSettings.ConfirmAccountHtml(callbackUrl))
+            var sbMessage = new ServiceBusMessage(_accountEmailSettings.ConfirmAccountHtml(new Uri(callbackUrl)))
             {
                 ReplyTo = _accountEmailSettings.Sender,
                 Subject = UserMessages.ConfirmEmailSubject,
@@ -161,7 +161,7 @@ public class Email : PageModel
             throw new InvalidOperationException(UserMessages.UnableToBuildConfirmationLink(userId));
         }
 
-        var sbMessage = new ServiceBusMessage(_accountEmailSettings.ConfirmAccountHtml(callbackUrl))
+        var sbMessage = new ServiceBusMessage(_accountEmailSettings.ConfirmAccountHtml(new Uri(callbackUrl)))
         {
             ReplyTo = _accountEmailSettings.Sender,
             Subject = UserMessages.ConfirmEmailSubject,

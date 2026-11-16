@@ -147,17 +147,17 @@ public class EnableAuthenticator : PageModel
             return;
         }
 
-        AuthenticatorUri = UriValue.From(GenerateQrCodeUri(email, unformattedKey));
+        AuthenticatorUri = GenerateQrCodeUri(email, unformattedKey);
     }
 
-    private string GenerateQrCodeUri(string email, string unformattedKey)
+    private Uri GenerateQrCodeUri(string email, string unformattedKey)
     {
-        return Format(
+        return new Uri(Format(
             CultureInfo.InvariantCulture,
             AuthenticatorUriFormat,
             _urlEncoder.Encode(_issuer),
             _urlEncoder.Encode(email),
-            unformattedKey);
+            unformattedKey));
     }
 
     public class InputModel

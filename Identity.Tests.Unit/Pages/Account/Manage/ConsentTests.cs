@@ -22,9 +22,7 @@ public sealed class ConsentTests : IDisposable
 {
     private static readonly string ExistingClientId = Generated.NewClientIdentifier();
     private static readonly string ExistingClientName = Generated.NewClientName();
-    private static readonly string AuthorizeReturnUrl = Generated.NewCallbackAddress();
-
-    private static readonly Uri AuthorizeReturnUri = new(AuthorizeReturnUrl, UriKind.RelativeOrAbsolute);
+    private static readonly Uri AuthorizeReturnUrl = new(Generated.NewCallbackAddress(), UriKind.Absolute);
     private static readonly string ApiScopeName = Generated.NewApiScopeName();
     private static readonly string ApiScopeDisplayName = Generated.NewDisplayName();
     private static readonly string ApiResourceName = Generated.NewApiResourceName();
@@ -106,7 +104,7 @@ public sealed class ConsentTests : IDisposable
 
         // Assert
         Assert.IsType<PageResult>(result);
-        Assert.Equal(AuthorizeReturnUrl, model.Input.ReturnUrl?.OriginalString);
+        Assert.Equal(AuthorizeReturnUrl, model.Input.ReturnUrl);
         Assert.Equal(ExistingClientName, model.View.ClientName);
         Assert.NotEmpty(model.View.IdentityScopes);
     }
@@ -156,7 +154,7 @@ public sealed class ConsentTests : IDisposable
         {
             Button = Generated.NewButtonValue(),
             ScopesConsented = [ApiScopeName],
-            ReturnUrl = AuthorizeReturnUri,
+            ReturnUrl = AuthorizeReturnUrl,
         };
 
         // Act
@@ -196,7 +194,7 @@ public sealed class ConsentTests : IDisposable
         var interaction = new Mock<IIdentityServerInteractionService>(MockBehavior.Strict);
         interaction.Setup(x => x.GetAuthorizationContextAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync((AuthorizationRequest?)null);
         var model = Create(interaction.Object);
-        model.Input = new global::Identity.Pages.Account.Manage.Consent.InputModel { ReturnUrl = AuthorizeReturnUri };
+        model.Input = new global::Identity.Pages.Account.Manage.Consent.InputModel { ReturnUrl = AuthorizeReturnUrl };
 
         // Act
         var result = await model.OnPostAsync();
@@ -217,13 +215,13 @@ public sealed class ConsentTests : IDisposable
         var events = new Mock<IEventService>(MockBehavior.Strict);
         events.Setup(e => e.RaiseAsync(It.IsAny<Event>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
         var model = Create(interaction.Object, events.Object);
-        model.Input = new global::Identity.Pages.Account.Manage.Consent.InputModel { Button = global::Identity.Pages.Account.Manage.Consent.DenyButtonValue, ReturnUrl = AuthorizeReturnUri };
+        model.Input = new global::Identity.Pages.Account.Manage.Consent.InputModel { Button = global::Identity.Pages.Account.Manage.Consent.DenyButtonValue, ReturnUrl = AuthorizeReturnUrl };
 
         // Act
         var result = await model.OnPostAsync();
 
         // Assert
-        Assert.Equal(AuthorizeReturnUrl, Assert.IsType<RedirectResult>(result).Url);
+        Assert.Equal(AuthorizeReturnUrl.OriginalString, Assert.IsType<RedirectResult>(result).Url);
         events.Verify(e => e.RaiseAsync(It.IsAny<ConsentDeniedEvent>(), It.IsAny<CancellationToken>()), Times.Once);
         interaction.Verify(x => x.GrantConsentAsync(request, It.IsAny<ConsentResponse>(), It.IsAny<CancellationToken>(), SignedInSubjectId), Times.Once);
     }
@@ -236,7 +234,7 @@ public sealed class ConsentTests : IDisposable
         var granted = new List<ConsentResponse>();
         var interaction = InteractionRecordingGrants(request, granted);
         var model = Create(interaction.Object, AcceptingEvents());
-        model.Input = new global::Identity.Pages.Account.Manage.Consent.InputModel { Button = global::Identity.Pages.Account.Manage.Consent.DenyButtonValue, ReturnUrl = AuthorizeReturnUri };
+        model.Input = new global::Identity.Pages.Account.Manage.Consent.InputModel { Button = global::Identity.Pages.Account.Manage.Consent.DenyButtonValue, ReturnUrl = AuthorizeReturnUrl };
         var denials = new List<long>();
         using var deniedListener = _harness.ListenTo(global::Identity.Telemetry.Metrics.ConsentDeniedCounterName, (value, _) => denials.Add(value));
 
@@ -262,7 +260,7 @@ public sealed class ConsentTests : IDisposable
         {
             Button = global::Identity.Pages.Account.Manage.Consent.GrantButtonValue,
             ScopesConsented = [IdentityServerConstants.StandardScopes.OpenId, IdentityServerConstants.StandardScopes.OfflineAccess],
-            ReturnUrl = AuthorizeReturnUri,
+            ReturnUrl = AuthorizeReturnUrl,
         };
 
         // Act
@@ -284,7 +282,7 @@ public sealed class ConsentTests : IDisposable
         {
             Button = global::Identity.Pages.Account.Manage.Consent.GrantButtonValue,
             ScopesConsented = [IdentityServerConstants.StandardScopes.OpenId, IdentityServerConstants.StandardScopes.OfflineAccess],
-            ReturnUrl = AuthorizeReturnUri,
+            ReturnUrl = AuthorizeReturnUrl,
         };
 
         // Act
@@ -309,7 +307,7 @@ public sealed class ConsentTests : IDisposable
             ScopesConsented = [IdentityServerConstants.StandardScopes.OpenId],
             RememberConsent = true,
             Description = consentDescription,
-            ReturnUrl = AuthorizeReturnUri,
+            ReturnUrl = AuthorizeReturnUrl,
         };
         var grants = new List<long>();
         var denials = new List<long>();
@@ -346,14 +344,14 @@ public sealed class ConsentTests : IDisposable
         {
             Button = global::Identity.Pages.Account.Manage.Consent.GrantButtonValue,
             ScopesConsented = [IdentityServerConstants.StandardScopes.OpenId],
-            ReturnUrl = AuthorizeReturnUri,
+            ReturnUrl = AuthorizeReturnUrl,
         };
 
         // Act
         var result = await model.OnPostAsync();
 
         // Assert
-        Assert.Equal(AuthorizeReturnUrl, Assert.IsType<RedirectResult>(result).Url);
+        Assert.Equal(AuthorizeReturnUrl.OriginalString, Assert.IsType<RedirectResult>(result).Url);
         events.Verify(e => e.RaiseAsync(It.IsAny<ConsentGrantedEvent>(), It.IsAny<CancellationToken>()), Times.Once);
         interaction.Verify(x => x.GrantConsentAsync(request, It.IsAny<ConsentResponse>(), It.IsAny<CancellationToken>(), SignedInSubjectId), Times.Once);
     }
@@ -370,7 +368,7 @@ public sealed class ConsentTests : IDisposable
         {
             Button = global::Identity.Pages.Account.Manage.Consent.GrantButtonValue,
             ScopesConsented = [],
-            ReturnUrl = AuthorizeReturnUri,
+            ReturnUrl = AuthorizeReturnUrl,
         };
 
         // Act
@@ -392,7 +390,7 @@ public sealed class ConsentTests : IDisposable
             .ReturnsAsync(request)
             .ReturnsAsync((AuthorizationRequest?)null);
         var model = Create(interaction.Object);
-        model.Input = new global::Identity.Pages.Account.Manage.Consent.InputModel { Button = Generated.NewButtonValue(), ReturnUrl = AuthorizeReturnUri };
+        model.Input = new global::Identity.Pages.Account.Manage.Consent.InputModel { Button = Generated.NewButtonValue(), ReturnUrl = AuthorizeReturnUrl };
 
         // Act
         var result = await model.OnPostAsync();

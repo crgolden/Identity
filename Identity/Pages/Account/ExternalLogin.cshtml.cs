@@ -62,33 +62,33 @@ public class ExternalLogin : PageModel
 
     public IActionResult OnGet() => RedirectToPage(LoginPageName);
 
-    public IActionResult OnPost(string provider, string? returnUrl = null)
+    public IActionResult OnPost(string provider, Uri? returnUrl = null)
     {
-        var redirectUrl = Url.Page(ExternalLoginPagePath, pageHandler: CallbackPageHandler, values: new { returnUrl });
+        var redirectUrl = Url.Page(ExternalLoginPagePath, pageHandler: CallbackPageHandler, values: new { returnUrl = returnUrl?.OriginalString });
         var properties = _signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl);
         return new ChallengeResult(provider, properties);
     }
 
-    public async Task<IActionResult> OnGetCallbackAsync(string? returnUrl = null, string? remoteError = null)
+    public async Task<IActionResult> OnGetCallbackAsync(Uri? returnUrl = null, string? remoteError = null)
     {
-        returnUrl ??= Url.Content(PageRoutes.ContentRoot);
+        var returnTo = returnUrl?.OriginalString ?? Url.Content(PageRoutes.ContentRoot);
         if (!IsNullOrWhiteSpace(remoteError))
         {
             ErrorMessage = $"Error from external provider: {remoteError}";
-            return RedirectToPage(LoginPageName, new { ReturnUrl = returnUrl });
+            return RedirectToPage(LoginPageName, new { ReturnUrl = returnTo });
         }
 
         var info = await _signInManager.GetExternalLoginInfoAsync();
         if (info is null)
         {
             ErrorMessage = LoadExternalLoginFailedMessage;
-            return RedirectToPage(LoginPageName, new { ReturnUrl = returnUrl });
+            return RedirectToPage(LoginPageName, new { ReturnUrl = returnTo });
         }
 
         var result = await _signInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, isPersistent: false, bypassTwoFactor: true);
         if (result.Succeeded)
         {
-            return Url.IsLocalUrl(returnUrl) ? LocalRedirect(returnUrl) : LocalRedirect(PageRoutes.ContentRoot);
+            return Url.IsLocalUrl(returnTo) ? LocalRedirect(returnTo) : LocalRedirect(PageRoutes.ContentRoot);
         }
 
         if (result.IsLockedOut)
@@ -99,7 +99,7 @@ public class ExternalLogin : PageModel
         var externalEmail = info.Principal.FindFirstValue(ClaimTypes.Email);
         if (IsNullOrWhiteSpace(externalEmail))
         {
-            ReturnUrl = UriValue.From(returnUrl);
+            ReturnUrl = new Uri(returnTo, UriKind.RelativeOrAbsolute);
             ProviderDisplayName = info.ProviderDisplayName;
             return Page();
         }
@@ -109,7 +109,7 @@ public class ExternalLogin : PageModel
         {
             ErrorMessage = AccountAlreadyExistsMessage(externalEmail, info.ProviderDisplayName);
             ErrorCode = AccountAlreadyExistsErrorCode;
-            return RedirectToPage(LoginPageName, new { ReturnUrl = returnUrl });
+            return RedirectToPage(LoginPageName, new { ReturnUrl = returnTo });
         }
 
         var user = new IdentityUser<Guid>();
@@ -124,7 +124,7 @@ public class ExternalLogin : PageModel
         if (!createResult.Succeeded)
         {
             ErrorMessage = Join(" ", createResult.Errors.Select(e => e.Description));
-            return RedirectToPage(LoginPageName, new { ReturnUrl = returnUrl });
+            return RedirectToPage(LoginPageName, new { ReturnUrl = returnTo });
         }
 
         var redirect = await CompleteExternalRegistrationAsync(user, info, externalEmail, returnUrl);
@@ -134,17 +134,17 @@ public class ExternalLogin : PageModel
         }
 
         ErrorMessage = $"Unable to link your {info.ProviderDisplayName} account.";
-        return RedirectToPage(LoginPageName, new { ReturnUrl = returnUrl });
+        return RedirectToPage(LoginPageName, new { ReturnUrl = returnTo });
     }
 
-    public async Task<IActionResult> OnPostConfirmationAsync(string? returnUrl = null)
+    public async Task<IActionResult> OnPostConfirmationAsync(Uri? returnUrl = null)
     {
-        returnUrl ??= Url.Content(PageRoutes.ContentRoot);
+        var returnTo = returnUrl?.OriginalString ?? Url.Content(PageRoutes.ContentRoot);
         var info = await _signInManager.GetExternalLoginInfoAsync();
         if (info is null)
         {
             ErrorMessage = LoadExternalLoginDuringConfirmationFailedMessage;
-            return RedirectToPage(LoginPageName, new { ReturnUrl = returnUrl });
+            return RedirectToPage(LoginPageName, new { ReturnUrl = returnTo });
         }
 
         if (ModelState.IsValid && !IsNullOrWhiteSpace(Input.Email))
@@ -154,7 +154,7 @@ public class ExternalLogin : PageModel
             {
                 ErrorMessage = AccountAlreadyExistsMessage(Input.Email, info.ProviderDisplayName);
                 ErrorCode = AccountAlreadyExistsErrorCode;
-                return RedirectToPage(LoginPageName, new { ReturnUrl = returnUrl });
+                return RedirectToPage(LoginPageName, new { ReturnUrl = returnTo });
             }
 
             var user = new IdentityUser<Guid>();
@@ -177,7 +177,7 @@ public class ExternalLogin : PageModel
         }
 
         ProviderDisplayName = info.ProviderDisplayName;
-        ReturnUrl = UriValue.From(returnUrl);
+        ReturnUrl = new Uri(returnTo, UriKind.RelativeOrAbsolute);
         return Page();
     }
 
@@ -189,7 +189,7 @@ public class ExternalLogin : PageModel
         IdentityUser<Guid> user,
         ExternalLoginInfo info,
         string email,
-        string returnUrl)
+        Uri? returnUrl)
     {
         var result = await _userManager.AddLoginAsync(user, info);
         if (!result.Succeeded)
@@ -213,7 +213,7 @@ public class ExternalLogin : PageModel
 
             if (!IsNullOrWhiteSpace(callbackUrl))
             {
-                var sbMessage = new ServiceBusMessage(_accountEmailSettings.ConfirmAccountHtml(callbackUrl))
+                var sbMessage = new ServiceBusMessage(_accountEmailSettings.ConfirmAccountHtml(new Uri(callbackUrl)))
                 {
                     ReplyTo = _accountEmailSettings.Sender,
                     Subject = UserMessages.ConfirmEmailSubject,
@@ -230,7 +230,8 @@ public class ExternalLogin : PageModel
         }
 
         await _signInManager.SignInAsync(user, isPersistent: false, info.LoginProvider);
-        return Url.IsLocalUrl(returnUrl) ? LocalRedirect(returnUrl) : LocalRedirect(PageRoutes.ContentRoot);
+        var returnTo = returnUrl?.OriginalString ?? Url.Content(PageRoutes.ContentRoot);
+        return Url.IsLocalUrl(returnTo) ? LocalRedirect(returnTo) : LocalRedirect(PageRoutes.ContentRoot);
     }
 
     public class InputModel

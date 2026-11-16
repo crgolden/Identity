@@ -61,7 +61,7 @@ public class Login : PageModel
     [TempData]
     public string? ErrorCode { get; set; }
 
-    public async Task OnGetAsync(string? returnUrl = null)
+    public async Task OnGetAsync(Uri? returnUrl = null)
     {
         if (!IsNullOrWhiteSpace(ErrorMessage))
         {
@@ -70,14 +70,14 @@ public class Login : PageModel
 
         await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
         ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
-        ReturnUrl = UriValue.From(returnUrl ?? Url.Content(PageRoutes.ContentRoot));
+        ReturnUrl = returnUrl ?? new Uri(Url.Content(PageRoutes.ContentRoot), UriKind.Relative);
         RecaptchaSiteKey = _captchaService.SiteKey;
         RecaptchaScriptEndpoint = _captchaService.ScriptEndpoint;
     }
 
-    public async Task<IActionResult> OnPostAsync(string? returnUrl = null)
+    public async Task<IActionResult> OnPostAsync(Uri? returnUrl = null)
     {
-        returnUrl ??= Url.Content(PageRoutes.ContentRoot);
+        var returnTo = returnUrl?.OriginalString ?? Url.Content(PageRoutes.ContentRoot);
         ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
         Microsoft.AspNetCore.Identity.SignInResult result;
         if (!IsNullOrWhiteSpace(Input.Passkey?.CredentialJson))
@@ -111,12 +111,12 @@ public class Login : PageModel
 
         if (result.Succeeded)
         {
-            return Url.IsLocalUrl(returnUrl) ? LocalRedirect(returnUrl) : LocalRedirect(PageRoutes.ContentRoot);
+            return Url.IsLocalUrl(returnTo) ? LocalRedirect(returnTo) : LocalRedirect(PageRoutes.ContentRoot);
         }
 
         if (result.RequiresTwoFactor)
         {
-            return RedirectToPage(LoginWith2faPageName, new { ReturnUrl = returnUrl, Input.RememberMe });
+            return RedirectToPage(LoginWith2faPageName, new { ReturnUrl = returnTo, Input.RememberMe });
         }
 
         if (result.IsLockedOut)

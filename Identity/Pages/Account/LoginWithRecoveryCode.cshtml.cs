@@ -25,7 +25,7 @@ public class LoginWithRecoveryCode : PageModel
 
     public Uri? ReturnUrl { get; set; }
 
-    public async Task<IActionResult> OnGetAsync(string? returnUrl = null)
+    public async Task<IActionResult> OnGetAsync(Uri? returnUrl = null)
     {
         var user = await _signInManager.GetTwoFactorAuthenticationUserAsync();
         if (user is null)
@@ -33,12 +33,12 @@ public class LoginWithRecoveryCode : PageModel
             throw new InvalidOperationException(UserMessages.UnableToLoadTwoFactorUser);
         }
 
-        ReturnUrl = UriValue.From(returnUrl);
+        ReturnUrl = returnUrl;
 
         return Page();
     }
 
-    public async Task<IActionResult> OnPostAsync(string? returnUrl = null)
+    public async Task<IActionResult> OnPostAsync(Uri? returnUrl = null)
     {
         if (!ModelState.IsValid || IsNullOrWhiteSpace(Input.RecoveryCode))
         {
@@ -57,7 +57,8 @@ public class LoginWithRecoveryCode : PageModel
 
         if (result.Succeeded)
         {
-            return Url.IsLocalUrl(returnUrl) ? LocalRedirect(returnUrl) : LocalRedirect(PageRoutes.ContentRoot);
+            var returnTo = returnUrl?.OriginalString;
+            return Url.IsLocalUrl(returnTo) ? LocalRedirect(returnTo) : LocalRedirect(PageRoutes.ContentRoot);
         }
 
         if (result.IsLockedOut)

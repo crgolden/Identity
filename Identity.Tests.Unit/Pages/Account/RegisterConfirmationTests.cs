@@ -84,7 +84,7 @@ public class RegisterConfirmationTests
     }
 
     [Fact]
-    public async Task OnGetAsync_UserFoundWithNoReturnUrl_SetsPropertiesAndDoesNotGenerateConfirmationUrl()
+    public async Task OnGetAsync_UserFound_SetsPropertiesAndDoesNotGenerateConfirmationUrl()
     {
         // Arrange
         var testEmail = Generated.NewEmailAddress();
@@ -92,23 +92,6 @@ public class RegisterConfirmationTests
 
         // Act
         var result = await model.OnGetAsync(testEmail);
-
-        // Assert
-        Assert.IsType<PageResult>(result);
-        Assert.Equal(testEmail, model.Email);
-        mockUrl.Verify(u => u.Content(It.IsAny<string>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task OnGetAsync_UserFoundWithLocalReturnUrl_SetsPropertiesAndDoesNotGenerateConfirmationUrl()
-    {
-        // Arrange
-        var testEmail = Generated.NewEmailAddress();
-        var localReturnUrl = Generated.NewLocalPath();
-        var (model, mockUrl) = BuildModelForFoundUser(testEmail);
-
-        // Act
-        var result = await model.OnGetAsync(testEmail, localReturnUrl);
 
         // Assert
         Assert.IsType<PageResult>(result);

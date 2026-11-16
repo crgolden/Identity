@@ -25,7 +25,7 @@ public class LoginWith2fa : PageModel
 
     public Uri? ReturnUrl { get; set; }
 
-    public async Task<IActionResult> OnGetAsync(bool rememberMe, string? returnUrl = null)
+    public async Task<IActionResult> OnGetAsync(bool rememberMe, Uri? returnUrl = null)
     {
         var user = await _signInManager.GetTwoFactorAuthenticationUserAsync();
 
@@ -34,20 +34,20 @@ public class LoginWith2fa : PageModel
             throw new InvalidOperationException(UserMessages.UnableToLoadTwoFactorUser);
         }
 
-        ReturnUrl = UriValue.From(returnUrl);
+        ReturnUrl = returnUrl;
         RememberMe = rememberMe;
 
         return Page();
     }
 
-    public async Task<IActionResult> OnPostAsync(bool rememberMe, string? returnUrl = null)
+    public async Task<IActionResult> OnPostAsync(bool rememberMe, Uri? returnUrl = null)
     {
         if (!ModelState.IsValid || IsNullOrWhiteSpace(Input.TwoFactorCode))
         {
             return Page();
         }
 
-        returnUrl ??= Url.Content(PageRoutes.ContentRoot);
+        var returnTo = returnUrl?.OriginalString ?? Url.Content(PageRoutes.ContentRoot);
 
         var user = await _signInManager.GetTwoFactorAuthenticationUserAsync();
         if (user is null)
@@ -63,7 +63,7 @@ public class LoginWith2fa : PageModel
 
         if (result.Succeeded)
         {
-            return Url.IsLocalUrl(returnUrl) ? LocalRedirect(returnUrl) : LocalRedirect(PageRoutes.ContentRoot);
+            return Url.IsLocalUrl(returnTo) ? LocalRedirect(returnTo) : LocalRedirect(PageRoutes.ContentRoot);
         }
 
         if (result.IsLockedOut)

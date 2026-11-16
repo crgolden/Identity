@@ -16,7 +16,7 @@ using Moq;
 [Trait("Category", "Unit")]
 public sealed class LoginTests : IDisposable
 {
-    private static readonly string RequestedReturnUrl = Generated.NewLocalPath();
+    private static readonly Uri RequestedReturnUrl = new(Generated.NewLocalPath(), UriKind.Relative);
 
     private static readonly string ContentRootUrl = Generated.NewLocalPath();
 
@@ -64,7 +64,7 @@ public sealed class LoginTests : IDisposable
         await model.OnGetAsync(RequestedReturnUrl);
 
         // Assert
-        Assert.Equal(RequestedReturnUrl, model.ReturnUrl?.OriginalString);
+        Assert.Equal(RequestedReturnUrl, model.ReturnUrl);
     }
 
     [Fact]
@@ -457,24 +457,24 @@ public sealed class LoginTests : IDisposable
         // Arrange
         var signInManagerMock = SignInManagerWithPasswordResult(Microsoft.AspNetCore.Identity.SignInResult.Success);
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
-        urlHelperMock.Setup(u => u.IsLocalUrl(RequestedReturnUrl)).Returns(true);
+        urlHelperMock.Setup(u => u.IsLocalUrl(RequestedReturnUrl.OriginalString)).Returns(true);
         var model = CreatePostModel(signInManagerMock, urlHelperMock, PasswordInput());
 
         // Act
         var result = await model.OnPostAsync(RequestedReturnUrl);
 
         // Assert
-        Assert.Equal(RequestedReturnUrl, Assert.IsType<LocalRedirectResult>(result).Url);
+        Assert.Equal(RequestedReturnUrl.OriginalString, Assert.IsType<LocalRedirectResult>(result).Url);
     }
 
     [Fact]
     public async Task OnPostAsync_PasswordSignIn_Succeeded_NonLocalReturnUrl_RedirectsToTheContentRoot()
     {
         // Arrange
-        var nonLocalReturnUrl = Generated.NewOrigin();
+        var nonLocalReturnUrl = new Uri(Generated.NewOrigin(), UriKind.Absolute);
         var signInManagerMock = SignInManagerWithPasswordResult(Microsoft.AspNetCore.Identity.SignInResult.Success);
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
-        urlHelperMock.Setup(u => u.IsLocalUrl(nonLocalReturnUrl)).Returns(false);
+        urlHelperMock.Setup(u => u.IsLocalUrl(nonLocalReturnUrl.OriginalString)).Returns(false);
         var model = CreatePostModel(signInManagerMock, urlHelperMock, PasswordInput());
 
         // Act

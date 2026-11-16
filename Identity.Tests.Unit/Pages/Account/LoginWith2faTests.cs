@@ -27,7 +27,7 @@ public class LoginWith2faTests
         model.ModelState.AddModelError(Generated.NewModelStateKey(), Generated.NewValidationMessage());
 
         // Act
-        var result = await model.OnPostAsync(true, Generated.NewLocalPath());
+        var result = await model.OnPostAsync(true, new Uri(Generated.NewLocalPath(), UriKind.Relative));
 
         // Assert
         Assert.IsType<PageResult>(result);
@@ -94,25 +94,10 @@ public class LoginWith2faTests
     }
 
     [Fact]
-    public async Task OnGetAsync_ValidUserNotRememberedWithBlankReturnUrl_SetsPropertiesAndReturnsPageResult()
-    {
-        // Arrange
-        var blankReturnUrl = Generated.NewBlank();
-        var model = BuildModelForTwoFactorUser();
-
-        // Act
-        var result = await model.OnGetAsync(false, blankReturnUrl);
-
-        // Assert
-        AssertReturnsPageWithReturnUrl(result, model, blankReturnUrl);
-        Assert.False(model.RememberMe);
-    }
-
-    [Fact]
     public async Task OnGetAsync_ValidUserRememberedWithLocalReturnUrl_SetsPropertiesAndReturnsPageResult()
     {
         // Arrange
-        var localReturnUrl = Generated.NewLocalPath();
+        var localReturnUrl = new Uri(Generated.NewLocalPath(), UriKind.Relative);
         var model = BuildModelForTwoFactorUser();
 
         // Act
@@ -120,51 +105,6 @@ public class LoginWith2faTests
 
         // Assert
         AssertReturnsPageWithReturnUrl(result, model, localReturnUrl);
-        Assert.True(model.RememberMe);
-    }
-
-    [Fact]
-    public async Task OnGetAsync_ValidUserRememberedWithWhitespaceReturnUrl_SetsPropertiesAndReturnsPageResult()
-    {
-        // Arrange
-        var whitespaceReturnUrl = Generated.NewWhitespaceValue();
-        var model = BuildModelForTwoFactorUser();
-
-        // Act
-        var result = await model.OnGetAsync(true, whitespaceReturnUrl);
-
-        // Assert
-        AssertReturnsPageWithReturnUrl(result, model, whitespaceReturnUrl);
-        Assert.True(model.RememberMe);
-    }
-
-    [Fact]
-    public async Task OnGetAsync_ValidUserNotRememberedWithOverlongReturnUrl_SetsPropertiesAndReturnsPageResult()
-    {
-        // Arrange
-        var overlongReturnUrl = Generated.NewOverlongValue();
-        var model = BuildModelForTwoFactorUser();
-
-        // Act
-        var result = await model.OnGetAsync(false, overlongReturnUrl);
-
-        // Assert
-        AssertReturnsPageWithReturnUrl(result, model, overlongReturnUrl);
-        Assert.False(model.RememberMe);
-    }
-
-    [Fact]
-    public async Task OnGetAsync_ValidUserRememberedWithControlAndSymbolReturnUrl_SetsPropertiesAndReturnsPageResult()
-    {
-        // Arrange
-        var controlAndSymbolReturnUrl = Generated.NewControlAndSymbolValue();
-        var model = BuildModelForTwoFactorUser();
-
-        // Act
-        var result = await model.OnGetAsync(true, controlAndSymbolReturnUrl);
-
-        // Assert
-        AssertReturnsPageWithReturnUrl(result, model, controlAndSymbolReturnUrl);
         Assert.True(model.RememberMe);
     }
 
@@ -268,10 +208,10 @@ public class LoginWith2faTests
     public async Task OnPostAsync_Succeeded_RedirectsToTheRequestedLocalReturnUrl()
     {
         // Arrange
-        var returnUrl = Generated.NewLocalPath();
+        var returnUrl = new Uri(Generated.NewLocalPath(), UriKind.Relative);
         var signInManagerMock = SignInManagerFor(Microsoft.AspNetCore.Identity.SignInResult.Success);
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
-        urlHelperMock.Setup(u => u.IsLocalUrl(returnUrl)).Returns(true);
+        urlHelperMock.Setup(u => u.IsLocalUrl(returnUrl.OriginalString)).Returns(true);
         var model = new LoginWith2fa(signInManagerMock.Object)
         {
             Input = new LoginWith2fa.InputModel { TwoFactorCode = Generated.NewVerificationCode() },
@@ -282,17 +222,17 @@ public class LoginWith2faTests
         var result = await model.OnPostAsync(false, returnUrl);
 
         // Assert
-        Assert.Equal(returnUrl, Assert.IsType<LocalRedirectResult>(result).Url);
+        Assert.Equal(returnUrl.OriginalString, Assert.IsType<LocalRedirectResult>(result).Url);
     }
 
     [Fact]
     public async Task OnPostAsync_Succeeded_NonLocalReturnUrl_RedirectsToTheContentRoot()
     {
         // Arrange
-        var returnUrl = Generated.NewOrigin();
+        var returnUrl = new Uri(Generated.NewOrigin(), UriKind.Absolute);
         var signInManagerMock = SignInManagerFor(Microsoft.AspNetCore.Identity.SignInResult.Success);
         var urlHelperMock = new Mock<IUrlHelper>(MockBehavior.Strict);
-        urlHelperMock.Setup(u => u.IsLocalUrl(returnUrl)).Returns(false);
+        urlHelperMock.Setup(u => u.IsLocalUrl(returnUrl.OriginalString)).Returns(false);
         var model = new LoginWith2fa(signInManagerMock.Object)
         {
             Input = new LoginWith2fa.InputModel { TwoFactorCode = Generated.NewVerificationCode() },
@@ -353,9 +293,9 @@ public class LoginWith2faTests
         return new LoginWith2fa(signInManagerMock.Object);
     }
 
-    private static void AssertReturnsPageWithReturnUrl(IActionResult result, LoginWith2fa model, string? returnUrl)
+    private static void AssertReturnsPageWithReturnUrl(IActionResult result, LoginWith2fa model, Uri? returnUrl)
     {
         Assert.IsType<PageResult>(result);
-        Assert.Equal(returnUrl, model.ReturnUrl?.OriginalString);
+        Assert.Equal(returnUrl, model.ReturnUrl);
     }
 }

@@ -45,7 +45,7 @@ public class ResendEmailConfirmation : AccountEmailPageBase
             protocol: Request.Scheme);
         if (!IsNullOrWhiteSpace(callbackUrl))
         {
-            await SendAccountEmailAsync(AccountEmailSettings.ConfirmAccountHtml(callbackUrl), UserMessages.ConfirmEmailSubject);
+            await SendAccountEmailAsync(AccountEmailSettings.ConfirmAccountHtml(new Uri(callbackUrl)), UserMessages.ConfirmEmailSubject);
         }
 
         ModelState.AddModelError(Empty, VerificationEmailSentMessage);
