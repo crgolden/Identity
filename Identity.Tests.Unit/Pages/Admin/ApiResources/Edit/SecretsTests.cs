@@ -30,7 +30,7 @@ public class SecretsTests
         // Arrange
         var resource = new ApiResource { Id = ExistingEntityId, Name = Generated.NewApiResourceName(), Secrets = [new ApiResourceSecret { Id = ExistingEntityId, Description = ExistingDescription }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
         var model = new Secrets(ctx.Object);
 
@@ -47,7 +47,7 @@ public class SecretsTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<ApiResource>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
         var model = new Secrets(ctx.Object);
 
@@ -64,7 +64,7 @@ public class SecretsTests
         // Arrange
         var resource = new ApiResource { Id = ExistingEntityId, Name = Generated.NewApiResourceName(), Secrets = [] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new Secrets(ctx.Object) { Resources = [new ApiResourceSecret { Id = 0, Description = PostedDescription, Value = PostedSecretValue, Type = IdentityServerConstants.SecretTypes.SharedSecret }] };
@@ -85,7 +85,7 @@ public class SecretsTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<ApiResource>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
         var model = new Secrets(ctx.Object) { Resources = [] };
 
@@ -103,7 +103,7 @@ public class SecretsTests
         var existing = new ApiResourceSecret { Id = ExistingEntityId, Description = RemovedDescription, ApiResourceId = ExistingEntityId };
         var resource = new ApiResource { Id = ExistingEntityId, Name = Generated.NewApiResourceName(), Secrets = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new Secrets(ctx.Object) { Resources = [] };
@@ -123,7 +123,7 @@ public class SecretsTests
         var existing = new ApiResourceSecret { Id = ExistingEntityId, Description = ExistingDescription, Value = storedValue, ApiResourceId = ExistingEntityId };
         var resource = new ApiResource { Id = ExistingEntityId, Name = Generated.NewApiResourceName(), Secrets = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var postedType = Generated.NewTokenOtherThan(IdentityServerConstants.SecretTypes.SharedSecret);
@@ -151,7 +151,7 @@ public class SecretsTests
         // Arrange
         var resource = new ApiResource { Id = ExistingEntityId, Name = Generated.NewApiResourceName() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
         var model = new Secrets(ctx.Object) { Resources = [] };
 
@@ -169,7 +169,7 @@ public class SecretsTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<ApiResource>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
         var model = new Secrets(ctx.Object) { Resources = [] };
 
@@ -186,7 +186,7 @@ public class SecretsTests
         // Arrange
         var resource = new ApiResource { Id = ExistingEntityId, Name = Generated.NewApiResourceName() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
         var model = new Secrets(ctx.Object) { Resources = [new ApiResourceSecret { Id = ExistingEntityId, Description = ExistingDescription }] };
 
@@ -203,7 +203,7 @@ public class SecretsTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<ApiResource>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
         var model = new Secrets(ctx.Object) { Resources = [] };
 

@@ -23,7 +23,7 @@ public class GrantTypesTests
         // Arrange
         var client = new Client { Id = ExistingEntityId, ClientId = Generated.NewClientIdentifier(), AllowedGrantTypes = [new ClientGrantType { Id = ExistingEntityId, GrantType = GrantTypeName, ClientId = ExistingEntityId }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         var model = new GrantTypes(ctx.Object);
 
@@ -40,7 +40,7 @@ public class GrantTypesTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<Client>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         var model = new GrantTypes(ctx.Object);
 

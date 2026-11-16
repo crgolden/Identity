@@ -19,7 +19,7 @@ public class IndexTests
     public void IsPageModel()
     {
         // Arrange
-        var ctx = new Mock<IPersistedGrantDbContext>();
+        var ctx = new Mock<IPersistedGrantDbContext>(MockBehavior.Strict);
 
         // Act
         var model = new Index(ctx.Object);
@@ -32,7 +32,7 @@ public class IndexTests
     public void Constructor_StartsWithNoServerSideSessions()
     {
         // Arrange
-        var ctx = new Mock<IPersistedGrantDbContext>();
+        var ctx = new Mock<IPersistedGrantDbContext>(MockBehavior.Strict);
 
         // Act
         var model = new Index(ctx.Object);
@@ -51,7 +51,7 @@ public class IndexTests
             new ServerSideSession { Key = FirstSubjectId, SubjectId = FirstSubjectId },
         };
         var mockSet = MockDbSetHelper.BuildMockDbSet(data);
-        var ctx = new Mock<IPersistedGrantDbContext>();
+        var ctx = new Mock<IPersistedGrantDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ServerSideSessions).Returns(mockSet.Object);
         var model = new Index(ctx.Object);
 

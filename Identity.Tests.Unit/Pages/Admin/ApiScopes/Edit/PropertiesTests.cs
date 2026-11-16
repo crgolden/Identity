@@ -25,7 +25,7 @@ public class PropertiesTests
         // Arrange
         var scope = new ApiScope { Id = ExistingEntityId, Name = Generated.NewApiResourceName(), Properties = [new ApiScopeProperty { Key = PropertyKey, Value = PropertyValue }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([scope]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
         var model = new Properties(ctx.Object);
 
@@ -42,7 +42,7 @@ public class PropertiesTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<ApiScope>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
         var model = new Properties(ctx.Object);
 
@@ -59,7 +59,7 @@ public class PropertiesTests
         // Arrange
         var scope = new ApiScope { Id = ExistingEntityId, Name = Generated.NewApiResourceName(), Properties = [] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([scope]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new Properties(ctx.Object)
@@ -82,7 +82,7 @@ public class PropertiesTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<ApiScope>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
         var model = new Properties(ctx.Object) { Resources = [] };
 
@@ -100,7 +100,7 @@ public class PropertiesTests
         var existing = new ApiScopeProperty { Id = ExistingEntityId, Key = PropertyKey, Value = PropertyValue, ScopeId = ExistingEntityId };
         var scope = new ApiScope { Id = ExistingEntityId, Name = Generated.NewApiResourceName(), Properties = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([scope]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new Properties(ctx.Object) { Resources = [] };
@@ -119,7 +119,7 @@ public class PropertiesTests
         var existing = new ApiScopeProperty { Id = ExistingEntityId, Key = PropertyKey, Value = PropertyValue, ScopeId = ExistingEntityId };
         var scope = new ApiScope { Id = ExistingEntityId, Name = Generated.NewApiResourceName(), Properties = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([scope]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var postedKey = Generated.NewPropertyKey();
@@ -144,7 +144,7 @@ public class PropertiesTests
         var existing = new ApiScopeProperty { Id = ExistingEntityId, Key = PropertyKey, Value = PropertyValue, ScopeId = ExistingEntityId };
         var scope = new ApiScope { Id = ExistingEntityId, Name = Generated.NewApiResourceName(), Properties = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([scope]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var unmatchedKey = Generated.NewPropertyKey();
@@ -174,7 +174,7 @@ public class PropertiesTests
         // Arrange
         var scope = new ApiScope { Id = ExistingEntityId, Name = Generated.NewApiResourceName() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([scope]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
         var model = new Properties(ctx.Object) { Resources = [] };
 
@@ -191,7 +191,7 @@ public class PropertiesTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<ApiScope>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
         var model = new Properties(ctx.Object) { Resources = [] };
 
@@ -208,7 +208,7 @@ public class PropertiesTests
         // Arrange
         var scope = new ApiScope { Id = ExistingEntityId, Name = Generated.NewApiResourceName() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([scope]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
         var model = new Properties(ctx.Object) { Resources = [new ApiScopeProperty { Id = ExistingEntityId, Key = PropertyKey, Value = PropertyValue }] };
 
@@ -225,7 +225,7 @@ public class PropertiesTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<ApiScope>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
         var model = new Properties(ctx.Object) { Resources = [] };
 

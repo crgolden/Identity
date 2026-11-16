@@ -30,7 +30,7 @@ public class SecretsTests
         // Arrange
         var client = new Client { Id = ExistingEntityId, ClientId = Generated.NewClientIdentifier(), ClientSecrets = [new ClientSecret { Id = ExistingEntityId, Value = ExistingSecretValue, Type = IdentityServerConstants.SecretTypes.SharedSecret, ClientId = ExistingEntityId }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         var model = new Secrets(ctx.Object);
 
@@ -47,7 +47,7 @@ public class SecretsTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<Client>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         var model = new Secrets(ctx.Object);
 
@@ -64,7 +64,7 @@ public class SecretsTests
         // Arrange
         var client = new Client { Id = ExistingEntityId, ClientId = Generated.NewClientIdentifier(), ClientSecrets = [] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new Secrets(ctx.Object)
@@ -87,7 +87,7 @@ public class SecretsTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<Client>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         var model = new Secrets(ctx.Object) { Resources = [] };
 
@@ -105,7 +105,7 @@ public class SecretsTests
         var existing = new ClientSecret { Id = ExistingEntityId, Value = ExistingSecretValue, Type = IdentityServerConstants.SecretTypes.SharedSecret, Description = ExistingDescription, ClientId = ExistingEntityId };
         var client = new Client { Id = ExistingEntityId, ClientId = Generated.NewClientIdentifier(), ClientSecrets = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var postedType = Generated.NewTokenOtherThan(IdentityServerConstants.SecretTypes.SharedSecret);
@@ -135,7 +135,7 @@ public class SecretsTests
         var existing = new ClientSecret { Id = ExistingEntityId, Value = ExistingSecretValue, Type = IdentityServerConstants.SecretTypes.SharedSecret, Description = ExistingDescription, ClientId = ExistingEntityId };
         var client = new Client { Id = ExistingEntityId, ClientId = Generated.NewClientIdentifier(), ClientSecrets = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new Secrets(ctx.Object)
@@ -164,7 +164,7 @@ public class SecretsTests
         var existing = new ClientSecret { Id = ExistingEntityId, Value = ExistingSecretValue, Type = IdentityServerConstants.SecretTypes.SharedSecret, ClientId = ExistingEntityId };
         var client = new Client { Id = ExistingEntityId, ClientId = Generated.NewClientIdentifier(), ClientSecrets = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new Secrets(ctx.Object) { Resources = [] };
@@ -186,7 +186,7 @@ public class SecretsTests
         var existing = new ClientSecret { Id = ExistingEntityId, Value = ExistingSecretValue, Type = IdentityServerConstants.SecretTypes.SharedSecret, ClientId = ExistingEntityId };
         var client = new Client { Id = ExistingEntityId, ClientId = Generated.NewClientIdentifier(), ClientSecrets = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new Secrets(ctx.Object) { Resources = [] };
@@ -204,7 +204,7 @@ public class SecretsTests
         // Arrange
         var client = new Client { Id = ExistingEntityId, ClientId = Generated.NewClientIdentifier() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         var model = new Secrets(ctx.Object) { Resources = [] };
 
@@ -222,7 +222,7 @@ public class SecretsTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<Client>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         var model = new Secrets(ctx.Object) { Resources = [] };
 
@@ -239,7 +239,7 @@ public class SecretsTests
         // Arrange
         var client = new Client { Id = ExistingEntityId, ClientId = Generated.NewClientIdentifier() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         var model = new Secrets(ctx.Object) { Resources = [new ClientSecret { Id = ExistingEntityId, Value = ExistingSecretValue, Type = IdentityServerConstants.SecretTypes.SharedSecret }] };
 
@@ -256,7 +256,7 @@ public class SecretsTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<Client>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         var model = new Secrets(ctx.Object) { Resources = [] };
 

@@ -21,7 +21,7 @@ public class DeleteTests
         // Arrange
         var client = new Client { Id = ExistingEntityId, ClientId = Generated.NewClientIdentifier() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         var model = new Delete(ctx.Object);
 
@@ -38,7 +38,7 @@ public class DeleteTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<Client>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         var model = new Delete(ctx.Object);
 
@@ -55,7 +55,8 @@ public class DeleteTests
         // Arrange
         var client = new Client { Id = ExistingEntityId, ClientId = Generated.NewClientIdentifier() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        mockSet.Setup(s => s.Remove(client)).Returns(MockDbSetHelper.DetachedEntry<Client>());
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new Delete(ctx.Object);
@@ -75,7 +76,7 @@ public class DeleteTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<Client>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         var model = new Delete(ctx.Object);
 

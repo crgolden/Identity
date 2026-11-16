@@ -18,14 +18,14 @@ public class GenerateRecoveryCodesTests
     public void Constructor_WithValidDependencies_CreatesInstance()
     {
         // Arrange
-        var userStoreMock = new Mock<IUserStore<IdentityUser<Guid>>>();
+        var userStoreMock = new Mock<IUserStore<IdentityUser<Guid>>>(MockBehavior.Strict);
         var options = Microsoft.Extensions.Options.Options.Create(new IdentityOptions());
-        var passwordHasherMock = new Mock<IPasswordHasher<IdentityUser<Guid>>>();
+        var passwordHasherMock = new Mock<IPasswordHasher<IdentityUser<Guid>>>(MockBehavior.Strict);
         var userValidators = Array.Empty<IUserValidator<IdentityUser<Guid>>>();
         var passwordValidators = Array.Empty<IPasswordValidator<IdentityUser<Guid>>>();
         var keyNormalizerMock = new Mock<ILookupNormalizer>(MockBehavior.Strict);
-        var services = new Mock<IServiceProvider>(MockBehavior.Loose);
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
+            MockBehavior.Strict,
             userStoreMock.Object,
             options,
             passwordHasherMock.Object,
@@ -33,8 +33,9 @@ public class GenerateRecoveryCodesTests
             passwordValidators,
             keyNormalizerMock.Object,
             new IdentityErrorDescriber(),
-            services.Object,
+            MockHelpers.ServiceProviderWithNoServices(),
             NullLogger<UserManager<IdentityUser<Guid>>>.Instance);
+        userManagerMock.SetupProperty(m => m.Logger);
 
         // Act
         var model = new GenerateRecoveryCodes(userManagerMock.Object);

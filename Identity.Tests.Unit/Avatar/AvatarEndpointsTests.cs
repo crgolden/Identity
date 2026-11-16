@@ -24,7 +24,7 @@ public class AvatarEndpointsTests
         // Arrange
         var builder = WebApplication.CreateSlimBuilder();
         builder.Services.AddSingleton(MockHelpers.MockUserManager().Object);
-        builder.Services.AddSingleton(new Mock<IAvatarService>().Object);
+        builder.Services.AddSingleton(new Mock<IAvatarService>(MockBehavior.Strict).Object);
         await using var app = builder.Build();
 
         // Act

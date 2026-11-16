@@ -24,7 +24,7 @@ public class SecretsTests
         // Arrange
         var client = new Client { Id = ExistingEntityId, ClientId = Generated.NewClientIdentifier(), ClientSecrets = [new ClientSecret { Id = ExistingEntityId, Value = SecretValue, Type = IdentityServerConstants.SecretTypes.SharedSecret, ClientId = ExistingEntityId }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         var model = new Secrets(ctx.Object);
 
@@ -41,7 +41,7 @@ public class SecretsTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<Client>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         var model = new Secrets(ctx.Object);
 

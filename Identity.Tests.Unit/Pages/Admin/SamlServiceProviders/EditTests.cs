@@ -27,7 +27,7 @@ public class EditTests
         // Arrange
         var sp = new SamlServiceProvider { Id = ExistingEntityId, EntityId = EntityId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([sp]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.SamlServiceProviders).Returns(mockSet.Object);
         var model = new Edit(ctx.Object);
 
@@ -44,7 +44,7 @@ public class EditTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<SamlServiceProvider>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.SamlServiceProviders).Returns(mockSet.Object);
         var model = new Edit(ctx.Object);
 
@@ -61,7 +61,7 @@ public class EditTests
         // Arrange
         var sp = new SamlServiceProvider { Id = ExistingEntityId, EntityId = EntityId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([sp]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.SamlServiceProviders).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new Edit(ctx.Object) { SamlServiceProvider = new SamlServiceProvider { EntityId = UpdatedEntityId, Enabled = true } };
@@ -82,7 +82,7 @@ public class EditTests
         // Arrange
         var sp = new SamlServiceProvider { Id = ExistingEntityId, EntityId = EntityId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([sp]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.SamlServiceProviders).Returns(mockSet.Object);
         var model = new Edit(ctx.Object) { SamlServiceProvider = new SamlServiceProvider { EntityId = UpdatedEntityId } };
         model.ModelState.AddModelError(nameof(SamlServiceProvider.EntityId), Generated.NewValidationMessage());
@@ -101,7 +101,7 @@ public class EditTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<SamlServiceProvider>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.SamlServiceProviders).Returns(mockSet.Object);
         var model = new Edit(ctx.Object) { SamlServiceProvider = new SamlServiceProvider { EntityId = UnmatchedEntityId } };
 

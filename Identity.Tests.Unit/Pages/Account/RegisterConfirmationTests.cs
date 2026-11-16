@@ -16,14 +16,14 @@ public class RegisterConfirmationTests
     public void Constructor_WithValidDependencies_DoesNotThrow()
     {
         // Arrange
-        var userStore = new Mock<IUserStore<IdentityUser<Guid>>>().Object;
+        var userStore = new Mock<IUserStore<IdentityUser<Guid>>>(MockBehavior.Strict).Object;
         var options = Microsoft.Extensions.Options.Options.Create(new IdentityOptions());
-        var passwordHasher = new Mock<IPasswordHasher<IdentityUser<Guid>>>().Object;
+        var passwordHasher = new Mock<IPasswordHasher<IdentityUser<Guid>>>(MockBehavior.Strict).Object;
         var userValidators = Array.Empty<IUserValidator<IdentityUser<Guid>>>();
         var passwordValidators = Array.Empty<IPasswordValidator<IdentityUser<Guid>>>();
         var keyNormalizer = new Mock<ILookupNormalizer>(MockBehavior.Strict).Object;
         var errors = new IdentityErrorDescriber();
-        var services = new Mock<IServiceProvider>(MockBehavior.Loose).Object;
+        var services = MockHelpers.ServiceProviderWithNoServices();
         var logger = NullLogger<UserManager<IdentityUser<Guid>>>.Instance;
         var userManager = new UserManager<IdentityUser<Guid>>(userStore, options, passwordHasher, userValidators, passwordValidators, keyNormalizer, errors, services, logger);
 

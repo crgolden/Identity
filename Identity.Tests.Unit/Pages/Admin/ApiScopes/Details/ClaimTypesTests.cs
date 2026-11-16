@@ -23,7 +23,7 @@ public class ClaimTypesTests
         // Arrange
         var scope = new ApiScope { Id = ExistingEntityId, Name = Generated.NewApiResourceName(), UserClaims = [new ApiScopeClaim { Type = ClaimType }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([scope]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
         var model = new ClaimTypes(ctx.Object);
 
@@ -40,7 +40,7 @@ public class ClaimTypesTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<ApiScope>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
         var model = new ClaimTypes(ctx.Object);
 

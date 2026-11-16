@@ -26,7 +26,7 @@ public class PropertiesTests
         // Arrange
         var resource = new IdentityResource { Id = ExistingEntityId, Name = IdentityServerConstants.StandardScopes.OpenId, Properties = [new IdentityResourceProperty { Key = PropertyKey, Value = PropertyValue }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         var model = new Properties(ctx.Object);
 
@@ -43,7 +43,7 @@ public class PropertiesTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<IdentityResource>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         var model = new Properties(ctx.Object);
 

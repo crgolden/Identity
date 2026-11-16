@@ -16,7 +16,7 @@ public class CreateTests
     public void OnGet_ReturnsPage()
     {
         // Arrange
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         var model = new Create(ctx.Object);
 
         // Act
@@ -30,7 +30,7 @@ public class CreateTests
     public async Task OnPostAsync_ReturnsPage_WhenModelInvalid()
     {
         // Arrange
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         var model = new Create(ctx.Object);
         model.ModelState.AddModelError(nameof(Client.ClientId), Generated.NewValidationMessage());
 
@@ -46,7 +46,8 @@ public class CreateTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<Client>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        mockSet.Setup(s => s.Add(It.IsAny<Client>())).Returns(MockDbSetHelper.DetachedEntry<Client>());
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var client = new Client { ClientId = Generated.NewClientIdentifier() };

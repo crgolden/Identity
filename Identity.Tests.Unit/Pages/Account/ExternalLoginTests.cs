@@ -627,7 +627,7 @@ public sealed class ExternalLoginTests
 
     private static (ExternalLogin Model, Mock<SignInManager<IdentityUser<Guid>>> SignIn, Mock<UserManager<IdentityUser<Guid>>> UserMgr, Mock<ServiceBusSender> Sender, Mock<IUrlHelper> Url, Mock<IUserEmailStore<IdentityUser<Guid>>> EmailStore, AccountEmailSettings EmailSettings) Create(bool requireConfirmedAccount = false)
     {
-        var emailStore = new Mock<IUserEmailStore<IdentityUser<Guid>>>();
+        var emailStore = new Mock<IUserEmailStore<IdentityUser<Guid>>>(MockBehavior.Strict);
         emailStore.Setup(s => s.SetUserNameAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string?>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
         emailStore.Setup(s => s.SetEmailAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string?>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
         emailStore.Setup(s => s.SetEmailConfirmedAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<bool>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
@@ -638,15 +638,18 @@ public sealed class ExternalLoginTests
         var options = Options.Create(identityOptions);
 
         var userManager = new Mock<UserManager<IdentityUser<Guid>>>(
+            MockBehavior.Strict,
             store.Object,
             options,
-            new Mock<IPasswordHasher<IdentityUser<Guid>>>().Object,
+            new Mock<IPasswordHasher<IdentityUser<Guid>>>(MockBehavior.Strict).Object,
             Enumerable.Empty<IUserValidator<IdentityUser<Guid>>>(),
             Enumerable.Empty<IPasswordValidator<IdentityUser<Guid>>>(),
-            new Mock<ILookupNormalizer>().Object,
+            new Mock<ILookupNormalizer>(MockBehavior.Strict).Object,
             new IdentityErrorDescriber(),
-            new Mock<IServiceProvider>().Object,
+            MockHelpers.ServiceProviderWithNoServices(),
             NullLogger<UserManager<IdentityUser<Guid>>>.Instance);
+        userManager.SetupProperty(u => u.Logger);
+        userManager.Setup(u => u.IsEmailConfirmedAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync(false);
         userManager.SetupGet(u => u.SupportsUserEmail).Returns(true);
         userManager.Setup(u => u.GetUserIdAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync(Generated.NewUserId().ToString());
         userManager.Setup(u => u.GenerateEmailConfirmationTokenAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync(Generated.NewEmailConfirmationToken());
@@ -655,17 +658,19 @@ public sealed class ExternalLoginTests
         userManager.Setup(u => u.FindByEmailAsync(It.IsAny<string>())).ReturnsAsync((IdentityUser<Guid>?)null);
 
         var signIn = new Mock<SignInManager<IdentityUser<Guid>>>(
+            MockBehavior.Strict,
             userManager.Object,
-            new Mock<IHttpContextAccessor>().Object,
-            new Mock<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>().Object,
+            new Mock<IHttpContextAccessor>(MockBehavior.Strict).Object,
+            new Mock<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(MockBehavior.Strict).Object,
             options,
             NullLogger<SignInManager<IdentityUser<Guid>>>.Instance,
-            new Mock<IAuthenticationSchemeProvider>().Object,
-            new Mock<IUserConfirmation<IdentityUser<Guid>>>().Object);
+            new Mock<IAuthenticationSchemeProvider>(MockBehavior.Strict).Object,
+            new Mock<IUserConfirmation<IdentityUser<Guid>>>(MockBehavior.Strict).Object);
+        signIn.SetupProperty(s => s.Logger);
 
         var (factory, sender) = CreateServiceBusFactory();
 
-        var url = new Mock<IUrlHelper>();
+        var url = new Mock<IUrlHelper>(MockBehavior.Strict);
         url.Setup(u => u.Content(PageRoutes.ContentRoot)).Returns(Generated.NewLocalPath());
         url.Setup(u => u.IsLocalUrl(It.IsAny<string?>())).Returns<string?>(u => u is not null && u.StartsWith('/', StringComparison.Ordinal));
         var routeData = new RouteData();

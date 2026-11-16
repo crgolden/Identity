@@ -25,7 +25,7 @@ public class IndexTests
         // Arrange
         var resource = new ApiResource { Id = ExistingEntityId, Name = ResourceName };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
         var model = new Index(ctx.Object);
 
@@ -42,7 +42,7 @@ public class IndexTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<ApiResource>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
         var model = new Index(ctx.Object);
 
@@ -59,7 +59,7 @@ public class IndexTests
         // Arrange
         var resource = new ApiResource { Id = ExistingEntityId, Name = ResourceName };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new Index(ctx.Object) { Resource = new ApiResource { Name = UpdatedResourceName, DisplayName = Generated.NewClientName() } };
@@ -80,7 +80,7 @@ public class IndexTests
         // Arrange
         var resource = new ApiResource { Id = ExistingEntityId, Name = ResourceName };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
         var model = new Index(ctx.Object) { Resource = new ApiResource { Name = UpdatedResourceName } };
         model.ModelState.AddModelError(nameof(ApiResource.Name), Generated.NewValidationMessage());
@@ -99,7 +99,7 @@ public class IndexTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<ApiResource>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
         var model = new Index(ctx.Object) { Resource = new ApiResource { Name = Generated.NewApiResourceName() } };
 

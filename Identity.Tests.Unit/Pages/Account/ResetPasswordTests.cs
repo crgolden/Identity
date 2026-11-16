@@ -19,14 +19,15 @@ public class ResetPasswordTests
     public void ResetPasswordModel_ValidUserManager_ConstructsSuccessfully()
     {
         // Arrange
-        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
+        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>(MockBehavior.Strict);
         var options = Microsoft.Extensions.Options.Options.Create(new IdentityOptions());
-        var passwordHasherMock = new Mock<IPasswordHasher<IdentityUser<Guid>>>();
+        var passwordHasherMock = new Mock<IPasswordHasher<IdentityUser<Guid>>>(MockBehavior.Strict);
         var userValidators = Array.Empty<IUserValidator<IdentityUser<Guid>>>();
         var passwordValidators = Array.Empty<IPasswordValidator<IdentityUser<Guid>>>();
         var lookupNormalizerMock = new Mock<ILookupNormalizer>(MockBehavior.Strict);
         var errors = new IdentityErrorDescriber();
-        var services = new Mock<IServiceProvider>(MockBehavior.Loose);
+        var services = new Mock<IServiceProvider>(MockBehavior.Strict);
+        services.Setup(s => s.GetService(It.IsAny<Type>())).Returns((object?)null);
         var logger = Microsoft.Extensions.Logging.Abstractions.NullLogger<UserManager<IdentityUser<Guid>>>.Instance;
 
         var userManager = new UserManager<IdentityUser<Guid>>(

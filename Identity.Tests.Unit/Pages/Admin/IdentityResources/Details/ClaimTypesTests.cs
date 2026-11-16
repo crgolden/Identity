@@ -24,7 +24,7 @@ public class ClaimTypesTests
         // Arrange
         var resource = new IdentityResource { Id = ExistingEntityId, Name = IdentityServerConstants.StandardScopes.OpenId, UserClaims = [new IdentityResourceClaim { Type = ClaimType }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         var model = new ClaimTypes(ctx.Object);
 
@@ -41,7 +41,7 @@ public class ClaimTypesTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<IdentityResource>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         var model = new ClaimTypes(ctx.Object);
 

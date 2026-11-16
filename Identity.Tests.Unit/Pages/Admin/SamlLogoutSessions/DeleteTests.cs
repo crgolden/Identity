@@ -23,7 +23,7 @@ public class DeleteTests
         // Arrange
         var session = new SamlLogoutSession { Id = ExistingEntityId, LogoutId = SamlLogoutId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([session]);
-        var ctx = new Mock<IPersistedGrantDbContext>();
+        var ctx = new Mock<IPersistedGrantDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.SamlLogoutSessions).Returns(mockSet.Object);
         var model = new Delete(ctx.Object);
 
@@ -40,7 +40,7 @@ public class DeleteTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<SamlLogoutSession>());
-        var ctx = new Mock<IPersistedGrantDbContext>();
+        var ctx = new Mock<IPersistedGrantDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.SamlLogoutSessions).Returns(mockSet.Object);
         var model = new Delete(ctx.Object);
 
@@ -57,7 +57,8 @@ public class DeleteTests
         // Arrange
         var session = new SamlLogoutSession { Id = ExistingEntityId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([session]);
-        var ctx = new Mock<IPersistedGrantDbContext>();
+        mockSet.Setup(s => s.Remove(session)).Returns(MockDbSetHelper.DetachedEntry<SamlLogoutSession>());
+        var ctx = new Mock<IPersistedGrantDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.SamlLogoutSessions).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new Delete(ctx.Object);
@@ -77,7 +78,7 @@ public class DeleteTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<SamlLogoutSession>());
-        var ctx = new Mock<IPersistedGrantDbContext>();
+        var ctx = new Mock<IPersistedGrantDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.SamlLogoutSessions).Returns(mockSet.Object);
         var model = new Delete(ctx.Object);
 

@@ -23,7 +23,7 @@ public class DeleteTests
         // Arrange
         var provider = new IdentityProvider { Id = ExistingEntityId, Scheme = SchemeName };
         var mockSet = MockDbSetHelper.BuildMockDbSet([provider]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.IdentityProviders).Returns(mockSet.Object);
         var model = new Delete(ctx.Object);
 
@@ -40,7 +40,7 @@ public class DeleteTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<IdentityProvider>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.IdentityProviders).Returns(mockSet.Object);
         var model = new Delete(ctx.Object);
 
@@ -57,7 +57,8 @@ public class DeleteTests
         // Arrange
         var provider = new IdentityProvider { Id = ExistingEntityId, Scheme = SchemeName };
         var mockSet = MockDbSetHelper.BuildMockDbSet([provider]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        mockSet.Setup(s => s.Remove(provider)).Returns(MockDbSetHelper.DetachedEntry<IdentityProvider>());
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.IdentityProviders).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new Delete(ctx.Object);
@@ -77,7 +78,7 @@ public class DeleteTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<IdentityProvider>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.IdentityProviders).Returns(mockSet.Object);
         var model = new Delete(ctx.Object);
 

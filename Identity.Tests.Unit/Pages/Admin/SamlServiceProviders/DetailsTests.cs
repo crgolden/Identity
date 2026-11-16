@@ -23,7 +23,7 @@ public class DetailsTests
         // Arrange
         var sp = new SamlServiceProvider { Id = ExistingEntityId, EntityId = EntityId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([sp]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.SamlServiceProviders).Returns(mockSet.Object);
         var model = new Details(ctx.Object);
 
@@ -40,7 +40,7 @@ public class DetailsTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<SamlServiceProvider>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.SamlServiceProviders).Returns(mockSet.Object);
         var model = new Details(ctx.Object);
 

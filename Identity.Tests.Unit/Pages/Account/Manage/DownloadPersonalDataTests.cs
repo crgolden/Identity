@@ -93,14 +93,14 @@ public class DownloadPersonalDataTests
     public void Constructor_WithValidDependencies_InstanceCreatedAndOnGetReturnsNotFound()
     {
         // Arrange
-        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
+        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>(MockBehavior.Strict);
         var optionsMock = new Mock<Microsoft.Extensions.Options.IOptions<IdentityOptions>>(MockBehavior.Strict);
         optionsMock.Setup(o => o.Value).Returns(new IdentityOptions());
-        var passwordHasherMock = new Mock<IPasswordHasher<IdentityUser<Guid>>>();
+        var passwordHasherMock = new Mock<IPasswordHasher<IdentityUser<Guid>>>(MockBehavior.Strict);
         var userValidators = Enumerable.Empty<IUserValidator<IdentityUser<Guid>>>();
         var passwordValidators = Enumerable.Empty<IPasswordValidator<IdentityUser<Guid>>>();
         var lookupNormalizerMock = new Mock<ILookupNormalizer>(MockBehavior.Strict);
-        var serviceProviderMock = new Mock<IServiceProvider>(MockBehavior.Loose);
+        var serviceProvider = MockHelpers.ServiceProviderWithNoServices();
         var userManagerLogger = NullLogger<UserManager<IdentityUser<Guid>>>.Instance;
 
         var userManager = new UserManager<IdentityUser<Guid>>(
@@ -111,7 +111,7 @@ public class DownloadPersonalDataTests
             passwordValidators,
             lookupNormalizerMock.Object,
             new IdentityErrorDescriber(),
-            serviceProviderMock.Object,
+            serviceProvider,
             userManagerLogger);
 
         // Act

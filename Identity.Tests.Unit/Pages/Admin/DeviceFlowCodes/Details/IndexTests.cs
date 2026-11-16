@@ -23,7 +23,7 @@ public class IndexTests
         // Arrange
         var code = new DeviceFlowCodes { DeviceCode = ExistingKey, ClientId = ExistingClientId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([code]);
-        var ctx = new Mock<IPersistedGrantDbContext>();
+        var ctx = new Mock<IPersistedGrantDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.DeviceFlowCodes).Returns(mockSet.Object);
         var model = new Index(ctx.Object);
 
@@ -40,7 +40,7 @@ public class IndexTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<DeviceFlowCodes>());
-        var ctx = new Mock<IPersistedGrantDbContext>();
+        var ctx = new Mock<IPersistedGrantDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.DeviceFlowCodes).Returns(mockSet.Object);
         var model = new Index(ctx.Object);
 

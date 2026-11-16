@@ -23,7 +23,7 @@ public class IndexTests
         // Arrange
         var session = new SamlLogoutSession { Id = ExistingEntityId, LogoutId = SamlLogoutId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([session]);
-        var ctx = new Mock<IPersistedGrantDbContext>();
+        var ctx = new Mock<IPersistedGrantDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.SamlLogoutSessions).Returns(mockSet.Object);
         var model = new Index(ctx.Object);
 
@@ -40,7 +40,7 @@ public class IndexTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<SamlLogoutSession>());
-        var ctx = new Mock<IPersistedGrantDbContext>();
+        var ctx = new Mock<IPersistedGrantDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.SamlLogoutSessions).Returns(mockSet.Object);
         var model = new Index(ctx.Object);
 

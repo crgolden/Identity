@@ -19,7 +19,7 @@ public class IndexTests
     public void IsPageModel()
     {
         // Arrange
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
 
         // Act
         var model = new Index(ctx.Object);
@@ -32,7 +32,7 @@ public class IndexTests
     public void Constructor_StartsWithNoApiScopes()
     {
         // Arrange
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
 
         // Act
         var model = new Index(ctx.Object);
@@ -47,7 +47,7 @@ public class IndexTests
         // Arrange
         var data = new[] { new ApiScope { Name = LastScopeName }, new ApiScope { Name = FirstScopeName } };
         var mockSet = MockDbSetHelper.BuildMockDbSet(data);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
         var model = new Index(ctx.Object);
 

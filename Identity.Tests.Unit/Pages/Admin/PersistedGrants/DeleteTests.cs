@@ -23,7 +23,7 @@ public class DeleteTests
         // Arrange
         var grant = new PersistedGrant { Key = ExistingKey, SubjectId = GrantSubjectId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([grant]);
-        var ctx = new Mock<IPersistedGrantDbContext>();
+        var ctx = new Mock<IPersistedGrantDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.PersistedGrants).Returns(mockSet.Object);
         var model = new Delete(ctx.Object);
 
@@ -40,7 +40,7 @@ public class DeleteTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<PersistedGrant>());
-        var ctx = new Mock<IPersistedGrantDbContext>();
+        var ctx = new Mock<IPersistedGrantDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.PersistedGrants).Returns(mockSet.Object);
         var model = new Delete(ctx.Object);
 
@@ -57,7 +57,8 @@ public class DeleteTests
         // Arrange
         var grant = new PersistedGrant { Key = ExistingKey };
         var mockSet = MockDbSetHelper.BuildMockDbSet([grant]);
-        var ctx = new Mock<IPersistedGrantDbContext>();
+        mockSet.Setup(s => s.Remove(grant)).Returns(MockDbSetHelper.DetachedEntry<PersistedGrant>());
+        var ctx = new Mock<IPersistedGrantDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.PersistedGrants).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new Delete(ctx.Object);
@@ -77,7 +78,7 @@ public class DeleteTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<PersistedGrant>());
-        var ctx = new Mock<IPersistedGrantDbContext>();
+        var ctx = new Mock<IPersistedGrantDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.PersistedGrants).Returns(mockSet.Object);
         var model = new Delete(ctx.Object);
 

@@ -26,7 +26,7 @@ public class ExternalLoginsTests
     {
         // Arrange
         var expectedUserId = Generated.NewUserId().ToString();
-        var userStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
+        var userStore = Mock.Of<IUserStore<IdentityUser<Guid>>>(MockBehavior.Strict);
 
         var userManagerMock = MockHelpers.MockUserManager();
         userManagerMock
@@ -57,7 +57,7 @@ public class ExternalLoginsTests
         var user = new IdentityUser<Guid> { Id = Generated.NewUserId() };
         var userIdString = Generated.NewUserId().ToString();
 
-        var userStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
+        var userStore = Mock.Of<IUserStore<IdentityUser<Guid>>>(MockBehavior.Strict);
 
         var userManagerMock = MockHelpers.MockUserManager();
         userManagerMock
@@ -133,17 +133,19 @@ public class ExternalLoginsTests
     public async Task OnPostRemoveLoginAsync_UserNotFound_ReturnsNotFound()
     {
         // Arrange
-        var userStoreMockForCtor = Mock.Of<IUserStore<IdentityUser<Guid>>>();
+        var userStoreMockForCtor = Mock.Of<IUserStore<IdentityUser<Guid>>>(MockBehavior.Strict);
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
+            MockBehavior.Strict,
             userStoreMockForCtor,
-            Mock.Of<IOptions<IdentityOptions>>(),
-            Mock.Of<IPasswordHasher<IdentityUser<Guid>>>(),
+            Mock.Of<IOptions<IdentityOptions>>(o => o.Value == new IdentityOptions(), MockBehavior.Strict),
+            Mock.Of<IPasswordHasher<IdentityUser<Guid>>>(MockBehavior.Strict),
             Array.Empty<IUserValidator<IdentityUser<Guid>>>(),
             Array.Empty<IPasswordValidator<IdentityUser<Guid>>>(),
-            Mock.Of<ILookupNormalizer>(),
-            Mock.Of<IdentityErrorDescriber>(),
-            Mock.Of<IServiceProvider>(),
+            Mock.Of<ILookupNormalizer>(MockBehavior.Strict),
+            Mock.Of<IdentityErrorDescriber>(MockBehavior.Strict),
+            MockHelpers.ServiceProviderWithNoServices(),
             NullLogger<UserManager<IdentityUser<Guid>>>.Instance);
+        userManagerMock.SetupProperty(u => u.Logger);
 
         var expectedUserId = Generated.NewUserId().ToString();
         userManagerMock
@@ -154,15 +156,17 @@ public class ExternalLoginsTests
             .Returns(expectedUserId);
 
         var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
+            MockBehavior.Strict,
             userManagerMock.Object,
-            Mock.Of<IHttpContextAccessor>(),
-            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
-            Mock.Of<IOptions<IdentityOptions>>(),
+            Mock.Of<IHttpContextAccessor>(MockBehavior.Strict),
+            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(MockBehavior.Strict),
+            Mock.Of<IOptions<IdentityOptions>>(o => o.Value == new IdentityOptions(), MockBehavior.Strict),
             NullLogger<SignInManager<IdentityUser<Guid>>>.Instance,
-            Mock.Of<IAuthenticationSchemeProvider>(),
-            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
+            Mock.Of<IAuthenticationSchemeProvider>(MockBehavior.Strict),
+            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>(MockBehavior.Strict));
+        signInManagerMock.SetupProperty(s => s.Logger);
 
-        var model = new ExternalLogins(userManagerMock.Object, signInManagerMock.Object, Mock.Of<IUserStore<IdentityUser<Guid>>>());
+        var model = new ExternalLogins(userManagerMock.Object, signInManagerMock.Object, Mock.Of<IUserStore<IdentityUser<Guid>>>(MockBehavior.Strict));
 
         // Act
         var result = await model.OnPostRemoveLoginAsync(Generated.NewSchemeName(), Generated.NewProviderKey());
@@ -351,7 +355,7 @@ public class ExternalLoginsTests
         var userManagerMock = MockHelpers.MockUserManager();
         userManagerMock.Setup(um => um.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync((IdentityUser<Guid>?)null);
         userManagerMock.Setup(um => um.GetUserId(It.IsAny<ClaimsPrincipal>())).Returns(expectedUserId);
-        var model = new ExternalLogins(userManagerMock.Object, MockHelpers.MockSignInManager(userManagerMock.Object).Object, Mock.Of<IUserStore<IdentityUser<Guid>>>());
+        var model = new ExternalLogins(userManagerMock.Object, MockHelpers.MockSignInManager(userManagerMock.Object).Object, Mock.Of<IUserStore<IdentityUser<Guid>>>(MockBehavior.Strict));
         model.PageContext = new PageContext { HttpContext = new DefaultHttpContext() };
 
         // Act
@@ -454,29 +458,33 @@ public class ExternalLoginsTests
 
     private static LinkLoginArrangement BuildModelForLinkLogin(string provider)
     {
-        var mockUserStoreForUserManager = new Mock<IUserStore<IdentityUser<Guid>>>().Object;
+        var mockUserStoreForUserManager = new Mock<IUserStore<IdentityUser<Guid>>>(MockBehavior.Strict).Object;
         var mockUserManager = new Mock<UserManager<IdentityUser<Guid>>>(
+            MockBehavior.Strict,
             mockUserStoreForUserManager,
-            Mock.Of<IOptions<IdentityOptions>>(),
-            Mock.Of<IPasswordHasher<IdentityUser<Guid>>>(),
+            Mock.Of<IOptions<IdentityOptions>>(o => o.Value == new IdentityOptions(), MockBehavior.Strict),
+            Mock.Of<IPasswordHasher<IdentityUser<Guid>>>(MockBehavior.Strict),
             Array.Empty<IUserValidator<IdentityUser<Guid>>>(),
             Array.Empty<IPasswordValidator<IdentityUser<Guid>>>(),
-            Mock.Of<ILookupNormalizer>(),
-            Mock.Of<IdentityErrorDescriber>(),
-            Mock.Of<IServiceProvider>(),
+            Mock.Of<ILookupNormalizer>(MockBehavior.Strict),
+            Mock.Of<IdentityErrorDescriber>(MockBehavior.Strict),
+            MockHelpers.ServiceProviderWithNoServices(),
             NullLogger<UserManager<IdentityUser<Guid>>>.Instance);
+        mockUserManager.SetupProperty(m => m.Logger);
 
         var expectedUserId = Generated.NewUserId().ToString();
         mockUserManager.Setup(m => m.GetUserId(It.IsAny<ClaimsPrincipal>())).Returns(expectedUserId);
 
         var mockSignInManager = new Mock<SignInManager<IdentityUser<Guid>>>(
+            MockBehavior.Strict,
             mockUserManager.Object,
-            Mock.Of<IHttpContextAccessor>(),
-            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
-            Mock.Of<IOptions<IdentityOptions>>(),
+            Mock.Of<IHttpContextAccessor>(MockBehavior.Strict),
+            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(MockBehavior.Strict),
+            Mock.Of<IOptions<IdentityOptions>>(o => o.Value == new IdentityOptions(), MockBehavior.Strict),
             NullLogger<SignInManager<IdentityUser<Guid>>>.Instance,
-            Mock.Of<IAuthenticationSchemeProvider>(),
-            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
+            Mock.Of<IAuthenticationSchemeProvider>(MockBehavior.Strict),
+            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>(MockBehavior.Strict));
+        mockSignInManager.SetupProperty(s => s.Logger);
 
         var expectedProperties = new AuthenticationProperties(
             new Dictionary<string, string?>(StringComparer.Ordinal) { { Generated.NewPropertyKey(), Generated.NewPropertyValue() } });
@@ -495,14 +503,15 @@ public class ExternalLoginsTests
                 It.Is<string>(id => id == expectedUserId)))
             .Returns(expectedProperties);
 
-        var mockUserStore = new Mock<IUserStore<IdentityUser<Guid>>>();
+        var mockUserStore = new Mock<IUserStore<IdentityUser<Guid>>>(MockBehavior.Strict);
         var mockAuthService = new Mock<IAuthenticationService>(MockBehavior.Strict);
         mockAuthService
             .Setup(a => a.SignOutAsync(It.IsAny<HttpContext>(), IdentityConstants.ExternalScheme, It.IsAny<AuthenticationProperties>()))
             .Returns(Task.CompletedTask)
             .Verifiable();
 
-        var services = new Mock<IServiceProvider>(MockBehavior.Loose);
+        var services = new Mock<IServiceProvider>(MockBehavior.Strict);
+        services.Setup(s => s.GetService(It.IsAny<Type>())).Returns((object?)null);
         services
             .Setup(s => s.GetService(typeof(IAuthenticationService)))
             .Returns(mockAuthService.Object);
@@ -565,7 +574,7 @@ public class ExternalLoginsTests
         bool passwordStore = true)
     {
         var user = new IdentityUser<Guid> { Id = Generated.NewUserId() };
-        var userStoreMock = new Mock<IUserStore<IdentityUser<Guid>>>();
+        var userStoreMock = new Mock<IUserStore<IdentityUser<Guid>>>(MockBehavior.Strict);
         if (passwordStore)
         {
             userStoreMock.As<IUserPasswordStore<IdentityUser<Guid>>>()
@@ -590,17 +599,19 @@ public class ExternalLoginsTests
     private static RemoveLoginArrangement BuildModelForRemoveLogin(string loginProvider, string providerKey, IdentityResult removeLoginResult)
     {
         var user = new IdentityUser<Guid> { Id = Generated.NewUserId() };
-        var userStoreMockForCtor = Mock.Of<IUserStore<IdentityUser<Guid>>>();
+        var userStoreMockForCtor = Mock.Of<IUserStore<IdentityUser<Guid>>>(MockBehavior.Strict);
         var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(
+            MockBehavior.Strict,
             userStoreMockForCtor,
-            Mock.Of<IOptions<IdentityOptions>>(),
-            Mock.Of<IPasswordHasher<IdentityUser<Guid>>>(),
+            Mock.Of<IOptions<IdentityOptions>>(o => o.Value == new IdentityOptions(), MockBehavior.Strict),
+            Mock.Of<IPasswordHasher<IdentityUser<Guid>>>(MockBehavior.Strict),
             Array.Empty<IUserValidator<IdentityUser<Guid>>>(),
             Array.Empty<IPasswordValidator<IdentityUser<Guid>>>(),
-            Mock.Of<ILookupNormalizer>(),
-            Mock.Of<IdentityErrorDescriber>(),
-            Mock.Of<IServiceProvider>(),
+            Mock.Of<ILookupNormalizer>(MockBehavior.Strict),
+            Mock.Of<IdentityErrorDescriber>(MockBehavior.Strict),
+            MockHelpers.ServiceProviderWithNoServices(),
             NullLogger<UserManager<IdentityUser<Guid>>>.Instance);
+        userManagerMock.SetupProperty(u => u.Logger);
 
         userManagerMock
             .Setup(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
@@ -611,19 +622,21 @@ public class ExternalLoginsTests
             .ReturnsAsync(removeLoginResult);
 
         var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(
+            MockBehavior.Strict,
             userManagerMock.Object,
-            Mock.Of<IHttpContextAccessor>(),
-            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(),
-            Mock.Of<IOptions<IdentityOptions>>(),
+            Mock.Of<IHttpContextAccessor>(MockBehavior.Strict),
+            Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(MockBehavior.Strict),
+            Mock.Of<IOptions<IdentityOptions>>(o => o.Value == new IdentityOptions(), MockBehavior.Strict),
             NullLogger<SignInManager<IdentityUser<Guid>>>.Instance,
-            Mock.Of<IAuthenticationSchemeProvider>(),
-            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>());
+            Mock.Of<IAuthenticationSchemeProvider>(MockBehavior.Strict),
+            Mock.Of<IUserConfirmation<IdentityUser<Guid>>>(MockBehavior.Strict));
+        signInManagerMock.SetupProperty(s => s.Logger);
 
         signInManagerMock
             .Setup(s => s.RefreshSignInAsync(It.IsAny<IdentityUser<Guid>>()))
             .Returns(Task.CompletedTask);
 
-        var model = new ExternalLogins(userManagerMock.Object, signInManagerMock.Object, Mock.Of<IUserStore<IdentityUser<Guid>>>());
+        var model = new ExternalLogins(userManagerMock.Object, signInManagerMock.Object, Mock.Of<IUserStore<IdentityUser<Guid>>>(MockBehavior.Strict));
         return new RemoveLoginArrangement
         {
             Model = model,
@@ -640,7 +653,7 @@ public class ExternalLoginsTests
         var loginProvider = Generated.NewSchemeName();
         var loginProviderKey = Generated.NewProviderKey();
 
-        var userStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
+        var userStore = Mock.Of<IUserStore<IdentityUser<Guid>>>(MockBehavior.Strict);
 
         var userManagerMock = MockHelpers.MockUserManager();
         userManagerMock
@@ -672,7 +685,8 @@ public class ExternalLoginsTests
         mockAuthService
             .Setup(a => a.SignOutAsync(It.IsAny<HttpContext>(), IdentityConstants.ExternalScheme, It.IsAny<AuthenticationProperties>()))
             .Returns(Task.CompletedTask);
-        var services = new Mock<IServiceProvider>(MockBehavior.Loose);
+        var services = new Mock<IServiceProvider>(MockBehavior.Strict);
+        services.Setup(s => s.GetService(It.IsAny<Type>())).Returns((object?)null);
         services.Setup(s => s.GetService(typeof(IAuthenticationService))).Returns(mockAuthService.Object);
 
         var model = new ExternalLogins(userManagerMock.Object, signInManagerMock.Object, userStore);

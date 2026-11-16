@@ -23,7 +23,7 @@ public class SecretsTests
         // Arrange
         var resource = new ApiResource { Id = ExistingEntityId, Name = Generated.NewApiResourceName(), Secrets = [new ApiResourceSecret { Id = ExistingEntityId, Description = SecretDescription }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
         var model = new Secrets(ctx.Object);
 
@@ -40,7 +40,7 @@ public class SecretsTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<ApiResource>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
         var model = new Secrets(ctx.Object);
 

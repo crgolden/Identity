@@ -18,7 +18,7 @@ public class PasskeySubmitTagHelperTests
         var httpContextAccessorMock = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
 
         // Act
-        var helper = new PasskeySubmitTagHelper(httpContextAccessorMock.Object, Mock.Of<IAntiforgery>());
+        var helper = new PasskeySubmitTagHelper(httpContextAccessorMock.Object, Mock.Of<IAntiforgery>(MockBehavior.Strict));
 
         // Assert
         Assert.NotNull(helper);
@@ -35,12 +35,12 @@ public class PasskeySubmitTagHelperTests
     public void Constructor_DifferentAccessors_CreatesIndependentInstances()
     {
         // Arrange
-        var mockA = new Mock<IHttpContextAccessor>(MockBehavior.Loose);
-        var mockB = new Mock<IHttpContextAccessor>(MockBehavior.Loose);
+        var mockA = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
+        var mockB = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
 
         // Act
-        var helperA = new PasskeySubmitTagHelper(mockA.Object, Mock.Of<IAntiforgery>());
-        var helperB = new PasskeySubmitTagHelper(mockB.Object, Mock.Of<IAntiforgery>());
+        var helperA = new PasskeySubmitTagHelper(mockA.Object, Mock.Of<IAntiforgery>(MockBehavior.Strict));
+        var helperB = new PasskeySubmitTagHelper(mockB.Object, Mock.Of<IAntiforgery>(MockBehavior.Strict));
 
         // Assert
         Assert.NotSame(helperA, helperB);

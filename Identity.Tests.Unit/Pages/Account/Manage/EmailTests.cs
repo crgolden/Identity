@@ -55,6 +55,8 @@ public class EmailTests
     {
         // Arrange
         var userManagerMock = MockHelpers.MockUserManager();
+        userManagerMock.Setup(um => um.GetEmailAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync((string?)null);
+        userManagerMock.Setup(um => um.IsEmailConfirmedAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync(false);
         var user = new IdentityUser<Guid> { Id = Generated.NewUserId() };
         var principal = new ClaimsPrincipal(new ClaimsIdentity());
 
@@ -243,6 +245,7 @@ public class EmailTests
         // Arrange
         var currentEmail = Generated.NewEmailAddress();
         var userManagerMock = UserManagerFor(currentEmail);
+        userManagerMock.Setup(u => u.IsEmailConfirmedAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync(false);
         var (factory, senderMock) = CreateSenderFactoryWithMock();
         var model = Create(userManagerMock, factory, UrlHelperReturning(Generated.NewCallbackAddress()));
         model.Input = new Email.InputModel { NewEmail = Generated.NewEmailAddress() };
@@ -417,6 +420,7 @@ public class EmailTests
         // Arrange
         var currentEmail = Generated.NewEmailAddress();
         var userManagerMock = UserManagerFor(currentEmail);
+        userManagerMock.Setup(u => u.IsEmailConfirmedAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync(false);
         var model = Create(userManagerMock, CreateSenderFactory(), UrlHelperReturning(Generated.NewCallbackAddress()));
         model.ModelState.AddModelError(Generated.NewModelStateKey(), Generated.NewValidationMessage());
 

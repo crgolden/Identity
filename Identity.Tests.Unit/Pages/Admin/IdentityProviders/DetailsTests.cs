@@ -23,7 +23,7 @@ public class DetailsTests
         // Arrange
         var provider = new IdentityProvider { Id = ExistingEntityId, Scheme = SchemeName };
         var mockSet = MockDbSetHelper.BuildMockDbSet([provider]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.IdentityProviders).Returns(mockSet.Object);
         var model = new Details(ctx.Object);
 
@@ -40,7 +40,7 @@ public class DetailsTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<IdentityProvider>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.IdentityProviders).Returns(mockSet.Object);
         var model = new Details(ctx.Object);
 

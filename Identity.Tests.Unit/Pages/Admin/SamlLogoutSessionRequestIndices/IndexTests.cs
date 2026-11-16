@@ -15,7 +15,7 @@ public class IndexTests
     public void IsPageModel()
     {
         // Arrange
-        var ctx = new Mock<IPersistedGrantDbContext>();
+        var ctx = new Mock<IPersistedGrantDbContext>(MockBehavior.Strict);
 
         // Act
         var model = new Index(ctx.Object);
@@ -28,7 +28,7 @@ public class IndexTests
     public void Constructor_StartsWithNoSamlLogoutSessionRequestIndices()
     {
         // Arrange
-        var ctx = new Mock<IPersistedGrantDbContext>();
+        var ctx = new Mock<IPersistedGrantDbContext>(MockBehavior.Strict);
 
         // Act
         var model = new Index(ctx.Object);
@@ -56,7 +56,7 @@ public class IndexTests
             },
         };
         var mockSet = MockDbSetHelper.BuildMockDbSet(data);
-        var ctx = new Mock<IPersistedGrantDbContext>();
+        var ctx = new Mock<IPersistedGrantDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.SamlLogoutSessionRequestIndices).Returns(mockSet.Object);
         var model = new Index(ctx.Object);
 

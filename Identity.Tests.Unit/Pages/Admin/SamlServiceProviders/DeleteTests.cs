@@ -23,7 +23,7 @@ public class DeleteTests
         // Arrange
         var sp = new SamlServiceProvider { Id = ExistingEntityId, EntityId = EntityId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([sp]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.SamlServiceProviders).Returns(mockSet.Object);
         var model = new Delete(ctx.Object);
 
@@ -40,7 +40,7 @@ public class DeleteTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<SamlServiceProvider>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.SamlServiceProviders).Returns(mockSet.Object);
         var model = new Delete(ctx.Object);
 
@@ -57,7 +57,8 @@ public class DeleteTests
         // Arrange
         var sp = new SamlServiceProvider { Id = ExistingEntityId, EntityId = EntityId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([sp]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        mockSet.Setup(s => s.Remove(sp)).Returns(MockDbSetHelper.DetachedEntry<SamlServiceProvider>());
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.SamlServiceProviders).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new Delete(ctx.Object);
@@ -77,7 +78,7 @@ public class DeleteTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<SamlServiceProvider>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.SamlServiceProviders).Returns(mockSet.Object);
         var model = new Delete(ctx.Object);
 

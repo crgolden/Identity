@@ -24,7 +24,7 @@ public class ClaimTypesTests
         // Arrange
         var resource = new IdentityResource { Id = ExistingEntityId, Name = IdentityServerConstants.StandardScopes.OpenId, UserClaims = [new IdentityResourceClaim { Type = ClaimType }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         var model = new ClaimTypes(ctx.Object);
 
@@ -41,7 +41,7 @@ public class ClaimTypesTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<IdentityResource>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         var model = new ClaimTypes(ctx.Object);
 
@@ -58,7 +58,7 @@ public class ClaimTypesTests
         // Arrange
         var resource = new IdentityResource { Id = ExistingEntityId, Name = IdentityServerConstants.StandardScopes.OpenId, UserClaims = [] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new ClaimTypes(ctx.Object)
@@ -81,7 +81,7 @@ public class ClaimTypesTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<IdentityResource>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         var model = new ClaimTypes(ctx.Object) { Resources = [] };
 
@@ -99,7 +99,7 @@ public class ClaimTypesTests
         var existing = new IdentityResourceClaim { Id = ExistingEntityId, Type = ClaimType, IdentityResourceId = ExistingEntityId };
         var resource = new IdentityResource { Id = ExistingEntityId, Name = IdentityServerConstants.StandardScopes.OpenId, UserClaims = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new ClaimTypes(ctx.Object) { Resources = [] };
@@ -118,7 +118,7 @@ public class ClaimTypesTests
         var existing = new IdentityResourceClaim { Id = ExistingEntityId, Type = ClaimType, IdentityResourceId = ExistingEntityId };
         var resource = new IdentityResource { Id = ExistingEntityId, Name = IdentityServerConstants.StandardScopes.OpenId, UserClaims = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var postedClaimType = Generated.NewClaimType();
@@ -141,7 +141,7 @@ public class ClaimTypesTests
         var existing = new IdentityResourceClaim { Id = ExistingEntityId, Type = ClaimType, IdentityResourceId = ExistingEntityId };
         var resource = new IdentityResource { Id = ExistingEntityId, Name = IdentityServerConstants.StandardScopes.OpenId, UserClaims = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var unmatchedClaimType = Generated.NewClaimType();
@@ -169,7 +169,7 @@ public class ClaimTypesTests
         // Arrange
         var resource = new IdentityResource { Id = ExistingEntityId, Name = IdentityServerConstants.StandardScopes.OpenId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         var model = new ClaimTypes(ctx.Object) { Resources = [] };
 
@@ -186,7 +186,7 @@ public class ClaimTypesTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<IdentityResource>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         var model = new ClaimTypes(ctx.Object) { Resources = [] };
 
@@ -203,7 +203,7 @@ public class ClaimTypesTests
         // Arrange
         var resource = new IdentityResource { Id = ExistingEntityId, Name = IdentityServerConstants.StandardScopes.OpenId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         var model = new ClaimTypes(ctx.Object) { Resources = [new IdentityResourceClaim { Id = ExistingEntityId, Type = ClaimType }] };
 
@@ -220,7 +220,7 @@ public class ClaimTypesTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<IdentityResource>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         var model = new ClaimTypes(ctx.Object) { Resources = [] };
 

@@ -23,7 +23,7 @@ public class ScopesTests
         // Arrange
         var resource = new ApiResource { Id = ExistingEntityId, Name = Generated.NewApiResourceName(), Scopes = [new ApiResourceScope { Id = ExistingEntityId, Scope = ScopeName }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
         var model = new Scopes(ctx.Object);
 
@@ -40,7 +40,7 @@ public class ScopesTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<ApiResource>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
         var model = new Scopes(ctx.Object);
 
@@ -55,7 +55,7 @@ public class ScopesTests
     public void Constructor_StartsWithNoResources()
     {
         // Arrange
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
 
         // Act
         var model = new Scopes(ctx.Object);

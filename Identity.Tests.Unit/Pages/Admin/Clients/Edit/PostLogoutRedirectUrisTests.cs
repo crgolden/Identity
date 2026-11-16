@@ -27,7 +27,7 @@ public class PostLogoutRedirectUrisTests
         // Arrange
         var client = new Client { Id = ExistingEntityId, ClientId = Generated.NewClientIdentifier(), PostLogoutRedirectUris = [new ClientPostLogoutRedirectUri { Id = ExistingEntityId, PostLogoutRedirectUri = ExistingUri, ClientId = ExistingEntityId }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         var model = new PostLogoutRedirectUris(ctx.Object);
 
@@ -44,7 +44,7 @@ public class PostLogoutRedirectUrisTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<Client>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         var model = new PostLogoutRedirectUris(ctx.Object);
 
@@ -61,7 +61,7 @@ public class PostLogoutRedirectUrisTests
         // Arrange
         var client = new Client { Id = ExistingEntityId, ClientId = Generated.NewClientIdentifier(), PostLogoutRedirectUris = [] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new PostLogoutRedirectUris(ctx.Object)
@@ -84,7 +84,7 @@ public class PostLogoutRedirectUrisTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<Client>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         var model = new PostLogoutRedirectUris(ctx.Object) { Resources = [] };
 
@@ -102,7 +102,7 @@ public class PostLogoutRedirectUrisTests
         var existing = new ClientPostLogoutRedirectUri { Id = ExistingEntityId, PostLogoutRedirectUri = ReplacedUri, ClientId = ExistingEntityId };
         var client = new Client { Id = ExistingEntityId, ClientId = Generated.NewClientIdentifier(), PostLogoutRedirectUris = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new PostLogoutRedirectUris(ctx.Object) { Resources = [] };
@@ -121,7 +121,7 @@ public class PostLogoutRedirectUrisTests
         var existing = new ClientPostLogoutRedirectUri { Id = ExistingEntityId, PostLogoutRedirectUri = ReplacedUri, ClientId = ExistingEntityId };
         var client = new Client { Id = ExistingEntityId, ClientId = Generated.NewClientIdentifier(), PostLogoutRedirectUris = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new PostLogoutRedirectUris(ctx.Object)
@@ -142,7 +142,7 @@ public class PostLogoutRedirectUrisTests
         // Arrange
         var client = new Client { Id = ExistingEntityId, ClientId = Generated.NewClientIdentifier() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         var model = new PostLogoutRedirectUris(ctx.Object) { Resources = [] };
 
@@ -159,7 +159,7 @@ public class PostLogoutRedirectUrisTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<Client>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         var model = new PostLogoutRedirectUris(ctx.Object) { Resources = [] };
 
@@ -176,7 +176,7 @@ public class PostLogoutRedirectUrisTests
         // Arrange
         var client = new Client { Id = ExistingEntityId, ClientId = Generated.NewClientIdentifier() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([client]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         var model = new PostLogoutRedirectUris(ctx.Object) { Resources = [new ClientPostLogoutRedirectUri { Id = ExistingEntityId, PostLogoutRedirectUri = ExistingUri }] };
 
@@ -193,7 +193,7 @@ public class PostLogoutRedirectUrisTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<Client>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         var model = new PostLogoutRedirectUris(ctx.Object) { Resources = [] };
 

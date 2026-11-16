@@ -16,7 +16,7 @@ public class CreateTests
     public void OnGet_ReturnsPage()
     {
         // Arrange
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         var model = new Create(ctx.Object);
 
         // Act
@@ -30,8 +30,8 @@ public class CreateTests
     public async Task OnPostAsync_Redirects_WhenValid()
     {
         // Arrange
-        var ctx = new Mock<IConfigurationDbContext>();
-        ctx.Setup(c => c.ApiScopes.Add(It.IsAny<ApiScope>()));
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
+        ctx.Setup(c => c.ApiScopes.Add(It.IsAny<ApiScope>())).Returns(MockDbSetHelper.DetachedEntry<ApiScope>());
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var scope = new ApiScope { Name = Generated.NewApiResourceName() };
         var model = new Create(ctx.Object) { Scope = scope };
@@ -50,7 +50,7 @@ public class CreateTests
     public async Task OnPostAsync_ReturnsPage_WhenInvalid()
     {
         // Arrange
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         var model = new Create(ctx.Object);
         model.ModelState.AddModelError(nameof(ApiScope.Name), Generated.NewValidationMessage());
 

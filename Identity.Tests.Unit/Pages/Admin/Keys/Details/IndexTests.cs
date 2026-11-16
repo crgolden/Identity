@@ -23,7 +23,7 @@ public class IndexTests
         // Arrange
         var key = new Key { Id = ExistingKey, Algorithm = AlgorithmName };
         var mockSet = MockDbSetHelper.BuildMockDbSet([key]);
-        var ctx = new Mock<IPersistedGrantDbContext>();
+        var ctx = new Mock<IPersistedGrantDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.Keys).Returns(mockSet.Object);
         var model = new Index(ctx.Object);
 
@@ -40,7 +40,7 @@ public class IndexTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<Key>());
-        var ctx = new Mock<IPersistedGrantDbContext>();
+        var ctx = new Mock<IPersistedGrantDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.Keys).Returns(mockSet.Object);
         var model = new Index(ctx.Object);
 

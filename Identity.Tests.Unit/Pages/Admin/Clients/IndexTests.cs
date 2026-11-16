@@ -15,7 +15,7 @@ public class IndexTests
     public void IsPageModel()
     {
         // Arrange
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
 
         // Act
         var model = new Index(ctx.Object);
@@ -28,7 +28,7 @@ public class IndexTests
     public void Constructor_StartsWithNoClients()
     {
         // Arrange
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
 
         // Act
         var model = new Index(ctx.Object);
@@ -49,7 +49,7 @@ public class IndexTests
             new Client { Id = Generated.NewEntityId(), ClientId = firstAlphabetically },
         };
         var mockSet = MockDbSetHelper.BuildMockDbSet(clients);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         var model = new Index(ctx.Object);
 
@@ -67,7 +67,7 @@ public class IndexTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<Client>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.Clients).Returns(mockSet.Object);
         var model = new Index(ctx.Object);
 

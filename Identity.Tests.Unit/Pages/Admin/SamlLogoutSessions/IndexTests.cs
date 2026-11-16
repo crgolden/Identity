@@ -15,7 +15,7 @@ public class IndexTests
     public void IsPageModel()
     {
         // Arrange
-        var ctx = new Mock<IPersistedGrantDbContext>();
+        var ctx = new Mock<IPersistedGrantDbContext>(MockBehavior.Strict);
 
         // Act
         var model = new Index(ctx.Object);
@@ -28,7 +28,7 @@ public class IndexTests
     public void Constructor_StartsWithNoSamlLogoutSessions()
     {
         // Arrange
-        var ctx = new Mock<IPersistedGrantDbContext>();
+        var ctx = new Mock<IPersistedGrantDbContext>(MockBehavior.Strict);
 
         // Act
         var model = new Index(ctx.Object);
@@ -49,7 +49,7 @@ public class IndexTests
             new SamlLogoutSession { Id = expiringLaterId, ExpiresAtUtc = expiringEarlier.AddDays(1) },
         };
         var mockSet = MockDbSetHelper.BuildMockDbSet(data);
-        var ctx = new Mock<IPersistedGrantDbContext>();
+        var ctx = new Mock<IPersistedGrantDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.SamlLogoutSessions).Returns(mockSet.Object);
         var model = new Index(ctx.Object);
 

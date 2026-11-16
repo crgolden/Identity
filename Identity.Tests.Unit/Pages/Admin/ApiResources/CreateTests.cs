@@ -16,7 +16,7 @@ public class CreateTests
     public void OnGet_ReturnsPage()
     {
         // Arrange
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         var model = new Create(ctx.Object);
 
         // Act
@@ -30,8 +30,8 @@ public class CreateTests
     public async Task OnPostAsync_Redirects_WhenValid()
     {
         // Arrange
-        var ctx = new Mock<IConfigurationDbContext>();
-        ctx.Setup(c => c.ApiResources.Add(It.IsAny<ApiResource>()));
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
+        ctx.Setup(c => c.ApiResources.Add(It.IsAny<ApiResource>())).Returns(MockDbSetHelper.DetachedEntry<ApiResource>());
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var resource = new ApiResource { Name = Generated.NewApiResourceName() };
         var model = new Create(ctx.Object) { Resource = resource };
@@ -50,7 +50,7 @@ public class CreateTests
     public async Task OnPostAsync_ReturnsPage_WhenInvalid()
     {
         // Arrange
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         var model = new Create(ctx.Object);
         model.ModelState.AddModelError(nameof(ApiResource.Name), Generated.NewValidationMessage());
 

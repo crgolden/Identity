@@ -25,14 +25,14 @@ public class SetPasswordTests
     public void Constructor_WithNonNullDependencies_NotImplemented()
     {
         // Arrange
-        var userStoreMock = new Mock<IUserStore<IdentityUser<Guid>>>();
+        var userStoreMock = new Mock<IUserStore<IdentityUser<Guid>>>(MockBehavior.Strict);
         var options = Options.Create(new IdentityOptions());
         var passwordHasher = new PasswordHasher<IdentityUser<Guid>>();
         var userValidators = Array.Empty<IUserValidator<IdentityUser<Guid>>>();
         var passwordValidators = Array.Empty<IPasswordValidator<IdentityUser<Guid>>>();
         var keyNormalizer = new UpperInvariantLookupNormalizer();
         var identityErrorDescriber = new IdentityErrorDescriber();
-        var services = new Mock<IServiceProvider>(MockBehavior.Loose).Object;
+        var services = MockHelpers.ServiceProviderWithNoServices();
         var userManagerLogger = NullLogger<UserManager<IdentityUser<Guid>>>.Instance;
 
         var userManager = new UserManager<IdentityUser<Guid>>(
@@ -47,10 +47,10 @@ public class SetPasswordTests
             userManagerLogger);
 
         var httpContextAccessor = new Mock<IHttpContextAccessor>(MockBehavior.Strict).Object;
-        var claimsFactory = new Mock<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>().Object;
+        var claimsFactory = new Mock<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(MockBehavior.Strict).Object;
         var signInLogger = NullLogger<SignInManager<IdentityUser<Guid>>>.Instance;
         var schemeProvider = new Mock<IAuthenticationSchemeProvider>(MockBehavior.Strict).Object;
-        var userConfirmation = new Mock<IUserConfirmation<IdentityUser<Guid>>>().Object;
+        var userConfirmation = new Mock<IUserConfirmation<IdentityUser<Guid>>>(MockBehavior.Strict).Object;
 
         var signInManager = new SignInManager<IdentityUser<Guid>>(
             userManager,

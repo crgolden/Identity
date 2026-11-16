@@ -18,7 +18,7 @@ public class CreateTests
     public void OnGet_ReturnsPage()
     {
         // Arrange
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         var model = new Create(ctx.Object);
 
         // Act
@@ -32,8 +32,8 @@ public class CreateTests
     public async Task OnPostAsync_Redirects_WhenValid()
     {
         // Arrange
-        var ctx = new Mock<IConfigurationDbContext>();
-        ctx.Setup(c => c.SamlServiceProviders.Add(It.IsAny<SamlServiceProvider>()));
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
+        ctx.Setup(c => c.SamlServiceProviders.Add(It.IsAny<SamlServiceProvider>())).Returns(MockDbSetHelper.DetachedEntry<SamlServiceProvider>());
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var serviceProvider = new SamlServiceProvider { EntityId = EntityId };
         var model = new Create(ctx.Object) { SamlServiceProvider = serviceProvider };
@@ -52,7 +52,7 @@ public class CreateTests
     public async Task OnPostAsync_ReturnsPage_WhenInvalid()
     {
         // Arrange
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         var model = new Create(ctx.Object);
         model.ModelState.AddModelError(nameof(SamlServiceProvider.EntityId), Generated.NewValidationMessage());
 

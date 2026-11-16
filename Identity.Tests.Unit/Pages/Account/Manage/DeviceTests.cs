@@ -433,7 +433,7 @@ public sealed class DeviceTests : IDisposable
         IEventService? events = null,
         IOptions<ConsentOptions>? consentOptions = null)
     {
-        var model = new Device(interaction, events ?? Mock.Of<IEventService>(), consentOptions ?? OfflineAccessEnabled, _harness.Telemetry);
+        var model = new Device(interaction, events ?? Mock.Of<IEventService>(MockBehavior.Strict), consentOptions ?? OfflineAccessEnabled, _harness.Telemetry);
         var principal = new ClaimsPrincipal(new ClaimsIdentity([new Claim(JwtClaimTypes.Subject, SignedInSubjectId)], AuthenticationType));
         model.PageContext = new PageContext
         {

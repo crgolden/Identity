@@ -181,14 +181,14 @@ public class ConfirmEmailTests
     public void ConfirmEmailModel_Constructor_ValidUserManager_InstanceCreatedAndStatusMessageIsNull()
     {
         // Arrange
-        var store = Mock.Of<IUserStore<IdentityUser<Guid>>>();
-        var options = Mock.Of<IOptions<IdentityOptions>>();
-        var passwordHasher = Mock.Of<IPasswordHasher<IdentityUser<Guid>>>();
+        var store = Mock.Of<IUserStore<IdentityUser<Guid>>>(MockBehavior.Strict);
+        var options = Mock.Of<IOptions<IdentityOptions>>(o => o.Value == new IdentityOptions(), MockBehavior.Strict);
+        var passwordHasher = Mock.Of<IPasswordHasher<IdentityUser<Guid>>>(MockBehavior.Strict);
         var userValidators = Array.Empty<IUserValidator<IdentityUser<Guid>>>();
         var passwordValidators = Array.Empty<IPasswordValidator<IdentityUser<Guid>>>();
-        var keyNormalizer = Mock.Of<ILookupNormalizer>();
+        var keyNormalizer = Mock.Of<ILookupNormalizer>(MockBehavior.Strict);
         var errors = new IdentityErrorDescriber();
-        var services = Mock.Of<IServiceProvider>();
+        var services = MockHelpers.ServiceProviderWithNoServices();
         var logger = NullLogger<UserManager<IdentityUser<Guid>>>.Instance;
 
         var userManager = new UserManager<IdentityUser<Guid>>(

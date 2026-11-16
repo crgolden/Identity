@@ -117,7 +117,7 @@ public class ManageNavPagesTests
         };
 
         var mockView = new Mock<IView>(MockBehavior.Strict);
-        var tempData = new TempDataDictionary(httpContext, Mock.Of<ITempDataProvider>());
+        var tempData = new TempDataDictionary(httpContext, Mock.Of<ITempDataProvider>(MockBehavior.Strict));
         var viewContext = new ViewContext(actionContext, mockView.Object, viewData, tempData, TextWriter.Null, new HtmlHelperOptions());
 
         // Act
@@ -139,7 +139,7 @@ public class ManageNavPagesTests
         var metadataProvider = new EmptyModelMetadataProvider();
         var viewData = new ViewDataDictionary(metadataProvider, new ModelStateDictionary());
         var mockView = new Mock<IView>(MockBehavior.Strict);
-        var tempData = new TempDataDictionary(httpContext, Mock.Of<ITempDataProvider>());
+        var tempData = new TempDataDictionary(httpContext, Mock.Of<ITempDataProvider>(MockBehavior.Strict));
         var viewContext = new ViewContext(actionContext, mockView.Object, viewData, tempData, TextWriter.Null, new HtmlHelperOptions());
 
         // Act
@@ -235,7 +235,7 @@ public class ManageNavPagesTests
         };
 
         var mockView = new Mock<IView>(MockBehavior.Strict);
-        var tempData = new TempDataDictionary(httpContext, Mock.Of<ITempDataProvider>());
+        var tempData = new TempDataDictionary(httpContext, Mock.Of<ITempDataProvider>(MockBehavior.Strict));
         var viewContext = new ViewContext(actionContext, mockView.Object, viewData, tempData, TextWriter.Null, new HtmlHelperOptions());
 
         // Act
@@ -850,7 +850,7 @@ public class ManageNavPagesTests
             [ManageNavPages.ActivePageViewDataKey] = whitespaceActivePage
         };
 
-        var tempData = new TempDataDictionary(httpContext, Mock.Of<ITempDataProvider>());
+        var tempData = new TempDataDictionary(httpContext, Mock.Of<ITempDataProvider>(MockBehavior.Strict));
         var view = new Mock<IView>(MockBehavior.Strict).Object;
         var viewContext = new ViewContext(actionContext, view, viewData, tempData, new StringWriter(), new HtmlHelperOptions());
 

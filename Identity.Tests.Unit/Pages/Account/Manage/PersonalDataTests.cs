@@ -24,14 +24,14 @@ public class PersonalDataTests
     public void PersonalDataModel_WithValidDependencies_DoesNotThrowAndCreatesInstance()
     {
         // Arrange
-        var userStoreMock = new Mock<IUserStore<IdentityUser<Guid>>>();
+        var userStoreMock = new Mock<IUserStore<IdentityUser<Guid>>>(MockBehavior.Strict);
         var options = Options.Create(new IdentityOptions());
-        var passwordHasherMock = new Mock<IPasswordHasher<IdentityUser<Guid>>>();
+        var passwordHasherMock = new Mock<IPasswordHasher<IdentityUser<Guid>>>(MockBehavior.Strict);
         var userValidators = Array.Empty<IUserValidator<IdentityUser<Guid>>>();
         var passwordValidators = Array.Empty<IPasswordValidator<IdentityUser<Guid>>>();
         var lookupNormalizerMock = new Mock<ILookupNormalizer>(MockBehavior.Strict);
         var errorDescriber = new IdentityErrorDescriber();
-        var servicesMock = new Mock<IServiceProvider>(MockBehavior.Loose);
+        var services = MockHelpers.ServiceProviderWithNoServices();
         var userManagerLogger = NullLogger<UserManager<IdentityUser<Guid>>>.Instance;
 
         var userManager = new UserManager<IdentityUser<Guid>>(
@@ -42,7 +42,7 @@ public class PersonalDataTests
             passwordValidators,
             lookupNormalizerMock.Object,
             errorDescriber,
-            servicesMock.Object,
+            services,
             userManagerLogger);
 
         // Act
@@ -60,14 +60,14 @@ public class PersonalDataTests
     public void PersonalDataModel_WithDifferentLoggerInstances_CreatesDistinctInstances()
     {
         // Arrange
-        var userStoreMock = new Mock<IUserStore<IdentityUser<Guid>>>();
+        var userStoreMock = new Mock<IUserStore<IdentityUser<Guid>>>(MockBehavior.Strict);
         var options = Options.Create(new IdentityOptions());
-        var passwordHasherMock = new Mock<IPasswordHasher<IdentityUser<Guid>>>();
+        var passwordHasherMock = new Mock<IPasswordHasher<IdentityUser<Guid>>>(MockBehavior.Strict);
         var userValidators = Array.Empty<IUserValidator<IdentityUser<Guid>>>();
         var passwordValidators = Array.Empty<IPasswordValidator<IdentityUser<Guid>>>();
         var lookupNormalizerMock = new Mock<ILookupNormalizer>(MockBehavior.Strict);
         var errorDescriber = new IdentityErrorDescriber();
-        var servicesMock = new Mock<IServiceProvider>(MockBehavior.Loose);
+        var services = MockHelpers.ServiceProviderWithNoServices();
         var userManagerLogger = NullLogger<UserManager<IdentityUser<Guid>>>.Instance;
 
         var userManager = new UserManager<IdentityUser<Guid>>(
@@ -78,7 +78,7 @@ public class PersonalDataTests
             passwordValidators,
             lookupNormalizerMock.Object,
             errorDescriber,
-            servicesMock.Object,
+            services,
             userManagerLogger);
 
         // Act

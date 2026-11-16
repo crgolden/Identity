@@ -25,7 +25,7 @@ public class ClaimTypesTests
         // Arrange
         var resource = new ApiResource { Id = ExistingEntityId, Name = Generated.NewApiResourceName(), UserClaims = [new ApiResourceClaim { Id = ExistingEntityId, Type = ExistingClaimType }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
         var model = new ClaimTypes(ctx.Object);
 
@@ -42,7 +42,7 @@ public class ClaimTypesTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<ApiResource>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
         var model = new ClaimTypes(ctx.Object);
 
@@ -59,7 +59,7 @@ public class ClaimTypesTests
         // Arrange
         var resource = new ApiResource { Id = ExistingEntityId, Name = Generated.NewApiResourceName(), UserClaims = [] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new ClaimTypes(ctx.Object) { Resources = [new ApiResourceClaim { Id = 0, Type = PostedClaimType }] };
@@ -79,7 +79,7 @@ public class ClaimTypesTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<ApiResource>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
         var model = new ClaimTypes(ctx.Object) { Resources = [] };
 
@@ -97,7 +97,7 @@ public class ClaimTypesTests
         var existing = new ApiResourceClaim { Id = ExistingEntityId, Type = ExistingClaimType, ApiResourceId = ExistingEntityId };
         var resource = new ApiResource { Id = ExistingEntityId, Name = Generated.NewApiResourceName(), UserClaims = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new ClaimTypes(ctx.Object) { Resources = [] };
@@ -116,7 +116,7 @@ public class ClaimTypesTests
         var existing = new ApiResourceClaim { Id = ExistingEntityId, Type = ExistingClaimType, ApiResourceId = ExistingEntityId };
         var resource = new ApiResource { Id = ExistingEntityId, Name = Generated.NewApiResourceName(), UserClaims = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new ClaimTypes(ctx.Object) { Resources = [new ApiResourceClaim { Id = ExistingEntityId, Type = PostedClaimType }] };
@@ -138,7 +138,7 @@ public class ClaimTypesTests
         var existing = new ApiResourceClaim { Id = ExistingEntityId, Type = ExistingClaimType, ApiResourceId = ExistingEntityId };
         var resource = new ApiResource { Id = ExistingEntityId, Name = Generated.NewApiResourceName(), UserClaims = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new ClaimTypes(ctx.Object)
@@ -165,7 +165,7 @@ public class ClaimTypesTests
         // Arrange
         var resource = new ApiResource { Id = ExistingEntityId, Name = Generated.NewApiResourceName() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
         var model = new ClaimTypes(ctx.Object) { Resources = [] };
 
@@ -182,7 +182,7 @@ public class ClaimTypesTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<ApiResource>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
         var model = new ClaimTypes(ctx.Object) { Resources = [] };
 
@@ -199,7 +199,7 @@ public class ClaimTypesTests
         // Arrange
         var resource = new ApiResource { Id = ExistingEntityId, Name = Generated.NewApiResourceName() };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
         var model = new ClaimTypes(ctx.Object) { Resources = [new ApiResourceClaim { Id = ExistingEntityId, Type = ExistingClaimType }] };
 
@@ -216,7 +216,7 @@ public class ClaimTypesTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<ApiResource>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiResources).Returns(mockSet.Object);
         var model = new ClaimTypes(ctx.Object) { Resources = [] };
 

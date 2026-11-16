@@ -148,6 +148,8 @@ public class IndexTests
     {
         // Arrange
         var userManagerMock = MockHelpers.MockUserManager();
+        userManagerMock.Setup(um => um.GetUserNameAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync((string?)null);
+        userManagerMock.Setup(um => um.GetPhoneNumberAsync(It.IsAny<IdentityUser<Guid>>())).ReturnsAsync((string?)null);
         var signInManagerMock = MockHelpers.MockSignInManager(userManagerMock.Object);
         var user = new IdentityUser<Guid>
         {
@@ -296,22 +298,22 @@ public class IndexTests
     public void Constructor_ValidDependencies_DoesNotThrow()
     {
         // Arrange
-        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
+        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>(MockBehavior.Strict);
         var optionsMock = new Mock<IOptions<IdentityOptions>>(MockBehavior.Strict);
         optionsMock.Setup(o => o.Value).Returns(new IdentityOptions());
-        var passwordHasherMock = new Mock<IPasswordHasher<IdentityUser<Guid>>>();
+        var passwordHasherMock = new Mock<IPasswordHasher<IdentityUser<Guid>>>(MockBehavior.Strict);
         var userValidators = Array.Empty<IUserValidator<IdentityUser<Guid>>>();
         var pwdValidators = Array.Empty<IPasswordValidator<IdentityUser<Guid>>>();
         var lookupNormalizerMock = new Mock<ILookupNormalizer>(MockBehavior.Strict);
         var identityErrorDescriber = new IdentityErrorDescriber();
-        var serviceProviderMock = new Mock<IServiceProvider>(MockBehavior.Loose);
+        var serviceProvider = MockHelpers.ServiceProviderWithNoServices();
         var userManagerLogger = NullLogger<UserManager<IdentityUser<Guid>>>.Instance;
-        var userManager = new UserManager<IdentityUser<Guid>>(storeMock.Object, optionsMock.Object, passwordHasherMock.Object, userValidators, pwdValidators, lookupNormalizerMock.Object, identityErrorDescriber, serviceProviderMock.Object, userManagerLogger);
+        var userManager = new UserManager<IdentityUser<Guid>>(storeMock.Object, optionsMock.Object, passwordHasherMock.Object, userValidators, pwdValidators, lookupNormalizerMock.Object, identityErrorDescriber, serviceProvider, userManagerLogger);
         var httpContextAccessorMock = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
-        var claimsFactoryMock = new Mock<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>();
+        var claimsFactoryMock = new Mock<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(MockBehavior.Strict);
         var signInManagerLogger = NullLogger<SignInManager<IdentityUser<Guid>>>.Instance;
         var schemeProviderMock = new Mock<IAuthenticationSchemeProvider>(MockBehavior.Strict);
-        var userConfirmationMock = new Mock<IUserConfirmation<IdentityUser<Guid>>>();
+        var userConfirmationMock = new Mock<IUserConfirmation<IdentityUser<Guid>>>(MockBehavior.Strict);
         var signInManager = new SignInManager<IdentityUser<Guid>>(userManager, httpContextAccessorMock.Object, claimsFactoryMock.Object, optionsMock.Object, signInManagerLogger, schemeProviderMock.Object, userConfirmationMock.Object);
 
         // Act
@@ -327,7 +329,7 @@ public class IndexTests
         string? inputPhone) =>
         new(userManagerMock.Object, signInManagerMock.Object)
         {
-            TempData = new TempDataDictionary(new DefaultHttpContext(), Mock.Of<ITempDataProvider>()),
+            TempData = new TempDataDictionary(new DefaultHttpContext(), Mock.Of<ITempDataProvider>(MockBehavior.Strict)),
             Input = new Index.InputModel { PhoneNumber = inputPhone }
         };
 

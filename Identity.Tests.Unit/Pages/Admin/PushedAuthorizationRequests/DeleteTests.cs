@@ -23,7 +23,7 @@ public class DeleteTests
         // Arrange
         var par = new PushedAuthorizationRequest { Id = ExistingEntityId, ReferenceValueHash = ReferenceValueHash };
         var mockSet = MockDbSetHelper.BuildMockDbSet([par]);
-        var ctx = new Mock<IPersistedGrantDbContext>();
+        var ctx = new Mock<IPersistedGrantDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.PushedAuthorizationRequests).Returns(mockSet.Object);
         var model = new Delete(ctx.Object);
 
@@ -40,7 +40,7 @@ public class DeleteTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<PushedAuthorizationRequest>());
-        var ctx = new Mock<IPersistedGrantDbContext>();
+        var ctx = new Mock<IPersistedGrantDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.PushedAuthorizationRequests).Returns(mockSet.Object);
         var model = new Delete(ctx.Object);
 
@@ -57,7 +57,8 @@ public class DeleteTests
         // Arrange
         var par = new PushedAuthorizationRequest { Id = ExistingEntityId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([par]);
-        var ctx = new Mock<IPersistedGrantDbContext>();
+        mockSet.Setup(s => s.Remove(par)).Returns(MockDbSetHelper.DetachedEntry<PushedAuthorizationRequest>());
+        var ctx = new Mock<IPersistedGrantDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.PushedAuthorizationRequests).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new Delete(ctx.Object);
@@ -77,7 +78,7 @@ public class DeleteTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<PushedAuthorizationRequest>());
-        var ctx = new Mock<IPersistedGrantDbContext>();
+        var ctx = new Mock<IPersistedGrantDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.PushedAuthorizationRequests).Returns(mockSet.Object);
         var model = new Delete(ctx.Object);
 

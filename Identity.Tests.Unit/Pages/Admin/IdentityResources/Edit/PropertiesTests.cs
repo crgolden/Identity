@@ -26,7 +26,7 @@ public class PropertiesTests
         // Arrange
         var resource = new IdentityResource { Id = ExistingEntityId, Name = IdentityServerConstants.StandardScopes.OpenId, Properties = [new IdentityResourceProperty { Key = PropertyKey, Value = PropertyValue }] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         var model = new Properties(ctx.Object);
 
@@ -43,7 +43,7 @@ public class PropertiesTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<IdentityResource>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         var model = new Properties(ctx.Object);
 
@@ -60,7 +60,7 @@ public class PropertiesTests
         // Arrange
         var resource = new IdentityResource { Id = ExistingEntityId, Name = IdentityServerConstants.StandardScopes.OpenId, Properties = [] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new Properties(ctx.Object)
@@ -83,7 +83,7 @@ public class PropertiesTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<IdentityResource>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         var model = new Properties(ctx.Object) { Resources = [] };
 
@@ -101,7 +101,7 @@ public class PropertiesTests
         var existing = new IdentityResourceProperty { Id = ExistingEntityId, Key = PropertyKey, Value = PropertyValue, IdentityResourceId = ExistingEntityId };
         var resource = new IdentityResource { Id = ExistingEntityId, Name = IdentityServerConstants.StandardScopes.OpenId, Properties = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new Properties(ctx.Object) { Resources = [] };
@@ -120,7 +120,7 @@ public class PropertiesTests
         var existing = new IdentityResourceProperty { Id = ExistingEntityId, Key = PropertyKey, Value = PropertyValue, IdentityResourceId = ExistingEntityId };
         var resource = new IdentityResource { Id = ExistingEntityId, Name = IdentityServerConstants.StandardScopes.OpenId, Properties = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var postedKey = Generated.NewPropertyKey();
@@ -145,7 +145,7 @@ public class PropertiesTests
         var existing = new IdentityResourceProperty { Id = ExistingEntityId, Key = PropertyKey, Value = PropertyValue, IdentityResourceId = ExistingEntityId };
         var resource = new IdentityResource { Id = ExistingEntityId, Name = IdentityServerConstants.StandardScopes.OpenId, Properties = [existing] };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var unmatchedKey = Generated.NewPropertyKey();
@@ -175,7 +175,7 @@ public class PropertiesTests
         // Arrange
         var resource = new IdentityResource { Id = ExistingEntityId, Name = IdentityServerConstants.StandardScopes.OpenId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         var model = new Properties(ctx.Object) { Resources = [] };
 
@@ -192,7 +192,7 @@ public class PropertiesTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<IdentityResource>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         var model = new Properties(ctx.Object) { Resources = [] };
 
@@ -209,7 +209,7 @@ public class PropertiesTests
         // Arrange
         var resource = new IdentityResource { Id = ExistingEntityId, Name = IdentityServerConstants.StandardScopes.OpenId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([resource]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         var model = new Properties(ctx.Object) { Resources = [new IdentityResourceProperty { Id = ExistingEntityId, Key = PropertyKey, Value = PropertyValue }] };
 
@@ -226,7 +226,7 @@ public class PropertiesTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<IdentityResource>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.IdentityResources).Returns(mockSet.Object);
         var model = new Properties(ctx.Object) { Resources = [] };
 

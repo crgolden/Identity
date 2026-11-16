@@ -23,7 +23,7 @@ public class IndexTests
         // Arrange
         var par = new PushedAuthorizationRequest { Id = ExistingEntityId, ReferenceValueHash = ReferenceValueHash };
         var mockSet = MockDbSetHelper.BuildMockDbSet([par]);
-        var ctx = new Mock<IPersistedGrantDbContext>();
+        var ctx = new Mock<IPersistedGrantDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.PushedAuthorizationRequests).Returns(mockSet.Object);
         var model = new Index(ctx.Object);
 
@@ -40,7 +40,7 @@ public class IndexTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<PushedAuthorizationRequest>());
-        var ctx = new Mock<IPersistedGrantDbContext>();
+        var ctx = new Mock<IPersistedGrantDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.PushedAuthorizationRequests).Returns(mockSet.Object);
         var model = new Index(ctx.Object);
 

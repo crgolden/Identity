@@ -20,21 +20,21 @@ public class ConfirmEmailChangeTests
     public void Constructor_WithValidDependencies_DoesNotThrow()
     {
         // Arrange
-        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>();
+        var storeMock = new Mock<IUserStore<IdentityUser<Guid>>>(MockBehavior.Strict);
         var options = Microsoft.Extensions.Options.Options.Create(new IdentityOptions());
-        var passwordHasher = new Mock<IPasswordHasher<IdentityUser<Guid>>>().Object;
+        var passwordHasher = new Mock<IPasswordHasher<IdentityUser<Guid>>>(MockBehavior.Strict).Object;
         var userValidators = Array.Empty<IUserValidator<IdentityUser<Guid>>>();
         var pwdValidators = Array.Empty<IPasswordValidator<IdentityUser<Guid>>>();
         var keyNormalizer = new Mock<ILookupNormalizer>(MockBehavior.Strict).Object;
         var errors = new IdentityErrorDescriber();
-        var services = new Mock<IServiceProvider>(MockBehavior.Loose).Object;
+        var services = MockHelpers.ServiceProviderWithNoServices();
         var loggerUserManager = NullLogger<UserManager<IdentityUser<Guid>>>.Instance;
         var userManager = new UserManager<IdentityUser<Guid>>(storeMock.Object, options, passwordHasher, userValidators, pwdValidators, keyNormalizer, errors, services, loggerUserManager);
         var httpContextAccessor = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
-        var claimsFactory = new Mock<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>();
+        var claimsFactory = new Mock<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(MockBehavior.Strict);
         var loggerSignIn = NullLogger<SignInManager<IdentityUser<Guid>>>.Instance;
         var schemes = new Mock<IAuthenticationSchemeProvider>(MockBehavior.Strict).Object;
-        var confirmation = new Mock<IUserConfirmation<IdentityUser<Guid>>>().Object;
+        var confirmation = new Mock<IUserConfirmation<IdentityUser<Guid>>>(MockBehavior.Strict).Object;
         var signInManager = new SignInManager<IdentityUser<Guid>>(userManager, httpContextAccessor.Object, claimsFactory.Object, options, loggerSignIn, schemes, confirmation);
 
         // Act

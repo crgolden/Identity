@@ -159,7 +159,7 @@ public class LogoutTests
         var userManager = MockHelpers.MockUserManager();
         var signInManager = MockHelpers.MockSignInManager(userManager.Object);
         signInManager.Setup(s => s.SignOutAsync()).Returns(Task.CompletedTask);
-        var model = new Logout(signInManager.Object, Mock.Of<IIdentityServerInteractionService>());
+        var model = new Logout(signInManager.Object, Mock.Of<IIdentityServerInteractionService>(MockBehavior.Strict));
         model.PageContext = BuildAnonymousPageContext();
         var logoutId = Generated.NewLogoutId();
 
@@ -188,9 +188,10 @@ public class LogoutTests
     {
         var userManager = MockHelpers.MockUserManager();
         var signInManager = MockHelpers.MockSignInManager(userManager.Object);
+        signInManager.Setup(s => s.SignOutAsync()).Returns(Task.CompletedTask);
         return new Logout(
             signInManager.Object,
-            interactionService ?? Mock.Of<IIdentityServerInteractionService>());
+            interactionService ?? Mock.Of<IIdentityServerInteractionService>(MockBehavior.Strict));
     }
 
     private static PageContext BuildAuthenticatedPageContext()

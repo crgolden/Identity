@@ -23,7 +23,7 @@ public class DeleteTests
         // Arrange
         var state = new SamlSigninState { Id = ExistingEntityId, ServiceProviderEntityId = ServiceProviderEntityId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([state]);
-        var ctx = new Mock<IPersistedGrantDbContext>();
+        var ctx = new Mock<IPersistedGrantDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.SamlSigninStates).Returns(mockSet.Object);
         var model = new Delete(ctx.Object);
 
@@ -40,7 +40,7 @@ public class DeleteTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<SamlSigninState>());
-        var ctx = new Mock<IPersistedGrantDbContext>();
+        var ctx = new Mock<IPersistedGrantDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.SamlSigninStates).Returns(mockSet.Object);
         var model = new Delete(ctx.Object);
 
@@ -57,7 +57,8 @@ public class DeleteTests
         // Arrange
         var state = new SamlSigninState { Id = ExistingEntityId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([state]);
-        var ctx = new Mock<IPersistedGrantDbContext>();
+        mockSet.Setup(s => s.Remove(state)).Returns(MockDbSetHelper.DetachedEntry<SamlSigninState>());
+        var ctx = new Mock<IPersistedGrantDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.SamlSigninStates).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new Delete(ctx.Object);
@@ -77,7 +78,7 @@ public class DeleteTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<SamlSigninState>());
-        var ctx = new Mock<IPersistedGrantDbContext>();
+        var ctx = new Mock<IPersistedGrantDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.SamlSigninStates).Returns(mockSet.Object);
         var model = new Delete(ctx.Object);
 

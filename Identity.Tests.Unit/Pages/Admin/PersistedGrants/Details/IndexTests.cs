@@ -23,7 +23,7 @@ public class IndexTests
         // Arrange
         var grant = new PersistedGrant { Key = ExistingKey, SubjectId = GrantSubjectId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([grant]);
-        var ctx = new Mock<IPersistedGrantDbContext>();
+        var ctx = new Mock<IPersistedGrantDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.PersistedGrants).Returns(mockSet.Object);
         var model = new Index(ctx.Object);
 
@@ -40,7 +40,7 @@ public class IndexTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<PersistedGrant>());
-        var ctx = new Mock<IPersistedGrantDbContext>();
+        var ctx = new Mock<IPersistedGrantDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.PersistedGrants).Returns(mockSet.Object);
         var model = new Index(ctx.Object);
 

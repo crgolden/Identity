@@ -25,7 +25,7 @@ public class IndexTests
         // Arrange
         var scope = new ApiScope { Id = ExistingEntityId, Name = ScopeName };
         var mockSet = MockDbSetHelper.BuildMockDbSet([scope]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
         var model = new Index(ctx.Object);
 
@@ -42,7 +42,7 @@ public class IndexTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<ApiScope>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
         var model = new Index(ctx.Object);
 
@@ -59,7 +59,7 @@ public class IndexTests
         // Arrange
         var scope = new ApiScope { Id = ExistingEntityId, Name = ScopeName };
         var mockSet = MockDbSetHelper.BuildMockDbSet([scope]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var model = new Index(ctx.Object) { Scope = new ApiScope { Name = UpdatedScopeName } };
@@ -80,7 +80,7 @@ public class IndexTests
         // Arrange
         var scope = new ApiScope { Id = ExistingEntityId, Name = ScopeName };
         var mockSet = MockDbSetHelper.BuildMockDbSet([scope]);
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
         var model = new Index(ctx.Object) { Scope = new ApiScope { Name = UpdatedScopeName } };
         model.ModelState.AddModelError(nameof(ApiScope.Name), Generated.NewValidationMessage());
@@ -99,7 +99,7 @@ public class IndexTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<ApiScope>());
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.ApiScopes).Returns(mockSet.Object);
         var model = new Index(ctx.Object) { Scope = new ApiScope { Name = Generated.NewApiResourceName() } };
 

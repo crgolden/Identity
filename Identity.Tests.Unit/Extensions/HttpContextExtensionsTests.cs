@@ -129,7 +129,7 @@ public sealed class HttpContextExtensionsTests : IDisposable
 
         if (exception is not null)
         {
-            var feature = Mock.Of<IExceptionHandlerFeature>(f => f.Error == exception);
+            var feature = Mock.Of<IExceptionHandlerFeature>(f => f.Error == exception, MockBehavior.Strict);
             context.Features.Set(feature);
         }
 

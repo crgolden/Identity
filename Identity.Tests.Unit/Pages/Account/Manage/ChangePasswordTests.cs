@@ -96,22 +96,24 @@ public class ChangePasswordTests
     public void Constructor_WithValidDependencies_DoesNotThrow()
     {
         // Arrange
-        var userStoreMock = new Mock<IUserStore<IdentityUser<Guid>>>();
+        var userStoreMock = new Mock<IUserStore<IdentityUser<Guid>>>(MockBehavior.Strict);
         var identityOptions = Options.Create(new IdentityOptions());
         var passwordHasher = new PasswordHasher<IdentityUser<Guid>>();
         var userValidators = Array.Empty<IUserValidator<IdentityUser<Guid>>>();
         var passwordValidators = Array.Empty<IPasswordValidator<IdentityUser<Guid>>>();
         var lookupNormalizer = new UpperInvariantLookupNormalizer();
         var errorDescriber = new IdentityErrorDescriber();
-        var serviceProvider = new Mock<IServiceProvider>(MockBehavior.Loose).Object;
+        var serviceProvider = MockHelpers.ServiceProviderWithNoServices();
         var userManagerLogger = NullLogger<UserManager<IdentityUser<Guid>>>.Instance;
-        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(userStoreMock.Object, identityOptions, passwordHasher, userValidators, passwordValidators, lookupNormalizer, errorDescriber, serviceProvider, userManagerLogger);
+        var userManagerMock = new Mock<UserManager<IdentityUser<Guid>>>(MockBehavior.Strict, userStoreMock.Object, identityOptions, passwordHasher, userValidators, passwordValidators, lookupNormalizer, errorDescriber, serviceProvider, userManagerLogger);
+        userManagerMock.SetupProperty(m => m.Logger);
         var httpContextAccessor = new Mock<IHttpContextAccessor>(MockBehavior.Strict).Object;
-        var claimsFactory = new Mock<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>().Object;
+        var claimsFactory = new Mock<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(MockBehavior.Strict).Object;
         var signInManagerLogger = NullLogger<SignInManager<IdentityUser<Guid>>>.Instance;
         var schemes = new Mock<IAuthenticationSchemeProvider>(MockBehavior.Strict).Object;
-        var confirmation = new Mock<IUserConfirmation<IdentityUser<Guid>>>().Object;
-        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(userManagerMock.Object, httpContextAccessor, claimsFactory, identityOptions, signInManagerLogger, schemes, confirmation);
+        var confirmation = new Mock<IUserConfirmation<IdentityUser<Guid>>>(MockBehavior.Strict).Object;
+        var signInManagerMock = new Mock<SignInManager<IdentityUser<Guid>>>(MockBehavior.Strict, userManagerMock.Object, httpContextAccessor, claimsFactory, identityOptions, signInManagerLogger, schemes, confirmation);
+        signInManagerMock.SetupProperty(m => m.Logger);
 
         // Act
         var model = new ChangePassword(userManagerMock.Object, signInManagerMock.Object);

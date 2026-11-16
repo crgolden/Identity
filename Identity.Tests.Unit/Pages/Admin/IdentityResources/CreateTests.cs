@@ -17,7 +17,7 @@ public class CreateTests
     public void OnGet_ReturnsPage()
     {
         // Arrange
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         var model = new Create(ctx.Object);
 
         // Act
@@ -31,8 +31,8 @@ public class CreateTests
     public async Task OnPostAsync_Redirects_WhenValid()
     {
         // Arrange
-        var ctx = new Mock<IConfigurationDbContext>();
-        ctx.Setup(c => c.IdentityResources.Add(It.IsAny<IdentityResource>()));
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
+        ctx.Setup(c => c.IdentityResources.Add(It.IsAny<IdentityResource>())).Returns(MockDbSetHelper.DetachedEntry<IdentityResource>());
         ctx.Setup(c => c.SaveChangesAsync()).ReturnsAsync(1);
         var resource = new IdentityResource { Name = IdentityServerConstants.StandardScopes.OpenId };
         var model = new Create(ctx.Object) { Resource = resource };
@@ -51,7 +51,7 @@ public class CreateTests
     public async Task OnPostAsync_ReturnsPage_WhenInvalid()
     {
         // Arrange
-        var ctx = new Mock<IConfigurationDbContext>();
+        var ctx = new Mock<IConfigurationDbContext>(MockBehavior.Strict);
         var model = new Create(ctx.Object);
         model.ModelState.AddModelError(nameof(IdentityResource.Name), Generated.NewValidationMessage());
 

@@ -23,7 +23,7 @@ public class IndexTests
         // Arrange
         var state = new SamlSigninState { Id = ExistingEntityId, ServiceProviderEntityId = ServiceProviderEntityId };
         var mockSet = MockDbSetHelper.BuildMockDbSet([state]);
-        var ctx = new Mock<IPersistedGrantDbContext>();
+        var ctx = new Mock<IPersistedGrantDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.SamlSigninStates).Returns(mockSet.Object);
         var model = new Index(ctx.Object);
 
@@ -40,7 +40,7 @@ public class IndexTests
     {
         // Arrange
         var mockSet = MockDbSetHelper.BuildMockDbSet(Array.Empty<SamlSigninState>());
-        var ctx = new Mock<IPersistedGrantDbContext>();
+        var ctx = new Mock<IPersistedGrantDbContext>(MockBehavior.Strict);
         ctx.Setup(c => c.SamlSigninStates).Returns(mockSet.Object);
         var model = new Index(ctx.Object);
 

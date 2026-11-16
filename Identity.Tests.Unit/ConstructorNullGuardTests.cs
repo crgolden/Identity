@@ -73,7 +73,7 @@ public sealed class ConstructorNullGuardTests : IDisposable
     public void Constructor_NullSignInManager_Logout_ThrowsArgumentNullException()
     {
         // Arrange
-        var interactionService = Mock.Of<IIdentityServerInteractionService>();
+        var interactionService = Mock.Of<IIdentityServerInteractionService>(MockBehavior.Strict);
 
         // Act
         var result = ConstructorGuard.Construct<Logout>([null, interactionService]);
@@ -112,7 +112,7 @@ public sealed class ConstructorNullGuardTests : IDisposable
     public void Constructor_NullSignInManager_Login_ThrowsArgumentNullException()
     {
         // Arrange
-        var captchaService = Mock.Of<ICAPTCHAService>();
+        var captchaService = Mock.Of<ICAPTCHAService>(MockBehavior.Strict);
 
         // Act
         var result = ConstructorGuard.Construct<Login>([null, captchaService, _harness.Telemetry]);
@@ -263,7 +263,7 @@ public sealed class ConstructorNullGuardTests : IDisposable
     public void Constructor_NullUserManager_ForgotPassword_ThrowsArgumentNullException()
     {
         // Arrange
-        var serviceBusClientFactory = Mock.Of<IAzureClientFactory<ServiceBusClient>>();
+        var serviceBusClientFactory = Mock.Of<IAzureClientFactory<ServiceBusClient>>(MockBehavior.Strict);
         var accountEmailSettings = TestValues.NewAccountEmailSettings();
 
         // Act
@@ -294,7 +294,7 @@ public sealed class ConstructorNullGuardTests : IDisposable
     {
         // Arrange
         var userManager = NewUserManager();
-        var serviceBusClientFactory = Mock.Of<IAzureClientFactory<ServiceBusClient>>();
+        var serviceBusClientFactory = Mock.Of<IAzureClientFactory<ServiceBusClient>>(MockBehavior.Strict);
 
         // Act
         var result = ConstructorGuard.Construct<ForgotPassword>([userManager, serviceBusClientFactory, null]);
@@ -309,7 +309,7 @@ public sealed class ConstructorNullGuardTests : IDisposable
     {
         // Arrange
         var signInManager = NewSignInManager();
-        var userStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
+        var userStore = Mock.Of<IUserStore<IdentityUser<Guid>>>(MockBehavior.Strict);
 
         // Act
         var result = ConstructorGuard.Construct<ExternalLogins>([null, signInManager, userStore]);
@@ -324,7 +324,7 @@ public sealed class ConstructorNullGuardTests : IDisposable
     {
         // Arrange
         var userManager = NewUserManager();
-        var userStore = Mock.Of<IUserStore<IdentityUser<Guid>>>();
+        var userStore = Mock.Of<IUserStore<IdentityUser<Guid>>>(MockBehavior.Strict);
 
         // Act
         var result = ConstructorGuard.Construct<ExternalLogins>([userManager, null, userStore]);
@@ -364,9 +364,9 @@ public sealed class ConstructorNullGuardTests : IDisposable
     public void Constructor_NullInteraction_Grants_ThrowsArgumentNullException()
     {
         // Arrange
-        var clients = Mock.Of<IClientStore>();
-        var resources = Mock.Of<IResourceStore>();
-        var events = Mock.Of<IEventService>();
+        var clients = Mock.Of<IClientStore>(MockBehavior.Strict);
+        var resources = Mock.Of<IResourceStore>(MockBehavior.Strict);
+        var events = Mock.Of<IEventService>(MockBehavior.Strict);
 
         // Act
         var result = ConstructorGuard.Construct<Grants>([null, clients, resources, events, _harness.Telemetry]);
@@ -380,9 +380,9 @@ public sealed class ConstructorNullGuardTests : IDisposable
     public void Constructor_NullClients_Grants_ThrowsArgumentNullException()
     {
         // Arrange
-        var interaction = Mock.Of<IIdentityServerInteractionService>();
-        var resources = Mock.Of<IResourceStore>();
-        var events = Mock.Of<IEventService>();
+        var interaction = Mock.Of<IIdentityServerInteractionService>(MockBehavior.Strict);
+        var resources = Mock.Of<IResourceStore>(MockBehavior.Strict);
+        var events = Mock.Of<IEventService>(MockBehavior.Strict);
 
         // Act
         var result = ConstructorGuard.Construct<Grants>([interaction, null, resources, events, _harness.Telemetry]);
@@ -396,9 +396,9 @@ public sealed class ConstructorNullGuardTests : IDisposable
     public void Constructor_NullResources_Grants_ThrowsArgumentNullException()
     {
         // Arrange
-        var interaction = Mock.Of<IIdentityServerInteractionService>();
-        var clients = Mock.Of<IClientStore>();
-        var events = Mock.Of<IEventService>();
+        var interaction = Mock.Of<IIdentityServerInteractionService>(MockBehavior.Strict);
+        var clients = Mock.Of<IClientStore>(MockBehavior.Strict);
+        var events = Mock.Of<IEventService>(MockBehavior.Strict);
 
         // Act
         var result = ConstructorGuard.Construct<Grants>([interaction, clients, null, events, _harness.Telemetry]);
@@ -412,9 +412,9 @@ public sealed class ConstructorNullGuardTests : IDisposable
     public void Constructor_NullEvents_Grants_ThrowsArgumentNullException()
     {
         // Arrange
-        var interaction = Mock.Of<IIdentityServerInteractionService>();
-        var clients = Mock.Of<IClientStore>();
-        var resources = Mock.Of<IResourceStore>();
+        var interaction = Mock.Of<IIdentityServerInteractionService>(MockBehavior.Strict);
+        var clients = Mock.Of<IClientStore>(MockBehavior.Strict);
+        var resources = Mock.Of<IResourceStore>(MockBehavior.Strict);
 
         // Act
         var result = ConstructorGuard.Construct<Grants>([interaction, clients, resources, null, _harness.Telemetry]);
@@ -440,7 +440,7 @@ public sealed class ConstructorNullGuardTests : IDisposable
     {
         // Arrange
         var userManager = NewUserManager();
-        var claimsFactory = Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>();
+        var claimsFactory = Mock.Of<IUserClaimsPrincipalFactory<IdentityUser<Guid>>>(MockBehavior.Strict);
 
         // Act
         var result = ConstructorGuard.Construct<AvatarProfileService>([userManager, claimsFactory, null]);

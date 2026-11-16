@@ -486,6 +486,8 @@ public sealed class RegisterTests : IDisposable
         var identityOptions = new IdentityOptions();
         identityOptions.SignIn.RequireConfirmedAccount = requireConfirmedAccount;
         var userManagerMock = MockHelpers.MockUserManager(identityOptions);
+        userManagerMock.Setup(u => u.SetUserNameAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string?>())).ReturnsAsync(IdentityResult.Success);
+        userManagerMock.Setup(u => u.SetEmailAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string?>())).ReturnsAsync(IdentityResult.Success);
         userManagerMock.SetupGet(u => u.SupportsUserEmail).Returns(true);
         userManagerMock
             .Setup(u => u.CreateAsync(It.IsAny<IdentityUser<Guid>>(), It.IsAny<string>()))
