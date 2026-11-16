@@ -33,7 +33,7 @@ fixtures and mutation testing: [TESTING.md](TESTING.md).
 
 | Layer | Technology |
 |---|---|
-| Framework | .NET 10 (`global.json`), ASP.NET Core Razor Pages |
+| Framework | .NET 11 (`global.json`), ASP.NET Core Razor Pages |
 | Auth server | Duende IdentityServer 8 |
 | Identity | ASP.NET Core Identity (`IdentityUser<Guid>`) |
 | Database | SQL Server through EF Core 10; schema in a SQL Database Project (`Identity.Data`, a dacpac) |
@@ -44,7 +44,7 @@ fixtures and mutation testing: [TESTING.md](TESTING.md).
 
 ## Prerequisites
 
-- The .NET 10 SDK, Node.js 24, and SqlPackage (`dotnet tool install --global microsoft.sqlpackage`).
+- The .NET 11 SDK, Node.js 24, and SqlPackage (`dotnet tool install --global microsoft.sqlpackage`).
 - A GitHub personal access token with the `read:packages` scope: `NuGet.Config` and `.npmrc` read the `crgolden`
   GitHub Packages feed, which asks for a token even for a public package. Store it outside the repo:
 
@@ -142,7 +142,7 @@ dotnet build --no-incremental --configuration Release /p:RestoreLockedMode=true 
 dotnet jb inspectcode Identity.slnx --no-build -e=WARNING --output=inspectcode.sarif
 dotnet test --project Identity.Tests.Unit --no-build --configuration Release -- --filter-trait "Category=Unit"
 sqlpackage /Action:Publish /SourceFile:Identity.Data/bin/Release/Identity.Data.dacpac /TargetConnectionString:"<test database>"
-pwsh Identity.Tests.E2E/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
+pwsh Identity.Tests.E2E/bin/Release/net11.0/playwright.ps1 install --with-deps chromium
 dotnet dev-certs https
 dotnet test --project Identity.Tests.E2E --no-build --configuration Release -- --filter-trait "Category=E2E"
 dotnet test --project Identity.Tests.Integration --no-build --configuration Release -- --filter-trait "Category=Integration"

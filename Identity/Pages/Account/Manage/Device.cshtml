@@ -30,14 +30,14 @@ else
             @if (Model.View.ClientLogoUrl != null)
             {
                 <div class="mb-3">
-                    <img src="@Model.View.ClientLogoUrl" alt="@Model.View.ClientName logo" class="img-thumbnail object-fit-contain" height="100" />
+                    <img src="@Model.View.ClientLogoUrl.OriginalString" alt="@Model.View.ClientName logo" class="img-thumbnail object-fit-contain" height="100" />
                 </div>
             }
 
             <h2>
                 @if (Model.View.ClientUrl != null)
                 {
-                    <a href="@Model.View.ClientUrl" target="_blank" rel="noopener noreferrer">@Model.View.ClientName</a>
+                    <a href="@Model.View.ClientUrl.OriginalString" target="_blank" rel="noopener noreferrer">@Model.View.ClientName</a>
                 }
                 else
                 {

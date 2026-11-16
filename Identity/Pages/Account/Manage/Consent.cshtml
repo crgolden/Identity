@@ -13,14 +13,14 @@
         @if (Model.View.ClientLogoUrl != null)
         {
             <div class="mb-3">
-                <img src="@Model.View.ClientLogoUrl" alt="@Model.View.ClientName logo" class="img-thumbnail object-fit-contain" height="100" />
+                <img src="@Model.View.ClientLogoUrl.OriginalString" alt="@Model.View.ClientName logo" class="img-thumbnail object-fit-contain" height="100" />
             </div>
         }
 
         <h2>
             @if (Model.View.ClientUrl != null)
             {
-                <a href="@Model.View.ClientUrl" target="_blank" rel="noopener noreferrer">@Model.View.ClientName</a>
+                <a href="@Model.View.ClientUrl.OriginalString" target="_blank" rel="noopener noreferrer">@Model.View.ClientName</a>
             }
             else
             {
@@ -31,7 +31,7 @@
         <p class="text-muted">Uncheck any permissions you do not wish to grant.</p>
 
         <form id="consent-form" method="post">
-            <input type="hidden" asp-for="Input.ReturnUrl" />
+            <input type="hidden" id="Input_ReturnUrl" name="Input.ReturnUrl" value="@Model.Input.ReturnUrl?.OriginalString" />
 
             <div id="@(mustChooseOne ? "must-choose-one-error" : null)">
                 <div id="validation-errors" asp-validation-summary="ModelOnly" class="text-danger mb-3" role="alert"></div>

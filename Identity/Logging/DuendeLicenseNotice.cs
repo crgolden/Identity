@@ -38,10 +38,13 @@ internal static class DuendeLicenseNotice
 
     private static string? ScalarPropertyOrNull(LogEvent logEvent, string propertyName)
     {
-        return logEvent.Properties.TryGetValue(propertyName, out var property)
-               && property is ScalarValue { Value: string value }
-            ? value
-            : null;
+        if (!logEvent.Properties.TryGetValue(propertyName, out var property)
+            || property is not ScalarValue { Value: string value })
+        {
+            return null;
+        }
+
+        return value;
     }
 
     private static string? EventNameOrNull(LogEvent logEvent)

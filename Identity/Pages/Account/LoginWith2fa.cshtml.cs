@@ -23,7 +23,7 @@ public class LoginWith2fa : PageModel
 
     public bool RememberMe { get; set; }
 
-    public string? ReturnUrl { get; set; }
+    public Uri? ReturnUrl { get; set; }
 
     public async Task<IActionResult> OnGetAsync(bool rememberMe, string? returnUrl = null)
     {
@@ -34,7 +34,7 @@ public class LoginWith2fa : PageModel
             throw new InvalidOperationException(UserMessages.UnableToLoadTwoFactorUser);
         }
 
-        ReturnUrl = returnUrl;
+        ReturnUrl = UriValue.From(returnUrl);
         RememberMe = rememberMe;
 
         return Page();

@@ -1,7 +1,6 @@
 namespace Identity.Tests.E2E.Infrastructure;
 
 using System.Collections.Concurrent;
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using Microsoft.Playwright;
 using Reqnroll;
@@ -106,10 +105,6 @@ public sealed class PlaywrightArtifactRecorder
             AddEvent($"{nameof(IPage.RequestFailed)} {request.Method} {request.Url} {request.Failure}");
     }
 
-    [SuppressMessage(
-        "Design",
-        "CA1031:Do not catch general exception types",
-        Justification = "Artifact capture is diagnostics. Any failure to screenshot, trace or dispose is recorded in the browser log and must never fail or mask the test that was actually running.")]
     public async Task CompleteAsync(IBrowserContext context, IPage page)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -123,7 +118,7 @@ public sealed class PlaywrightArtifactRecorder
                 FullPage = true
             }).ConfigureAwait(false);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is PlaywrightException or TimeoutException)
         {
             AddEvent($"{nameof(IPage.ScreenshotAsync)} {ex.GetType().Name}: {ex.Message}");
         }
@@ -135,7 +130,7 @@ public sealed class PlaywrightArtifactRecorder
                 Path = Path.Combine(_tempDirectory, _settings.TraceFileName)
             }).ConfigureAwait(false);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is PlaywrightException or TimeoutException)
         {
             AddEvent($"{nameof(ITracing.StopAsync)} {ex.GetType().Name}: {ex.Message}");
         }
@@ -144,7 +139,7 @@ public sealed class PlaywrightArtifactRecorder
         {
             await context.DisposeAsync().ConfigureAwait(false);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is PlaywrightException or TimeoutException)
         {
             AddEvent($"{nameof(IBrowserContext.DisposeAsync)} {ex.GetType().Name}: {ex.Message}");
         }

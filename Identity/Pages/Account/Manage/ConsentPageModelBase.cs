@@ -68,9 +68,9 @@ public abstract class ConsentPageModelBase : PageModel
     {
         public string? ClientName { get; set; }
 
-        public string? ClientUrl { get; set; }
+        public Uri? ClientUrl { get; set; }
 
-        public string? ClientLogoUrl { get; set; }
+        public Uri? ClientLogoUrl { get; set; }
 
         public bool AllowRememberConsent { get; set; }
 

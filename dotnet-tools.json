@@ -3,7 +3,7 @@
   "isRoot": true,
   "tools": {
     "microsoft.dotnet-openapi": {
-      "version": "10.0.14",
+      "version": "11.0.0",
       "commands": [
         "dotnet-openapi"
       ],
@@ -17,14 +17,14 @@
       "rollForward": false
     },
     "jetbrains.resharper.globaltools": {
-      "version": "2026.2.3.1",
+      "version": "2026.3.0",
       "commands": [
         "jb"
       ],
       "rollForward": false
     },
     "dotnet-stryker": {
-      "version": "5.0.0",
+      "version": "5.1.0",
       "commands": [
         "dotnet-stryker"
       ],

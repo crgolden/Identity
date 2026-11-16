@@ -20,7 +20,7 @@ No Azure credentials required, no Playwright dependency. All unit test classes m
 
 ```powershell
 dotnet build Identity.Tests.Unit --configuration Debug
-.\Identity.Tests.Unit\bin\Debug\net10.0\Identity.Tests.Unit.exe -trait "Category=Unit" -showLiveOutput
+.\Identity.Tests.Unit\bin\Debug\net11.0\Identity.Tests.Unit.exe -trait "Category=Unit" -showLiveOutput
 ```
 
 A `PageModel` test whose handler calls `Url.Page(...)` or `Url.RouteUrl(...)` must set up the mocked `IUrlHelper`'s `ActionContext` (`urlHelperMock.SetupGet(u => u.ActionContext).Returns(new ActionContext(new DefaultHttpContext(), routeData, new ActionDescriptor()))`) even though the test never reads it: `UrlHelperExtensions.Page`/`RouteUrl` read it on every call and throw on null. `Pages/Account/ExternalLoginTests.cs` is the pattern.
@@ -37,12 +37,12 @@ $env:ASPNETCORE_ENVIRONMENT = "Development"
 $env:SqlConnectionStringBuilder__InitialCatalog = "IdentityTest"
 $env:PasskeyOrigin = "https://127.0.0.1"
 dotnet build Identity.Tests.E2E --configuration Debug
-.\Identity.Tests.E2E\bin\Debug\net10.0\Identity.Tests.E2E.exe -trait "Category=E2E" -showLiveOutput
+.\Identity.Tests.E2E\bin\Debug\net11.0\Identity.Tests.E2E.exe -trait "Category=E2E" -showLiveOutput
 dotnet build Identity.Tests.Integration --configuration Debug
-.\Identity.Tests.Integration\bin\Debug\net10.0\Identity.Tests.Integration.exe -trait "Category=Integration" -showLiveOutput
+.\Identity.Tests.Integration\bin\Debug\net11.0\Identity.Tests.Integration.exe -trait "Category=Integration" -showLiveOutput
 
 # Redirect output for in-flight inspection
-cmd /c "Identity.Tests.E2E\bin\Debug\net10.0\Identity.Tests.E2E.exe -trait ""Category=E2E"" -showLiveOutput > C:\temp\identity-e2e.txt 2>&1"
+cmd /c "Identity.Tests.E2E\bin\Debug\net11.0\Identity.Tests.E2E.exe -trait ""Category=E2E"" -showLiveOutput > C:\temp\identity-e2e.txt 2>&1"
 ```
 
 **`PasskeyOrigin` is not optional either, and `appsettings.Development.json`'s value is the wrong one
@@ -95,9 +95,9 @@ Sonar branch and fails `Fail on open Sonar issues`. The deployed site's account 
 ### Single Test (by method name)
 
 ```powershell
-.\Identity.Tests.Unit\bin\Debug\net10.0\Identity.Tests.Unit.exe -method "*MethodName*" -showLiveOutput
-.\Identity.Tests.E2E\bin\Debug\net10.0\Identity.Tests.E2E.exe -method "*MethodName*" -showLiveOutput
-.\Identity.Tests.Integration\bin\Debug\net10.0\Identity.Tests.Integration.exe -method "*MethodName*" -showLiveOutput
+.\Identity.Tests.Unit\bin\Debug\net11.0\Identity.Tests.Unit.exe -method "*MethodName*" -showLiveOutput
+.\Identity.Tests.E2E\bin\Debug\net11.0\Identity.Tests.E2E.exe -method "*MethodName*" -showLiveOutput
+.\Identity.Tests.Integration\bin\Debug\net11.0\Identity.Tests.Integration.exe -method "*MethodName*" -showLiveOutput
 ```
 
 ---
@@ -166,7 +166,7 @@ Replay a failed walk with the seed from the job summary:
 
 ```powershell
 $env:SYNTHETIC_SEED = '<seed>'; $env:WalkerBaseUrl = 'https://crgolden-identity.azurewebsites.net'
-.\Identity.Tests.E2E\bin\Debug\net10.0\Identity.Tests.E2E.exe -trait "Category=Walker" -showLiveOutput
+.\Identity.Tests.E2E\bin\Debug\net11.0\Identity.Tests.E2E.exe -trait "Category=Walker" -showLiveOutput
 ```
 
 ---
@@ -1842,7 +1842,7 @@ Current test infrastructure:
 `Identity.Tests.E2E` records Playwright diagnostics for every E2E browser context, then keeps them only when the xUnit test fails. Retained failure folders are written under:
 
 ```text
-Identity.Tests.E2E/bin/<Configuration>/net10.0/TestResults/PlaywrightArtifacts/E2E/<test-name>/<context-id>/
+Identity.Tests.E2E/bin/<Configuration>/net11.0/TestResults/PlaywrightArtifacts/E2E/<test-name>/<context-id>/
 ```
 
 Each retained folder contains:

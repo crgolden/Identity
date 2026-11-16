@@ -59,8 +59,8 @@ public class Grants : PageModel
                 {
                     ClientId = client.ClientId,
                     ClientName = client.ClientName ?? client.ClientId,
-                    ClientLogoUrl = client.LogoUri,
-                    ClientUrl = client.ClientUri,
+                    ClientLogoUrl = UriValue.From(client.LogoUri),
+                    ClientUrl = UriValue.From(client.ClientUri),
                     Description = grant.Description,
                     Created = new DateTimeOffset(grant.CreationTime.Ticks, TimeSpan.Zero),
                     Expires = grant.Expiration is { } expiration
@@ -100,9 +100,9 @@ public class Grants : PageModel
 
         public required string ClientName { get; set; }
 
-        public string? ClientLogoUrl { get; set; }
+        public Uri? ClientLogoUrl { get; set; }
 
-        public string? ClientUrl { get; set; }
+        public Uri? ClientUrl { get; set; }
 
         public string? Description { get; set; }
 

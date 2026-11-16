@@ -48,7 +48,7 @@ public class EnableAuthenticator : PageModel
 
     public string? SharedKey { get; set; }
 
-    public string? AuthenticatorUri { get; set; }
+    public Uri? AuthenticatorUri { get; set; }
 
     [TempData]
     public string[] RecoveryCodes { get; set; } = Array.Empty<string>();
@@ -147,7 +147,7 @@ public class EnableAuthenticator : PageModel
             return;
         }
 
-        AuthenticatorUri = GenerateQrCodeUri(email, unformattedKey);
+        AuthenticatorUri = UriValue.From(GenerateQrCodeUri(email, unformattedKey));
     }
 
     private string GenerateQrCodeUri(string email, string unformattedKey)

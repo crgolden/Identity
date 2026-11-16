@@ -15,13 +15,13 @@
     else
     {
         <p>You have successfully logged out of the application.</p>
-        @if (!IsNullOrWhiteSpace(Model.PostLogoutRedirectUri))
+        @if (Model.PostLogoutRedirectUri is { } postLogoutRedirectUri)
         {
-            <a href="@Model.PostLogoutRedirectUri">Click here to return to the application</a>
+            <a href="@postLogoutRedirectUri.OriginalString">Click here to return to the application</a>
         }
-        @if (!IsNullOrWhiteSpace(Model.SignOutIFrameUrl))
+        @if (Model.SignOutIFrameUrl is { } signOutIFrameUrl)
         {
-            <iframe width="0" height="0" class="signout" title="Sign Out" src="@Model.SignOutIFrameUrl"></iframe>
+            <iframe width="0" height="0" class="signout" title="Sign Out" src="@signOutIFrameUrl.OriginalString"></iframe>
         }
     }
 </header>

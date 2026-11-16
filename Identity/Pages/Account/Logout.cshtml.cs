@@ -24,9 +24,9 @@ public class Logout : PageModel
         _interactionService = interactionService;
     }
 
-    public string? PostLogoutRedirectUri { get; private set; }
+    public Uri? PostLogoutRedirectUri { get; private set; }
 
-    public string? SignOutIFrameUrl { get; private set; }
+    public Uri? SignOutIFrameUrl { get; private set; }
 
     public bool ShowLogoutPrompt { get; private set; }
 
@@ -56,7 +56,7 @@ public class Logout : PageModel
         }
 
         var context = await _interactionService.GetLogoutContextAsync(logoutId, HttpContext.RequestAborted);
-        PostLogoutRedirectUri = context.PostLogoutRedirectUri;
-        SignOutIFrameUrl = context.SignOutIFrameUrl;
+        PostLogoutRedirectUri = UriValue.From(context.PostLogoutRedirectUri);
+        SignOutIFrameUrl = UriValue.From(context.SignOutIFrameUrl);
     }
 }

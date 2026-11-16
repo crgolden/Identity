@@ -50,7 +50,7 @@ public sealed class RenamePasskeyTests
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
-        Assert.Contains(MissingUserId, notFound.Value as string, StringComparison.Ordinal);
+        Assert.Equal(UserMessages.UnableToLoadUser(MissingUserId), notFound.Value);
     }
 
     [Fact]
@@ -116,7 +116,7 @@ public sealed class RenamePasskeyTests
 
         // Assert
         var notFound = Assert.IsType<NotFoundObjectResult>(result);
-        Assert.Contains(MissingUserId, notFound.Value as string, StringComparison.Ordinal);
+        Assert.Equal(UserMessages.UnableToLoadUser(MissingUserId), notFound.Value);
     }
 
     [Fact]

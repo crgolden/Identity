@@ -115,7 +115,7 @@ public sealed class RegisterTests : IDisposable
         await model.OnGetAsync(returnUrl);
 
         // Assert
-        Assert.Equal(returnUrl, model.ReturnUrl);
+        Assert.Equal(returnUrl, model.ReturnUrl?.OriginalString);
         Assert.NotNull(model.ExternalLogins);
         Assert.Equal(schemes.Length, model.ExternalLogins.Count);
         var expectedNames = schemes.Select(s => s.Name).ToList();
@@ -136,7 +136,7 @@ public sealed class RegisterTests : IDisposable
         await model.OnGetAsync(returnUrl);
 
         // Assert
-        Assert.Equal(returnUrl, model.ReturnUrl);
+        Assert.Equal(returnUrl, model.ReturnUrl?.OriginalString);
         Assert.NotNull(model.ExternalLogins);
         Assert.Equal(schemes.Length, model.ExternalLogins.Count);
         var expectedNames = schemes.Select(s => s.Name).ToList();
@@ -453,7 +453,7 @@ public sealed class RegisterTests : IDisposable
     private static void AssertReturnUrlAssignedWithoutExternalLogins(Exception? ex, Register model, string? returnUrl)
     {
         Assert.Null(ex);
-        Assert.Equal(returnUrl, model.ReturnUrl);
+        Assert.Equal(returnUrl, model.ReturnUrl?.OriginalString);
         Assert.NotNull(model.ExternalLogins);
         Assert.Empty(model.ExternalLogins);
     }
@@ -535,7 +535,7 @@ public sealed class RegisterTests : IDisposable
             .Callback<UrlRouteContext>(context => RoutedPages.Record(context, _routedPages))
             .Returns(callbackResolves ? Generated.NewCallbackAddress() : null);
         urlHelperMock.Setup(u => u.Content(PageRoutes.ContentRoot)).Returns(Generated.NewLocalPath());
-        urlHelperMock.Setup(u => u.IsLocalUrl(It.IsAny<string?>())).Returns<string?>(u => u is not null && u.StartsWith('/'));
+        urlHelperMock.Setup(u => u.IsLocalUrl(It.IsAny<string?>())).Returns<string?>(u => u is not null && u.StartsWith('/', StringComparison.Ordinal));
         model.Url = urlHelperMock.Object;
         model.Input = new Register.InputModel
         {

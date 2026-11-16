@@ -64,7 +64,7 @@ public class RedirectTests
 
         // Assert
         Assert.IsType<PageResult>(result);
-        Assert.Equal(LocalPath, model.RedirectUri);
+        Assert.Equal(LocalPath, model.RedirectUri?.OriginalString);
     }
 
     private static Redirect Create()

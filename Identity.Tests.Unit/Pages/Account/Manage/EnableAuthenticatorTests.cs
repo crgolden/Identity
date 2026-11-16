@@ -293,8 +293,8 @@ public class EnableAuthenticatorTests
 
         // Assert
         Assert.NotNull(model.AuthenticatorUri);
-        Assert.Contains(storedKey, model.AuthenticatorUri, StringComparison.Ordinal);
-        Assert.Contains(UrlEncoder.Default.Encode(email), model.AuthenticatorUri, StringComparison.Ordinal);
+        Assert.Contains(storedKey, model.AuthenticatorUri.OriginalString, StringComparison.Ordinal);
+        Assert.Contains(UrlEncoder.Default.Encode(email), model.AuthenticatorUri.OriginalString, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -308,7 +308,7 @@ public class EnableAuthenticatorTests
         await model.OnGetAsync();
 
         // Assert
-        Assert.Contains(UrlEncoder.Default.Encode(IssuerOptions.Value.Issuer), model.AuthenticatorUri, StringComparison.Ordinal);
+        Assert.Contains(UrlEncoder.Default.Encode(IssuerOptions.Value.Issuer), model.AuthenticatorUri?.OriginalString, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -342,7 +342,7 @@ public class EnableAuthenticatorTests
 
         // Assert
         userManagerMock.Verify(um => um.ResetAuthenticatorKeyAsync(It.IsAny<IdentityUser<Guid>>()), Times.Once);
-        Assert.Contains(newKey, model.AuthenticatorUri, StringComparison.Ordinal);
+        Assert.Contains(newKey, model.AuthenticatorUri?.OriginalString, StringComparison.Ordinal);
     }
 
     [Fact]

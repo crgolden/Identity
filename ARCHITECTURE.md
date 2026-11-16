@@ -541,7 +541,7 @@ Every job runs on `ubuntu-latest` with `pwsh` as the default shell. A browser on
 
 A first job regenerates `packages.lock.json` on a Dependabot pull request; the build job follows it.
 
-1. Set up Java 21 (SonarCloud scanner), .NET 10, Node.js; restore the NuGet cache and the local tools.
+1. Set up Java 21 (SonarCloud scanner), .NET 11, Node.js; restore the NuGet cache and the local tools.
 2. `npm ci`, `npm run lint` (the `wwwroot/js` scripts) and `npm run audit` (fails on a high or critical advisory).
 3. Begin SonarCloud scan.
 4. `dotnet build --no-incremental --configuration Release /p:RestoreLockedMode=true -warnaserror` — builds all projects including the `.dacpac`.

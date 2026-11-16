@@ -356,6 +356,6 @@ public class LoginWith2faTests
     private static void AssertReturnsPageWithReturnUrl(IActionResult result, LoginWith2fa model, string? returnUrl)
     {
         Assert.IsType<PageResult>(result);
-        Assert.Equal(returnUrl, model.ReturnUrl);
+        Assert.Equal(returnUrl, model.ReturnUrl?.OriginalString);
     }
 }

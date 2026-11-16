@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 [AllowAnonymous]
 public class Redirect : PageModel
 {
-    public string? RedirectUri { get; set; }
+    public Uri? RedirectUri { get; set; }
 
     public IActionResult OnGet(string? redirectUri)
     {
@@ -16,7 +16,7 @@ public class Redirect : PageModel
             return RedirectToPage(PageRoutes.Error);
         }
 
-        RedirectUri = redirectUri;
+        RedirectUri = UriValue.From(redirectUri);
         return Page();
     }
 }

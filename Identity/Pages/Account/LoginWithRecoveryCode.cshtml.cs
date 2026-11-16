@@ -23,7 +23,7 @@ public class LoginWithRecoveryCode : PageModel
     [BindProperty]
     public InputModel Input { get; set; } = new InputModel();
 
-    public string? ReturnUrl { get; set; }
+    public Uri? ReturnUrl { get; set; }
 
     public async Task<IActionResult> OnGetAsync(string? returnUrl = null)
     {
@@ -33,7 +33,7 @@ public class LoginWithRecoveryCode : PageModel
             throw new InvalidOperationException(UserMessages.UnableToLoadTwoFactorUser);
         }
 
-        ReturnUrl = returnUrl;
+        ReturnUrl = UriValue.From(returnUrl);
 
         return Page();
     }

@@ -261,6 +261,6 @@ public class LoginWithRecoveryCodeTests
     private static void AssertReturnsPageWithReturnUrl(IActionResult result, LoginWithRecoveryCode model, string? returnUrl)
     {
         Assert.IsType<PageResult>(result);
-        Assert.Equal(returnUrl, model.ReturnUrl);
+        Assert.Equal(returnUrl, model.ReturnUrl?.OriginalString);
     }
 }

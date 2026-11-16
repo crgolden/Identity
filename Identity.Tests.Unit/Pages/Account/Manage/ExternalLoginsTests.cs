@@ -511,8 +511,7 @@ public class ExternalLoginsTests
         {
             RequestServices = services.Object
         };
-        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, expectedUserId)
-        ]));
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, expectedUserId)]));
 
         var model = new ExternalLogins(mockUserManager.Object, mockSignInManager.Object, mockUserStore.Object)
         {

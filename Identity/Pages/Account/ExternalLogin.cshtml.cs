@@ -52,7 +52,7 @@ public class ExternalLogin : PageModel
 
     public string? ProviderDisplayName { get; set; }
 
-    public string? ReturnUrl { get; set; }
+    public Uri? ReturnUrl { get; set; }
 
     [TempData]
     public string? ErrorMessage { get; set; }
@@ -99,7 +99,7 @@ public class ExternalLogin : PageModel
         var externalEmail = info.Principal.FindFirstValue(ClaimTypes.Email);
         if (IsNullOrWhiteSpace(externalEmail))
         {
-            ReturnUrl = returnUrl;
+            ReturnUrl = UriValue.From(returnUrl);
             ProviderDisplayName = info.ProviderDisplayName;
             return Page();
         }
@@ -177,7 +177,7 @@ public class ExternalLogin : PageModel
         }
 
         ProviderDisplayName = info.ProviderDisplayName;
-        ReturnUrl = returnUrl;
+        ReturnUrl = UriValue.From(returnUrl);
         return Page();
     }
 

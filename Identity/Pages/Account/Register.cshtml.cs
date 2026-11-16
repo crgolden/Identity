@@ -43,7 +43,7 @@ public class Register : PageModel
     [BindProperty]
     public InputModel Input { get; set; } = new InputModel();
 
-    public string? ReturnUrl { get; set; }
+    public Uri? ReturnUrl { get; set; }
 
     public string? RecaptchaSiteKey { get; private set; }
 
@@ -53,7 +53,7 @@ public class Register : PageModel
 
     public async Task OnGetAsync(string? returnUrl = null)
     {
-        ReturnUrl = returnUrl;
+        ReturnUrl = UriValue.From(returnUrl);
         ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
         RecaptchaSiteKey = _captchaService.SiteKey;
         RecaptchaScriptEndpoint = _captchaService.ScriptEndpoint;

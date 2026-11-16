@@ -48,9 +48,9 @@ Register-StepInputs @{
 Register-VolatileSteps @('npm run audit')
 $repo = $PSScriptRoot
 $sarif = (Join-Path $gateOutput 'identity-inspect.sarif')
-$unitTrx = Join-Path $repo 'Identity.Tests.Unit\bin\Release\net10.0\TestResults\unit-tests.trx'
-$e2eTrx = Join-Path $repo 'Identity.Tests.E2E\bin\Release\net10.0\TestResults\e2e-tests.trx'
-$integrationTrx = Join-Path $repo 'Identity.Tests.Integration\bin\Release\net10.0\TestResults\integration-tests.trx'
+$unitTrx = Join-Path $repo 'Identity.Tests.Unit\bin\Release\net11.0\TestResults\unit-tests.trx'
+$e2eTrx = Join-Path $repo 'Identity.Tests.E2E\bin\Release\net11.0\TestResults\e2e-tests.trx'
+$integrationTrx = Join-Path $repo 'Identity.Tests.Integration\bin\Release\net11.0\TestResults\integration-tests.trx'
 $testCatalog = $env:SqlConnectionStringBuilder__InitialCatalog ?? 'IdentityTest'
 $developmentSql = (Get-Content -Raw (Join-Path $repo 'Identity\appsettings.Development.json') | ConvertFrom-Json).SqlConnectionStringBuilder
 $dataSource = $env:SqlConnectionStringBuilder__DataSource ?? $developmentSql.DataSource
@@ -77,9 +77,9 @@ $s101 = 'S101 dictionary control (must FAIL without the dictionary)'
 $unit = 'Unit tests (Identity.Tests.Unit, Category=Unit)'
 $schema = "Deploy E2E test database schema ($testCatalog)"
 $e2e = 'E2E tests (Identity.Tests.E2E, Category=E2E)'
-$e2eOutput = Join-Path $repo 'Identity.Tests.E2E\bin\Release\net10.0'
+$e2eOutput = Join-Path $repo 'Identity.Tests.E2E\bin\Release\net11.0'
 $e2eFloor = [int](Get-Content (Join-Path $repo 'Identity.Tests.E2E\e2e-settings.json') -Raw | ConvertFrom-Json).executedTestFloor
-$cucumberMessagesRelative = Join-Path 'Identity.Tests.E2E\bin\Release\net10.0' (Get-Content (Join-Path $repo 'Identity.Tests.E2E\reqnroll.json') -Raw | ConvertFrom-Json).formatters.message.outputFilePath
+$cucumberMessagesRelative = Join-Path 'Identity.Tests.E2E\bin\Release\net11.0' (Get-Content (Join-Path $repo 'Identity.Tests.E2E\reqnroll.json') -Raw | ConvertFrom-Json).formatters.message.outputFilePath
 $cucumberMessages = Join-Path $repo $cucumberMessagesRelative
 $publishStep = 'Publish command reaches the CLI (the workflow line run without GITHUB_RUN_ID must fail on the run identity, not on usage)'
 $cucumberReport = 'Cucumber messages report (Identity.Tests.E2E, one testCaseFinished per floor scenario)'
@@ -98,7 +98,7 @@ if ($Tests) {
             $env:ASPNETCORE_ENVIRONMENT = 'Development'
             $env:SqlConnectionStringBuilder__InitialCatalog = $testCatalog
             $env:PasskeyOrigin = 'https://127.0.0.1'
-            pwsh "$repo\Identity.Tests.E2E\bin\Release\net10.0\playwright.ps1" install chromium
+            pwsh "$repo\Identity.Tests.E2E\bin\Release\net11.0\playwright.ps1" install chromium
         }
     }
 }
@@ -119,7 +119,7 @@ if ($Only) {
         $env:ASPNETCORE_ENVIRONMENT = 'Development'
         $env:SqlConnectionStringBuilder__InitialCatalog = $testCatalog
         $env:PasskeyOrigin = 'https://127.0.0.1'
-        pwsh "$repo\Identity.Tests.E2E\bin\Release\net10.0\playwright.ps1" install chromium
+        pwsh "$repo\Identity.Tests.E2E\bin\Release\net11.0\playwright.ps1" install chromium
     }
     $probeResults = Join-Path $gateOutput 'probe-results'
     $probeTrx = Join-Path $probeResults 'probe.trx'
@@ -231,9 +231,9 @@ if (-not (Test-StepCarried 'jb inspectcode')) {
 if (-not (Test-StepCarried $unit)) {
     if (Test-Path $unitTrx) { Remove-Item $unitTrx -Force }
     $global:LASTEXITCODE = $null
-    dotnet coverlet Identity.Tests.Unit\bin\Release\net10.0 `
+    dotnet coverlet Identity.Tests.Unit\bin\Release\net11.0 `
         --target "dotnet" `
-        --targetargs "test --project Identity.Tests.Unit --no-build --configuration Release -- --filter-trait Category=Unit --stop-on-fail on --report-xunit-trx --report-xunit-trx-filename unit-tests.trx --results-directory=Identity.Tests.Unit/bin/Release/net10.0/TestResults" `
+        --targetargs "test --project Identity.Tests.Unit --no-build --configuration Release -- --filter-trait Category=Unit --stop-on-fail on --report-xunit-trx --report-xunit-trx-filename unit-tests.trx --results-directory=Identity.Tests.Unit/bin/Release/net11.0/TestResults" `
         --format opencover --output "coverage.opencover.xml" `
         --skipautoprops --exclude-by-attribute GeneratedCodeAttribute --exclude-by-file "**/obj/**" `
         --exclude-by-file "**/Program.cs" --does-not-return-attribute DoesNotReturnAttribute `
@@ -252,7 +252,7 @@ if (-not (Test-StepCarried $schema)) {
     Assert-StepExit $schema
 }
 
-Install-PlaywrightBrowsers 'Install Playwright browsers' { pwsh "$repo\Identity.Tests.E2E\bin\Release\net10.0\playwright.ps1" install --dry-run chromium } { pwsh "$repo\Identity.Tests.E2E\bin\Release\net10.0\playwright.ps1" install chromium }
+Install-PlaywrightBrowsers 'Install Playwright browsers' { pwsh "$repo\Identity.Tests.E2E\bin\Release\net11.0\playwright.ps1" install --dry-run chromium } { pwsh "$repo\Identity.Tests.E2E\bin\Release\net11.0\playwright.ps1" install chromium }
 
 if (-not (Test-StepCarried $e2e)) {
     if ($e2eFloor -le 0) { Stop-Gate $e2e 'Identity.Tests.E2E\e2e-settings.json carries no positive executedTestFloor' }
@@ -265,7 +265,7 @@ if (-not (Test-StepCarried $e2e)) {
     $env:PasskeyOrigin = 'https://127.0.0.1'
     $global:LASTEXITCODE = $null
     dotnet-coverage collect `
-        "dotnet test --project Identity.Tests.E2E --no-build --configuration Release -- --filter-trait Category=E2E --stop-on-fail on --report-xunit-trx --report-xunit-trx-filename e2e-tests.trx --results-directory=Identity.Tests.E2E/bin/Release/net10.0/TestResults" `
+        "dotnet test --project Identity.Tests.E2E --no-build --configuration Release -- --filter-trait Category=E2E --stop-on-fail on --report-xunit-trx --report-xunit-trx-filename e2e-tests.trx --results-directory=Identity.Tests.E2E/bin/Release/net11.0/TestResults" `
         -f xml -o "coverage-e2e.xml" -s "coverage.settings.xml"
     Test-Trx $e2e $e2eTrx $global:LASTEXITCODE -floor $e2eFloor
     if (-not (Test-Path $cucumberMessages)) { Stop-Gate $cucumberReport "missing: $cucumberMessages" }
@@ -286,7 +286,7 @@ if (-not (Test-StepCarried $integration)) {
     $env:PasskeyOrigin = 'https://127.0.0.1'
     $global:LASTEXITCODE = $null
     dotnet-coverage collect `
-        "dotnet test --project Identity.Tests.Integration --no-build --configuration Release -- --filter-trait Category=Integration --stop-on-fail on --report-xunit-trx --report-xunit-trx-filename integration-tests.trx --results-directory=Identity.Tests.Integration/bin/Release/net10.0/TestResults" `
+        "dotnet test --project Identity.Tests.Integration --no-build --configuration Release -- --filter-trait Category=Integration --stop-on-fail on --report-xunit-trx --report-xunit-trx-filename integration-tests.trx --results-directory=Identity.Tests.Integration/bin/Release/net11.0/TestResults" `
         -f xml -o "coverage-integration.xml" -s "coverage.settings.xml"
     Test-Trx $integration $integrationTrx $global:LASTEXITCODE -floor 27
 }

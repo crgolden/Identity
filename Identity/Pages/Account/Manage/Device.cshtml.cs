@@ -141,8 +141,8 @@ public class Device : ConsentPageModelBase
         var vm = new ViewModel
         {
             ClientName = request.Client.ClientName ?? request.Client.ClientId,
-            ClientUrl = request.Client.ClientUri,
-            ClientLogoUrl = request.Client.LogoUri,
+            ClientUrl = UriValue.From(request.Client.ClientUri),
+            ClientLogoUrl = UriValue.From(request.Client.LogoUri),
             AllowRememberConsent = request.Client.AllowRememberConsent,
         };
 

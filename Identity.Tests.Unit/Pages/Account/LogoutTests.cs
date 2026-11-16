@@ -75,8 +75,8 @@ public class LogoutTests
         // Assert
         Assert.IsType<PageResult>(result);
         Assert.False(model.ShowLogoutPrompt);
-        Assert.Equal(PostLogoutRedirectUri, model.PostLogoutRedirectUri);
-        Assert.Equal(SignOutIFrameUrl, model.SignOutIFrameUrl);
+        Assert.Equal(PostLogoutRedirectUri, model.PostLogoutRedirectUri?.OriginalString);
+        Assert.Equal(SignOutIFrameUrl, model.SignOutIFrameUrl?.OriginalString);
         interaction.Verify(s => s.GetLogoutContextAsync(logoutId, It.IsAny<CancellationToken>()), Times.Once);
     }
 

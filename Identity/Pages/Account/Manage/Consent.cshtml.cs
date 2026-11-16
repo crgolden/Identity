@@ -46,13 +46,13 @@ public class Consent : ConsentPageModelBase
             return RedirectToPage(PageRoutes.Error);
         }
 
-        Input = new InputModel { ReturnUrl = returnUrl };
+        Input = new InputModel { ReturnUrl = UriValue.From(returnUrl) };
         return Page();
     }
 
     public async Task<IActionResult> OnPostAsync()
     {
-        var request = await _interaction.GetAuthorizationContextAsync(Input.ReturnUrl, HttpContext.RequestAborted);
+        var request = await _interaction.GetAuthorizationContextAsync(Input.ReturnUrl?.OriginalString, HttpContext.RequestAborted);
         if (request == null)
         {
             return RedirectToPage(PageRoutes.Error);
@@ -128,10 +128,10 @@ public class Consent : ConsentPageModelBase
         {
             ThrowIfNull(Input.ReturnUrl);
             await _interaction.GrantConsentAsync(request, grantedConsent, HttpContext.RequestAborted, User.GetSubjectId());
-            return Redirect(Input.ReturnUrl);
+            return Redirect(Input.ReturnUrl.OriginalString);
         }
 
-        if (!await SetViewModelAsync(Input.ReturnUrl, Input.ScopesConsented.Contains))
+        if (!await SetViewModelAsync(Input.ReturnUrl?.OriginalString, Input.ScopesConsented.Contains))
         {
             return RedirectToPage(PageRoutes.Error);
         }
@@ -144,8 +144,8 @@ public class Consent : ConsentPageModelBase
         var vm = new ViewModel
         {
             ClientName = request.Client.ClientName ?? request.Client.ClientId,
-            ClientUrl = request.Client.ClientUri,
-            ClientLogoUrl = request.Client.LogoUri,
+            ClientUrl = UriValue.From(request.Client.ClientUri),
+            ClientLogoUrl = UriValue.From(request.Client.LogoUri),
             AllowRememberConsent = request.Client.AllowRememberConsent,
         };
 
@@ -217,7 +217,7 @@ public class Consent : ConsentPageModelBase
 
         public bool RememberConsent { get; set; }
 
-        public string? ReturnUrl { get; set; }
+        public Uri? ReturnUrl { get; set; }
 
         public string? Description { get; set; }
     }

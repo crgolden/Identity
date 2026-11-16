@@ -11,9 +11,6 @@ using Microsoft.Extensions.Options;
 
 [AllowAnonymous]
 [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-#pragma warning disable S4502 // Error pages must accept GET/POST without a valid CSRF token
-[IgnoreAntiforgeryToken]
-#pragma warning restore S4502
 public class Error : PageModel
 {
     internal const string OidcErrorActivityName = "identity.error.oidc";

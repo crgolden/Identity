@@ -416,7 +416,7 @@ public sealed class ExternalLoginTests
         // Assert
         Assert.IsType<PageResult>(result);
         Assert.Equal(ExternalProviderDisplayName, harness.Model.ProviderDisplayName);
-        Assert.Equal(LocalReturnUrl, harness.Model.ReturnUrl);
+        Assert.Equal(LocalReturnUrl, harness.Model.ReturnUrl?.OriginalString);
         harness.UserMgr.Verify(m => m.CreateAsync(It.IsAny<IdentityUser<Guid>>()), Times.Never);
     }
 
@@ -667,7 +667,7 @@ public sealed class ExternalLoginTests
 
         var url = new Mock<IUrlHelper>();
         url.Setup(u => u.Content(PageRoutes.ContentRoot)).Returns(Generated.NewLocalPath());
-        url.Setup(u => u.IsLocalUrl(It.IsAny<string?>())).Returns<string?>(u => u is not null && u.StartsWith('/'));
+        url.Setup(u => u.IsLocalUrl(It.IsAny<string?>())).Returns<string?>(u => u is not null && u.StartsWith('/', StringComparison.Ordinal));
         var routeData = new RouteData();
         routeData.Values[AspNetRouteConstants.PageRouteValueName] = ExternalLogin.ExternalLoginPagePath;
         url.SetupGet(u => u.ActionContext).Returns(new ActionContext(new DefaultHttpContext(), routeData, new ActionDescriptor()));

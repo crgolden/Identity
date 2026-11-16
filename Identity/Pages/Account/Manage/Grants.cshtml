@@ -22,11 +22,11 @@ else
                 <div class="d-flex align-items-center gap-2">
                     @if (grant.ClientLogoUrl != null)
                     {
-                        <img src="@grant.ClientLogoUrl" alt="@grant.ClientName logo" class="object-fit-contain" height="32" />
+                        <img src="@grant.ClientLogoUrl.OriginalString" alt="@grant.ClientName logo" class="object-fit-contain" height="32" />
                     }
                     @if (grant.ClientUrl != null)
                     {
-                        <strong><a href="@grant.ClientUrl" target="_blank" rel="noopener noreferrer">@grant.ClientName</a></strong>
+                        <strong><a href="@grant.ClientUrl.OriginalString" target="_blank" rel="noopener noreferrer">@grant.ClientName</a></strong>
                     }
                     else
                     {
@@ -46,12 +46,12 @@ else
                     </li>
                 }
                 <li class="list-group-item">
-                    <span class="text-muted">Granted:</span> @grant.Created.ToString("yyyy-MM-dd")
+                    <span class="text-muted">Granted:</span> @grant.Created.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
                 </li>
                 @if (grant.Expires.HasValue)
                 {
                     <li class="list-group-item">
-                        <span class="text-muted">Expires:</span> @grant.Expires.Value.ToString("yyyy-MM-dd")
+                        <span class="text-muted">Expires:</span> @grant.Expires.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
                     </li>
                 }
                 @if (grant.IdentityGrantNames.Any())

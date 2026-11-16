@@ -52,6 +52,23 @@ internal sealed record SyntheticAccount(
 
     private static long MonotonicSignCountSeed() => DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
+    private static bool IsLoginPath(string url) =>
+        new Uri(url).AbsolutePath.StartsWith(LoginPath, StringComparison.OrdinalIgnoreCase);
+
+    private static string RequiredField(JsonElement root, string name, string envName)
+    {
+        if (root.TryGetProperty(name, out var element) && element.ValueKind == JsonValueKind.String)
+        {
+            var value = element.GetString();
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                return value;
+            }
+        }
+
+        throw new InvalidOperationException($"{envName} is missing the non-empty string field '{name}'.");
+    }
+
     private async Task SeedPasskeyAsync(IPage page)
     {
         var session = await page.Context.NewCDPSessionAsync(page);
@@ -95,22 +112,5 @@ internal sealed record SyntheticAccount(
             });
 
         await CredentialSerialization.InstallAsync(page.Context);
-    }
-
-    private static bool IsLoginPath(string url) =>
-        new Uri(url).AbsolutePath.StartsWith(LoginPath, StringComparison.OrdinalIgnoreCase);
-
-    private static string RequiredField(JsonElement root, string name, string envName)
-    {
-        if (root.TryGetProperty(name, out var element) && element.ValueKind == JsonValueKind.String)
-        {
-            var value = element.GetString();
-            if (!string.IsNullOrWhiteSpace(value))
-            {
-                return value;
-            }
-        }
-
-        throw new InvalidOperationException($"{envName} is missing the non-empty string field '{name}'.");
     }
 }

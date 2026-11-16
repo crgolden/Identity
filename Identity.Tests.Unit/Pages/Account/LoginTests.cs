@@ -64,7 +64,7 @@ public sealed class LoginTests : IDisposable
         await model.OnGetAsync(RequestedReturnUrl);
 
         // Assert
-        Assert.Equal(RequestedReturnUrl, model.ReturnUrl);
+        Assert.Equal(RequestedReturnUrl, model.ReturnUrl?.OriginalString);
     }
 
     [Fact]
@@ -77,7 +77,7 @@ public sealed class LoginTests : IDisposable
         await model.OnGetAsync();
 
         // Assert
-        Assert.Equal(ContentRootUrl, model.ReturnUrl);
+        Assert.Equal(ContentRootUrl, model.ReturnUrl?.OriginalString);
     }
 
     [Fact]

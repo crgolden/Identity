@@ -47,7 +47,7 @@ public class Login : PageModel
 
     public IList<AuthenticationScheme> ExternalLogins { get; set; } = new List<AuthenticationScheme>();
 
-    public string? ReturnUrl { get; set; }
+    public Uri? ReturnUrl { get; set; }
 
     public string? RecaptchaSiteKey { get; private set; }
 
@@ -70,8 +70,7 @@ public class Login : PageModel
 
         await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
         ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
-        ReturnUrl = returnUrl;
-        ReturnUrl ??= Url.Content(PageRoutes.ContentRoot);
+        ReturnUrl = UriValue.From(returnUrl ?? Url.Content(PageRoutes.ContentRoot));
         RecaptchaSiteKey = _captchaService.SiteKey;
         RecaptchaScriptEndpoint = _captchaService.ScriptEndpoint;
     }

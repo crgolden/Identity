@@ -13,6 +13,7 @@ public sealed class AntiforgeryTests(IntegrationFixture fixture)
     [InlineData(PageRoutes.Register)]
     [InlineData(PageRoutes.ForgotPassword)]
     [InlineData(PageRoutes.ResendEmailConfirmation)]
+    [InlineData(PageRoutes.Error)]
     public async Task Post_WithoutAntiforgeryToken_ReturnsBadRequest(string path)
     {
         var client = fixture.Factory.CreateClient(new WebApplicationFactoryClientOptions

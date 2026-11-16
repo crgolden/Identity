@@ -8,7 +8,7 @@
 
 <div class="row justify-content-center">
     <div class="col-md-4">
-        <form id="registerForm" asp-route-returnUrl="@Model.ReturnUrl" method="post">
+        <form id="registerForm" asp-route-returnUrl="@Model.ReturnUrl?.OriginalString" method="post">
             <h2>Create a new account.</h2>
             <hr />
             <div id="validation-errors" asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
@@ -33,7 +33,7 @@
         </form>
     </div>
     <div class="col-md-6 col-md-offset-2">
-        <partial name="_ExternalProviders" model="Model.ExternalLogins" view-data='@(new ViewDataDictionary(ViewData) { ["ReturnUrl"] = Model.ReturnUrl, ["ActionVerb"] = "register" })' />
+        <partial name="_ExternalProviders" model="Model.ExternalLogins" view-data='@(new ViewDataDictionary(ViewData) { ["ReturnUrl"] = Model.ReturnUrl?.OriginalString, ["ActionVerb"] = "register" })' />
     </div>
 </div>
 
