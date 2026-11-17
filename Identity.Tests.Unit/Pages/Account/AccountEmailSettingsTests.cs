@@ -1,5 +1,6 @@
 namespace Identity.Tests.Unit.Pages.Account;
 
+using System.Reflection;
 using Identity.Pages.Account;
 using Identity.Tests.Unit.Infrastructure;
 using Microsoft.Extensions.Configuration;
@@ -31,5 +32,39 @@ public class AccountEmailSettingsTests
         Assert.Equal(sender, settings.Sender);
         Assert.Equal(confirmAccountHtmlFormat, settings.ConfirmAccountHtmlFormat);
         Assert.Equal(resetPasswordHtmlFormat, settings.ResetPasswordHtmlFormat);
+    }
+
+    [Fact]
+    public void ConfirmAccountHtml_NullCallbackUrl_ThrowsArgumentNullExceptionNamingIt()
+    {
+        // Arrange
+        var settings = new AccountEmailSettings(Generated.NewEmailAddress(), Generated.NewDescription(), Generated.NewDescription());
+        var builder = typeof(AccountEmailSettings).GetMethod(nameof(AccountEmailSettings.ConfirmAccountHtml));
+        Assert.NotNull(builder);
+        var callbackUrlParameter = Assert.Single(builder.GetParameters());
+
+        // Act
+        var thrown = Assert.Throws<TargetInvocationException>(() => builder.Invoke(settings, [null]));
+
+        // Assert
+        var argumentNull = Assert.IsType<ArgumentNullException>(thrown.InnerException);
+        Assert.Equal(callbackUrlParameter.Name, argumentNull.ParamName);
+    }
+
+    [Fact]
+    public void ResetPasswordHtml_NullCallbackUrl_ThrowsArgumentNullExceptionNamingIt()
+    {
+        // Arrange
+        var settings = new AccountEmailSettings(Generated.NewEmailAddress(), Generated.NewDescription(), Generated.NewDescription());
+        var builder = typeof(AccountEmailSettings).GetMethod(nameof(AccountEmailSettings.ResetPasswordHtml));
+        Assert.NotNull(builder);
+        var callbackUrlParameter = Assert.Single(builder.GetParameters());
+
+        // Act
+        var thrown = Assert.Throws<TargetInvocationException>(() => builder.Invoke(settings, [null]));
+
+        // Assert
+        var argumentNull = Assert.IsType<ArgumentNullException>(thrown.InnerException);
+        Assert.Equal(callbackUrlParameter.Name, argumentNull.ParamName);
     }
 }
