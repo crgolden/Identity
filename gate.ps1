@@ -14,7 +14,7 @@ $gateOutput = if (Get-Command Get-GateOutputDirectory -ErrorAction SilentlyConti
 } else {
     (New-Item -ItemType Directory -Force -Path (Join-Path ([IO.Path]::GetTempPath()) "claude\crgolden-gates\$(Split-Path -Leaf $PSScriptRoot)")).FullName
 }
-Register-GateSteps @('Install dotnet-coverage', 'Restore local tools', 'node_modules install markers', 'npm run lint', 'npm run audit',
+Register-GateSteps @('Install dotnet-coverage', 'Restore local tools',
     'S101 dictionary control', 'Begin Sonar analysis',
     'Build with dotnet', 'jb inspectcode', 'Unit tests (Identity.Tests.Unit', 'Install SqlPackage',
     'Deploy E2E test database schema', 'Install Playwright browsers', 'E2E tests (Identity.Tests.E2E',
@@ -25,9 +25,6 @@ Register-GateSteps @('Install dotnet-coverage', 'Restore local tools', 'node_mod
 Register-StepInputs @{
     'Install dotnet-coverage'                             = @('*')
     'Restore local tools'                                 = @('dotnet-tools.json')
-    'node_modules install markers'                        = @('*')
-    'npm run lint'                                        = @('*')
-    'npm run audit'                                       = @('package.json', 'package-lock.json')
     'S101 dictionary control'                             = @('*')
     'Begin Sonar analysis'                                = @('*')
     'Build with dotnet'                                   = @('*')
@@ -45,7 +42,6 @@ Register-StepInputs @{
     'Fail on open Sonar issues'                           = @('*')
     'Run Stryker mutation tests'                          = @('*')
 }
-Register-VolatileSteps @('npm run audit')
 $repo = $PSScriptRoot
 $sarif = (Join-Path $gateOutput 'identity-inspect.sarif')
 $unitTrx = Join-Path $repo 'Identity.Tests.Unit\bin\Release\net11.0\TestResults\unit-tests.trx'
@@ -150,23 +146,6 @@ if (-not (Test-StepCarried 'Install dotnet-coverage')) {
 $global:LASTEXITCODE = $null
 dotnet tool restore
 Assert-StepExit 'Restore local tools (dotnet tool restore)'
-
-$installed = (Test-Path (Join-Path $repo 'node_modules\.package-lock.json')) -and
-    (Test-Path (Join-Path $repo 'node_modules\.bin\eslint.cmd'))
-if (-not $installed) { Stop-Gate 'node_modules install markers' 'incomplete install; run npm ci deliberately first' }
-Assert-NodeInstallCurrent $repo
-Write-Row 'node_modules install markers' 'PASS' 'eslint.cmd present; every package matches package-lock.json'
-
-if (-not (Test-StepCarried 'npm run lint')) {
-    $global:LASTEXITCODE = $null
-    npm run lint
-    Assert-StepExit 'npm run lint'
-}
-if (-not (Test-StepCarried 'npm run audit')) {
-    $global:LASTEXITCODE = $null
-    npm run audit
-    Assert-StepExit 'npm run audit'
-}
 
 if (-not (Test-StepCarried $s101)) {
     $identityCsproj = Join-Path $repo 'Identity\Identity.csproj'

@@ -38,21 +38,19 @@ fixtures and mutation testing: [TESTING.md](TESTING.md).
 | Identity | ASP.NET Core Identity (`IdentityUser<Guid>`) |
 | Database | SQL Server through EF Core 10; schema in a SQL Database Project (`Identity.Data`, a dacpac) |
 | Email | Azure Service Bus (a separate worker delivers the queue) |
-| Front-end scripts | vanilla JavaScript in `Identity/wwwroot/js`, linted with ESLint from the repo root (Node 24, `.nvmrc`) |
+| Front-end scripts | vanilla JavaScript in `Identity/wwwroot/js`, with jQuery and its validation plugins vendored in `Identity/wwwroot/lib` |
 | Tests | xUnit v3, Reqnroll with Playwright (E2E), Stryker.NET, ReSharper `jb inspectcode`, SonarCloud |
 | Hosting | Azure App Service; Key Vault references |
 
 ## Prerequisites
 
-- The .NET 11 SDK, Node.js 24, and SqlPackage (`dotnet tool install --global microsoft.sqlpackage`).
-- A GitHub personal access token with the `read:packages` scope: `NuGet.Config` and `.npmrc` read the `crgolden`
-  GitHub Packages feed, which asks for a token even for a public package. Store it outside the repo:
+- The .NET 11 SDK and SqlPackage (`dotnet tool install --global microsoft.sqlpackage`).
+- A GitHub personal access token with the `read:packages` scope: `NuGet.Config` reads the `crgolden` GitHub Packages
+  feed, which asks for a token even for a public package. Store it outside the repo:
 
   ```powershell
   dotnet nuget update source GitHub --username <your GitHub user> --password <token> --store-password-in-clear-text --configfile "$env:APPDATA\NuGet\NuGet.Config"
   ```
-
-  and in your user `~/.npmrc`: `//npm.pkg.github.com/:_authToken=<token>`.
 - SQL Server: LocalDB (`appsettings.Development.json`'s default) or any instance.
 - A Google OAuth 2.0 client and a reCAPTCHA v3 site and secret key.
 - An Azure Service Bus namespace or connection string with an `email` queue, to send confirmation email.
@@ -64,7 +62,6 @@ fixtures and mutation testing: [TESTING.md](TESTING.md).
 git clone https://github.com/crgolden/Identity.git
 cd Identity
 dotnet tool restore
-npm ci
 dotnet build
 ```
 
@@ -134,9 +131,6 @@ every function `gate.ps1` calls, since those functions decide whether each step 
 with `ASPNETCORE_ENVIRONMENT=CI` and the settings above pointing at a `*Test` database):
 
 ```powershell
-npm ci
-npm run lint
-npm run audit
 dotnet tool restore
 dotnet build --no-incremental --configuration Release /p:RestoreLockedMode=true -warnaserror
 dotnet jb inspectcode Identity.slnx --no-build -e=WARNING --output=inspectcode.sarif
@@ -162,7 +156,6 @@ and fails on any open issue.
 | `Identity.Tests.Integration/` | endpoint and service tests over `HttpClient` against a hosted app |
 | `Identity.Tests.E2E/` | browser journeys as Gherkin (Reqnroll and Playwright), and the synthetic walker |
 | `Identity.Tests.Load/` | throughput tests, run on manual dispatch |
-| `package.json`, `eslint.config.js` | linting `Identity/wwwroot/js` |
 
 ## Deployment
 

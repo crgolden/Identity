@@ -173,7 +173,7 @@ $env:SYNTHETIC_SEED = '<seed>'; $env:WalkerBaseUrl = 'https://crgolden-identity.
 
 ## CI pipeline
 
-`.github/workflows/main_crgolden-identity.yml` runs, on every push and pull request: the npm lint and audit, the
+`.github/workflows/main_crgolden-identity.yml` runs, on every push and pull request: the
 build with warnings as errors, `jb inspectcode`, the unit tier under `coverlet`, the `.dacpac` to the E2E database,
 the E2E tier with its floor check, the integration tier, and SonarCloud with a check that fails on any open issue.
 The load tier runs on `workflow_dispatch` only, the mutation job on every push and same-repository pull request, and

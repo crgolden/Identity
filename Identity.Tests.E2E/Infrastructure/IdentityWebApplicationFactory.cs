@@ -54,6 +54,7 @@ public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Progra
         var addresses = server.Features.GetRequiredFeature<IServerAddressesFeature>();
         _serverAddress = addresses.Addresses.First().TrimEnd('/');
 
+        testHost.Start();
         return testHost;
     }
 

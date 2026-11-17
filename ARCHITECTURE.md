@@ -541,18 +541,17 @@ Every job runs on `ubuntu-latest` with `pwsh` as the default shell. A browser on
 
 A first job regenerates `packages.lock.json` on a Dependabot pull request; the build job follows it.
 
-1. Set up Java 21 (SonarCloud scanner), .NET 11, Node.js; restore the NuGet cache and the local tools.
-2. `npm ci`, `npm run lint` (the `wwwroot/js` scripts) and `npm run audit` (fails on a high or critical advisory).
-3. Begin SonarCloud scan.
-4. `dotnet build --no-incremental --configuration Release /p:RestoreLockedMode=true -warnaserror` — builds all projects including the `.dacpac`.
-5. ReSharper `jb inspectcode`; any result fails the job.
-6. Run unit tests under `coverlet` (OpenCover); write `coverage.opencover.xml`.
-7. Deploy the `.dacpac` to the E2E test database with `SqlPackage`, using the SQL login in the workflow's secrets. The build job performs no Azure login.
-8. Run E2E tests (`ASPNETCORE_ENVIRONMENT=CI`) under `dotnet-coverage`; write `coverage-e2e.xml`; assert the run executed at least its floor; publish the scenario results.
-9. Run integration tests under `dotnet-coverage`; write `coverage-integration.xml`.
-10. On `workflow_dispatch` only, run the load tests.
-11. Publish web app (`-r win-x86 --self-contained false`) and upload it with the `.dacpac` and the test results.
-12. End SonarCloud scan (reads the three coverage files), then fail on any open Sonar issue.
+1. Set up Java 21 (SonarCloud scanner), .NET 11, Node.js (for `@crgolden/modules`'s `publish-bdd-results`); restore the NuGet cache and the local tools.
+2. Begin SonarCloud scan.
+3. `dotnet build --no-incremental --configuration Release /p:RestoreLockedMode=true -warnaserror`: builds all projects including the `.dacpac`.
+4. ReSharper `jb inspectcode`; any result fails the job.
+5. Run unit tests under `coverlet` (OpenCover); write `coverage.opencover.xml`.
+6. Deploy the `.dacpac` to the E2E test database with `SqlPackage`, using the SQL login in the workflow's secrets. The build job performs no Azure login.
+7. Run E2E tests (`ASPNETCORE_ENVIRONMENT=CI`) under `dotnet-coverage`; write `coverage-e2e.xml`; assert the run executed at least its floor; publish the scenario results.
+8. Run integration tests under `dotnet-coverage`; write `coverage-integration.xml`.
+9. On `workflow_dispatch` only, run the load tests.
+10. Publish web app (`-r win-x86 --self-contained false`) and upload it with the `.dacpac` and the test results.
+11. End SonarCloud scan (reads the three coverage files), then fail on any open Sonar issue.
 
 The database, E2E, integration and SonarCloud steps are skipped for Dependabot (`if: github.actor != 'dependabot[bot]'`), so a dependency bump is verified by unit tests alone. The publish and artifact-upload steps carry no such condition, but they follow the test steps, so a failing test skips them and the whole deploy job with them.
 

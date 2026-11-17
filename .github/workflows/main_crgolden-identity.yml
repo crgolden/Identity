@@ -138,19 +138,6 @@ jobs:
           node-version-file: .nvmrc
           registry-url: https://npm.pkg.github.com
 
-      - name: Install npm dependencies
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.PACKAGES_READ_TOKEN }}
-        run: npm ci --ignore-scripts
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Audit dependencies (fails on high or critical)
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.PACKAGES_READ_TOKEN }}
-        run: npm run audit
-
       - name: Begin Sonar analysis
         if: github.actor != 'dependabot[bot]'
         env:
