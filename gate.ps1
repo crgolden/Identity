@@ -14,7 +14,7 @@ $gateOutput = if (Get-Command Get-GateOutputDirectory -ErrorAction SilentlyConti
 } else {
     (New-Item -ItemType Directory -Force -Path (Join-Path ([IO.Path]::GetTempPath()) "claude\crgolden-gates\$(Split-Path -Leaf $PSScriptRoot)")).FullName
 }
-Register-GateSteps @('Install dotnet-coverage', 'Restore local tools',
+Register-GateStep @('Install dotnet-coverage', 'Restore local tools',
     'S101 dictionary control', 'Begin Sonar analysis',
     'Build with dotnet', 'jb inspectcode', 'Unit tests (Identity.Tests.Unit', 'Install SqlPackage',
     'Deploy E2E test database schema', 'Install Playwright browsers', 'E2E tests (Identity.Tests.E2E',
@@ -22,26 +22,24 @@ Register-GateSteps @('Install dotnet-coverage', 'Restore local tools',
     'Publish command reaches the CLI',
     'Integration tests (Identity.Tests.Integration',
     'End Sonar analysis', 'Fail on open Sonar issues', 'Run Stryker mutation tests')
-Register-StepInputs @{
-    'Install dotnet-coverage'                             = @('*')
-    'Restore local tools'                                 = @('dotnet-tools.json')
-    'S101 dictionary control'                             = @('*')
-    'Begin Sonar analysis'                                = @('*')
-    'Build with dotnet'                                   = @('*')
-    'jb inspectcode'                                      = @('*')
-    'Unit tests (Identity.Tests.Unit'                     = @('*', '!Identity.Tests.E2E/*', '!Identity.Tests.Integration/*', '!Identity.Tests.Load/*')
-    'Install SqlPackage'                                  = @('*')
-    'Deploy E2E test database schema'                     = @('*', '!Identity.Tests.Unit/*')
-    'Install Playwright browsers'                         = @('*', '!Identity.Tests.Unit/*')
-    'E2E tests (Identity.Tests.E2E'                       = @('*', '!Identity.Tests.Unit/*')
-    'Cucumber messages report (Identity.Tests.E2E'        = @('*', '!Identity.Tests.Unit/*')
-    'Playwright artifact temp folder (Identity.Tests.E2E' = @('*', '!Identity.Tests.Unit/*')
-    'Publish command reaches the CLI'                     = @('*')
-    'Integration tests (Identity.Tests.Integration'       = @('*', '!Identity.Tests.Unit/*')
-    'End Sonar analysis'                                  = @('*')
-    'Fail on open Sonar issues'                           = @('*')
-    'Run Stryker mutation tests'                          = @('*')
-}
+Register-StepInput 'Install dotnet-coverage' @('*')
+Register-StepInput 'Restore local tools' @('dotnet-tools.json')
+Register-StepInput 'S101 dictionary control' @('*')
+Register-StepInput 'Begin Sonar analysis' @('*')
+Register-StepInput 'Build with dotnet' @('*')
+Register-StepInput 'jb inspectcode' @('*')
+Register-StepInput 'Unit tests (Identity.Tests.Unit' @('*', '!Identity.Tests.E2E/*', '!Identity.Tests.Integration/*', '!Identity.Tests.Load/*')
+Register-StepInput 'Install SqlPackage' @('*')
+Register-StepInput 'Deploy E2E test database schema' @('*', '!Identity.Tests.Unit/*')
+Register-StepInput 'Install Playwright browsers' @('*', '!Identity.Tests.Unit/*')
+Register-StepInput 'E2E tests (Identity.Tests.E2E' @('*', '!Identity.Tests.Unit/*')
+Register-StepInput 'Cucumber messages report (Identity.Tests.E2E' @('*', '!Identity.Tests.Unit/*')
+Register-StepInput 'Playwright artifact temp folder (Identity.Tests.E2E' @('*', '!Identity.Tests.Unit/*')
+Register-StepInput 'Publish command reaches the CLI' @('*')
+Register-StepInput 'Integration tests (Identity.Tests.Integration' @('*', '!Identity.Tests.Unit/*')
+Register-StepInput 'End Sonar analysis' @('*')
+Register-StepInput 'Fail on open Sonar issues' @('*')
+Register-StepInput 'Run Stryker mutation tests' @('*')
 $repo = $PSScriptRoot
 $sarif = (Join-Path $gateOutput 'identity-inspect.sarif')
 $unitTrx = Join-Path $repo 'Identity.Tests.Unit\bin\Release\net11.0\TestResults\unit-tests.trx'
@@ -88,7 +86,7 @@ $env:TZ = 'UTC'
 if ($env:TZ -ne 'UTC') { Write-Host 'GATE: FAILED (TZ pin)'; exit 1 }
 Set-Location $repo
 if ($Tests) {
-    Invoke-SelectedTests $repo $TestProject $Tests {
+    Invoke-SelectedTest $repo $TestProject $Tests {
         if ($TestProject -in 'Identity.Tests.E2E', 'Identity.Tests.Integration') {
             Start-LocalDbWhenTargeted
             $env:ASPNETCORE_ENVIRONMENT = 'Development'
@@ -136,8 +134,8 @@ if ($Only) {
 }
 exit (Invoke-Gate {
 Initialize-GateState 'Identity' $repo
-Resolve-OwedSteps
-Invoke-CatalogSteps
+Get-OwedStep | Register-OwedStep
+Invoke-GateLibraryStep
 
 if (-not (Test-StepCarried 'Install dotnet-coverage')) {
     if (Get-Command dotnet-coverage -ErrorAction SilentlyContinue) { Write-Row 'Install dotnet-coverage' 'PASS' 'present on PATH' }
@@ -203,7 +201,7 @@ else {
 
 if (-not (Test-StepCarried 'jb inspectcode')) {
     if (Test-Path $sarif) { Remove-Item $sarif -Force }
-    dotnet jb inspectcode "$repo\Identity.slnx" --no-build -e=WARNING --caches-home="$(New-InspectCodeCaches $gateOutput)" --output="$sarif"
+    dotnet jb inspectcode "$repo\Identity.slnx" --no-build -e=WARNING --caches-home="$(New-InspectCodeCache $gateOutput)" --output="$sarif"
     Test-Sarif $sarif
 }
 
@@ -231,7 +229,7 @@ if (-not (Test-StepCarried $schema)) {
     Assert-StepExit $schema
 }
 
-Install-PlaywrightBrowsers 'Install Playwright browsers' { pwsh "$repo\Identity.Tests.E2E\bin\Release\net11.0\playwright.ps1" install --dry-run chromium } { pwsh "$repo\Identity.Tests.E2E\bin\Release\net11.0\playwright.ps1" install chromium }
+Install-PlaywrightBrowser 'Install Playwright browsers' { pwsh "$repo\Identity.Tests.E2E\bin\Release\net11.0\playwright.ps1" install --dry-run chromium } { pwsh "$repo\Identity.Tests.E2E\bin\Release\net11.0\playwright.ps1" install chromium }
 
 if (-not (Test-StepCarried $e2e)) {
     if ($e2eFloor -le 0) { Stop-Gate $e2e 'Identity.Tests.E2E\e2e-settings.json carries no positive executedTestFloor' }
@@ -274,7 +272,7 @@ if (-not $sonarCarried) {
     $global:LASTEXITCODE = $null
     dotnet-sonarscanner end
     Assert-StepExit $endSonar
-    Test-SonarIssues $sonarIssues 'crgolden_Identity' $sonarBranch $sonarStartedAt
+    Assert-NoOpenSonarIssue $sonarIssues 'crgolden_Identity' $sonarBranch $sonarStartedAt
 }
 
 if (-not (Test-StepCarried $stryker)) {
