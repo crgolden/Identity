@@ -13,7 +13,7 @@ internal static class DuendeLicenseNotice
     private const string EventIdPropertyName = "EventId";
     private const string EventNamePropertyName = "Name";
 
-    private static readonly string[] NoLicenseConfiguredEventNames =
+    internal static IReadOnlyList<string> NoLicenseConfiguredEventNames =>
     [
         NoValidLicenseKeyEventName,
         FeatureUsedNoLicenseEventName,

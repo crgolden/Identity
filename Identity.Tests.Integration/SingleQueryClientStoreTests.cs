@@ -27,7 +27,7 @@ public sealed class SingleQueryClientStoreTests(IntegrationFixture fixture)
     [Fact]
     public async Task SeedClientAsync_FillsEveryCollectionNavigationTheModelDeclares_SoTheParityTestCannotPassVacuously()
     {
-        var rowsPerCollection = Random.Shared.Next(2, 5);
+        var rowsPerCollection = SingleQueryClientStoreConstants.RowsPerCollection;
         var clientId = await SeedClientAsync(rowsPerCollection);
         await using var scope = fixture.Factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -50,7 +50,7 @@ public sealed class SingleQueryClientStoreTests(IntegrationFixture fixture)
     [Fact]
     public async Task FindClientByIdAsync_ReturnsTheSameClientAsDuendesStore()
     {
-        var rowsPerCollection = Random.Shared.Next(2, 5);
+        var rowsPerCollection = SingleQueryClientStoreConstants.RowsPerCollection;
         var clientId = await SeedClientAsync(rowsPerCollection);
         await using var scope = fixture.Factory.Services.CreateAsyncScope();
         var duendeStore = scope.ServiceProvider.GetRequiredService<ClientStore>();
@@ -66,7 +66,7 @@ public sealed class SingleQueryClientStoreTests(IntegrationFixture fixture)
     [Fact]
     public async Task FindClientByIdAsync_WhenTheIdDiffersOnlyInCase_ReturnsNullLikeDuendesStore()
     {
-        var rowsPerCollection = Random.Shared.Next(2, 5);
+        var rowsPerCollection = SingleQueryClientStoreConstants.RowsPerCollection;
         var clientId = await SeedClientAsync(rowsPerCollection);
         var caseVariant = clientId.ToUpperInvariant();
         await using var scope = fixture.Factory.Services.CreateAsyncScope();
@@ -85,7 +85,7 @@ public sealed class SingleQueryClientStoreTests(IntegrationFixture fixture)
     [Fact]
     public async Task FindClientByIdAsync_ReadsTheClientAndEveryCollectionInOneCommand()
     {
-        var rowsPerCollection = Random.Shared.Next(2, 5);
+        var rowsPerCollection = SingleQueryClientStoreConstants.RowsPerCollection;
         var clientId = await SeedClientAsync(rowsPerCollection);
         await using var scope = fixture.Factory.Services.CreateAsyncScope();
         var singleQueryStore = scope.ServiceProvider.GetRequiredService<SingleQueryClientStore>();
@@ -99,7 +99,7 @@ public sealed class SingleQueryClientStoreTests(IntegrationFixture fixture)
     [Fact]
     public async Task DuendesClientStore_ReadsTheClientInOneCommandPerCollectionPlusOne_SoTheCommandCountDiscriminates()
     {
-        var rowsPerCollection = Random.Shared.Next(2, 5);
+        var rowsPerCollection = SingleQueryClientStoreConstants.RowsPerCollection;
         var clientId = await SeedClientAsync(rowsPerCollection);
         await using var scope = fixture.Factory.Services.CreateAsyncScope();
         var duendeStore = scope.ServiceProvider.GetRequiredService<ClientStore>();

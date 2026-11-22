@@ -2,6 +2,7 @@ namespace Identity.Tests.Unit.Logging;
 
 internal static class DuendeLicenseEventConstants
 {
+    internal const string LicensingAssemblyName = "Duende.Private.Licensing";
     internal const int NoValidLicenseKeyEventId = 263521618;
     internal const string ErrorValidatingV2LicenseKeyEventName = "ErrorValidatingV2LicenseKey";
     internal const string LicenseExpiredEventName = "LicenseExpired";

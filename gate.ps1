@@ -113,6 +113,7 @@ if ($Only) {
         $env:ASPNETCORE_ENVIRONMENT = 'Development'
         $env:SqlConnectionStringBuilder__InitialCatalog = $testCatalog
         $env:PasskeyOrigin = 'https://127.0.0.1'
+        dotnet build $probeProject --configuration Release
         pwsh "$repo\Identity.Tests.E2E\bin\Release\net11.0\playwright.ps1" install chromium
     }
     $probeResults = Join-Path $gateOutput 'probe-results'
@@ -120,7 +121,7 @@ if ($Only) {
     if (Test-Path -LiteralPath $probeTrx) { Remove-Item -LiteralPath $probeTrx -Force }
     Write-Host "PROBE: running one test, '$probeTest' of $probeClass in $probeProject; no gate record or verdict is written"
     $global:LASTEXITCODE = $null
-    dotnet test --project $probeProject --no-build --configuration Release -- --filter-query "/*/*/$probeClass/$probeTest" --report-xunit-trx --report-xunit-trx-filename probe.trx --results-directory=$probeResults
+    dotnet test --project $probeProject --configuration Release -- --filter-query "/*/*/$probeClass/$probeTest" --report-xunit-trx --report-xunit-trx-filename probe.trx --results-directory=$probeResults
     $probeExit = $global:LASTEXITCODE
     if (-not (Test-Path -LiteralPath $probeTrx)) { Write-Host "PROBE: FAILED (no TRX, exit $probeExit)"; exit 1 }
     [xml]$probeDoc = Get-Content -LiteralPath $probeTrx -Raw
