@@ -32,7 +32,7 @@
     <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.21.0" />
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.21.0" />
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.21.0" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.EntityFrameworkCore" Version="1.21.0-beta.1" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.EntityFrameworkCore" Version="1.21.0-beta.2" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.21.0" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.21.0" />
     <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.21.0" />
@@ -40,7 +40,7 @@
     <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
     <PackageReference Include="Shared" Version="2.0.0" />
-    <PackageReference Include="SonarAnalyzer.CSharp" Version="10.36.0.15337">
+    <PackageReference Include="SonarAnalyzer.CSharp" Version="10.37.0.15768">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
