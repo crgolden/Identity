@@ -138,15 +138,19 @@ Initialize-GateState 'Identity' $repo
 Get-OwedStep | Register-OwedStep
 Invoke-GateLibraryStep
 
-if (-not (Test-StepCarried 'Install dotnet-coverage')) {
-    if (Get-Command dotnet-coverage -ErrorAction SilentlyContinue) { Write-Row 'Install dotnet-coverage' 'PASS' 'present on PATH' }
-    else { Stop-Gate 'Install dotnet-coverage' 'not on PATH' }
+$coverageTool = 'Install dotnet-coverage'
+Invoke-GateStep -Name $coverageTool -Body {
+    if (Get-Command dotnet-coverage -ErrorAction SilentlyContinue) { Write-Row $coverageTool 'PASS' 'present on PATH' }
+    else { Stop-Gate $coverageTool 'not on PATH' }
 }
-$global:LASTEXITCODE = $null
-dotnet tool restore
-Assert-StepExit 'Restore local tools (dotnet tool restore)'
+$restore = 'Restore local tools (dotnet tool restore)'
+Invoke-GateStep -Name $restore -Body {
+    $global:LASTEXITCODE = $null
+    dotnet tool restore
+    Assert-StepExit $restore
+}
 
-if (-not (Test-StepCarried $s101)) {
+Invoke-GateStep -Name $s101 -Body {
     $identityCsproj = Join-Path $repo 'Identity\Identity.csproj'
     $csprojBackup = Join-Path $gateOutput 'Identity.csproj.s101-control-backup'
     if (Test-Path -LiteralPath $csprojBackup) {
@@ -187,31 +191,35 @@ if ($sonarCarried) {
 }
 else {
     $sonarStartedAt = [DateTimeOffset]::UtcNow
-    $env:JAVA_HOME = Get-SonarScannerJavaHome $beginSonar
-    $global:LASTEXITCODE = $null
-    dotnet-sonarscanner begin /k:"crgolden_Identity" /o:"crgolden" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportsPaths="coverage.opencover.xml" /d:sonar.cs.vscoveragexml.reportsPaths="coverage-e2e.xml,coverage-integration.xml" /d:sonar.exclusions="**/bin/**,**/obj/**" /d:sonar.coverage.exclusions="**/Program.cs,**/gate.ps1" /d:sonar.qualitygate.wait=true /d:sonar.scanner.skipJreProvisioning=true /d:sonar.scm.use.blame.algorithm=GIT_NATIVE_BLAME /d:sonar.branch.name="$sonarBranch"
-    Assert-StepExit $beginSonar
+    Invoke-GateStep -Name $beginSonar -Always -Body {
+        $env:JAVA_HOME = Get-SonarScannerJavaHome $beginSonar
+        $global:LASTEXITCODE = $null
+        dotnet-sonarscanner begin /k:"crgolden_Identity" /o:"crgolden" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportsPaths="coverage.opencover.xml" /d:sonar.cs.vscoveragexml.reportsPaths="coverage-e2e.xml,coverage-integration.xml" /d:sonar.exclusions="**/bin/**,**/obj/**" /d:sonar.coverage.exclusions="**/Program.cs,**/gate.ps1" /d:sonar.qualitygate.wait=true /d:sonar.scanner.skipJreProvisioning=true /d:sonar.scm.use.blame.algorithm=GIT_NATIVE_BLAME /d:sonar.branch.name="$sonarBranch"
+        Assert-StepExit $beginSonar
+    }
 }
 
 if ($sonarCarried) { $null = Test-StepCarried $build }
 else {
-    $global:LASTEXITCODE = $null
-    dotnet build --no-incremental --configuration Release /p:RestoreLockedMode=true -warnaserror
-    Assert-StepExit $build
+    Invoke-GateStep -Name $build -Always -Body {
+        $global:LASTEXITCODE = $null
+        dotnet build --no-incremental --configuration Release /p:RestoreLockedMode=true -warnaserror
+        Assert-StepExit $build
+    }
 }
 
-if (-not (Test-StepCarried 'jb inspectcode')) {
+Invoke-GateStep -Name 'jb inspectcode' -Needs @($build, $restore) -Body {
     if (Test-Path $sarif) { Remove-Item $sarif -Force }
     dotnet jb inspectcode "$repo\Identity.slnx" --no-build -e=WARNING --caches-home="$(New-InspectCodeCache $gateOutput)" --output="$sarif"
     Test-Sarif $sarif
 }
 
-if (-not (Test-StepCarried $unit)) {
+Invoke-GateStep -Name $unit -Needs @($build, $restore) -Body {
     if (Test-Path $unitTrx) { Remove-Item $unitTrx -Force }
     $global:LASTEXITCODE = $null
     dotnet coverlet Identity.Tests.Unit\bin\Release\net11.0 `
         --target "dotnet" `
-        --targetargs "test --project Identity.Tests.Unit --no-build --configuration Release -- --filter-trait Category=Unit --stop-on-fail on --report-xunit-trx --report-xunit-trx-filename unit-tests.trx --results-directory=Identity.Tests.Unit/bin/Release/net11.0/TestResults" `
+        --targetargs "test --project Identity.Tests.Unit --no-build --configuration Release -- --filter-trait Category=Unit --report-xunit-trx --report-xunit-trx-filename unit-tests.trx --results-directory=Identity.Tests.Unit/bin/Release/net11.0/TestResults" `
         --format opencover --output "coverage.opencover.xml" `
         --skipautoprops --exclude-by-attribute GeneratedCodeAttribute --exclude-by-file "**/obj/**" `
         --exclude-by-file "**/Program.cs" --does-not-return-attribute DoesNotReturnAttribute `
@@ -219,20 +227,26 @@ if (-not (Test-StepCarried $unit)) {
     Test-Trx $unit $unitTrx $global:LASTEXITCODE -floor 1
 }
 
-if (-not (Test-StepCarried 'Install SqlPackage')) {
-    if (Get-Command sqlpackage -ErrorAction SilentlyContinue) { Write-Row 'Install SqlPackage' 'PASS' 'present on PATH' }
-    else { Stop-Gate 'Install SqlPackage' 'not on PATH' }
+$sqlPackageTool = 'Install SqlPackage'
+Invoke-GateStep -Name $sqlPackageTool -Body {
+    if (Get-Command sqlpackage -ErrorAction SilentlyContinue) { Write-Row $sqlPackageTool 'PASS' 'present on PATH' }
+    else { Stop-Gate $sqlPackageTool 'not on PATH' }
 }
-if (-not (Test-StepCarried $schema)) {
+Invoke-GateStep -Name $schema -Needs @($build, $sqlPackageTool) -Body {
     Start-LocalDbWhenTargeted
     $global:LASTEXITCODE = $null
     sqlpackage /Action:Publish /SourceFile:Identity.Data/bin/Release/Identity.Data.dacpac /TargetConnectionString:"$($targetConnection.ConnectionString)"
     Assert-StepExit $schema
 }
 
-Install-PlaywrightBrowser 'Install Playwright browsers' { pwsh "$repo\Identity.Tests.E2E\bin\Release\net11.0\playwright.ps1" install --dry-run chromium } { pwsh "$repo\Identity.Tests.E2E\bin\Release\net11.0\playwright.ps1" install chromium }
+$playwright = 'Install Playwright browsers'
+Invoke-GateStep -Name $playwright -Needs @($build) -Always -Body {
+    Install-PlaywrightBrowser $playwright { pwsh "$repo\Identity.Tests.E2E\bin\Release\net11.0\playwright.ps1" install --dry-run chromium } { pwsh "$repo\Identity.Tests.E2E\bin\Release\net11.0\playwright.ps1" install chromium }
+}
 
-if (-not (Test-StepCarried $e2e)) {
+$e2eRun = @{ Ran = $false }
+Invoke-GateStep -Name $e2e -Needs @($build, $coverageTool, $schema, $playwright) -Body {
+    $e2eRun.Ran = $true
     if ($e2eFloor -le 0) { Stop-Gate $e2e 'Identity.Tests.E2E\e2e-settings.json carries no positive executedTestFloor' }
     if (Test-Path $e2eTrx) { Remove-Item $e2eTrx -Force }
     if (Test-Path $cucumberMessages) { Remove-Item $cucumberMessages -Force }
@@ -243,20 +257,32 @@ if (-not (Test-StepCarried $e2e)) {
     $env:PasskeyOrigin = 'https://127.0.0.1'
     $global:LASTEXITCODE = $null
     dotnet-coverage collect `
-        "dotnet test --project Identity.Tests.E2E --no-build --configuration Release -- --filter-trait Category=E2E --stop-on-fail on --report-xunit-trx --report-xunit-trx-filename e2e-tests.trx --results-directory=Identity.Tests.E2E/bin/Release/net11.0/TestResults" `
+        "dotnet test --project Identity.Tests.E2E --no-build --configuration Release -- --filter-trait Category=E2E --report-xunit-trx --report-xunit-trx-filename e2e-tests.trx --results-directory=Identity.Tests.E2E/bin/Release/net11.0/TestResults" `
         -f xml -o "coverage-e2e.xml" -s "coverage.settings.xml"
     Test-Trx $e2e $e2eTrx $global:LASTEXITCODE -floor $e2eFloor
-    if (-not (Test-Path $cucumberMessages)) { Stop-Gate $cucumberReport "missing: $cucumberMessages" }
-    $finishedCases = @(Select-String -LiteralPath $cucumberMessages -SimpleMatch '"testCaseFinished"').Count
-    if ($finishedCases -lt $e2eFloor) { Stop-Gate $cucumberReport "$finishedCases testCaseFinished messages, floor $e2eFloor" }
-    Write-Row $cucumberReport 'PASS' "$finishedCases testCaseFinished messages, floor $e2eFloor"
-    $leakedSessions = if (Test-Path $artifactTemp) { @(Get-ChildItem -LiteralPath $artifactTemp -Recurse -File).Count } else { 0 }
-    if ($leakedSessions -gt 0) { Stop-Gate $artifactTempStep "$leakedSessions file(s) left in ${artifactTemp}: artifacts were never finalized" }
-    Write-Row $artifactTempStep 'PASS' "no files left in $artifactTemp"
-    Test-PublishCommandLine $publishStep (Join-Path $repo '.github\workflows\main_crgolden-identity.yml') 'Identity' $repo $cucumberMessagesRelative
+}
+$e2eChecks = @($cucumberReport, $artifactTempStep, $publishStep)
+if ($e2eRun.Ran) {
+    Invoke-GateStep -Name $cucumberReport -Always -Body {
+        if (-not (Test-Path $cucumberMessages)) { Stop-Gate $cucumberReport "missing: $cucumberMessages" }
+        $finishedCases = @(Select-String -LiteralPath $cucumberMessages -SimpleMatch '"testCaseFinished"').Count
+        if ($finishedCases -lt $e2eFloor) { Stop-Gate $cucumberReport "$finishedCases testCaseFinished messages, floor $e2eFloor" }
+        Write-Row $cucumberReport 'PASS' "$finishedCases testCaseFinished messages, floor $e2eFloor"
+    }
+    Invoke-GateStep -Name $artifactTempStep -Always -Body {
+        $leakedSessions = if (Test-Path $artifactTemp) { @(Get-ChildItem -LiteralPath $artifactTemp -Recurse -File).Count } else { 0 }
+        if ($leakedSessions -gt 0) { Stop-Gate $artifactTempStep "$leakedSessions file(s) left in ${artifactTemp}: artifacts were never finalized" }
+        Write-Row $artifactTempStep 'PASS' "no files left in $artifactTemp"
+    }
+    Invoke-GateStep -Name $publishStep -Needs @($cucumberReport) -Always -Body {
+        Test-PublishCommandLine $publishStep (Join-Path $repo '.github\workflows\main_crgolden-identity.yml') 'Identity' $repo $cucumberMessagesRelative
+    }
+}
+elseif (@(Get-FailedStep -Step @($e2e)).Count) {
+    Write-PrerequisiteUnreached -Step $e2eChecks -Failed @($e2e)
 }
 
-if (-not (Test-StepCarried $integration)) {
+Invoke-GateStep -Name $integration -Needs @($build, $coverageTool, $schema) -Body {
     if (Test-Path $integrationTrx) { Remove-Item $integrationTrx -Force }
     Start-LocalDbWhenTargeted
     $env:ASPNETCORE_ENVIRONMENT = 'Development'
@@ -264,19 +290,23 @@ if (-not (Test-StepCarried $integration)) {
     $env:PasskeyOrigin = 'https://127.0.0.1'
     $global:LASTEXITCODE = $null
     dotnet-coverage collect `
-        "dotnet test --project Identity.Tests.Integration --no-build --configuration Release -- --filter-trait Category=Integration --stop-on-fail on --report-xunit-trx --report-xunit-trx-filename integration-tests.trx --results-directory=Identity.Tests.Integration/bin/Release/net11.0/TestResults" `
+        "dotnet test --project Identity.Tests.Integration --no-build --configuration Release -- --filter-trait Category=Integration --report-xunit-trx --report-xunit-trx-filename integration-tests.trx --results-directory=Identity.Tests.Integration/bin/Release/net11.0/TestResults" `
         -f xml -o "coverage-integration.xml" -s "coverage.settings.xml"
     Test-Trx $integration $integrationTrx $global:LASTEXITCODE -floor 27
 }
 
 if (-not $sonarCarried) {
-    $global:LASTEXITCODE = $null
-    dotnet-sonarscanner end
-    Assert-StepExit $endSonar
-    Assert-NoOpenSonarIssue $sonarIssues 'crgolden_Identity' $sonarBranch $sonarStartedAt
+    Invoke-GateStep -Name $endSonar -Needs @($beginSonar, $build, $unit, $e2e, $integration) -Always -Body {
+        $global:LASTEXITCODE = $null
+        dotnet-sonarscanner end
+        Assert-StepExit $endSonar
+    }
+    Invoke-GateStep -Name $sonarIssues -Needs @($endSonar) -Always -Body {
+        Assert-NoOpenSonarIssue $sonarIssues 'crgolden_Identity' $sonarBranch $sonarStartedAt
+    }
 }
 
-if (-not (Test-StepCarried $stryker)) {
+Invoke-GateStep -Name $stryker -Needs @($build, $restore) -Body {
     if ([string]::IsNullOrWhiteSpace($env:STRYKER_DASHBOARD_API_KEY)) { Stop-Gate $stryker 'STRYKER_DASHBOARD_API_KEY is not in the environment' }
     $strykerConfig = (Get-Content (Join-Path $repo 'stryker-config.json') -Raw | ConvertFrom-Json).'stryker-config'
     $strykerReporters = @($strykerConfig.reporters | Where-Object { $_ -ne 'dashboard' } | ForEach-Object { '--reporter', $_ })

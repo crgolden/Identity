@@ -181,7 +181,7 @@ jobs:
           $arguments = @(
             'Identity.Tests.Unit/bin/Release/net11.0'
             '--target', 'dotnet'
-            '--targetargs', 'test --project Identity.Tests.Unit --no-build --configuration Release -- --filter-trait Category=Unit --stop-on-fail on --report-xunit-trx --report-xunit-trx-filename unit-tests.trx --results-directory=Identity.Tests.Unit/bin/Release/net11.0/TestResults'
+            '--targetargs', 'test --project Identity.Tests.Unit --no-build --configuration Release -- --filter-trait Category=Unit --report-xunit-trx --report-xunit-trx-filename unit-tests.trx --results-directory=Identity.Tests.Unit/bin/Release/net11.0/TestResults'
             '--format', 'opencover', '--output', 'coverage.opencover.xml'
             '--skipautoprops'
             '--exclude-by-attribute', 'GeneratedCodeAttribute'
@@ -268,7 +268,7 @@ jobs:
         run: |
           $arguments = @(
             'collect'
-            'dotnet test --project Identity.Tests.E2E --no-build --configuration Release -- --filter-trait Category=E2E --stop-on-fail on --report-xunit-trx --report-xunit-trx-filename e2e-tests.trx --results-directory=Identity.Tests.E2E/bin/Release/net11.0/${{ vars.PLAYWRIGHT_TEST_RESULTS_FOLDER_NAME }}'
+            'dotnet test --project Identity.Tests.E2E --no-build --configuration Release -- --filter-trait Category=E2E --report-xunit-trx --report-xunit-trx-filename e2e-tests.trx --results-directory=Identity.Tests.E2E/bin/Release/net11.0/${{ vars.PLAYWRIGHT_TEST_RESULTS_FOLDER_NAME }}'
             '-f', 'xml', '-o', 'coverage-e2e.xml', '-s', 'coverage.settings.xml'
           )
           dotnet-coverage @arguments
@@ -343,7 +343,7 @@ jobs:
         run: |
           $arguments = @(
             'collect'
-            'dotnet test --project Identity.Tests.Integration --no-build --configuration Release -- --filter-trait Category=Integration --stop-on-fail on --report-xunit-trx --report-xunit-trx-filename integration-tests.trx --results-directory=Identity.Tests.Integration/bin/Release/net11.0/TestResults'
+            'dotnet test --project Identity.Tests.Integration --no-build --configuration Release -- --filter-trait Category=Integration --report-xunit-trx --report-xunit-trx-filename integration-tests.trx --results-directory=Identity.Tests.Integration/bin/Release/net11.0/TestResults'
             '-f', 'xml', '-o', 'coverage-integration.xml', '-s', 'coverage.settings.xml'
           )
           dotnet-coverage @arguments

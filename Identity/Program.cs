@@ -272,6 +272,7 @@ try
         .UseForwardedHeaders()
         .UseSerilogRequestLogging(requestLoggingOptions =>
         {
+            requestLoggingOptions.GetLevel = RequestLogLevel.Of;
             requestLoggingOptions.EnrichDiagnosticContext = (diagnosticContext, _) =>
             {
                 if (Activity.Current is null)
