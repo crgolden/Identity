@@ -296,7 +296,7 @@ Invoke-GateStep -Name $integration -Needs @($build, $coverageTool, $schema) -Bod
 }
 
 if (-not $sonarCarried) {
-    Invoke-GateStep -Name $endSonar -Needs @($beginSonar, $build, $unit, $e2e, $integration) -Always -Body {
+    Invoke-GateStep -Name $endSonar -Needs @($beginSonar, $build) -Always -Body {
         $global:LASTEXITCODE = $null
         dotnet-sonarscanner end
         Assert-StepExit $endSonar
