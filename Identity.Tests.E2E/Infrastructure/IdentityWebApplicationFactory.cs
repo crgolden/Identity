@@ -55,6 +55,7 @@ public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Progra
         _serverAddress = addresses.Addresses.First().TrimEnd('/');
 
         testHost.Start();
+        WaitUntilItsApplicationHasStarted(testHost);
         return testHost;
     }
 
@@ -115,6 +116,9 @@ public sealed class IdentityWebApplicationFactory : WebApplicationFactory<Progra
 
         base.Dispose(disposing);
     }
+
+    private static void WaitUntilItsApplicationHasStarted(IHost host) =>
+        host.Services.GetRequiredService<IHostApplicationLifetime>().ApplicationStarted.WaitHandle.WaitOne();
 
     private static string BuildNeverDialledServiceBusConnectionString()
     {
