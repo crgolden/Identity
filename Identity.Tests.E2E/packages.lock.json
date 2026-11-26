@@ -25,9 +25,9 @@
       },
       "Microsoft.Playwright": {
         "type": "Direct",
-        "requested": "[1.64.1, )",
-        "resolved": "1.64.1",
-        "contentHash": "DO8plHiCCUS/54XZxhsuzGtxI4RkyJ/5XOlVFoT0A0K1jNYdGhntry36ivkPjcCbv0uz6P/PmJ35gUgnAYGbiw==",
+        "requested": "[1.65.1, )",
+        "resolved": "1.65.1",
+        "contentHash": "xJ9Imv5+05KULm2wQPS2w4gVAHg5eByo0P8KixryyE7XpVL8xmuQcvzCqQTYPpJoQLLgpRwe7LibfF1mIBHL1g==",
         "dependencies": {
           "Microsoft.Bcl.AsyncInterfaces": "6.0.0"
         }
@@ -61,9 +61,9 @@
       },
       "SonarAnalyzer.CSharp": {
         "type": "Direct",
-        "requested": "[10.36.0.15337, )",
-        "resolved": "10.36.0.15337",
-        "contentHash": "jGLAZUjheSURfe0T/dJYGUrMOrLt1fxaInpChq75YJvrywsxFoUKK/EM6PSfTjkt4pbaq2ywIQjgQzhrmmj5Ow=="
+        "requested": "[10.37.0.15768, )",
+        "resolved": "10.37.0.15768",
+        "contentHash": "73Qo5UF1HSCwUGqiZ9XOKXWNRAe3WN8dfsj3pWIi5oIuenY1Uo9WuMinGibs3up9zcJ5CFk5Ex/Ei/S17mcBvg=="
       },
       "StyleCop.Analyzers": {
         "type": "Direct",
@@ -983,8 +983,8 @@
       },
       "OpenTelemetry.Instrumentation.EntityFrameworkCore": {
         "type": "Transitive",
-        "resolved": "1.21.0-beta.1",
-        "contentHash": "cZZoG3cfMu8jqapbDVYi8IXgV27pL629BlZuDwxuUwPTVTHSyrI8j5RYuQYm0Wsssetky41u33Z7tYfG1xyQlg==",
+        "resolved": "1.21.0-beta.2",
+        "contentHash": "SoJedykl/jcKLP9G3N2gH+VCqg0zVNia1SB4mQriZF3haoADA+lt+gdwsz5OuXUpuaC2Hy6Tq+j0fza9SDpemQ==",
         "dependencies": {
           "Microsoft.Extensions.Configuration": "11.0.0",
           "OpenTelemetry.Api.ProviderBuilderExtensions": "[1.21.0, 2.0.0)"
@@ -1264,7 +1264,7 @@
           "OpenTelemetry.Exporter.Console": "[1.21.0, )",
           "OpenTelemetry.Exporter.OpenTelemetryProtocol": "[1.21.0, )",
           "OpenTelemetry.Extensions.Hosting": "[1.21.0, )",
-          "OpenTelemetry.Instrumentation.EntityFrameworkCore": "[1.21.0-beta.1, )",
+          "OpenTelemetry.Instrumentation.EntityFrameworkCore": "[1.21.0-beta.2, )",
           "OpenTelemetry.Instrumentation.Http": "[1.21.0, )",
           "OpenTelemetry.Instrumentation.Runtime": "[1.21.0, )",
           "Serilog.AspNetCore": "[10.0.0, )",
