@@ -79,9 +79,9 @@ one setting that gates origin validation.
 **`-trait "Category=E2E"` is not optional.** `Identity.Tests.E2E` also holds the `Category=Walker` suite,
 written to run against a **deployed** target. The walker skips when `WalkerBaseUrl` is unset, but it still
 inflates an unfiltered total, so **the E2E tier alone is the count to compare** against the last green run.
-`gate.ps1`'s `Test-Trx` calls assert a floor per tier: the E2E floor is `executedTestFloor` in
-`Identity.Tests.E2E/e2e-settings.json`, and **27** Integration tests. The gate and CI's "Assert E2E executed at least
-its floor" step read that one file, and both also require one `testCaseFinished` per floor scenario in the Cucumber
+The gate asserts a floor per tier: the E2E floor is `executedTestFloor` in
+`Identity.Tests.E2E/e2e-settings.json`, and **27** Integration tests (`gate.steps.psd1`). The gate's
+`scripts/gate/Assert-E2eFloor.ps1` and CI's "Assert E2E executed at least its floor" step read that one file, and both also require one `testCaseFinished` per floor scenario in the Cucumber
 messages report, whose path both derive from `reqnroll.json`. A run that executes fewer fails, and a floor changes
 only in the same edit that deliberately adds or removes a scenario or test.
 
