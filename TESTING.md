@@ -1737,7 +1737,7 @@ Only the unit tests run under Stryker, because `test-projects` names `Identity.T
 
 **Never add a `test-case-filter`.** Every test in that project is `Category=Unit`, so a filter selects nothing more, and under dotnet-stryker 5.0.0's MTP runner a filter is what strands a static-initializer mutant: its every-test run is aggregated against a filtered count that can never match the discovered total, the mutant stays `Pending`, and the dashboard refuses a report holding one (400, "Submitting pending reports to the completed reports endpoint is not allowed").
 
-**Thresholds are 100 (high, low and break).** Every mutant is killed by a unit test, recorded as equivalent with `// Stryker disable once <Mutator> : <reason>` on the line above the statement it covers, or excluded in `mutate` with its reason in the table above. A surviving or uncovered mutant fails the gate and CI.
+**Thresholds are 100 (high, low and break).** Every mutant is killed by a unit test or excluded in `mutate` with its reason in the table above; a `// Stryker disable` comment is a suppression the gate's comment catalog fails. A surviving or uncovered mutant fails the gate and CI.
 
 **Do not reintroduce a filename allowlist in `mutate`; add an exclusion with a stated reason instead.** An allowlisted file that moves or is renamed drops out silently: Stryker mutates a smaller set, still reports a score, and the run stays green while covering less.
 
